@@ -2,7 +2,7 @@ pseudo.CstrMain = (function() {
   // Exposed class functions/variables
   return {
     awake() {
-      mips.awake();
+      r3ka.awake();
     },
 
     reset() {

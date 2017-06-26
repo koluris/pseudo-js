@@ -6,7 +6,7 @@ pseudo.CstrR3ka = (function() {
   const r;
   const copr;
 
-  function step(inslot) {
+  step(inslot) {
     const code = pc>>>28 === 0xbfc;
     pc  += 4;
     r[0] = 0;
@@ -16,7 +16,14 @@ pseudo.CstrR3ka = (function() {
     psx.error('hi');
   }
 
-  function branch(addr) {
+  branch(addr) {
+    // Execute instruction in slot
+    step(true);
+    pc = addr;
+  }
+
+  exception(code, inslot) {
+    pc = 0x80;
   }
 
   // Exposed class functions/variables
