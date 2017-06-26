@@ -1,6 +1,6 @@
-#define pc r[33]
-#define lo r[34]
-#define hi r[35]
+#define pc r[32]
+#define lo r[33]
+#define hi r[34]
 
 pseudo.CstrR3ka = (function() {
   let r;

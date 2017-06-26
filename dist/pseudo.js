@@ -85,9 +85,9 @@ pseudo.CstrR3ka = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    const code = r[33]>>>28 === 0xbfc;
+    const code = r[32]>>>28 === 0xbfc;
     opcodeCount++;
-    r[33]  += 4;
+    r[32]  += 4;
     r[0] = 0; // As weird as this seems, it is needed
 
     switch(code) {
@@ -98,17 +98,17 @@ pseudo.CstrR3ka = (function() {
   function branch(addr) {
     // Execute instruction in slot
     step(true);
-    r[33] = addr;
+    r[32] = addr;
   }
 
   function exception(code, inslot) {
-    r[33] = 0x80;
+    r[32] = 0x80;
   }
 
   // Exposed class functions/variables
   return {
     awake() {
-         r = new Uint32Array(32 + 3); // + r[33], r[34], r[35]
+         r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
       copr = new Uint32Array(16);
     },
 
@@ -116,7 +116,7 @@ pseudo.CstrR3ka = (function() {
          r.fill(0);
       copr.fill(0);
 
-      r[33] = 0xbfc00000;
+      r[32] = 0xbfc00000;
       opcodeCount = 0;
     }
   };
