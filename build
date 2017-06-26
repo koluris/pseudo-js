@@ -1,0 +1,7 @@
+combined="dist/combined.js"
+rm -f $combined
+cat src/*.h src/*.js > $combined
+dist="dist/pseudo.js"
+rm -f $dist
+/usr/bin/cpp -P -undef < $combined > $dist
+rm -f $combined

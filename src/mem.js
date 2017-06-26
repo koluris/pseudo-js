@@ -10,6 +10,7 @@ pseudo.CstrMem = (function() {
     _hwr: union(0x4000),
 
     reset() {
+      // Reset all, except for BIOS?
       ram.ub.fill(0);
       rom.ub.fill(0);
       hwr.ub.fill(0);

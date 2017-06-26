@@ -3,26 +3,29 @@
 #define hi r[35]
 
 pseudo.CstrR3ka = (function() {
-  const r;
-  const copr;
+  let r;
+  let copr;
+  let opcodeCount;
 
-  step(inslot) {
+  // Base CPU stepper
+  function step(inslot) {
     const code = pc>>>28 === 0xbfc;
+    opcodeCount++;
     pc  += 4;
-    r[0] = 0;
+    r[0] = 0; // As weird as this seems, it is needed
 
     switch(code) {
     }
     psx.error('hi');
   }
 
-  branch(addr) {
+  function branch(addr) {
     // Execute instruction in slot
     step(true);
     pc = addr;
   }
 
-  exception(code, inslot) {
+  function exception(code, inslot) {
     pc = 0x80;
   }
 
@@ -38,6 +41,7 @@ pseudo.CstrR3ka = (function() {
       copr.fill(0);
 
       pc = 0xbfc00000;
+      opcodeCount = 0;
     }
   };
 })();
