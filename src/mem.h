@@ -1,0 +1,2 @@
+#define mem\
+  pseudo.CstrMem

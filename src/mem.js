@@ -1,13 +1,14 @@
 pseudo.CstrMem = (function() {
-  const ram;
-  const rom;
-  const hwr;
-  
+  // Exposed class functions/variables
   return {
-    init() {
-    },
+    _ram: union(0x200000),
+    _rom: union(0x80000),
+    _hwr: union(0x4000),
 
     reset() {
+      ram.ub.fill(0);
+      rom.ub.fill(0);
+      hwr.ub.fill(0);
     }
   };
 })();

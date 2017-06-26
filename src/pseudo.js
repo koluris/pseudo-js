@@ -1,28 +1,18 @@
-#define pc r[33]
-#define lo r[34]
-#define hi r[35]
-
-pseudo.CstrMain = (function() { // Start
-  const r;
-  const copr;
-
+pseudo.CstrMain = (function() {
+  // Exposed class functions/variables
   return {
-    init() {
-         r = new Uint32cap(36); // + lo, hi, pc
-      copr = new Uint32cap(16);
-
-      // BIOS
+    awake() {
+      mips.awake();
     },
 
     reset() {
-         r.fill(0);
-      copr.fill(0);
+      // Reset all emulator components
+      mem .reset();
+      r3ka.reset();
+    },
 
-      pc = 0xbfc00000;
+    error(out) {
+      throw new Error(out);
     }
   };
 })();
-
-#undef pc
-#undef lo
-#undef hi

@@ -1,0 +1,2 @@
+#define psx\
+  pseudo.CstrMain
