@@ -1,0 +1,2 @@
+#define io\
+  pseudo.CstrHardware

@@ -16,17 +16,17 @@
 #define shamt\
   ((code>>>6)&0x1f)
 
-#define immu\
+#define imm_u\
   (code&0xffff)
 
-#define imms\
-  (sextH(code))
+#define imm_s\
+  (s_ext_h(code))
 
 #define ob\
-  (r[rs]+imms)
+  (r[rs]+imm_s)
 
-#define baddr\
-  (pc+(imms<<2))
+#define b_addr\
+  (pc+(imm_s<<2))
 
-#define taddr\
+#define s_addr\
   ((pc&0xf0000000)|(code&0x3ffffff)<<2)

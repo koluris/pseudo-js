@@ -9,7 +9,7 @@ pseudo.CstrR3ka = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    const code = pc>>>20 === 0xbfc ? ioAccW(mem._rom.uw, pc) : ioAccW(mem._ram.uw, pc);
+    const code = pc>>>20 === 0xbfc ? io_acc_w(mem._rom.uw, pc) : io_acc_w(mem._ram.uw, pc);
     opcodeCount++;
     pc  += 4;
     r[0] = 0; // As weird as this seems, it is needed
@@ -37,25 +37,34 @@ pseudo.CstrR3ka = (function() {
         return;
 
       case 2: // J
-        branch(taddr);
+        branch(s_addr);
+        return;
+
+      case 3: // JAL
+        r[31] = pc+4;
+        branch(s_addr);
         return;
 
       case 5: // BNE
         if (r[rs] !== r[rt]) {
-          branch(baddr);
+          branch(b_addr);
         }
         return;
 
       case 8: // ADDI
-        r[rt] = r[rs] + imms;
+        r[rt] = r[rs] + imm_s;
         return;
 
       case 9: // ADDIU
-        r[rt] = r[rs] + imms;
+        r[rt] = r[rs] + imm_s;
+        return;
+
+      case 12: // ANDI
+        r[rt] = r[rs] & imm_u;
         return;
 
       case 13: // ORI
-        r[rt] = r[rs] | immu;
+        r[rt] = r[rs] | imm_u;
         return;
 
       case 16: // COP0
@@ -72,15 +81,19 @@ pseudo.CstrR3ka = (function() {
         return;
 
       case 35: // LW
-        r[rt] = mem.read.uw(ob);
+        r[rt] = mem.read.w(ob);
+        return;
+
+      case 40: // SB
+        mem.write.b(ob, r[rt]);
         return;
 
       case 41: // SH
-        mem.write.uh(ob, r[rt]);
+        mem.write.h(ob, r[rt]);
         return;
 
       case 43: // SW
-        mem.write.uw(ob, r[rt]);
+        mem.write.w(ob, r[rt]);
         return;
     }
     psx.error('pseudo / Basic CPU instruction -> '+opcode);
