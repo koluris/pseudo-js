@@ -6,3 +6,15 @@
 
 #define rt\
   ((code>>>15)&0x1f)
+
+#define rs\
+  ((code>>>21)&0x1f)
+
+#define immu\
+  (code&0xffff)
+
+#define imms\
+  (sextH(code))
+
+#define taddr\
+  (r[rs]+imms)

@@ -49,6 +49,27 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrMem = (function() {
   // Exposed class functions/variables
   return {
@@ -115,11 +136,16 @@ pseudo.CstrR3ka = (function() {
     r[0] = 0; // As weird as this seems, it is needed
 
     switch(((code>>>26)&0x3f)) {
-      case 13: //
+      case 13: // ORI
+        r[((code>>>15)&0x1f)] = r[((code>>>21)&0x1f)] | (code&0xffff);
         return;
 
       case 15: // LUI
         r[((code>>>15)&0x1f)] = code<<16;
+        return;
+
+      case 43: // SW
+        pseudo.CstrMem.write.uw((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>15)&0x1f)]);
         return;
     }
     pseudo.CstrMain.error('pseudo / Basic CPU instruction -> '+((code>>>26)&0x3f));

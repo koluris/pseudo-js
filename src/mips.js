@@ -15,11 +15,16 @@ pseudo.CstrR3ka = (function() {
     r[0] = 0; // As weird as this seems, it is needed
 
     switch(opcode) {
-      case 13: //
+      case 13: // ORI
+        r[rt] = r[rs] | immu;
         return;
 
       case 15: // LUI
         r[rt] = code<<16;
+        return;
+
+      case 43: // SW
+        mem.write.uw(taddr, r[rt]);
         return;
     }
     psx.error('pseudo / Basic CPU instruction -> '+opcode);
