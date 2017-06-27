@@ -21,6 +21,11 @@ pseudo.CstrR3ka = (function() {
             r[rd] = r[rt] << shamt;
             return;
 
+          case 8: // JR
+            branch(r[rs]);
+            output();
+            return;
+
           case 33: // ADDU
             r[rd] = r[rs] + r[rt];
             return;
@@ -109,6 +114,18 @@ pseudo.CstrR3ka = (function() {
 
   function exception(code, inslot) {
     pc = 0x80;
+  }
+
+  function output() {
+    switch(pc) {
+      case 0xa:
+        psx.error('Output class -> '+hex(pc));
+        break;
+
+      case 0xb:
+        psx.error('Output class -> '+hex(pc));
+        break;
+    }
   }
 
   // Exposed class functions/variables

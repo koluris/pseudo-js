@@ -10,6 +10,7 @@
 
 
 
+
 // A kind of helper for various data manipulation
 function union(size) {
   const bfr = new ArrayBuffer(size);
@@ -203,6 +204,11 @@ pseudo.CstrR3ka = (function() {
             r[((code>>>11)&0x1f)] = r[((code>>>15)&0x1f)] << ((code>>>6)&0x1f);
             return;
 
+          case 8: // JR
+            branch(r[((code>>>21)&0x1f)]);
+            output();
+            return;
+
           case 33: // ADDU
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>15)&0x1f)];
             return;
@@ -291,6 +297,18 @@ pseudo.CstrR3ka = (function() {
 
   function exception(code, inslot) {
     r[32] = 0x80;
+  }
+
+  function output() {
+    switch(r[32]) {
+      case 0xa:
+        pseudo.CstrMain.error('Output class -> '+('0x'+(r[32]>>>0).toString(16)));
+        break;
+
+      case 0xb:
+        pseudo.CstrMain.error('Output class -> '+('0x'+(r[32]>>>0).toString(16)));
+        break;
+    }
   }
 
   // Exposed class functions/variables

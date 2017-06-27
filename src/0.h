@@ -1,6 +1,7 @@
 // Preprocessor
 #define UintWcap      Uint32Array
 #define UintBcap      Uint8Array
+#define Chars         String
 #define toChars       toString
 #define responseSort  responseType
 #define dataBin       'arraybuffer'
