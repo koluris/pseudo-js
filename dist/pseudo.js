@@ -10,9 +10,6 @@
 
 
 
-// Declare our namespace
-const pseudo = window.pseudo || {};
-
 // A kind of helper for various data manipulation
 function union(size) {
   const bfr = new ArrayBuffer(size);
@@ -27,6 +24,12 @@ function union(size) {
     sb: new Int8Array (bfr),
   };
 }
+
+// Declare our namespace
+const pseudo = window.pseudo || {};
+
+
+
 
 
 
@@ -100,7 +103,8 @@ pseudo.CstrMem = (function() {
 
 
 pseudo.CstrR3ka = (function() {
-  let r, copr;
+  let r, copr; // Base + Coprocessor
+  let divMath; // Cache for expensive calculation
   let opcodeCount;
 
   // Base CPU stepper
@@ -110,7 +114,7 @@ pseudo.CstrR3ka = (function() {
     r[32]  += 4;
     r[0] = 0; // As weird as this seems, it is needed
 
-    switch((code>>>26)&0x3f) {
+    switch(((code>>>26)&0x3f)) {
       case 13: //
         return;
 
@@ -118,7 +122,7 @@ pseudo.CstrR3ka = (function() {
         r[((code>>>15)&0x1f)] = code<<16;
         return;
     }
-    pseudo.CstrMain.error('pseudo / Unknown CPU instruction -> '+((code>>>26)&0x3f));
+    pseudo.CstrMain.error('pseudo / Basic CPU instruction -> '+((code>>>26)&0x3f));
   }
 
   function branch(addr) {
@@ -138,6 +142,9 @@ pseudo.CstrR3ka = (function() {
     awake() {
          r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
       copr = new Uint32Array(16);
+
+      // Cache
+      divMath = Math.pow(32, 2); // Btw, pure multiplication is faster
     },
 
     reset() {
@@ -152,7 +159,11 @@ pseudo.CstrR3ka = (function() {
       while (r[32] !== 0x80030000) {
         step(false);
       }
-      pseudo.CstrMain.error('psinex / Bootstrap completed');
+      pseudo.CstrMain.error('pseudo / Bootstrap completed');
+    },
+
+    run() {
+      // requestAnimationFrame loop
     }
   };
 })();

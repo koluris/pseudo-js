@@ -59,7 +59,7 @@ pseudo.CstrR3ka = (function() {
       while (pc !== 0x80030000) {
         step(false);
       }
-      psx.error('psinex / Bootstrap completed');
+      psx.error('pseudo / Bootstrap completed');
     },
 
     run() {
