@@ -43,6 +43,9 @@ function union(size) {
 
 
 
+
+
+
 pseudo.CstrMem = (function() {
   // Exposed class functions/variables
   return {
@@ -97,8 +100,7 @@ pseudo.CstrMem = (function() {
 
 
 pseudo.CstrR3ka = (function() {
-  let r;
-  let copr;
+  let r, copr;
   let opcodeCount;
 
   // Base CPU stepper
@@ -108,9 +110,15 @@ pseudo.CstrR3ka = (function() {
     r[32]  += 4;
     r[0] = 0; // As weird as this seems, it is needed
 
-    switch(code) {
+    switch((code>>>26)&0x3f) {
+      case 13: //
+        return;
+
+      case 15: // LUI
+        r[((code>>>15)&0x1f)] = code<<16;
+        return;
     }
-    pseudo.CstrMain.error('pseudo / Unknown CPU instruction -> '+('0x'+(code>>>0).toString(16)));
+    pseudo.CstrMain.error('pseudo / Unknown CPU instruction -> '+((code>>>26)&0x3f));
   }
 
   function branch(addr) {

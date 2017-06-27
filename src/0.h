@@ -6,9 +6,6 @@
 #define dataBin       'arraybuffer'
 #define bLen          byteLength
 
-// Declare our namespace
-const pseudo = window.pseudo || {};
-
 // A kind of helper for various data manipulation
 function union(size) {
   const bfr = new ArrayBuffer(size);
@@ -23,3 +20,6 @@ function union(size) {
     sb: new Int8Array (bfr),
   };
 }
+
+// Declare our namespace
+const pseudo = window.pseudo || {};

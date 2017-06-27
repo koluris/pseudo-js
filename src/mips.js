@@ -3,8 +3,7 @@
 #define hi r[34]
 
 pseudo.CstrR3ka = (function() {
-  let r;
-  let copr;
+  let r, copr;
   let opcodeCount;
 
   // Base CPU stepper
@@ -14,9 +13,15 @@ pseudo.CstrR3ka = (function() {
     pc  += 4;
     r[0] = 0; // As weird as this seems, it is needed
 
-    switch(code) {
+    switch((code>>>26)&0x3f) {
+      case 13: //
+        return;
+
+      case 15: // LUI
+        r[rt] = code<<16;
+        return;
     }
-    psx.error('pseudo / Unknown CPU instruction -> '+hex(code));
+    psx.error('pseudo / Basic CPU instruction -> '+((code>>>26)&0x3f));
   }
 
   function branch(addr) {
