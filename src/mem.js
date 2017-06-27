@@ -17,6 +17,11 @@ pseudo.CstrMem = (function() {
 
     write: {
       uw(addr, data) {
+        switch(addr>>>28) {
+          case 0x0:
+            ioAccW(ram.uw, addr) = data;
+            return;
+        }
         psx.error('pseudo / Mem write uw '+hex(addr)+' <- '+hex(data));
       },
 

@@ -70,6 +70,12 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
 pseudo.CstrMem = (function() {
   // Exposed class functions/variables
   return {
@@ -85,6 +91,11 @@ pseudo.CstrMem = (function() {
 
     write: {
       uw(addr, data) {
+        switch(addr>>>28) {
+          case 0x0:
+            pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = data;
+            return;
+        }
         pseudo.CstrMain.error('pseudo / Mem write uw '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
       },
 
@@ -136,6 +147,19 @@ pseudo.CstrR3ka = (function() {
     r[0] = 0; // As weird as this seems, it is needed
 
     switch(((code>>>26)&0x3f)) {
+      case 0: // SPECIAL
+        switch(code&0x3f) {
+          case 0: // SLL
+            r[((code>>>11)&0x1f)] = r[((code>>>15)&0x1f)] << ((code>>>6)&0x1f);
+            return;
+        }
+        pseudo.CstrMain.error('pseudo / Special CPU instruction -> '+(code&0x3f));
+        return;
+
+      case 9: // ADDIU
+        r[((code>>>15)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
+        return;
+
       case 13: // ORI
         r[((code>>>15)&0x1f)] = r[((code>>>21)&0x1f)] | (code&0xffff);
         return;

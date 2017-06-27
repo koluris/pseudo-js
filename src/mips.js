@@ -15,6 +15,22 @@ pseudo.CstrR3ka = (function() {
     r[0] = 0; // As weird as this seems, it is needed
 
     switch(opcode) {
+      case 0: // SPECIAL
+        switch(code&0x3f) {
+          case 0: // SLL
+            r[rd] = r[rt] << shamt;
+            return;
+        }
+        psx.error('pseudo / Special CPU instruction -> '+(code&0x3f));
+        return;
+
+      case 2: // J
+        return;
+
+      case 9: // ADDIU
+        r[rt] = r[rs] + imms;
+        return;
+
       case 13: // ORI
         r[rt] = r[rs] | immu;
         return;
