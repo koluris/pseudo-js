@@ -76,6 +76,12 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
 pseudo.CstrMem = (function() {
   // Exposed class functions/variables
   return {
@@ -110,6 +116,10 @@ pseudo.CstrMem = (function() {
 
     read: {
       uw(addr) {
+        switch(addr>>>28) {
+          case 0x0:
+            return pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
+        }
         pseudo.CstrMain.error('pseudo / Mem read uw '+('0x'+(addr>>>0).toString(16)));
         return 0;
       },
@@ -152,8 +162,34 @@ pseudo.CstrR3ka = (function() {
           case 0: // SLL
             r[((code>>>11)&0x1f)] = r[((code>>>15)&0x1f)] << ((code>>>6)&0x1f);
             return;
+
+          case 33: // ADDU
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>15)&0x1f)];
+            return;
+
+          case 37: // OR
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] | r[((code>>>15)&0x1f)];
+            return;
+
+          case 43: // SLTU
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] < r[((code>>>15)&0x1f)];
+            return;
         }
         pseudo.CstrMain.error('pseudo / Special CPU instruction -> '+(code&0x3f));
+        return;
+
+      case 2: // J
+        branch(((r[32]&0xf0000000)|(code&0x3ffffff)<<2));
+        return;
+
+      case 5: // BNE
+        if (r[((code>>>21)&0x1f)] !== r[((code>>>15)&0x1f)]) {
+          branch((r[32]+((((code)<<16>>16))<<2)));
+        }
+        return;
+
+      case 8: // ADDI
+        r[((code>>>15)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
         return;
 
       case 9: // ADDIU
@@ -164,8 +200,25 @@ pseudo.CstrR3ka = (function() {
         r[((code>>>15)&0x1f)] = r[((code>>>21)&0x1f)] | (code&0xffff);
         return;
 
+      case 16: // COP0
+        switch (((code>>>21)&0x1f)) {
+          case 4: // MTC0
+            copr[((code>>>11)&0x1f)] = r[((code>>>15)&0x1f)];
+            return;
+        }
+        pseudo.CstrMain.error('pseudo / Coprocessor 0 CPU instruction -> '+((code>>>21)&0x1f));
+        return
+
       case 15: // LUI
         r[((code>>>15)&0x1f)] = code<<16;
+        return;
+
+      case 35: // LW
+        r[((code>>>15)&0x1f)] = pseudo.CstrMem.read.uw((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
+        return;
+
+      case 41: // SH
+        pseudo.CstrMem.write.uh((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>15)&0x1f)]);
         return;
 
       case 43: // SW

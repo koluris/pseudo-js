@@ -20,11 +20,34 @@ pseudo.CstrR3ka = (function() {
           case 0: // SLL
             r[rd] = r[rt] << shamt;
             return;
+
+          case 33: // ADDU
+            r[rd] = r[rs] + r[rt];
+            return;
+
+          case 37: // OR
+            r[rd] = r[rs] | r[rt];
+            return;
+
+          case 43: // SLTU
+            r[rd] = r[rs] < r[rt];
+            return;
         }
         psx.error('pseudo / Special CPU instruction -> '+(code&0x3f));
         return;
 
       case 2: // J
+        branch(taddr);
+        return;
+
+      case 5: // BNE
+        if (r[rs] !== r[rt]) {
+          branch(baddr);
+        }
+        return;
+
+      case 8: // ADDI
+        r[rt] = r[rs] + imms;
         return;
 
       case 9: // ADDIU
@@ -35,12 +58,29 @@ pseudo.CstrR3ka = (function() {
         r[rt] = r[rs] | immu;
         return;
 
+      case 16: // COP0
+        switch (rs) {
+          case 4: // MTC0
+            copr[rd] = r[rt];
+            return;
+        }
+        psx.error('pseudo / Coprocessor 0 CPU instruction -> '+rs);
+        return
+
       case 15: // LUI
         r[rt] = code<<16;
         return;
 
+      case 35: // LW
+        r[rt] = mem.read.uw(ob);
+        return;
+
+      case 41: // SH
+        mem.write.uh(ob, r[rt]);
+        return;
+
       case 43: // SW
-        mem.write.uw(taddr, r[rt]);
+        mem.write.uw(ob, r[rt]);
         return;
     }
     psx.error('pseudo / Basic CPU instruction -> '+opcode);

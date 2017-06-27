@@ -36,6 +36,10 @@ pseudo.CstrMem = (function() {
 
     read: {
       uw(addr) {
+        switch(addr>>>28) {
+          case 0x0:
+            return ioAccW(ram.uw, addr);
+        }
         psx.error('pseudo / Mem read uw '+hex(addr));
         return 0;
       },

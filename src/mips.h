@@ -22,5 +22,11 @@
 #define imms\
   (sextH(code))
 
-#define taddr\
+#define ob\
   (r[rs]+imms)
+
+#define baddr\
+  (pc+(imms<<2))
+
+#define taddr\
+  ((pc&0xf0000000)|(code&0x3ffffff)<<2)
