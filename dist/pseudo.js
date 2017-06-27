@@ -131,7 +131,7 @@ pseudo.CstrMem = (function() {
 
           case 0x1:
             pseudo.CstrHardware.write.w(addr, data);
-            return
+            return;
         }
         pseudo.CstrMain.error('pseudo / Mem write w '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
       },
@@ -201,7 +201,7 @@ pseudo.CstrR3ka = (function() {
       case 0: // SPECIAL
         switch(code&0x3f) {
           case 0: // SLL
-            r[((code>>>11)&0x1f)] = r[((code>>>15)&0x1f)] << ((code>>>6)&0x1f);
+            r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] << ((code>>>6)&0x1f);
             return;
 
           case 8: // JR
@@ -210,15 +210,15 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 33: // ADDU
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>15)&0x1f)];
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
             return;
 
           case 37: // OR
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] | r[((code>>>15)&0x1f)];
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)];
             return;
 
           case 43: // SLTU
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] < r[((code>>>15)&0x1f)];
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] < r[((code>>>16)&0x1f)];
             return;
         }
         pseudo.CstrMain.error('pseudo / Special CPU instruction -> '+(code&0x3f));
@@ -234,54 +234,54 @@ pseudo.CstrR3ka = (function() {
         return;
 
       case 5: // BNE
-        if (r[((code>>>21)&0x1f)] !== r[((code>>>15)&0x1f)]) {
+        if (r[((code>>>21)&0x1f)] !== r[((code>>>16)&0x1f)]) {
           branch((r[32]+((((code)<<16>>16))<<2)));
         }
         return;
 
       case 8: // ADDI
-        r[((code>>>15)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
+        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
         return;
 
       case 9: // ADDIU
-        r[((code>>>15)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
+        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
         return;
 
       case 12: // ANDI
-        r[((code>>>15)&0x1f)] = r[((code>>>21)&0x1f)] & (code&0xffff);
+        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] & (code&0xffff);
         return;
 
       case 13: // ORI
-        r[((code>>>15)&0x1f)] = r[((code>>>21)&0x1f)] | (code&0xffff);
+        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] | (code&0xffff);
+        return;
+
+      case 15: // LUI
+        r[((code>>>16)&0x1f)] = code<<16;
         return;
 
       case 16: // COP0
         switch (((code>>>21)&0x1f)) {
           case 4: // MTC0
-            copr[((code>>>11)&0x1f)] = r[((code>>>15)&0x1f)];
+            copr[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)];
             return;
         }
         pseudo.CstrMain.error('pseudo / Coprocessor 0 CPU instruction -> '+((code>>>21)&0x1f));
-        return
-
-      case 15: // LUI
-        r[((code>>>15)&0x1f)] = code<<16;
         return;
 
       case 35: // LW
-        r[((code>>>15)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
+        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
         return;
 
       case 40: // SB
-        pseudo.CstrMem.write.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>15)&0x1f)]);
+        pseudo.CstrMem.write.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>16)&0x1f)]);
         return;
 
       case 41: // SH
-        pseudo.CstrMem.write.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>15)&0x1f)]);
+        pseudo.CstrMem.write.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>16)&0x1f)]);
         return;
 
       case 43: // SW
-        pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>15)&0x1f)]);
+        pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>16)&0x1f)]);
         return;
     }
     pseudo.CstrMain.error('pseudo / Basic CPU instruction -> '+((code>>>26)&0x3f));

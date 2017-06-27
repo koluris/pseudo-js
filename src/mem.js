@@ -24,7 +24,7 @@ pseudo.CstrMem = (function() {
 
           case 0x1:
             io.write.w(addr, data);
-            return
+            return;
         }
         psx.error('pseudo / Mem write w '+hex(addr)+' <- '+hex(data));
       },

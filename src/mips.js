@@ -72,6 +72,10 @@ pseudo.CstrR3ka = (function() {
         r[rt] = r[rs] | imm_u;
         return;
 
+      case 15: // LUI
+        r[rt] = code<<16;
+        return;
+
       case 16: // COP0
         switch (rs) {
           case 4: // MTC0
@@ -79,10 +83,6 @@ pseudo.CstrR3ka = (function() {
             return;
         }
         psx.error('pseudo / Coprocessor 0 CPU instruction -> '+rs);
-        return
-
-      case 15: // LUI
-        r[rt] = code<<16;
         return;
 
       case 35: // LW
