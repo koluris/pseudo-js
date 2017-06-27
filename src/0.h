@@ -1,5 +1,10 @@
 // Preprocessor
-#define Uint32cap   Uint32Array
+#define UintWcap      Uint32Array
+#define UintBcap      Uint8Array
+#define toChars       toString
+#define responseSort  responseType
+#define dataBin       'arraybuffer'
+#define bLen          byteLength
 
 // Declare our namespace
 const pseudo = window.pseudo || {};

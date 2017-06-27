@@ -12,37 +12,36 @@ pseudo.CstrMem = (function() {
     reset() {
       // Reset all, except for BIOS?
       ram.ub.fill(0);
-      rom.ub.fill(0);
       hwr.ub.fill(0);
     },
 
     write: {
       uw(addr, data) {
-        psx.error('pseudo / Mem write uw '+addr+' <- '+data);
+        psx.error('pseudo / Mem write uw '+hex(addr)+' <- '+hex(data));
       },
 
       uh(addr, data) {
-        psx.error('pseudo / Mem write uh '+addr+' <- '+data);
+        psx.error('pseudo / Mem write uh '+hex(addr)+' <- '+hex(data));
       },
 
       ub(addr, data) {
-        psx.error('pseudo / Mem write ub '+addr+' <- '+data);
+        psx.error('pseudo / Mem write ub '+hex(addr)+' <- '+hex(data));
       }
     },
 
     read: {
       uw(addr) {
-        psx.error('pseudo / Mem read uw '+addr);
+        psx.error('pseudo / Mem read uw '+hex(addr));
         return 0;
       },
 
       uh(addr) {
-        psx.error('pseudo / Mem read uh '+addr);
+        psx.error('pseudo / Mem read uh '+hex(addr));
         return 0;
       },
 
       ub(addr) {
-        psx.error('pseudo / Mem read ub '+addr);
+        psx.error('pseudo / Mem read ub '+hex(addr));
         return 0;
       }
     }
