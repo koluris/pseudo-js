@@ -3,7 +3,8 @@
 #define hi r[34]
 
 pseudo.CstrR3ka = (function() {
-  let r, copr;
+  let r, copr; // Base + Coprocessor
+  let divMath; // Cache for expensive calculation
   let opcodeCount;
 
   // Base CPU stepper
@@ -13,7 +14,7 @@ pseudo.CstrR3ka = (function() {
     pc  += 4;
     r[0] = 0; // As weird as this seems, it is needed
 
-    switch((code>>>26)&0x3f) {
+    switch(opcode) {
       case 13: //
         return;
 
@@ -21,7 +22,7 @@ pseudo.CstrR3ka = (function() {
         r[rt] = code<<16;
         return;
     }
-    psx.error('pseudo / Basic CPU instruction -> '+((code>>>26)&0x3f));
+    psx.error('pseudo / Basic CPU instruction -> '+opcode);
   }
 
   function branch(addr) {
@@ -41,6 +42,9 @@ pseudo.CstrR3ka = (function() {
     awake() {
          r = new UintWcap(32 + 3); // + pc, lo, hi
       copr = new UintWcap(16);
+
+      // Cache
+      divMath = Math.pow(32, 2); // Btw, pure multiplication is faster
     },
 
     reset() {
@@ -56,6 +60,10 @@ pseudo.CstrR3ka = (function() {
         step(false);
       }
       psx.error('psinex / Bootstrap completed');
+    },
+
+    run() {
+      // requestAnimationFrame loop
     }
   };
 })();
