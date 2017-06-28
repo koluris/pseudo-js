@@ -234,6 +234,7 @@ pseudo.CstrMem = (function() {
 
       b(addr) {
         switch(addr>>>28) {
+          case 0x0: // Base
           case 0x8: // Mirror
             return pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0];
 
@@ -485,7 +486,7 @@ pseudo.CstrR3ka = (function() {
       // requestAnimationFrame loop
     },
 
-    writeok: function() {
+    writeok() {
       return !(copr[12]&0x10000);
     }
   };

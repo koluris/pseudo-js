@@ -87,6 +87,7 @@ pseudo.CstrMem = (function() {
 
       b(addr) {
         switch(addr>>>28) {
+          case 0x0: // Base
           case 0x8: // Mirror
             return io_acc_b(ram.ub, addr);
 

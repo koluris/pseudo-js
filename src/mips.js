@@ -229,7 +229,7 @@ pseudo.CstrR3ka = (function() {
       // requestAnimationFrame loop
     },
 
-    writeok: function() {
+    writeok() {
       return !(copr[12]&0x10000);
     }
   };
