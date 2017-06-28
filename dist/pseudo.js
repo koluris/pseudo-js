@@ -90,6 +90,7 @@ const pseudo = window.pseudo || {};
 
 
 pseudo.CstrHardware = (function() {
+  // Exposed class functions/variables
   return {
     write: {
       w(addr, data) {
@@ -129,6 +130,7 @@ pseudo.CstrHardware = (function() {
 
       b(addr, data) {
         addr&=0xffff;
+        
         switch(addr) {
           case 0x2041:
             pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0] = data;
@@ -161,18 +163,20 @@ pseudo.CstrMem = (function() {
     write: {
       w(addr, data) {
         switch(addr>>>28) {
-          case 0x0:
-          case 0x8:
-          case 0xa:
-            pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = data;
+          case 0x0: // Base
+          case 0x8: // Mirror
+          case 0xa: // Mirror
+            if (pseudo.CstrR3ka.writeok()) {
+              pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = data;
+            }
             return;
 
-          case 0x1:
+          case 0x1: // Hardware
             pseudo.CstrHardware.write.w(addr, data);
             return;
         }
 
-        if (addr === 0xfffe0130) {
+        if (addr === 0xfffe0130) { // Mem Access
           return;
         }
         pseudo.CstrMain.error('pseudo / Mem write w '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
@@ -180,11 +184,11 @@ pseudo.CstrMem = (function() {
 
       h(addr, data) {
         switch(addr>>>28) {
-          case 0x0:
+          case 0x0: // Base
             pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1] = data;
             return;
 
-          case 0x1:
+          case 0x1: // Hardware
             pseudo.CstrHardware.write.h(addr, data);
             return;
         }
@@ -193,11 +197,12 @@ pseudo.CstrMem = (function() {
 
       b(addr, data) {
         switch(addr>>>28) {
-          case 0x0:
+          case 0x0: // Base
+          case 0x8: // Mirror
             pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0] = data;
             return;
 
-          case 0x1:
+          case 0x1: // Hardware
             pseudo.CstrHardware.write.b(addr, data);
             return;
         }
@@ -208,10 +213,13 @@ pseudo.CstrMem = (function() {
     read: {
       w(addr) {
         switch(addr>>>28) {
-          case 0x0:
-          case 0x8:
-          case 0xa:
+          case 0x0: // Base
+          case 0x8: // Mirror
+          case 0xa: // Mirror
             return pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
+
+          case 0xb: // BIOS
+            return pseudo.CstrMem._rom.uw[(( addr)&(pseudo.CstrMem._rom.uw.byteLength-1))>>>2];
         }
         pseudo.CstrMain.error('pseudo / Mem read w '+('0x'+(addr>>>0).toString(16)));
         return 0;
@@ -223,6 +231,17 @@ pseudo.CstrMem = (function() {
       },
 
       b(addr) {
+        switch(addr>>>28) {
+          case 0x8: // Mirror
+            return pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0];
+
+          case 0xb: // BIOS
+            return pseudo.CstrMem._rom.ub[(( addr)&(pseudo.CstrMem._rom.ub.byteLength-1))>>>0];
+        }
+
+        if (addr === 0x1f000084) { // PIO?
+          return 0;
+        }
         pseudo.CstrMain.error('pseudo / Mem read b '+('0x'+(addr>>>0).toString(16)));
         return 0;
       }
@@ -261,8 +280,16 @@ pseudo.CstrR3ka = (function() {
             output();
             return;
 
+          case 32: // ADD
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
+            return;
+
           case 33: // ADDU
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
+            return;
+
+          case 36: // AND
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] & r[((code>>>16)&0x1f)];
             return;
 
           case 37: // OR
@@ -283,6 +310,12 @@ pseudo.CstrR3ka = (function() {
       case 3: // JAL
         r[31] = r[32]+4;
         branch(((r[32]&0xf0000000)|(code&0x3ffffff)<<2));
+        return;
+
+      case 4: // BEQ
+        if (r[((code>>>21)&0x1f)] === r[((code>>>16)&0x1f)]) {
+          branch((r[32]+((((code)<<16>>16))<<2)));
+        }
         return;
 
       case 5: // BNE
@@ -313,11 +346,23 @@ pseudo.CstrR3ka = (function() {
 
       case 16: // COP0
         switch (((code>>>21)&0x1f)) {
+          case 0: // MFC0
+            r[((code>>>16)&0x1f)] = copr[((code>>>11)&0x1f)];
+            return;
+
           case 4: // MTC0
             copr[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)];
             return;
+
+          case 16: // RFE
+            copr[12] = (copr[12]&0xfffffff0)|((copr[12]>>>2)&0xf);
+            return;
         }
         pseudo.CstrMain.error('pseudo / Coprocessor 0 CPU instruction -> '+((code>>>21)&0x1f));
+        return;
+
+      case 32: // LB
+        r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))))<<24>>24);
         return;
 
       case 35: // LW
@@ -363,6 +408,12 @@ pseudo.CstrR3ka = (function() {
     }
   }
 
+  function bootstrap() {
+    while (r[32] !== 0x80030000) {
+      step(false);
+    }
+  }
+
   // Exposed class functions/variables
   return {
     awake() {
@@ -377,19 +428,23 @@ pseudo.CstrR3ka = (function() {
          r.fill(0);
       copr.fill(0);
 
+      copr[12] = 0x10900000;
+      copr[15] = 0x2;
+
       r[32] = 0xbfc00000;
       opcodeCount = 0;
-    },
 
-    bootstrap() {
-      while (r[32] !== 0x80030000) {
-        step(false);
-      }
-      pseudo.CstrMain.error('pseudo / Bootstrap completed');
+      var start = performance.now();
+      bootstrap();
+      pseudo.CstrMain.error('pseudo / Bootstrap completed in '+(performance.now()-start)+' ms');
     },
 
     run() {
       // requestAnimationFrame loop
+    },
+
+    writeok: function() {
+      return !(copr[12]&0x10000);
     }
   };
 })();

@@ -26,8 +26,16 @@ pseudo.CstrR3ka = (function() {
             output();
             return;
 
+          case 32: // ADD
+            r[rd] = r[rs] + r[rt];
+            return;
+
           case 33: // ADDU
             r[rd] = r[rs] + r[rt];
+            return;
+
+          case 36: // AND
+            r[rd] = r[rs] & r[rt];
             return;
 
           case 37: // OR
@@ -48,6 +56,12 @@ pseudo.CstrR3ka = (function() {
       case 3: // JAL
         r[31] = pc+4;
         branch(s_addr);
+        return;
+
+      case 4: // BEQ
+        if (r[rs] === r[rt]) {
+          branch(b_addr);
+        }
         return;
 
       case 5: // BNE
@@ -78,11 +92,23 @@ pseudo.CstrR3ka = (function() {
 
       case 16: // COP0
         switch (rs) {
+          case 0: // MFC0
+            r[rt] = copr[rd];
+            return;
+
           case 4: // MTC0
             copr[rd] = r[rt];
             return;
+
+          case 16: // RFE
+            copr[12] = (copr[12]&0xfffffff0)|((copr[12]>>>2)&0xf);
+            return;
         }
         psx.error('pseudo / Coprocessor 0 CPU instruction -> '+rs);
+        return;
+
+      case 32: // LB
+        r[rt] = s_ext_b(mem.read.b(ob));
         return;
 
       case 35: // LW
@@ -128,6 +154,12 @@ pseudo.CstrR3ka = (function() {
     }
   }
 
+  function bootstrap() {
+    while (pc !== 0x80030000) {
+      step(false);
+    }
+  }
+
   // Exposed class functions/variables
   return {
     awake() {
@@ -142,19 +174,23 @@ pseudo.CstrR3ka = (function() {
          r.fill(0);
       copr.fill(0);
 
+      copr[12] = 0x10900000;
+      copr[15] = 0x2;
+
       pc = 0xbfc00000;
       opcodeCount = 0;
-    },
 
-    bootstrap() {
-      while (pc !== 0x80030000) {
-        step(false);
-      }
-      psx.error('pseudo / Bootstrap completed');
+      var start = performance.now();
+      bootstrap();
+      psx.error('pseudo / Bootstrap completed in '+(performance.now()-start)+' ms');
     },
 
     run() {
       // requestAnimationFrame loop
+    },
+
+    writeok: function() {
+      return !(copr[12]&0x10000);
     }
   };
 })();

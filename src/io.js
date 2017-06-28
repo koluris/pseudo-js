@@ -1,6 +1,7 @@
 #define hwr mem._hwr
 
 pseudo.CstrHardware = (function() {
+  // Exposed class functions/variables
   return {
     write: {
       w(addr, data) {
@@ -40,6 +41,7 @@ pseudo.CstrHardware = (function() {
 
       b(addr, data) {
         addr&=0xffff;
+        
         switch(addr) {
           case 0x2041:
             io_acc_b(hwr.ub, addr) = data;
