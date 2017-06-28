@@ -23,6 +23,8 @@ pseudo.CstrHardware = (function() {
           case 0x101c:
           case 0x1020:
           case 0x1060:
+          case 0x1070: //
+          case 0x1074: //
             io_acc_w(hwr.uw, addr) = data;
             return;
         }

@@ -112,6 +112,8 @@ pseudo.CstrHardware = (function() {
           case 0x101c:
           case 0x1020:
           case 0x1060:
+          case 0x1070: //
+          case 0x1074: //
             pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
             return;
         }
@@ -280,12 +282,21 @@ pseudo.CstrR3ka = (function() {
             output();
             return;
 
+          case 9: // JALR
+            r[((code>>>11)&0x1f)] = r[32]+4;
+            branch(r[((code>>>21)&0x1f)]);
+            return;
+
           case 32: // ADD
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
             return;
 
           case 33: // ADDU
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
+            return;
+
+          case 35: // SUBU
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] - r[((code>>>16)&0x1f)];
             return;
 
           case 36: // AND
@@ -301,6 +312,17 @@ pseudo.CstrR3ka = (function() {
             return;
         }
         pseudo.CstrMain.error('pseudo / Special CPU instruction -> '+(code&0x3f));
+        return;
+
+      case 1: // REGIMM
+        switch (((code>>>16)&0x1f)) {
+          case 0: // BLTZ
+            if (((r[((code>>>21)&0x1f)])<<0>>0) < 0) {
+              branch((r[32]+((((code)<<16>>16))<<2)));
+            }
+            return;
+        }
+        pseudo.CstrMain.error('pseudo / Bcond CPU instruction -> '+((code>>>16)&0x1f));
         return;
 
       case 2: // J
@@ -324,12 +346,28 @@ pseudo.CstrR3ka = (function() {
         }
         return;
 
+      case 6: // BLEZ
+        if (((r[((code>>>21)&0x1f)])<<0>>0) <= 0) {
+          branch((r[32]+((((code)<<16>>16))<<2)));
+        }
+        return;
+
+      case 7: // BGTZ
+        if (((r[((code>>>21)&0x1f)])<<0>>0) > 0) {
+          branch((r[32]+((((code)<<16>>16))<<2)));
+        }
+        return;
+
       case 8: // ADDI
         r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
         return;
 
       case 9: // ADDIU
         r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
+        return;
+
+      case 10: // SLTI
+        r[((code>>>16)&0x1f)] = ((r[((code>>>21)&0x1f)])<<0>>0) < (((code)<<16>>16));
         return;
 
       case 12: // ANDI
@@ -367,6 +405,10 @@ pseudo.CstrR3ka = (function() {
 
       case 35: // LW
         r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
+        return;
+
+      case 36: // LBU
+        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
         return;
 
       case 40: // SB

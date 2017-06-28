@@ -26,12 +26,21 @@ pseudo.CstrR3ka = (function() {
             output();
             return;
 
+          case 9: // JALR
+            r[rd] = pc+4;
+            branch(r[rs]);
+            return;
+
           case 32: // ADD
             r[rd] = r[rs] + r[rt];
             return;
 
           case 33: // ADDU
             r[rd] = r[rs] + r[rt];
+            return;
+
+          case 35: // SUBU
+            r[rd] = r[rs] - r[rt];
             return;
 
           case 36: // AND
@@ -47,6 +56,17 @@ pseudo.CstrR3ka = (function() {
             return;
         }
         psx.error('pseudo / Special CPU instruction -> '+(code&0x3f));
+        return;
+
+      case 1: // REGIMM
+        switch (rt) {
+          case 0: // BLTZ
+            if (s_ext_w(r[rs]) < 0) {
+              branch(b_addr);
+            }
+            return;
+        }
+        psx.error('pseudo / Bcond CPU instruction -> '+rt);
         return;
 
       case 2: // J
@@ -70,12 +90,28 @@ pseudo.CstrR3ka = (function() {
         }
         return;
 
+      case 6: // BLEZ
+        if (s_ext_w(r[rs]) <= 0) {
+          branch(b_addr);
+        }
+        return;
+
+      case 7: // BGTZ
+        if (s_ext_w(r[rs]) > 0) {
+          branch(b_addr);
+        }
+        return;
+
       case 8: // ADDI
         r[rt] = r[rs] + imm_s;
         return;
 
       case 9: // ADDIU
         r[rt] = r[rs] + imm_s;
+        return;
+
+      case 10: // SLTI
+        r[rt] = s_ext_w(r[rs]) < imm_s;
         return;
 
       case 12: // ANDI
@@ -113,6 +149,10 @@ pseudo.CstrR3ka = (function() {
 
       case 35: // LW
         r[rt] = mem.read.w(ob);
+        return;
+
+      case 36: // LBU
+        r[rt] = mem.read.b(ob);
         return;
 
       case 40: // SB
