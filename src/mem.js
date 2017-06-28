@@ -19,12 +19,18 @@ pseudo.CstrMem = (function() {
       w(addr, data) {
         switch(addr>>>28) {
           case 0x0:
+          case 0x8:
+          case 0xa:
             io_acc_w(ram.uw, addr) = data;
             return;
 
           case 0x1:
             io.write.w(addr, data);
             return;
+        }
+
+        if (addr === 0xfffe0130) {
+          return;
         }
         psx.error('pseudo / Mem write w '+hex(addr)+' <- '+hex(data));
       },
@@ -33,6 +39,10 @@ pseudo.CstrMem = (function() {
         switch(addr>>>28) {
           case 0x0:
             io_acc_h(ram.uh, addr) = data;
+            return;
+
+          case 0x1:
+            io.write.h(addr, data);
             return;
         }
         psx.error('pseudo / Mem write h '+hex(addr)+' <- '+hex(data));
@@ -43,6 +53,10 @@ pseudo.CstrMem = (function() {
           case 0x0:
             io_acc_b(ram.ub, addr) = data;
             return;
+
+          case 0x1:
+            io.write.b(addr, data);
+            return;
         }
         psx.error('pseudo / Mem write b '+hex(addr)+' <- '+hex(data));
       }
@@ -52,6 +66,8 @@ pseudo.CstrMem = (function() {
       w(addr) {
         switch(addr>>>28) {
           case 0x0:
+          case 0x8:
+          case 0xa:
             return io_acc_w(ram.uw, addr);
         }
         psx.error('pseudo / Mem read w '+hex(addr));

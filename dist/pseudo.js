@@ -96,9 +96,45 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
 
         if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
-          return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
+          pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
+          return;
+        }
+
+        switch(addr) {
+          case 0x1000:
+          case 0x1004:
+          case 0x1008:
+          case 0x100c:
+          case 0x1010:
+          case 0x1014:
+          case 0x1018:
+          case 0x101c:
+          case 0x1020:
+          case 0x1060:
+            pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
+            return;
         }
         pseudo.CstrMain.error('pseudo / Hardware write w '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+      },
+
+      h(addr, data) {
+        addr&=0xffff;
+        
+        if (addr >= 0x1d80 && addr <= 0x1d86) { // Audio
+          pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
+          return;
+        }
+        pseudo.CstrMain.error('pseudo / Hardware write h '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+      },
+
+      b(addr, data) {
+        addr&=0xffff;
+        switch(addr) {
+          case 0x2041:
+            pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0] = data;
+            return;
+        }
+        pseudo.CstrMain.error('pseudo / Hardware write b '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
       }
     }
   };
@@ -126,12 +162,18 @@ pseudo.CstrMem = (function() {
       w(addr, data) {
         switch(addr>>>28) {
           case 0x0:
+          case 0x8:
+          case 0xa:
             pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = data;
             return;
 
           case 0x1:
             pseudo.CstrHardware.write.w(addr, data);
             return;
+        }
+
+        if (addr === 0xfffe0130) {
+          return;
         }
         pseudo.CstrMain.error('pseudo / Mem write w '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
       },
@@ -140,6 +182,10 @@ pseudo.CstrMem = (function() {
         switch(addr>>>28) {
           case 0x0:
             pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1] = data;
+            return;
+
+          case 0x1:
+            pseudo.CstrHardware.write.h(addr, data);
             return;
         }
         pseudo.CstrMain.error('pseudo / Mem write h '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
@@ -150,6 +196,10 @@ pseudo.CstrMem = (function() {
           case 0x0:
             pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0] = data;
             return;
+
+          case 0x1:
+            pseudo.CstrHardware.write.b(addr, data);
+            return;
         }
         pseudo.CstrMain.error('pseudo / Mem write b '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
       }
@@ -159,6 +209,8 @@ pseudo.CstrMem = (function() {
       w(addr) {
         switch(addr>>>28) {
           case 0x0:
+          case 0x8:
+          case 0xa:
             return pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
         }
         pseudo.CstrMain.error('pseudo / Mem read w '+('0x'+(addr>>>0).toString(16)));
