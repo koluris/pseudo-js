@@ -517,25 +517,12 @@ pseudo.CstrR3ka = (function() {
   }
 
   function print() {
-    switch(r[32]) {
-      case 0xa0:
-        if (r[9] ===  9 || r[9] === 60) {
-          console.dir('Console out -> 9, 60');
-          break;
-        }
-        return;
-
-      case 0xb0:
-        if (r[9] === 59 || r[9] === 61) {
-          break;
-        }
-        return;
-
-      default:
-        return;
+    if (r[32] === 0xb0) {
+      if (r[9] === 59 || r[9] === 61) {
+        var char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');
+        output.append(char.toUpperCase());
+      }
     }
-    var char = (r[4]&0xff) !== 10 ? String.fromCharCode(r[4]&0xff) : '<br/>';
-    output.append(char);
   }
 
   function bootstrap() {
