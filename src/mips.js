@@ -3,9 +3,11 @@
 #define hi r[34]
 
 pseudo.CstrR3ka = (function() {
-  let r, copr; // Base + Coprocessor
+  let r; // Base
+  let copr; // Coprocessor
   let divMath; // Cache for expensive calculation
   let opcodeCount;
+  let output;
 
   function div(a, b) {
     if (b) {
@@ -38,7 +40,7 @@ pseudo.CstrR3ka = (function() {
 
           case 8: // JR
             branch(r[rs]);
-            output();
+            print();
             return;
 
           case 9: // JALR
@@ -227,16 +229,26 @@ pseudo.CstrR3ka = (function() {
     pc = 0x80;
   }
 
-  function output() {
+  function print() {
     switch(pc) {
-      case 0xa:
-        psx.error('Output class -> '+hex(pc));
-        break;
+      case 0xa0:
+        if (r[9] ===  9 || r[9] === 60) {
+          console.dir('Console out -> 9, 60');
+          break;
+        }
+        return;
 
-      case 0xb:
-        psx.error('Output class -> '+hex(pc));
-        break;
+      case 0xb0:
+        if (r[9] === 59 || r[9] === 61) {
+          break;
+        }
+        return;
+
+      default:
+        return;
     }
+    var char = (r[4]&0xff) !== 10 ? Chars.fromCharCode(r[4]&0xff) : '<br/>';
+    output.append(char);
   }
 
   function bootstrap() {
@@ -247,12 +259,13 @@ pseudo.CstrR3ka = (function() {
 
   // Exposed class functions/variables
   return {
-    awake() {
+    awake(element) {
          r = new UintWcap(32 + 3); // + pc, lo, hi
       copr = new UintWcap(16);
 
       // Cache
       divMath = Math.pow(32, 2); // Btw, pure multiplication is faster
+      output  = element;
     },
 
     reset() {

@@ -290,9 +290,11 @@ pseudo.CstrMem = (function() {
 
 
 pseudo.CstrR3ka = (function() {
-  let r, copr; // Base + Coprocessor
+  let r; // Base
+  let copr; // Coprocessor
   let divMath; // Cache for expensive calculation
   let opcodeCount;
+  let output;
 
   function div(a, b) {
     if (b) {
@@ -325,7 +327,7 @@ pseudo.CstrR3ka = (function() {
 
           case 8: // JR
             branch(r[((code>>>21)&0x1f)]);
-            output();
+            print();
             return;
 
           case 9: // JALR
@@ -514,16 +516,26 @@ pseudo.CstrR3ka = (function() {
     r[32] = 0x80;
   }
 
-  function output() {
+  function print() {
     switch(r[32]) {
-      case 0xa:
-        pseudo.CstrMain.error('Output class -> '+('0x'+(r[32]>>>0).toString(16)));
-        break;
+      case 0xa0:
+        if (r[9] ===  9 || r[9] === 60) {
+          console.dir('Console out -> 9, 60');
+          break;
+        }
+        return;
 
-      case 0xb:
-        pseudo.CstrMain.error('Output class -> '+('0x'+(r[32]>>>0).toString(16)));
-        break;
+      case 0xb0:
+        if (r[9] === 59 || r[9] === 61) {
+          break;
+        }
+        return;
+
+      default:
+        return;
     }
+    var char = (r[4]&0xff) !== 10 ? String.fromCharCode(r[4]&0xff) : '<br/>';
+    output.append(char);
   }
 
   function bootstrap() {
@@ -534,12 +546,13 @@ pseudo.CstrR3ka = (function() {
 
   // Exposed class functions/variables
   return {
-    awake() {
+    awake(element) {
          r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
       copr = new Uint32Array(16);
 
       // Cache
       divMath = Math.pow(32, 2); // Btw, pure multiplication is faster
+      output  = element;
     },
 
     reset() {
@@ -585,14 +598,16 @@ pseudo.CstrMain = (function() {
   // Exposed class functions/variables
   return {
     awake() {
-      pseudo.CstrR3ka.awake();
+      $(function() {
+        pseudo.CstrR3ka.awake($('#output'));
 
-      file('bios/scph1001.bin', function(resp) {
-        // Move BIOS to Mem
-        const bios = new Uint8Array(resp);
-        pseudo.CstrMem._rom.ub.set(bios);
+        file('bios/scph1001.bin', function(resp) {
+          // Move BIOS to Mem
+          const bios = new Uint8Array(resp);
+          pseudo.CstrMem._rom.ub.set(bios);
 
-        pseudo.CstrMain.reset();
+          pseudo.CstrMain.reset();
+        });
       });
     },
 

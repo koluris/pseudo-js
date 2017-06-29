@@ -13,14 +13,16 @@ pseudo.CstrMain = (function() {
   // Exposed class functions/variables
   return {
     awake() {
-      r3ka.awake();
+      $(function() {
+        r3ka.awake($('#output'));
 
-      file('bios/scph1001.bin', function(resp) {
-        // Move BIOS to Mem
-        const bios = new UintBcap(resp);
-        mem._rom.ub.set(bios);
+        file('bios/scph1001.bin', function(resp) {
+          // Move BIOS to Mem
+          const bios = new UintBcap(resp);
+          mem._rom.ub.set(bios);
 
-        psx.reset();
+          psx.reset();
+        });
       });
     },
 
