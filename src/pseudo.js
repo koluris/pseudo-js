@@ -30,7 +30,7 @@ pseudo.CstrMain = (function() {
       r3ka.reset();
 
       // Run emulator to Bootstrap
-      r3ka.bootstrap();
+      //r3ka.bootstrap();
     },
 
     error(out) {

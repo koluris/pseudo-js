@@ -38,6 +38,20 @@ pseudo.CstrHardware = (function() {
           io_acc_h(hwr.uh, addr) = data;
           return;
         }
+
+        switch(addr) {
+          case 0x1100:
+          case 0x1104:
+          case 0x1108:
+          case 0x1110:
+          case 0x1114:
+          case 0x1118:
+          case 0x1120:
+          case 0x1124:
+          case 0x1128:
+            io_acc_h(hwr.uh, addr) = data;
+            return;
+        }
         psx.error('pseudo / Hardware write h '+hex(addr)+' <- '+hex(data));
       },
 
@@ -50,6 +64,18 @@ pseudo.CstrHardware = (function() {
             return;
         }
         psx.error('pseudo / Hardware write b '+hex(addr)+' <- '+hex(data));
+      }
+    },
+
+    read: {
+      w(addr) {
+        addr&=0xffff;
+
+        switch(addr) {
+          case 0x1074:
+            return io_acc_w(hwr.uw, addr);
+        }
+        psx.error('pseudo / Hardware read w '+hex(addr));
       }
     }
   };

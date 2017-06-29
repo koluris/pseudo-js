@@ -127,6 +127,20 @@ pseudo.CstrHardware = (function() {
           pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
           return;
         }
+
+        switch(addr) {
+          case 0x1100:
+          case 0x1104:
+          case 0x1108:
+          case 0x1110:
+          case 0x1114:
+          case 0x1118:
+          case 0x1120:
+          case 0x1124:
+          case 0x1128:
+            pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
+            return;
+        }
         pseudo.CstrMain.error('pseudo / Hardware write h '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
       },
 
@@ -139,6 +153,18 @@ pseudo.CstrHardware = (function() {
             return;
         }
         pseudo.CstrMain.error('pseudo / Hardware write b '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+      }
+    },
+
+    read: {
+      w(addr) {
+        addr&=0xffff;
+
+        switch(addr) {
+          case 0x1074:
+            return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
+        }
+        pseudo.CstrMain.error('pseudo / Hardware read w '+('0x'+(addr>>>0).toString(16)));
       }
     }
   };
@@ -201,6 +227,7 @@ pseudo.CstrMem = (function() {
         switch(addr>>>28) {
           case 0x0: // Base
           case 0x8: // Mirror
+          case 0xa: // Mirror
             pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0] = data;
             return;
 
@@ -222,6 +249,9 @@ pseudo.CstrMem = (function() {
 
           case 0xb: // BIOS
             return pseudo.CstrMem._rom.uw[(( addr)&(pseudo.CstrMem._rom.uw.byteLength-1))>>>2];
+
+          case 0x1: // Hardware
+            return pseudo.CstrHardware.read.w(addr);
         }
         pseudo.CstrMain.error('pseudo / Mem read w '+('0x'+(addr>>>0).toString(16)));
         return 0;
@@ -264,6 +294,13 @@ pseudo.CstrR3ka = (function() {
   let divMath; // Cache for expensive calculation
   let opcodeCount;
 
+  function div(a, b) {
+    if (b) {
+      r[33] = a / b;
+      r[34] = a % b;
+    }
+  }
+
   // Base CPU stepper
   function step(inslot) {
     const code = r[32]>>>20 === 0xbfc ? pseudo.CstrMem._rom.uw[(( r[32])&(pseudo.CstrMem._rom.uw.byteLength-1))>>>2] : pseudo.CstrMem._ram.uw[(( r[32])&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
@@ -278,6 +315,14 @@ pseudo.CstrR3ka = (function() {
             r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] << ((code>>>6)&0x1f);
             return;
 
+          case 2: // SRL
+            r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] >>> ((code>>>6)&0x1f);
+            return;
+
+          case 3: // SRA
+            r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)])<<0>>0) >> ((code>>>6)&0x1f);
+            return;
+
           case 8: // JR
             branch(r[((code>>>21)&0x1f)]);
             output();
@@ -286,6 +331,22 @@ pseudo.CstrR3ka = (function() {
           case 9: // JALR
             r[((code>>>11)&0x1f)] = r[32]+4;
             branch(r[((code>>>21)&0x1f)]);
+            return;
+
+          case 16: // MFHI
+            r[((code>>>11)&0x1f)] = r[34];
+            return;
+
+          case 18: // MFLO
+            r[((code>>>11)&0x1f)] = r[33];
+            return;
+
+          case 26: // DIV
+            div(((r[((code>>>21)&0x1f)])<<0>>0), ((r[((code>>>16)&0x1f)])<<0>>0));
+            return;
+
+          case 27: // DIVU
+            div(r[((code>>>21)&0x1f)], r[((code>>>16)&0x1f)]);
             return;
 
           case 32: // ADD
@@ -308,6 +369,10 @@ pseudo.CstrR3ka = (function() {
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)];
             return;
 
+          case 42: // SLT
+            r[((code>>>11)&0x1f)] = ((r[((code>>>21)&0x1f)])<<0>>0) < ((r[((code>>>16)&0x1f)])<<0>>0);
+            return;
+
           case 43: // SLTU
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] < r[((code>>>16)&0x1f)];
             return;
@@ -319,6 +384,12 @@ pseudo.CstrR3ka = (function() {
         switch (((code>>>16)&0x1f)) {
           case 0: // BLTZ
             if (((r[((code>>>21)&0x1f)])<<0>>0) < 0) {
+              branch((r[32]+((((code)<<16>>16))<<2)));
+            }
+            return;
+
+          case 1: // BGEZ
+            if (((r[((code>>>21)&0x1f)])<<0>>0) >= 0) {
               branch((r[32]+((((code)<<16>>16))<<2)));
             }
             return;
@@ -369,6 +440,10 @@ pseudo.CstrR3ka = (function() {
 
       case 10: // SLTI
         r[((code>>>16)&0x1f)] = ((r[((code>>>21)&0x1f)])<<0>>0) < (((code)<<16>>16));
+        return;
+
+      case 11: // SLTIU
+        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] < (code&0xffff);
         return;
 
       case 12: // ANDI
@@ -479,7 +554,7 @@ pseudo.CstrR3ka = (function() {
 
       var start = performance.now();
       bootstrap();
-      pseudo.CstrMain.error('pseudo / Bootstrap completed in '+(performance.now()-start)+' ms');
+      console.dir('pseudo / Bootstrap completed in '+(performance.now()-start)+' ms');
     },
 
     run() {
@@ -527,7 +602,7 @@ pseudo.CstrMain = (function() {
       pseudo.CstrR3ka.reset();
 
       // Run emulator to Bootstrap
-      pseudo.CstrR3ka.bootstrap();
+      //pseudo.CstrR3ka.bootstrap();
     },
 
     error(out) {

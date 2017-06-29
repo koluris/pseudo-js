@@ -7,6 +7,13 @@ pseudo.CstrR3ka = (function() {
   let divMath; // Cache for expensive calculation
   let opcodeCount;
 
+  function div(a, b) {
+    if (b) {
+      lo = a / b;
+      hi = a % b;
+    }
+  }
+
   // Base CPU stepper
   function step(inslot) {
     const code = pc>>>20 === 0xbfc ? io_acc_w(mem._rom.uw, pc) : io_acc_w(mem._ram.uw, pc);
@@ -21,6 +28,14 @@ pseudo.CstrR3ka = (function() {
             r[rd] = r[rt] << shamt;
             return;
 
+          case 2: // SRL
+            r[rd] = r[rt] >>> shamt;
+            return;
+
+          case 3: // SRA
+            r[rd] = s_ext_w(r[rt]) >> shamt;
+            return;
+
           case 8: // JR
             branch(r[rs]);
             output();
@@ -29,6 +44,22 @@ pseudo.CstrR3ka = (function() {
           case 9: // JALR
             r[rd] = pc+4;
             branch(r[rs]);
+            return;
+
+          case 16: // MFHI
+            r[rd] = hi;
+            return;
+
+          case 18: // MFLO
+            r[rd] = lo;
+            return;
+
+          case 26: // DIV
+            div(s_ext_w(r[rs]), s_ext_w(r[rt]));
+            return;
+
+          case 27: // DIVU
+            div(r[rs], r[rt]);
             return;
 
           case 32: // ADD
@@ -51,6 +82,10 @@ pseudo.CstrR3ka = (function() {
             r[rd] = r[rs] | r[rt];
             return;
 
+          case 42: // SLT
+            r[rd] = s_ext_w(r[rs]) < s_ext_w(r[rt]);
+            return;
+
           case 43: // SLTU
             r[rd] = r[rs] < r[rt];
             return;
@@ -62,6 +97,12 @@ pseudo.CstrR3ka = (function() {
         switch (rt) {
           case 0: // BLTZ
             if (s_ext_w(r[rs]) < 0) {
+              branch(b_addr);
+            }
+            return;
+
+          case 1: // BGEZ
+            if (s_ext_w(r[rs]) >= 0) {
               branch(b_addr);
             }
             return;
@@ -112,6 +153,10 @@ pseudo.CstrR3ka = (function() {
 
       case 10: // SLTI
         r[rt] = s_ext_w(r[rs]) < imm_s;
+        return;
+
+      case 11: // SLTIU
+        r[rt] = r[rs] < imm_u;
         return;
 
       case 12: // ANDI
@@ -222,7 +267,7 @@ pseudo.CstrR3ka = (function() {
 
       var start = performance.now();
       bootstrap();
-      psx.error('pseudo / Bootstrap completed in '+(performance.now()-start)+' ms');
+      console.dir('pseudo / Bootstrap completed in '+(performance.now()-start)+' ms');
     },
 
     run() {

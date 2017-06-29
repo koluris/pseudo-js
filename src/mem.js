@@ -54,6 +54,7 @@ pseudo.CstrMem = (function() {
         switch(addr>>>28) {
           case 0x0: // Base
           case 0x8: // Mirror
+          case 0xa: // Mirror
             io_acc_b(ram.ub, addr) = data;
             return;
 
@@ -75,6 +76,9 @@ pseudo.CstrMem = (function() {
 
           case 0xb: // BIOS
             return io_acc_w(rom.uw, addr);
+
+          case 0x1: // Hardware
+            return io.read.w(addr);
         }
         psx.error('pseudo / Mem read w '+hex(addr));
         return 0;
