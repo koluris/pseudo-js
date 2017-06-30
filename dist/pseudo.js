@@ -329,26 +329,40 @@ pseudo.CstrMem = (function() {
 
 
 
+// Inline functions for speedup
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrR3ka = (function() {
   let r; // Base
   let copr; // Coprocessor
   let divMath; // Cache for expensive calculation
   let opcodeCount;
   let output;
-
-  function mult(a, b) {
-    const res = a * b;
-
-    r[33] = res&0xffffffff;
-    r[34] = Math.floor(res/divMath);
-  }
-
-  function div(a, b) {
-    if (b) {
-      r[33] = a / b;
-      r[34] = a % b;
-    }
-  }
 
   // Base CPU stepper
   function step(inslot) {
@@ -386,7 +400,7 @@ pseudo.CstrR3ka = (function() {
 
           case 8: // JR
             branch(r[((code>>>21)&0x1f)]);
-            print();
+            if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { var char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>'); output.append(char.toUpperCase()); } };
             return;
 
           case 9: // JALR
@@ -396,7 +410,7 @@ pseudo.CstrR3ka = (function() {
 
           case 12: // SYSCALL
             r[32]-=4;
-            exception(0x20, inslot);
+            copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x20; copr[14] = r[32]; r[32] = 0x80;
             return;
 
           case 16: // MFHI
@@ -416,15 +430,15 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 25: // MULTU
-            mult(r[((code>>>21)&0x1f)], r[((code>>>16)&0x1f)]);
+            const res = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = res&0xffffffff; r[34] = Math.floor(res/divMath);
             return;
 
           case 26: // DIV
-            div(((r[((code>>>21)&0x1f)])<<0>>0), ((r[((code>>>16)&0x1f)])<<0>>0));
+            if ( ((r[((code>>>16)&0x1f)])<<0>>0)) { r[33] = ((r[((code>>>21)&0x1f)])<<0>>0) /  ((r[((code>>>16)&0x1f)])<<0>>0); r[34] = ((r[((code>>>21)&0x1f)])<<0>>0) %  ((r[((code>>>16)&0x1f)])<<0>>0); };
             return;
 
           case 27: // DIVU
-            div(r[((code>>>21)&0x1f)], r[((code>>>16)&0x1f)]);
+            if ( r[((code>>>16)&0x1f)]) { r[33] = r[((code>>>21)&0x1f)] /  r[((code>>>16)&0x1f)]; r[34] = r[((code>>>21)&0x1f)] %  r[((code>>>16)&0x1f)]; };
             return;
 
           case 32: // ADD
@@ -599,23 +613,6 @@ pseudo.CstrR3ka = (function() {
 
     // Rootcounters, interrupts
     pseudo.CstrCounters.update();
-  }
-
-  function exception(code, inslot) {
-    copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f);
-    copr[13] = code;
-    copr[14] = r[32];
-
-    r[32] = 0x80;
-  }
-
-  function print() {
-    if (r[32] === 0xb0) {
-      if (r[9] === 59 || r[9] === 61) {
-        var char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');
-        output.append(char.toUpperCase());
-      }
-    }
   }
 
   // Exposed class functions/variables

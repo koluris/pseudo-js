@@ -2,26 +2,40 @@
 #define lo r[33]
 #define hi r[34]
 
+// Inline functions for speedup
+#define mult(a, b)\
+  const res = a * b;\
+  \
+  lo = res&0xffffffff;\
+  hi = Math.floor(res/divMath)
+
+#define div(a, b)\
+  if (b) {\
+    lo = a / b;\
+    hi = a % b;\
+  }
+
+#define exception(code, inslot)\
+  copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f);\
+  copr[13] = code;\
+  copr[14] = pc;\
+  \
+  pc = 0x80
+
+#define print()\
+  if (pc === 0xb0) {\
+    if (r[9] === 59 || r[9] === 61) {\
+      var char = Chars.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');\
+      output.append(char.toUpperCase());\
+    }\
+  }
+
 pseudo.CstrR3ka = (function() {
   let r; // Base
   let copr; // Coprocessor
   let divMath; // Cache for expensive calculation
   let opcodeCount;
   let output;
-
-  function mult(a, b) {
-    const res = a * b;
-
-    lo = res&0xffffffff;
-    hi = Math.floor(res/divMath);
-  }
-
-  function div(a, b) {
-    if (b) {
-      lo = a / b;
-      hi = a % b;
-    }
-  }
 
   // Base CPU stepper
   function step(inslot) {
@@ -272,23 +286,6 @@ pseudo.CstrR3ka = (function() {
 
     // Rootcounters, interrupts
     rootcnt.update();
-  }
-
-  function exception(code, inslot) {
-    copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f);
-    copr[13] = code;
-    copr[14] = pc;
-
-    pc = 0x80;
-  }
-
-  function print() {
-    if (pc === 0xb0) {
-      if (r[9] === 59 || r[9] === 61) {
-        var char = Chars.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');
-        output.append(char.toUpperCase());
-      }
-    }
   }
 
   // Exposed class functions/variables
