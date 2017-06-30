@@ -33,25 +33,22 @@ pseudo.CstrHardware = (function() {
 
       h(addr, data) {
         addr&=0xffff;
+
+        if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
+          directMemH(hwr.uh, addr) = data;
+          return;
+        }
         
         if (addr >= 0x1d80 && addr <= 0x1d86) { // Audio
           directMemH(hwr.uh, addr) = data;
           return;
         }
 
-        switch(addr) {
-          case 0x1100:
-          case 0x1104:
-          case 0x1108:
-          case 0x1110:
-          case 0x1114:
-          case 0x1118:
-          case 0x1120:
-          case 0x1124:
-          case 0x1128:
-            directMemH(hwr.uh, addr) = data;
-            return;
-        }
+        // switch(addr) {
+        //   case 0:
+        //     directMemH(hwr.uh, addr) = data;
+        //     return;
+        // }
         psx.error('pseudo / Hardware write h '+hex(addr)+' <- '+hex(data));
       },
 
@@ -59,7 +56,7 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
         
         switch(addr) {
-          case 0x2041:
+          case 0x2041: // DIP Switch?
             directMemB(hwr.ub, addr) = data;
             return;
         }

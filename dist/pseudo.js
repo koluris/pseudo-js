@@ -145,25 +145,22 @@ pseudo.CstrHardware = (function() {
 
       h(addr, data) {
         addr&=0xffff;
+
+        if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
+          pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
+          return;
+        }
         
         if (addr >= 0x1d80 && addr <= 0x1d86) { // Audio
           pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
           return;
         }
 
-        switch(addr) {
-          case 0x1100:
-          case 0x1104:
-          case 0x1108:
-          case 0x1110:
-          case 0x1114:
-          case 0x1118:
-          case 0x1120:
-          case 0x1124:
-          case 0x1128:
-            pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
-            return;
-        }
+        // switch(addr) {
+        //   case 0:
+        //     pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
+        //     return;
+        // }
         pseudo.CstrMain.error('pseudo / Hardware write h '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
       },
 
@@ -171,7 +168,7 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
         
         switch(addr) {
-          case 0x2041:
+          case 0x2041: // DIP Switch?
             pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0] = data;
             return;
         }
@@ -580,7 +577,10 @@ pseudo.CstrR3ka = (function() {
     },
 
     run() {
-      // requestAnimationFrame loop
+      for (let i=0; i<100000; i++) {
+        step(false);
+      }
+      requestAnimationFrame(pseudo.CstrR3ka.run);
     },
 
     writeOK() {
@@ -627,8 +627,8 @@ pseudo.CstrMain = (function() {
       pseudo.CstrCounters.reset();
       pseudo.CstrR3ka   .reset();
 
-      // Run emulator to Bootstrap
-      //pseudo.CstrR3ka.bootstrap();
+      // Run emulator
+      pseudo.CstrR3ka.run();
     },
 
     error(out) {

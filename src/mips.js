@@ -270,7 +270,10 @@ pseudo.CstrR3ka = (function() {
     },
 
     run() {
-      // requestAnimationFrame loop
+      for (let i=0; i<100000; i++) {
+        step(false);
+      }
+      requestAnimationFrame(r3ka.run);
     },
 
     writeOK() {
