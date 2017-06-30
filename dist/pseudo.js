@@ -168,6 +168,9 @@ pseudo.CstrHardware = (function() {
           case 0x1070: //
           case 0x1074: //
           case 0x10a8: // DMA?
+          case 0x10e0:
+          case 0x10e4:
+          case 0x10e8: // DMA?
           case 0x10f0:
           case 0x10f4:
             pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
@@ -219,6 +222,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           case 0x1074:
+          case 0x10e8:
           case 0x10f0:
           case 0x10f4:
             return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];

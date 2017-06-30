@@ -5,15 +5,72 @@
   <title>pseudo</title>
 
   <STYLE>
+    @import url('css/normalize.css');
+
+    * {
+      box-sizing: border-box;
+    }
     BODY {
-      color: #555;
-      BACKGROUND: #ddd;
+      background: #ddd;
       font: normal 13px 'Andale Mono', sans-serif;
+    }
+    #main {
+      position: absolute;
+      DISPLAY: flex;
+      flex-direction: column;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+    }
+    #top {
+      position: relative;
+      background: black;
+    }
+    #screen {
+      DISPLAY: block;
+      background: black;
+      margin: 0 auto;
+    }
+    #resolution {
+      position: absolute;
+      color: Yellow;
+      background: RGBA(255, 255, 255, 0.15);
+      top: 0;
+      right: 0;
+      padding: 5px 7px;
+    }
+    #bottom {
+      DISPLAY: flex;
+      flex: 1;
+    }
+    #output {
+      flex: 2;
+      border-right: 1px solid rgba(0, 0, 0, .15);
+      padding: 0 7px;
+    }
+    #homebrew {
+      flex: 1;
     }
   </STYLE>
 </head>
 <BODY>
-  <div id="output">
+  <div id="main">
+    <div id="top">
+      <canvas id="screen" width="320" HEIGHT="240">
+        No support for <code>canvas</code> element.
+      </canvas>
+      <div id="resolution">
+        320 x 240
+      </div>
+    </div>
+
+    <div id="bottom">
+      <div id="output">
+      </div>
+      <div id="homebrew">
+      </div>
+    </div>
   </div>
 
   <script src="js/quer-3.2.1.min.js"></script>
