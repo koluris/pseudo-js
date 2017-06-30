@@ -1,4 +1,4 @@
-# pseudo
+# PSeudo
 
 ### JS/WebGL/WebAudio based PLAYSTATION emulator (aka PSX, PS1)
 *******
