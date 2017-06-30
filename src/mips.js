@@ -7,7 +7,7 @@
   const res = a * b;\
   \
   lo = res&0xffffffff;\
-  hi = Math.floor(res/divMath)
+  hi = (res/power32) | 0
 
 #define div(a, b)\
   if (b) {\
@@ -33,7 +33,7 @@
 pseudo.CstrR3ka = (function() {
   let r; // Base
   let copr; // Coprocessor
-  let divMath; // Cache for expensive calculation
+  let power32; // Cache for expensive calculation
   let opcodeCount;
   let output;
 
@@ -295,7 +295,7 @@ pseudo.CstrR3ka = (function() {
       copr = new UintWcap(16);
 
       // Cache
-      divMath = Math.pow(32, 2); // Btw, pure multiplication is faster
+      power32 = Math.pow(32, 2); // Btw, pure multiplication is faster
       output  = element;
     },
 

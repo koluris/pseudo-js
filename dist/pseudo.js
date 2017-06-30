@@ -360,7 +360,7 @@ pseudo.CstrMem = (function() {
 pseudo.CstrR3ka = (function() {
   let r; // Base
   let copr; // Coprocessor
-  let divMath; // Cache for expensive calculation
+  let power32; // Cache for expensive calculation
   let opcodeCount;
   let output;
 
@@ -430,7 +430,7 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 25: // MULTU
-            const res = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = res&0xffffffff; r[34] = Math.floor(res/divMath);
+            const res = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = res&0xffffffff; r[34] = (res/power32) | 0;
             return;
 
           case 26: // DIV
@@ -622,7 +622,7 @@ pseudo.CstrR3ka = (function() {
       copr = new Uint32Array(16);
 
       // Cache
-      divMath = Math.pow(32, 2); // Btw, pure multiplication is faster
+      power32 = Math.pow(32, 2); // Btw, pure multiplication is faster
       output  = element;
     },
 
