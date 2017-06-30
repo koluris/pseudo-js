@@ -33,8 +33,8 @@
 pseudo.CstrR3ka = (function() {
   let r; // Base
   let copr; // Coprocessor
-  let power32; // Cache for expensive calculation
   let opcodeCount;
+  let power32; // Cache for expensive calculation
   let output;
 
   // Base CPU stepper
@@ -310,12 +310,15 @@ pseudo.CstrR3ka = (function() {
       opcodeCount = 0;
 
       // Bootstrap
+      //for (let i=0; i<50; i++) { // Benchmark
       const start = performance.now();
+      //pc = 0xbfc00000;
 
       while (pc !== 0x80030000) {
         step(false);
       }
       console.dir('pseudo / Bootstrap completed in '+parseFloat(performance.now()-start).toFixed(2)+' ms');
+      //}
     },
 
     run() {

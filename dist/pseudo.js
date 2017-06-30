@@ -91,8 +91,21 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrCounters = (function() {
   var timer;
+  var vbk;
 
   // Exposed class functions/variables
   return {
@@ -103,12 +116,17 @@ pseudo.CstrCounters = (function() {
     reset() {
       for (let i=0; i<3; i++) {
         timer[i] = {
-          hi: 0
+          bound: 0xffff
         };
       }
+
+      vbk = 0;
     },
 
     update() {
+      if ((vbk += 64) === 33868800/60) {
+        vbk = 0;
+      }
     }
   };
 })();
@@ -126,7 +144,12 @@ pseudo.CstrHardware = (function() {
           return;
         }
 
-        if (addr >= 0x1810 && addr <= 0x1810) { // Graphics
+        if (addr >= 0x1114 && addr <= 0x1118) { // Rootcounters
+          pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
+          return;
+        }
+
+        if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
           pseudo.CstrGraphics.scopeW(addr, data);
           return;
         }
@@ -144,7 +167,9 @@ pseudo.CstrHardware = (function() {
           case 0x1060:
           case 0x1070: //
           case 0x1074: //
+          case 0x10a8: // DMA?
           case 0x10f0:
+          case 0x10f4:
             pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
             return;
         }
@@ -164,11 +189,11 @@ pseudo.CstrHardware = (function() {
           return;
         }
 
-        // switch(addr) {
-        //   case 0:
-        //     pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
-        //     return;
-        // }
+        switch(addr) {
+          case 0x1074:
+            pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
+            return;
+        }
         pseudo.CstrMain.error('pseudo / Hardware write h '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
       },
 
@@ -188,13 +213,14 @@ pseudo.CstrHardware = (function() {
       w(addr) {
         addr&=0xffff;
 
-        if (addr >= 0x1814 && addr <= 0x1814) {
+        if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
           return pseudo.CstrGraphics.scopeR(addr);
         }
 
         switch(addr) {
           case 0x1074:
           case 0x10f0:
+          case 0x10f4:
             return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
         }
         pseudo.CstrMain.error('pseudo / Hardware read w '+('0x'+(addr>>>0).toString(16)));
@@ -207,6 +233,10 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
         }
 
+        switch(addr) {
+          case 0x1074:
+            return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
+        }
         pseudo.CstrMain.error('pseudo / Hardware read h '+('0x'+(addr>>>0).toString(16)));
       }
     }
@@ -371,8 +401,8 @@ pseudo.CstrMem = (function() {
 pseudo.CstrR3ka = (function() {
   let r; // Base
   let copr; // Coprocessor
-  let power32; // Cache for expensive calculation
   let opcodeCount;
+  let power32; // Cache for expensive calculation
   let output;
 
   // Base CPU stepper
@@ -648,12 +678,15 @@ pseudo.CstrR3ka = (function() {
       opcodeCount = 0;
 
       // Bootstrap
+      //for (let i=0; i<50; i++) { // Benchmark
       const start = performance.now();
+      //r[32] = 0xbfc00000;
 
       while (r[32] !== 0x80030000) {
         step(false);
       }
       console.dir('pseudo / Bootstrap completed in '+parseFloat(performance.now()-start).toFixed(2)+' ms');
+      //}
     },
 
     run() {
@@ -718,6 +751,9 @@ pseudo.CstrMain = (function() {
     }
   };
 })();
+
+
+
 pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
@@ -796,12 +832,27 @@ pseudo.CstrGraphics = (function() {
         case 0: // Data
           write.data(data);
           return;
+
+        case 4: // Status
+          switch ((data>>>24)&0xff) {
+            case 0x00:
+              status = 0x14802000;
+              return;
+
+            case 0x08:
+              return;
+          }
+          pseudo.CstrMain.error('pseudo / GPU write status -> '+('0x'+((data>>>24)&0xff>>>0).toString(16)));
+          return;
       }
       pseudo.CstrMain.error('pseudo / GPU write '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
     },
 
     scopeR(addr) {
       switch(addr&0xf) {
+        case 0: // Data
+          return 0; // Nope: data
+
         case 4: // Status
           return status;
       }

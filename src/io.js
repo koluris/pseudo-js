@@ -12,7 +12,12 @@ pseudo.CstrHardware = (function() {
           return;
         }
 
-        if (addr >= 0x1810 && addr <= 0x1810) { // Graphics
+        if (addr >= 0x1114 && addr <= 0x1118) { // Rootcounters
+          directMemW(hwr.uw, addr) = data;
+          return;
+        }
+
+        if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
           vs.scopeW(addr, data);
           return;
         }
@@ -30,7 +35,9 @@ pseudo.CstrHardware = (function() {
           case 0x1060:
           case 0x1070: //
           case 0x1074: //
+          case 0x10a8: // DMA?
           case 0x10f0:
+          case 0x10f4:
             directMemW(hwr.uw, addr) = data;
             return;
         }
@@ -50,11 +57,11 @@ pseudo.CstrHardware = (function() {
           return;
         }
 
-        // switch(addr) {
-        //   case 0:
-        //     directMemH(hwr.uh, addr) = data;
-        //     return;
-        // }
+        switch(addr) {
+          case 0x1074:
+            directMemH(hwr.uh, addr) = data;
+            return;
+        }
         psx.error('pseudo / Hardware write h '+hex(addr)+' <- '+hex(data));
       },
 
@@ -74,13 +81,14 @@ pseudo.CstrHardware = (function() {
       w(addr) {
         addr&=0xffff;
 
-        if (addr >= 0x1814 && addr <= 0x1814) {
+        if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
           return vs.scopeR(addr);
         }
 
         switch(addr) {
           case 0x1074:
           case 0x10f0:
+          case 0x10f4:
             return directMemW(hwr.uw, addr);
         }
         psx.error('pseudo / Hardware read w '+hex(addr));
@@ -93,6 +101,10 @@ pseudo.CstrHardware = (function() {
           return directMemH(hwr.uh, addr);
         }
 
+        switch(addr) {
+          case 0x1074:
+            return directMemH(hwr.uh, addr);
+        }
         psx.error('pseudo / Hardware read h '+hex(addr));
       }
     }

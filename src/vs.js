@@ -1,3 +1,6 @@
+#define GPU_COMMAND(x)\
+  (x>>>24)&0xff
+
 pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
@@ -24,7 +27,7 @@ pseudo.CstrGraphics = (function() {
   const write = {
     data(addr) {
       if (!pipe.size) {
-        const prim = (addr>>>24)&0xff;
+        const prim = GPU_COMMAND(addr);
         const size = sizePrim[prim];
 
         if (size) {
@@ -76,12 +79,27 @@ pseudo.CstrGraphics = (function() {
         case 0: // Data
           write.data(data);
           return;
+
+        case 4: // Status
+          switch (GPU_COMMAND(data)) {
+            case 0x00:
+              status = 0x14802000;
+              return;
+
+            case 0x08:
+              return;
+          }
+          psx.error('pseudo / GPU write status -> '+hex((data>>>24)&0xff));
+          return;
       }
       psx.error('pseudo / GPU write '+hex(addr)+' <- '+hex(data));
     },
 
     scopeR(addr) {
       switch(addr&0xf) {
+        case 0: // Data
+          return 0; // Nope: data
+
         case 4: // Status
           return status;
       }
