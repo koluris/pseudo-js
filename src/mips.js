@@ -18,7 +18,7 @@ pseudo.CstrR3ka = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    const code = pc>>>20 === 0xbfc ? io_acc_w(mem._rom.uw, pc) : io_acc_w(mem._ram.uw, pc);
+    const code = pc>>>20 === 0xbfc ? directMemW(mem._rom.uw, pc) : directMemW(mem._ram.uw, pc);
     opcodeCount++;
     pc  += 4;
     r[0] = 0; // As weird as this seems, it is needed

@@ -22,7 +22,7 @@ pseudo.CstrMem = (function() {
           case 0x8: // Mirror
           case 0xa: // Mirror
             if (r3ka.writeok()) {
-              io_acc_w(ram.uw, addr) = data;
+              directMemW(ram.uw, addr) = data;
             }
             return;
 
@@ -40,7 +40,7 @@ pseudo.CstrMem = (function() {
       h(addr, data) {
         switch(addr>>>28) {
           case 0x0: // Base
-            io_acc_h(ram.uh, addr) = data;
+            directMemH(ram.uh, addr) = data;
             return;
 
           case 0x1: // Hardware
@@ -55,7 +55,7 @@ pseudo.CstrMem = (function() {
           case 0x0: // Base
           case 0x8: // Mirror
           case 0xa: // Mirror
-            io_acc_b(ram.ub, addr) = data;
+            directMemB(ram.ub, addr) = data;
             return;
 
           case 0x1: // Hardware
@@ -72,10 +72,10 @@ pseudo.CstrMem = (function() {
           case 0x0: // Base
           case 0x8: // Mirror
           case 0xa: // Mirror
-            return io_acc_w(ram.uw, addr);
+            return directMemW(ram.uw, addr);
 
           case 0xb: // BIOS
-            return io_acc_w(rom.uw, addr);
+            return directMemW(rom.uw, addr);
 
           case 0x1: // Hardware
             return io.read.w(addr);
@@ -93,10 +93,10 @@ pseudo.CstrMem = (function() {
         switch(addr>>>28) {
           case 0x0: // Base
           case 0x8: // Mirror
-            return io_acc_b(ram.ub, addr);
+            return directMemB(ram.ub, addr);
 
           case 0xb: // BIOS
-            return io_acc_b(rom.ub, addr);
+            return directMemB(rom.ub, addr);
         }
 
         if (addr === 0x1f000084) { // PIO?

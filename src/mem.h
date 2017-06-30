@@ -1,11 +1,11 @@
 #define mem\
   pseudo.CstrMem
 
-#define io_acc_w(mem, addr)\
+#define directMemW(mem, addr)\
   mem[((addr)&(mem.bLen-1))>>>2]
 
-#define io_acc_h(mem, addr)\
+#define directMemH(mem, addr)\
   mem[((addr)&(mem.bLen-1))>>>1]
 
-#define io_acc_b(mem, addr)\
+#define directMemB(mem, addr)\
   mem[((addr)&(mem.bLen-1))>>>0]

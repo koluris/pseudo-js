@@ -8,7 +8,7 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
 
         if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
-          io_acc_w(hwr.uw, addr) = data;
+          directMemW(hwr.uw, addr) = data;
           return;
         }
 
@@ -25,7 +25,7 @@ pseudo.CstrHardware = (function() {
           case 0x1060:
           case 0x1070: //
           case 0x1074: //
-            io_acc_w(hwr.uw, addr) = data;
+            directMemW(hwr.uw, addr) = data;
             return;
         }
         psx.error('pseudo / Hardware write w '+hex(addr)+' <- '+hex(data));
@@ -35,7 +35,7 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
         
         if (addr >= 0x1d80 && addr <= 0x1d86) { // Audio
-          io_acc_h(hwr.uh, addr) = data;
+          directMemH(hwr.uh, addr) = data;
           return;
         }
 
@@ -49,7 +49,7 @@ pseudo.CstrHardware = (function() {
           case 0x1120:
           case 0x1124:
           case 0x1128:
-            io_acc_h(hwr.uh, addr) = data;
+            directMemH(hwr.uh, addr) = data;
             return;
         }
         psx.error('pseudo / Hardware write h '+hex(addr)+' <- '+hex(data));
@@ -60,7 +60,7 @@ pseudo.CstrHardware = (function() {
         
         switch(addr) {
           case 0x2041:
-            io_acc_b(hwr.ub, addr) = data;
+            directMemB(hwr.ub, addr) = data;
             return;
         }
         psx.error('pseudo / Hardware write b '+hex(addr)+' <- '+hex(data));
@@ -73,7 +73,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           case 0x1074:
-            return io_acc_w(hwr.uw, addr);
+            return directMemW(hwr.uw, addr);
         }
         psx.error('pseudo / Hardware read w '+hex(addr));
       }
