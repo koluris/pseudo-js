@@ -1,0 +1,2 @@
+#define rootcnt\
+  pseudo.CstrCounters

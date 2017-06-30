@@ -17,16 +17,16 @@ pseudo.CstrMem = (function() {
 
     write: {
       w(addr, data) {
-        switch(addr>>>28) {
-          case 0x0: // Base
-          case 0x8: // Mirror
-          case 0xa: // Mirror
-            if (r3ka.writeok()) {
+        switch(addr>>>24) {
+          case 0x00: // Base
+          case 0x80: // Mirror
+          case 0xa0: // Mirror
+            if (r3ka.writeOK()) {
               directMemW(ram.uw, addr) = data;
             }
             return;
 
-          case 0x1: // Hardware
+          case 0x1f: // Hardware
             io.write.w(addr, data);
             return;
         }
@@ -38,12 +38,12 @@ pseudo.CstrMem = (function() {
       },
 
       h(addr, data) {
-        switch(addr>>>28) {
-          case 0x0: // Base
+        switch(addr>>>24) {
+          case 0x00: // Base
             directMemH(ram.uh, addr) = data;
             return;
 
-          case 0x1: // Hardware
+          case 0x1f: // Hardware
             io.write.h(addr, data);
             return;
         }
@@ -51,14 +51,14 @@ pseudo.CstrMem = (function() {
       },
 
       b(addr, data) {
-        switch(addr>>>28) {
-          case 0x0: // Base
-          case 0x8: // Mirror
-          case 0xa: // Mirror
+        switch(addr>>>24) {
+          case 0x00: // Base
+          case 0x80: // Mirror
+          case 0xa0: // Mirror
             directMemB(ram.ub, addr) = data;
             return;
 
-          case 0x1: // Hardware
+          case 0x1f: // Hardware
             io.write.b(addr, data);
             return;
         }
@@ -68,16 +68,16 @@ pseudo.CstrMem = (function() {
 
     read: {
       w(addr) {
-        switch(addr>>>28) {
-          case 0x0: // Base
-          case 0x8: // Mirror
-          case 0xa: // Mirror
+        switch(addr>>>24) {
+          case 0x00: // Base
+          case 0x80: // Mirror
+          case 0xa0: // Mirror
             return directMemW(ram.uw, addr);
 
-          case 0xb: // BIOS
+          case 0xbf: // BIOS
             return directMemW(rom.uw, addr);
 
-          case 0x1: // Hardware
+          case 0x1f: // Hardware
             return io.read.w(addr);
         }
         psx.error('pseudo / Mem read w '+hex(addr));
@@ -90,12 +90,12 @@ pseudo.CstrMem = (function() {
       },
 
       b(addr) {
-        switch(addr>>>28) {
-          case 0x0: // Base
-          case 0x8: // Mirror
+        switch(addr>>>24) {
+          case 0x00: // Base
+          case 0x80: // Mirror
             return directMemB(ram.ub, addr);
 
-          case 0xb: // BIOS
+          case 0xbf: // BIOS
             return directMemB(rom.ub, addr);
         }
 

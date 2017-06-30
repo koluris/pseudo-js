@@ -223,6 +223,7 @@ pseudo.CstrR3ka = (function() {
     pc = addr;
 
     // Rootcounters, interrupts
+    rootcnt.update();
   }
 
   function exception(code, inslot) {
@@ -235,12 +236,6 @@ pseudo.CstrR3ka = (function() {
         var char = Chars.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');
         output.append(char.toUpperCase());
       }
-    }
-  }
-
-  function bootstrap() {
-    while (pc !== 0x80030000) {
-      step(false);
     }
   }
 
@@ -265,8 +260,12 @@ pseudo.CstrR3ka = (function() {
       pc = 0xbfc00000;
       opcodeCount = 0;
 
+      // Bootstrap
       var start = performance.now();
-      bootstrap();
+
+      while (pc !== 0x80030000) {
+        step(false);
+      }
       console.dir('pseudo / Bootstrap completed in '+(performance.now()-start)+' ms');
     },
 
@@ -274,7 +273,7 @@ pseudo.CstrR3ka = (function() {
       // requestAnimationFrame loop
     },
 
-    writeok() {
+    writeOK() {
       return !(copr[12]&0x10000);
     }
   };

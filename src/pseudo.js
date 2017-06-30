@@ -14,7 +14,8 @@ pseudo.CstrMain = (function() {
   return {
     awake() {
       $(function() {
-        r3ka.awake($('#output'));
+        rootcnt.awake();
+        r3ka   .awake($('#output'));
 
         file('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
@@ -28,8 +29,9 @@ pseudo.CstrMain = (function() {
 
     reset() {
       // Reset all emulator components
-      mem .reset();
-      r3ka.reset();
+      mem    .reset();
+      rootcnt.reset();
+      r3ka   .reset();
 
       // Run emulator to Bootstrap
       //r3ka.bootstrap();

@@ -89,6 +89,29 @@ const pseudo = window.pseudo || {};
 
 
 
+pseudo.CstrCounters = (function() {
+  var timer;
+
+  // Exposed class functions/variables
+  return {
+    awake() {
+      timer = [];
+    },
+
+    reset() {
+      for (let i=0; i<3; i++) {
+        timer[i] = {
+          hi: 0
+        };
+      }
+    },
+
+    update() {
+    }
+  };
+})();
+
+
 pseudo.CstrHardware = (function() {
   // Exposed class functions/variables
   return {
@@ -190,16 +213,16 @@ pseudo.CstrMem = (function() {
 
     write: {
       w(addr, data) {
-        switch(addr>>>28) {
-          case 0x0: // Base
-          case 0x8: // Mirror
-          case 0xa: // Mirror
-            if (pseudo.CstrR3ka.writeok()) {
+        switch(addr>>>24) {
+          case 0x00: // Base
+          case 0x80: // Mirror
+          case 0xa0: // Mirror
+            if (pseudo.CstrR3ka.writeOK()) {
               pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = data;
             }
             return;
 
-          case 0x1: // Hardware
+          case 0x1f: // Hardware
             pseudo.CstrHardware.write.w(addr, data);
             return;
         }
@@ -211,12 +234,12 @@ pseudo.CstrMem = (function() {
       },
 
       h(addr, data) {
-        switch(addr>>>28) {
-          case 0x0: // Base
+        switch(addr>>>24) {
+          case 0x00: // Base
             pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1] = data;
             return;
 
-          case 0x1: // Hardware
+          case 0x1f: // Hardware
             pseudo.CstrHardware.write.h(addr, data);
             return;
         }
@@ -224,14 +247,14 @@ pseudo.CstrMem = (function() {
       },
 
       b(addr, data) {
-        switch(addr>>>28) {
-          case 0x0: // Base
-          case 0x8: // Mirror
-          case 0xa: // Mirror
+        switch(addr>>>24) {
+          case 0x00: // Base
+          case 0x80: // Mirror
+          case 0xa0: // Mirror
             pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0] = data;
             return;
 
-          case 0x1: // Hardware
+          case 0x1f: // Hardware
             pseudo.CstrHardware.write.b(addr, data);
             return;
         }
@@ -241,16 +264,16 @@ pseudo.CstrMem = (function() {
 
     read: {
       w(addr) {
-        switch(addr>>>28) {
-          case 0x0: // Base
-          case 0x8: // Mirror
-          case 0xa: // Mirror
+        switch(addr>>>24) {
+          case 0x00: // Base
+          case 0x80: // Mirror
+          case 0xa0: // Mirror
             return pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
 
-          case 0xb: // BIOS
+          case 0xbf: // BIOS
             return pseudo.CstrMem._rom.uw[(( addr)&(pseudo.CstrMem._rom.uw.byteLength-1))>>>2];
 
-          case 0x1: // Hardware
+          case 0x1f: // Hardware
             return pseudo.CstrHardware.read.w(addr);
         }
         pseudo.CstrMain.error('pseudo / Mem read w '+('0x'+(addr>>>0).toString(16)));
@@ -263,12 +286,12 @@ pseudo.CstrMem = (function() {
       },
 
       b(addr) {
-        switch(addr>>>28) {
-          case 0x0: // Base
-          case 0x8: // Mirror
+        switch(addr>>>24) {
+          case 0x00: // Base
+          case 0x80: // Mirror
             return pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0];
 
-          case 0xb: // BIOS
+          case 0xbf: // BIOS
             return pseudo.CstrMem._rom.ub[(( addr)&(pseudo.CstrMem._rom.ub.byteLength-1))>>>0];
         }
 
@@ -510,6 +533,7 @@ pseudo.CstrR3ka = (function() {
     r[32] = addr;
 
     // Rootcounters, interrupts
+    pseudo.CstrCounters.update();
   }
 
   function exception(code, inslot) {
@@ -522,12 +546,6 @@ pseudo.CstrR3ka = (function() {
         var char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');
         output.append(char.toUpperCase());
       }
-    }
-  }
-
-  function bootstrap() {
-    while (r[32] !== 0x80030000) {
-      step(false);
     }
   }
 
@@ -552,8 +570,12 @@ pseudo.CstrR3ka = (function() {
       r[32] = 0xbfc00000;
       opcodeCount = 0;
 
+      // Bootstrap
       var start = performance.now();
-      bootstrap();
+
+      while (r[32] !== 0x80030000) {
+        step(false);
+      }
       console.dir('pseudo / Bootstrap completed in '+(performance.now()-start)+' ms');
     },
 
@@ -561,7 +583,7 @@ pseudo.CstrR3ka = (function() {
       // requestAnimationFrame loop
     },
 
-    writeok() {
+    writeOK() {
       return !(copr[12]&0x10000);
     }
   };
@@ -586,7 +608,8 @@ pseudo.CstrMain = (function() {
   return {
     awake() {
       $(function() {
-        pseudo.CstrR3ka.awake($('#output'));
+        pseudo.CstrCounters.awake();
+        pseudo.CstrR3ka   .awake($('#output'));
 
         file('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
@@ -600,8 +623,9 @@ pseudo.CstrMain = (function() {
 
     reset() {
       // Reset all emulator components
-      pseudo.CstrMem .reset();
-      pseudo.CstrR3ka.reset();
+      pseudo.CstrMem    .reset();
+      pseudo.CstrCounters.reset();
+      pseudo.CstrR3ka   .reset();
 
       // Run emulator to Bootstrap
       //pseudo.CstrR3ka.bootstrap();
