@@ -21,7 +21,7 @@ pseudo.CstrGraphics = (function() {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xf0
   ];
 
-  var write = {
+  const write = {
     data(addr) {
       if (!pipe.size) {
         const prim = (addr>>>24)&0xff;
@@ -29,23 +29,23 @@ pseudo.CstrGraphics = (function() {
 
         if (size) {
           pipe.data[0] = addr;
-          pipe.cmd  = prim;
+          pipe.prim = prim;
           pipe.size = size;
-          pipe.p    = 1;
+          pipe.row  = 1;
         }
         else {
           return;
         }
       }
       else {
-        pipe.data[pipe.p] = addr;
-        pipe.p++;
+        pipe.data[pipe.row] = addr;
+        pipe.row++;
       }
 
       // Render primitive
-      if (pipe.size === pipe.p) {
+      if (pipe.size === pipe.row) {
         pipe.size = 0;
-        pipe.p    = 0;
+        pipe.row  = 0;
         
         console.dir('pseudo / GPU render primitive');
       }
@@ -66,9 +66,9 @@ pseudo.CstrGraphics = (function() {
 
       // Command Pipe
       pipe.data.fill(0);
-      pipe.cmd  = 0;
+      pipe.prim = 0;
       pipe.size = 0;
-      pipe.p    = 0;
+      pipe.row  = 0;
     },
 
     scopeW(addr, data) {
