@@ -12,6 +12,11 @@ pseudo.CstrHardware = (function() {
           return;
         }
 
+        if (addr >= 0x1810 && addr <= 0x1810) { // Graphics
+          vs.scopeW(addr, data);
+          return;
+        }
+
         switch(addr) {
           case 0x1000:
           case 0x1004:
@@ -68,6 +73,10 @@ pseudo.CstrHardware = (function() {
     read: {
       w(addr) {
         addr&=0xffff;
+
+        if (addr >= 0x1814 && addr <= 0x1814) {
+          return vs.scopeR(addr);
+        }
 
         switch(addr) {
           case 0x1074:

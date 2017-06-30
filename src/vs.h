@@ -1,0 +1,2 @@
+#define vs\
+  pseudo.CstrGraphics

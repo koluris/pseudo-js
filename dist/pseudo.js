@@ -89,6 +89,8 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
 pseudo.CstrCounters = (function() {
   var timer;
 
@@ -121,6 +123,11 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
           pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
+          return;
+        }
+
+        if (addr >= 0x1810 && addr <= 0x1810) { // Graphics
+          pseudo.CstrGraphics.scopeW(addr, data);
           return;
         }
 
@@ -180,6 +187,10 @@ pseudo.CstrHardware = (function() {
     read: {
       w(addr) {
         addr&=0xffff;
+
+        if (addr >= 0x1814 && addr <= 0x1814) {
+          return pseudo.CstrGraphics.scopeR(addr);
+        }
 
         switch(addr) {
           case 0x1074:
@@ -677,6 +688,7 @@ pseudo.CstrMain = (function() {
   return {
     awake() {
       $(function() {
+        pseudo.CstrGraphics     .awake();
         pseudo.CstrCounters.awake();
         pseudo.CstrR3ka   .awake($('#output'));
 
@@ -692,6 +704,7 @@ pseudo.CstrMain = (function() {
 
     reset() {
       // Reset all emulator components
+      pseudo.CstrGraphics     .reset();
       pseudo.CstrMem    .reset();
       pseudo.CstrCounters.reset();
       pseudo.CstrR3ka   .reset();
@@ -702,6 +715,97 @@ pseudo.CstrMain = (function() {
 
     error(out) {
       throw new Error(out);
+    }
+  };
+})();
+pseudo.CstrGraphics = (function() {
+  let status;
+  let pipe;
+
+  const sizePrim = [
+    0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x10
+    4, 4, 4, 4, 7, 7, 7, 7, 5, 5, 5, 5, 9, 9, 9, 9, // 0x20
+    6, 6, 6, 6, 9, 9, 9, 9, 8, 8, 8, 8,12,12,12,12, // 0x30
+    3, 3, 3, 3, 0, 0, 0, 0, 5, 5, 5, 5, 6, 6, 6, 6, // 0x40
+    4, 4, 4, 4, 0, 0, 0, 0, 7, 7, 7, 7, 9, 9, 9, 9, // 0x50
+    3, 3, 3, 3, 4, 4, 4, 4, 2, 2, 2, 2, 0, 0, 0, 0, // 0x60
+    2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 3, 3, 3, 3, // 0x70
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x80
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x90
+    3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xa0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xb0
+    3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xc0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xd0
+    0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xe0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xf0
+  ];
+
+  var write = {
+    data(addr) {
+      if (!pipe.size) {
+        const prim = (addr>>>24)&0xff;
+        const size = sizePrim[prim];
+
+        if (size) {
+          pipe.data[0] = addr;
+          pipe.cmd  = prim;
+          pipe.size = size;
+          pipe.p    = 1;
+        }
+        else {
+          return;
+        }
+      }
+      else {
+        pipe.data[pipe.p] = addr;
+        pipe.p++;
+      }
+
+      // Render primitive
+      if (pipe.size === pipe.p) {
+        pipe.size = 0;
+        pipe.p    = 0;
+        
+        console.dir('pseudo / GPU render primitive');
+      }
+    }
+  }
+
+  // Exposed class functions/variables
+  return {
+    awake() {
+      // Command Pipe
+      pipe = {
+        data: new Uint32Array(100)
+      };
+    },
+
+    reset() {
+      status = 0x14802000;
+
+      // Command Pipe
+      pipe.data.fill(0);
+      pipe.cmd  = 0;
+      pipe.size = 0;
+      pipe.p    = 0;
+    },
+
+    scopeW(addr, data) {
+      switch(addr&0xf) {
+        case 0: // Data
+          write.data(data);
+          return;
+      }
+      pseudo.CstrMain.error('pseudo / GPU write '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+    },
+
+    scopeR(addr) {
+      switch(addr&0xf) {
+        case 4: // Status
+          return status;
+      }
+      pseudo.CstrMain.error('pseudo / GPU read '+('0x'+(addr>>>0).toString(16)));
     }
   };
 })();
