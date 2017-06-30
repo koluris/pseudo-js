@@ -25,6 +25,7 @@ pseudo.CstrHardware = (function() {
           case 0x1060:
           case 0x1070: //
           case 0x1074: //
+          case 0x10f0:
             directMemW(hwr.uw, addr) = data;
             return;
         }
@@ -39,7 +40,7 @@ pseudo.CstrHardware = (function() {
           return;
         }
         
-        if (addr >= 0x1d80 && addr <= 0x1d86) { // Audio
+        if (addr >= 0x1c00 && addr <= 0x1dfe) { // Audio
           directMemH(hwr.uh, addr) = data;
           return;
         }
@@ -70,9 +71,20 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           case 0x1074:
+          case 0x10f0:
             return directMemW(hwr.uw, addr);
         }
         psx.error('pseudo / Hardware read w '+hex(addr));
+      },
+
+      h(addr) {
+        addr&=0xffff;
+
+        if (addr >= 0x1c0c && addr <= 0x1dae) { // Audio
+          return directMemH(hwr.uh, addr);
+        }
+
+        psx.error('pseudo / Hardware read h '+hex(addr));
       }
     }
   };

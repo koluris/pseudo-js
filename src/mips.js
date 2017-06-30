@@ -9,6 +9,13 @@ pseudo.CstrR3ka = (function() {
   let opcodeCount;
   let output;
 
+  function mult(a, b) {
+    const res = a * b;
+
+    lo = res&0xffffffff;
+    hi = Math.floor(res/divMath);
+  }
+
   function div(a, b) {
     if (b) {
       lo = a / b;
@@ -38,6 +45,18 @@ pseudo.CstrR3ka = (function() {
             r[rd] = s_ext_w(r[rt]) >> shamt;
             return;
 
+          case 4: // SLLV
+            r[rd] = r[rt] << (r[rs]&0x1f);
+            return;
+
+          case 6: // SRLV
+            r[rd] = r[rt] >>> (r[rs]&0x1f);
+            return;
+
+          case 7: // SRAV
+            r[rd] = s_ext_w(r[rt]) >> (r[rs]&0x1f);
+            return;
+
           case 8: // JR
             branch(r[rs]);
             print();
@@ -48,12 +67,29 @@ pseudo.CstrR3ka = (function() {
             branch(r[rs]);
             return;
 
+          case 12: // SYSCALL
+            pc-=4;
+            exception(0x20, inslot);
+            return;
+
           case 16: // MFHI
             r[rd] = hi;
             return;
 
+          case 17: // MTHI
+            hi = r[rs];
+            return;
+
           case 18: // MFLO
             r[rd] = lo;
+            return;
+
+          case 19: // MTLO
+            lo = r[rs];
+            return;
+
+          case 25: // MULTU
+            mult(r[rs], r[rt]);
             return;
 
           case 26: // DIV
@@ -82,6 +118,10 @@ pseudo.CstrR3ka = (function() {
 
           case 37: // OR
             r[rd] = r[rs] | r[rt];
+            return;
+
+          case 39: // NOR
+            r[rd] = ~(r[rs] | r[rt]);
             return;
 
           case 42: // SLT
@@ -194,12 +234,20 @@ pseudo.CstrR3ka = (function() {
         r[rt] = s_ext_b(mem.read.b(ob));
         return;
 
+      case 33: // LH
+        r[rt] = s_ext_h(mem.read.h(ob));
+        return;
+
       case 35: // LW
         r[rt] = mem.read.w(ob);
         return;
 
       case 36: // LBU
         r[rt] = mem.read.b(ob);
+        return;
+
+      case 37: // LHU
+        r[rt] = mem.read.h(ob);
         return;
 
       case 40: // SB
@@ -227,6 +275,10 @@ pseudo.CstrR3ka = (function() {
   }
 
   function exception(code, inslot) {
+    copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f);
+    copr[13] = code;
+    copr[14] = pc;
+
     pc = 0x80;
   }
 
@@ -270,7 +322,7 @@ pseudo.CstrR3ka = (function() {
     },
 
     run() {
-      for (let i=0; i<100000; i++) {
+      for (let i=0; i<350000; i++) {
         step(false);
       }
       requestAnimationFrame(r3ka.run);

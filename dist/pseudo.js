@@ -137,6 +137,7 @@ pseudo.CstrHardware = (function() {
           case 0x1060:
           case 0x1070: //
           case 0x1074: //
+          case 0x10f0:
             pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
             return;
         }
@@ -151,7 +152,7 @@ pseudo.CstrHardware = (function() {
           return;
         }
         
-        if (addr >= 0x1d80 && addr <= 0x1d86) { // Audio
+        if (addr >= 0x1c00 && addr <= 0x1dfe) { // Audio
           pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
           return;
         }
@@ -182,9 +183,20 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           case 0x1074:
+          case 0x10f0:
             return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
         }
         pseudo.CstrMain.error('pseudo / Hardware read w '+('0x'+(addr>>>0).toString(16)));
+      },
+
+      h(addr) {
+        addr&=0xffff;
+
+        if (addr >= 0x1c0c && addr <= 0x1dae) { // Audio
+          return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
+        }
+
+        pseudo.CstrMain.error('pseudo / Hardware read h '+('0x'+(addr>>>0).toString(16)));
       }
     }
   };
@@ -233,6 +245,7 @@ pseudo.CstrMem = (function() {
       h(addr, data) {
         switch(addr>>>24) {
           case 0x00: // Base
+          case 0x80: // Mirror
             pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1] = data;
             return;
 
@@ -278,6 +291,13 @@ pseudo.CstrMem = (function() {
       },
 
       h(addr) {
+        switch(addr>>>24) {
+          case 0x80: // Mirror
+            return pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1];
+
+          case 0x1f: // Hardware
+            return pseudo.CstrHardware.read.h(addr);
+        }
         pseudo.CstrMain.error('pseudo / Mem read h '+('0x'+(addr>>>0).toString(16)));
         return 0;
       },
@@ -316,6 +336,13 @@ pseudo.CstrR3ka = (function() {
   let opcodeCount;
   let output;
 
+  function mult(a, b) {
+    const res = a * b;
+
+    r[33] = res&0xffffffff;
+    r[34] = Math.floor(res/divMath);
+  }
+
   function div(a, b) {
     if (b) {
       r[33] = a / b;
@@ -345,6 +372,18 @@ pseudo.CstrR3ka = (function() {
             r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)])<<0>>0) >> ((code>>>6)&0x1f);
             return;
 
+          case 4: // SLLV
+            r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] << (r[((code>>>21)&0x1f)]&0x1f);
+            return;
+
+          case 6: // SRLV
+            r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] >>> (r[((code>>>21)&0x1f)]&0x1f);
+            return;
+
+          case 7: // SRAV
+            r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)])<<0>>0) >> (r[((code>>>21)&0x1f)]&0x1f);
+            return;
+
           case 8: // JR
             branch(r[((code>>>21)&0x1f)]);
             print();
@@ -355,12 +394,29 @@ pseudo.CstrR3ka = (function() {
             branch(r[((code>>>21)&0x1f)]);
             return;
 
+          case 12: // SYSCALL
+            r[32]-=4;
+            exception(0x20, inslot);
+            return;
+
           case 16: // MFHI
             r[((code>>>11)&0x1f)] = r[34];
             return;
 
+          case 17: // MTHI
+            r[34] = r[((code>>>21)&0x1f)];
+            return;
+
           case 18: // MFLO
             r[((code>>>11)&0x1f)] = r[33];
+            return;
+
+          case 19: // MTLO
+            r[33] = r[((code>>>21)&0x1f)];
+            return;
+
+          case 25: // MULTU
+            mult(r[((code>>>21)&0x1f)], r[((code>>>16)&0x1f)]);
             return;
 
           case 26: // DIV
@@ -389,6 +445,10 @@ pseudo.CstrR3ka = (function() {
 
           case 37: // OR
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)];
+            return;
+
+          case 39: // NOR
+            r[((code>>>11)&0x1f)] = ~(r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)]);
             return;
 
           case 42: // SLT
@@ -501,12 +561,20 @@ pseudo.CstrR3ka = (function() {
         r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))))<<24>>24);
         return;
 
+      case 33: // LH
+        r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))))<<16>>16);
+        return;
+
       case 35: // LW
         r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
         return;
 
       case 36: // LBU
         r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
+        return;
+
+      case 37: // LHU
+        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
         return;
 
       case 40: // SB
@@ -534,6 +602,10 @@ pseudo.CstrR3ka = (function() {
   }
 
   function exception(code, inslot) {
+    copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f);
+    copr[13] = code;
+    copr[14] = r[32];
+
     r[32] = 0x80;
   }
 
@@ -577,7 +649,7 @@ pseudo.CstrR3ka = (function() {
     },
 
     run() {
-      for (let i=0; i<100000; i++) {
+      for (let i=0; i<350000; i++) {
         step(false);
       }
       requestAnimationFrame(pseudo.CstrR3ka.run);

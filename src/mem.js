@@ -40,6 +40,7 @@ pseudo.CstrMem = (function() {
       h(addr, data) {
         switch(addr>>>24) {
           case 0x00: // Base
+          case 0x80: // Mirror
             directMemH(ram.uh, addr) = data;
             return;
 
@@ -85,6 +86,13 @@ pseudo.CstrMem = (function() {
       },
 
       h(addr) {
+        switch(addr>>>24) {
+          case 0x80: // Mirror
+            return directMemH(ram.uh, addr);
+
+          case 0x1f: // Hardware
+            return io.read.h(addr);
+        }
         psx.error('pseudo / Mem read h '+hex(addr));
         return 0;
       },
