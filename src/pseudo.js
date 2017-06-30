@@ -22,6 +22,7 @@ pseudo.CstrMain = (function() {
           // Move BIOS to Mem
           const bios = new UintBcap(resp);
           mem._rom.ub.set(bios);
+          r3ka.consoleWrite('PSeudo / BIOS file has been written to ROM', false);
 
           psx.reset();
         });

@@ -317,7 +317,8 @@ pseudo.CstrR3ka = (function() {
       while (pc !== 0x80030000) {
         step(false);
       }
-      console.dir('pseudo / Bootstrap completed in '+parseFloat(performance.now()-start).toFixed(2)+' ms');
+      const delta = parseFloat(performance.now()-start).toFixed(2);
+      r3ka.consoleWrite('PSeudo / Bootstrap completed in '+delta+' ms', true);
       //}
     },
 
@@ -330,6 +331,10 @@ pseudo.CstrR3ka = (function() {
 
     writeOK() {
       return !(copr[12]&0x10000);
+    },
+
+    consoleWrite(out, space) {
+      output.append((space ? '<br/>' : ' ')+'<div class="pseudoText">'+out+'</div>'+(space ? '<br/>' : ' '));
     }
   };
 })();

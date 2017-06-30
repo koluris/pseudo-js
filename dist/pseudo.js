@@ -689,7 +689,8 @@ pseudo.CstrR3ka = (function() {
       while (r[32] !== 0x80030000) {
         step(false);
       }
-      console.dir('pseudo / Bootstrap completed in '+parseFloat(performance.now()-start).toFixed(2)+' ms');
+      const delta = parseFloat(performance.now()-start).toFixed(2);
+      pseudo.CstrR3ka.consoleWrite('PSeudo / Bootstrap completed in '+delta+' ms', true);
       //}
     },
 
@@ -702,6 +703,10 @@ pseudo.CstrR3ka = (function() {
 
     writeOK() {
       return !(copr[12]&0x10000);
+    },
+
+    consoleWrite(out, space) {
+      output.append((space ? '<br/>' : ' ')+'<div class="pseudoText">'+out+'</div>'+(space ? '<br/>' : ' '));
     }
   };
 })();
@@ -733,6 +738,7 @@ pseudo.CstrMain = (function() {
           // Move BIOS to Mem
           const bios = new Uint8Array(resp);
           pseudo.CstrMem._rom.ub.set(bios);
+          pseudo.CstrR3ka.consoleWrite('PSeudo / BIOS file has been written to ROM', false);
 
           pseudo.CstrMain.reset();
         });
