@@ -310,12 +310,12 @@ pseudo.CstrR3ka = (function() {
       opcodeCount = 0;
 
       // Bootstrap
-      var start = performance.now();
+      const start = performance.now();
 
       while (pc !== 0x80030000) {
         step(false);
       }
-      console.dir('pseudo / Bootstrap completed in '+(performance.now()-start)+' ms');
+      console.dir('pseudo / Bootstrap completed in '+parseFloat(performance.now()-start).toFixed(2)+' ms');
     },
 
     run() {
