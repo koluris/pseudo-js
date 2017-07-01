@@ -70,7 +70,7 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 3: // SRA
-            r[rd] = s_ext_w(r[rt]) >> shamt;
+            r[rd] = SIGN_EXT_32(r[rt]) >> shamt;
             return;
 
           case 4: // SLLV
@@ -82,7 +82,7 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 7: // SRAV
-            r[rd] = s_ext_w(r[rt]) >> (r[rs]&0x1f);
+            r[rd] = SIGN_EXT_32(r[rt]) >> (r[rs]&0x1f);
             return;
 
           case 8: // JR
@@ -121,7 +121,6 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 26: // DIV
-            //opcodeDiv(s_ext_w(r[rs]), s_ext_w(r[rt]));
             opcodeDiv(SIGN_EXT_32(r[rs]), SIGN_EXT_32(r[rt]));
             return;
 
@@ -158,7 +157,7 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 42: // SLT
-            r[rd] = s_ext_w(r[rs]) < s_ext_w(r[rt]);
+            r[rd] = SIGN_EXT_32(r[rs]) < SIGN_EXT_32(r[rt]);
             return;
 
           case 43: // SLTU
@@ -171,13 +170,13 @@ pseudo.CstrR3ka = (function() {
       case 1: // REGIMM
         switch (rt) {
           case 0: // BLTZ
-            if (s_ext_w(r[rs]) < 0) {
+            if (SIGN_EXT_32(r[rs]) < 0) {
               branch(b_addr);
             }
             return;
 
           case 1: // BGEZ
-            if (s_ext_w(r[rs]) >= 0) {
+            if (SIGN_EXT_32(r[rs]) >= 0) {
               branch(b_addr);
             }
             return;
@@ -207,13 +206,13 @@ pseudo.CstrR3ka = (function() {
         return;
 
       case 6: // BLEZ
-        if (s_ext_w(r[rs]) <= 0) {
+        if (SIGN_EXT_32(r[rs]) <= 0) {
           branch(b_addr);
         }
         return;
 
       case 7: // BGTZ
-        if (s_ext_w(r[rs]) > 0) {
+        if (SIGN_EXT_32(r[rs]) > 0) {
           branch(b_addr);
         }
         return;
@@ -227,7 +226,7 @@ pseudo.CstrR3ka = (function() {
         return;
 
       case 10: // SLTI
-        r[rt] = s_ext_w(r[rs]) < imm_s;
+        r[rt] = SIGN_EXT_32(r[rs]) < imm_s;
         return;
 
       case 11: // SLTIU
@@ -264,11 +263,11 @@ pseudo.CstrR3ka = (function() {
         return;
 
       case 32: // LB
-        r[rt] = s_ext_b(mem.read.b(ob));
+        r[rt] = SIGN_EXT_8(mem.read.b(ob));
         return;
 
       case 33: // LH
-        r[rt] = s_ext_h(mem.read.h(ob));
+        r[rt] = SIGN_EXT_16(mem.read.h(ob));
         return;
 
       case 34: // LWL

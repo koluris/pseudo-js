@@ -20,7 +20,7 @@
   (code&0xffff)
 
 #define imm_s\
-  (s_ext_h(code))
+  (SIGN_EXT_16(code))
 
 #define ob\
   (r[rs]+imm_s)

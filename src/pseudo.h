@@ -1,13 +1,13 @@
 #define psx\
   pseudo.CstrMain
 
-#define s_ext_w(n)\
+#define SIGN_EXT_32(n)\
   ((n)<<0>>0)
 
-#define s_ext_h(n)\
+#define SIGN_EXT_16(n)\
   ((n)<<16>>16)
 
-#define s_ext_b(n)\
+#define SIGN_EXT_8(n)\
   ((n)<<24>>24)
 
 #define hex(n)\
