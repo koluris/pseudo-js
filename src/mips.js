@@ -31,8 +31,7 @@
   }
 
 pseudo.CstrR3ka = (function() {
-  let r; // Base
-  let copr; // Coprocessor
+  let r, copr; // Base + Coprocessor
   let opcodeCount;
   let cacheAddr, power32; // Cache for expensive calculation
   let output;
