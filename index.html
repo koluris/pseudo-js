@@ -11,7 +11,6 @@
       box-sizing: border-box;
     }
     BODY {
-      background: #ddd;
       font: normal 13px 'Andale Mono', sans-serif;
     }
     #main {
@@ -45,7 +44,8 @@
       flex: 1;
     }
     #output {
-      flex: 2;
+      background: #ddd;
+      flex: 3;
       padding: 7px;
       overflow-Y: scroll;
     }
@@ -56,6 +56,34 @@
       flex: 1;
       overflow-Y: scroll;
     }
+    #homebrew > .item {
+      background: white;
+      font: normal 12px 'Helvetica Neue', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      height: 35px;
+      line-height: 35px;
+      padding-left: 15px;
+      cursor: pointer;
+    }
+    #homebrew > .item:nth-child(even) {
+      background: #e7f3ff;
+    }
+    /*#homebrew > .item:not(:last-child) {
+      border-bottom: 1px solid rgba(0, 0, 0, .1);
+    }*/
+    #homebrew > .item:hover {
+      color: #0a7bff;
+      text-decoration: underline;
+    }
+
+    ::-webkit-scrollbar {
+  width: 5px;
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: #666; 
+}
   </STYLE>
 </head>
 <BODY>
@@ -73,6 +101,19 @@
       <div id="output">
       </div>
       <div id="homebrew">
+        <div class="item">deuce-beta</div>
+        <div class="item">ff9</div>
+        <div class="item">pactro</div>
+        <div class="item">lightastic</div>
+        <div class="item">t-rex</div>
+        <div class="item">manta</div>
+        <div class="item">pdx-012</div>
+        <div class="item">20th-anniverse</div>
+        <div class="item">dentro</div>
+        <div class="item">flaptron</div>
+        <div class="item">va</div>
+        <div class="item">roots</div>
+        <div class="item">pdx-032</div>
       </div>
     </div>
   </div>
