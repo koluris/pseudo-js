@@ -114,6 +114,10 @@ pseudo.CstrHardware = (function() {
           return directMemW(hwr.uw, addr);
         }
 
+        if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
+          return directMemW(hwr.uw, addr);
+        }
+
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
           return vs.scopeR(addr);
         }

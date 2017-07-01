@@ -1,9 +1,15 @@
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
 
+#define GPU_DMA_NONE     0
+#define GPU_DMA_UNKNOWN  1
+#define GPU_DMA_MEM2VRAM 2
+#define GPU_DMA_VRAM2MEM 3
+
 pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
+  let modeDMA;
 
   const sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
@@ -65,7 +71,8 @@ pseudo.CstrGraphics = (function() {
     },
 
     reset() {
-      status = 0x14802000;
+      status  = 0x14802000;
+      modeDMA = GPU_DMA_NONE;
 
       // Command Pipe
       pipe.data.fill(0);
@@ -86,7 +93,20 @@ pseudo.CstrGraphics = (function() {
               status = 0x14802000;
               return;
 
+            case 0x03:
+              return;
+
+            case 0x04:
+              modeDMA = data&3;
+              return;
+
             case 0x08:
+              return;
+
+            /* unused */
+            case 0x05:
+            case 0x06:
+            case 0x07:
               return;
           }
           psx.error('pseudo / GPU write status -> '+hex((data>>>24)&0xff));

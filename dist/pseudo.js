@@ -272,6 +272,10 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
         }
 
+        if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
+          return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
+        }
+
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
           return pseudo.CstrGraphics.scopeR(addr);
         }
@@ -463,8 +467,22 @@ pseudo.CstrR3ka = (function() {
   let r; // Base
   let copr; // Coprocessor
   let opcodeCount;
-  let power32; // Cache for expensive calculation
+  let cacheAddr, power32; // Cache for expensive calculation
   let output;
+
+  const mask = [
+    [ 0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000 ],
+    [ 0x00000000, 0xff000000, 0xffff0000, 0xffffff00 ],
+    [ 0xffffff00, 0xffff0000, 0xff000000, 0x00000000 ],
+    [ 0x00000000, 0x000000ff, 0x0000ffff, 0x00ffffff ],
+  ];
+
+  const shift = [
+    [ 0x18, 0x10, 0x08, 0x00 ],
+    [ 0x00, 0x08, 0x10, 0x18 ],
+    [ 0x18, 0x10, 0x08, 0x00 ],
+    [ 0x00, 0x08, 0x10, 0x18 ],
+  ];
 
   // Base CPU stepper
   function step(inslot) {
@@ -532,7 +550,7 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 25: // MULTU
-            const res = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = res&0xffffffff; r[34] = (res/power32) | 0;
+            cacheAddr = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = cacheAddr&0xffffffff; r[34] = (cacheAddr/power32) | 0;
             return;
 
           case 26: // DIV
@@ -561,6 +579,10 @@ pseudo.CstrR3ka = (function() {
 
           case 37: // OR
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)];
+            return;
+
+          case 38: // XOR
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] ^ r[((code>>>16)&0x1f)];
             return;
 
           case 39: // NOR
@@ -681,6 +703,11 @@ pseudo.CstrR3ka = (function() {
         r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))))<<16>>16);
         return;
 
+      case 34: // LWL
+        cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[0][cacheAddr&3])|(pseudo.CstrMem.read.w(cacheAddr&~3)<<shift[0][cacheAddr&3]);
+        return;
+
       case 35: // LW
         r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
         return;
@@ -693,6 +720,11 @@ pseudo.CstrR3ka = (function() {
         r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
         return;
 
+      case 38: // LWR
+        cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[1][cacheAddr&3])|(pseudo.CstrMem.read.w(cacheAddr&~3)>>shift[1][cacheAddr&3]);
+        return;
+
       case 40: // SB
         pseudo.CstrMem.write.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>16)&0x1f)]);
         return;
@@ -701,8 +733,18 @@ pseudo.CstrR3ka = (function() {
         pseudo.CstrMem.write.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>16)&0x1f)]);
         return;
 
+      case 42: // SWL
+        cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        pseudo.CstrMem.write.w(cacheAddr&~3, (r[((code>>>16)&0x1f)]>>shift[2][cacheAddr&3])|(pseudo.CstrMem.read.w(cacheAddr&~3)&mask[2][cacheAddr&3]));
+        return;
+
       case 43: // SW
         pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>16)&0x1f)]);
+        return;
+
+      case 46: // SWR
+        cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        pseudo.CstrMem.write.w(cacheAddr&~3, (r[((code>>>16)&0x1f)]<<shift[3][cacheAddr&3])|(pseudo.CstrMem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
         return;
     }
     pseudo.CstrMain.error('pseudo / Basic CPU instruction -> '+((code>>>26)&0x3f));
@@ -821,9 +863,15 @@ pseudo.CstrMain = (function() {
 
 
 
+
+
+
+
+
 pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
+  let modeDMA;
 
   const sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
@@ -885,7 +933,8 @@ pseudo.CstrGraphics = (function() {
     },
 
     reset() {
-      status = 0x14802000;
+      status  = 0x14802000;
+      modeDMA = 0;
 
       // Command Pipe
       pipe.data.fill(0);
@@ -906,7 +955,20 @@ pseudo.CstrGraphics = (function() {
               status = 0x14802000;
               return;
 
+            case 0x03:
+              return;
+
+            case 0x04:
+              modeDMA = data&3;
+              return;
+
             case 0x08:
+              return;
+
+            
+            case 0x05:
+            case 0x06:
+            case 0x07:
               return;
           }
           pseudo.CstrMain.error('pseudo / GPU write status -> '+('0x'+((data>>>24)&0xff>>>0).toString(16)));

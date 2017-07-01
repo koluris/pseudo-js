@@ -3,13 +3,13 @@
 #define hi r[34]
 
 // Inline functions for speedup
-#define mult(a, b)\
-  const res = a * b;\
+#define opcodeMult(a, b)\
+  cacheAddr = a * b;\
   \
-  lo = res&0xffffffff;\
-  hi = (res/power32) | 0
+  lo = cacheAddr&0xffffffff;\
+  hi = (cacheAddr/power32) | 0
 
-#define div(a, b)\
+#define opcodeDiv(a, b)\
   if (b) {\
     lo = a / b;\
     hi = a % b;\
@@ -34,8 +34,22 @@ pseudo.CstrR3ka = (function() {
   let r; // Base
   let copr; // Coprocessor
   let opcodeCount;
-  let power32; // Cache for expensive calculation
+  let cacheAddr, power32; // Cache for expensive calculation
   let output;
+
+  const mask = [
+    [ 0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000 ],
+    [ 0x00000000, 0xff000000, 0xffff0000, 0xffffff00 ],
+    [ 0xffffff00, 0xffff0000, 0xff000000, 0x00000000 ],
+    [ 0x00000000, 0x000000ff, 0x0000ffff, 0x00ffffff ],
+  ];
+
+  const shift = [
+    [ 0x18, 0x10, 0x08, 0x00 ],
+    [ 0x00, 0x08, 0x10, 0x18 ],
+    [ 0x18, 0x10, 0x08, 0x00 ],
+    [ 0x00, 0x08, 0x10, 0x18 ],
+  ];
 
   // Base CPU stepper
   function step(inslot) {
@@ -103,15 +117,16 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 25: // MULTU
-            mult(r[rs], r[rt]);
+            opcodeMult(r[rs], r[rt]);
             return;
 
           case 26: // DIV
-            div(s_ext_w(r[rs]), s_ext_w(r[rt]));
+            //opcodeDiv(s_ext_w(r[rs]), s_ext_w(r[rt]));
+            opcodeDiv(SIGN_EXT_32(r[rs]), SIGN_EXT_32(r[rt]));
             return;
 
           case 27: // DIVU
-            div(r[rs], r[rt]);
+            opcodeDiv(r[rs], r[rt]);
             return;
 
           case 32: // ADD
@@ -132,6 +147,10 @@ pseudo.CstrR3ka = (function() {
 
           case 37: // OR
             r[rd] = r[rs] | r[rt];
+            return;
+
+          case 38: // XOR
+            r[rd] = r[rs] ^ r[rt];
             return;
 
           case 39: // NOR
@@ -252,6 +271,11 @@ pseudo.CstrR3ka = (function() {
         r[rt] = s_ext_h(mem.read.h(ob));
         return;
 
+      case 34: // LWL
+        cacheAddr = ob;
+        r[rt] = (r[rt]&mask[0][cacheAddr&3])|(mem.read.w(cacheAddr&~3)<<shift[0][cacheAddr&3]);
+        return;
+
       case 35: // LW
         r[rt] = mem.read.w(ob);
         return;
@@ -264,6 +288,11 @@ pseudo.CstrR3ka = (function() {
         r[rt] = mem.read.h(ob);
         return;
 
+      case 38: // LWR
+        cacheAddr = ob;
+        r[rt] = (r[rt]&mask[1][cacheAddr&3])|(mem.read.w(cacheAddr&~3)>>shift[1][cacheAddr&3]);
+        return;
+
       case 40: // SB
         mem.write.b(ob, r[rt]);
         return;
@@ -272,8 +301,18 @@ pseudo.CstrR3ka = (function() {
         mem.write.h(ob, r[rt]);
         return;
 
+      case 42: // SWL
+        cacheAddr = ob;
+        mem.write.w(cacheAddr&~3, (r[rt]>>shift[2][cacheAddr&3])|(mem.read.w(cacheAddr&~3)&mask[2][cacheAddr&3]));
+        return;
+
       case 43: // SW
         mem.write.w(ob, r[rt]);
+        return;
+
+      case 46: // SWR
+        cacheAddr = ob;
+        mem.write.w(cacheAddr&~3, (r[rt]<<shift[3][cacheAddr&3])|(mem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
         return;
     }
     psx.error('pseudo / Basic CPU instruction -> '+opcode);
