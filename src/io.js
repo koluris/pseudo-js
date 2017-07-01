@@ -1,5 +1,17 @@
 #define hwr mem._hwr
 
+#define data32\
+  directMemW(mem._hwr.uw, 0x1070)
+
+#define mask32\
+  directMemW(mem._hwr.uw, 0x1074)
+
+#define data16\
+  directMemH(mem._hwr.uh, 0x1070)
+
+#define mask16\
+  directMemH(mem._hwr.uh, 0x1074)
+
 pseudo.CstrHardware = (function() {
   // Exposed class functions/variables
   return {
@@ -8,6 +20,15 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
 
         if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          directMemW(hwr.uw, addr) = data;
+          return;
+        }
+
+        if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
+          if (addr&8) {
+            dma.execute(addr, data);
+            return;
+          }
           directMemW(hwr.uw, addr) = data;
           return;
         }
@@ -23,6 +44,15 @@ pseudo.CstrHardware = (function() {
         }
 
         switch(addr) {
+          case 0x1070:
+            data32 &= data&mask32;
+            return;
+
+          case 0x10f4:
+            icr = (icr&(~((data&0xff000000)|0xffffff)))|(data&0xffffff);
+            return;
+
+          /* unused */
           case 0x1000:
           case 0x1004:
           case 0x1008:
@@ -33,14 +63,8 @@ pseudo.CstrHardware = (function() {
           case 0x101c:
           case 0x1020:
           case 0x1060:
-          case 0x1070: //
-          case 0x1074: //
-          case 0x10a8: // DMA?
-          case 0x10e0:
-          case 0x10e4:
-          case 0x10e8: // DMA?
+          case 0x1074:
           case 0x10f0:
-          case 0x10f4:
             directMemW(hwr.uw, addr) = data;
             return;
         }
@@ -61,6 +85,7 @@ pseudo.CstrHardware = (function() {
         }
 
         switch(addr) {
+          /* unused */
           case 0x1074:
             directMemH(hwr.uh, addr) = data;
             return;
@@ -72,6 +97,7 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
         
         switch(addr) {
+          /* unused */
           case 0x2041: // DIP Switch?
             directMemB(hwr.ub, addr) = data;
             return;
@@ -84,13 +110,17 @@ pseudo.CstrHardware = (function() {
       w(addr) {
         addr&=0xffff;
 
+        if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
+          return directMemW(hwr.uw, addr);
+        }
+
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
           return vs.scopeR(addr);
         }
 
         switch(addr) {
+          /* unused */
           case 0x1074:
-          case 0x10e8:
           case 0x10f0:
           case 0x10f4:
             return directMemW(hwr.uw, addr);
@@ -106,6 +136,7 @@ pseudo.CstrHardware = (function() {
         }
 
         switch(addr) {
+          /* unused */
           case 0x1074:
             return directMemH(hwr.uh, addr);
         }

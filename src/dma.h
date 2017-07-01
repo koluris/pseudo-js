@@ -1,0 +1,2 @@
+#define dma\
+  pseudo.CstrDMA

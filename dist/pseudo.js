@@ -103,6 +103,8 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
 pseudo.CstrCounters = (function() {
   var timer;
   var vbk;
@@ -132,6 +134,42 @@ pseudo.CstrCounters = (function() {
 })();
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+pseudo.CstrDMA = (function() {
+  return {
+    execute(addr, data) {
+      var chan = ((addr&0xf0)>>>4)-8;
+
+      console.dir(chan);
+    }
+  };
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrHardware = (function() {
   // Exposed class functions/variables
   return {
@@ -140,6 +178,15 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
 
         if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
+          return;
+        }
+
+        if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
+          if (addr&8) {
+            pseudo.CstrDMA.execute(addr, data);
+            return;
+          }
           pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
           return;
         }
@@ -155,6 +202,15 @@ pseudo.CstrHardware = (function() {
         }
 
         switch(addr) {
+          case 0x1070:
+            pseudo.CstrMem._hwr.uw[((0x1070)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] &= data&pseudo.CstrMem._hwr.uw[((0x1074)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
+            return;
+
+          case 0x10f4:
+            pseudo.CstrMem._hwr.uw[((0x10f4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = (pseudo.CstrMem._hwr.uw[((0x10f4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&(~((data&0xff000000)|0xffffff)))|(data&0xffffff);
+            return;
+
+          
           case 0x1000:
           case 0x1004:
           case 0x1008:
@@ -165,14 +221,8 @@ pseudo.CstrHardware = (function() {
           case 0x101c:
           case 0x1020:
           case 0x1060:
-          case 0x1070: //
-          case 0x1074: //
-          case 0x10a8: // DMA?
-          case 0x10e0:
-          case 0x10e4:
-          case 0x10e8: // DMA?
+          case 0x1074:
           case 0x10f0:
-          case 0x10f4:
             pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
             return;
         }
@@ -193,6 +243,7 @@ pseudo.CstrHardware = (function() {
         }
 
         switch(addr) {
+          
           case 0x1074:
             pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
             return;
@@ -204,6 +255,7 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
         
         switch(addr) {
+          
           case 0x2041: // DIP Switch?
             pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0] = data;
             return;
@@ -216,13 +268,17 @@ pseudo.CstrHardware = (function() {
       w(addr) {
         addr&=0xffff;
 
+        if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
+          return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
+        }
+
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
           return pseudo.CstrGraphics.scopeR(addr);
         }
 
         switch(addr) {
+          
           case 0x1074:
-          case 0x10e8:
           case 0x10f0:
           case 0x10f4:
             return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
@@ -238,6 +294,7 @@ pseudo.CstrHardware = (function() {
         }
 
         switch(addr) {
+          
           case 0x1074:
             return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
         }
