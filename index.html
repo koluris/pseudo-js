@@ -7,6 +7,12 @@
   <STYLE>
     @import url('css/normalize.css');
 
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #666; 
+    }
     * {
       box-sizing: border-box;
     }
@@ -71,21 +77,10 @@
     #homebrew > .item:nth-child(even) {
       background: #f0f0f0;
     }
-    /*#homebrew > .item:not(:last-child) {
-      border-bottom: 1px solid rgba(0, 0, 0, .1);
-    }*/
     #homebrew > .item:hover {
       color: #f46823;
       text-decoration: underline;
     }
-
-    ::-webkit-scrollbar {
-  width: 5px;
-}
- 
-::-webkit-scrollbar-thumb {
-  background: #666; 
-}
   </STYLE>
 </head>
 <BODY>
