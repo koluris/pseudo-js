@@ -184,7 +184,7 @@ pseudo.CstrInterrupts = (function() {
     },
 
     update() {
-      for (var i=0; i<1; i++) {
+      for (let i=0; i<1; i++) {
         if (ints[i].queued) {
           if (ints[i].queued++ === ints[i].dest) {
             pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] |= (1<<ints[i].code);

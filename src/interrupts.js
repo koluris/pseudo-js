@@ -12,7 +12,7 @@ pseudo.CstrInterrupts = (function() {
     },
 
     update() {
-      for (var i=0; i<1; i++) {
+      for (let i=0; i<1; i++) {
         if (ints[i].queued) {
           if (ints[i].queued++ === ints[i].dest) {
             data16 |= (1<<ints[i].code);
