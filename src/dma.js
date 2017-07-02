@@ -16,7 +16,7 @@
 pseudo.CstrDMA = (function() {
   return {
     execute(addr, data) {
-      var chan = ((addr>>>4)&0xf) - 8;
+      const chan = ((addr>>>4)&0xf) - 8;
 
       console.dir(chan);
     }

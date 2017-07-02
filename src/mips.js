@@ -25,7 +25,7 @@
 #define print()\
   if (pc === 0xb0) {\
     if (r[9] === 59 || r[9] === 61) {\
-      var char = Chars.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');\
+      const char = Chars.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');\
       output.append(char.toUpperCase());\
     }\
   }

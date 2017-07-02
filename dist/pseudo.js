@@ -120,8 +120,8 @@ const pseudo = window.pseudo || {};
 
 
 pseudo.CstrCounters = (function() {
-  var timer;
-  var vbk;
+  let timer;
+  let vbk;
 
   // Exposed class functions/variables
   return {
@@ -164,7 +164,7 @@ pseudo.CstrCounters = (function() {
 pseudo.CstrDMA = (function() {
   return {
     execute(addr, data) {
-      var chan = ((addr>>>4)&0xf) - 8;
+      const chan = ((addr>>>4)&0xf) - 8;
 
       console.dir(chan);
     }
@@ -560,7 +560,7 @@ pseudo.CstrR3ka = (function() {
 
           case 8: // JR
             branch(r[((code>>>21)&0x1f)]);
-            if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { var char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>'); output.append(char.toUpperCase()); } };
+            if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { const char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>'); output.append(char.toUpperCase()); } };
             return;
 
           case 9: // JALR

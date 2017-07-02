@@ -11,8 +11,8 @@
   0xffff
 
 pseudo.CstrCounters = (function() {
-  var timer;
-  var vbk;
+  let timer;
+  let vbk;
 
   // Exposed class functions/variables
   return {
