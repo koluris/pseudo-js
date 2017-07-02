@@ -1,6 +1,9 @@
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
 
+#define GPU_DATA   0
+#define GPU_STATUS 4
+
 #define GPU_DMA_NONE     0
 #define GPU_DMA_UNKNOWN  1
 #define GPU_DMA_MEM2VRAM 2
@@ -10,6 +13,11 @@ pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
   let modeDMA;
+  let screen;
+
+  const resMode = [
+    256, 320, 512, 640, 368, 384, 512, 640
+  ];
 
   const sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
@@ -61,13 +69,25 @@ pseudo.CstrGraphics = (function() {
     }
   }
 
+  function resize(res) {
+    if (res.h > 0 && res.v > 0) {
+      screen.width = res.h;
+      screen.hei   = res.v;
+    
+      $('#resolution').text(res.h+' x '+res.v);
+    }
+  }
+
   // Exposed class functions/variables
   return {
-    awake() {
+    awake(element) {
       // Command Pipe
       pipe = {
         data: new UintWcap(100)
       };
+
+      // Canvas
+      screen = element;
     },
 
     reset() {
@@ -83,11 +103,11 @@ pseudo.CstrGraphics = (function() {
 
     scopeW(addr, data) {
       switch(addr&0xf) {
-        case 0: // Data
+        case GPU_DATA:
           write.data(data);
           return;
 
-        case 4: // Status
+        case GPU_STATUS:
           switch (GPU_COMMAND(data)) {
             case 0x00:
               status = 0x14802000;
@@ -101,6 +121,10 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x08:
+              resize({
+                h: resMode[(data&3)|((data&0x40)>>>4)],
+                v: (data&4) ? 480 : 240
+              });
               return;
 
             /* unused */
@@ -109,21 +133,19 @@ pseudo.CstrGraphics = (function() {
             case 0x07:
               return;
           }
-          psx.error('pseudo / GPU write status -> '+hex((data>>>24)&0xff));
+          psx.error('pseudo / GPU write status -> '+hex(GPU_COMMAND(addr)));
           return;
       }
-      psx.error('pseudo / GPU write '+hex(addr)+' <- '+hex(data));
     },
 
     scopeR(addr) {
       switch(addr&0xf) {
-        case 0: // Data
+        case GPU_DATA:
           return 0; // Nope: data
 
-        case 4: // Status
+        case GPU_STATUS:
           return status;
       }
-      psx.error('pseudo / GPU read '+hex(addr));
     }
   };
 })();

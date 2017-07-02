@@ -325,6 +325,7 @@ pseudo.CstrR3ka = (function() {
     rootcnt.update();
     interrupts.update();
 
+    // Exceptions
     if (data32&mask32) {
       if ((copr[12]&0x401) === 0x401) {
         exception(0x400, false);

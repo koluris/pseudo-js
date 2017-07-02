@@ -14,7 +14,7 @@ pseudo.CstrMain = (function() {
   return {
     awake() {
       $(function() {
-        vs.awake();
+        vs.awake($('#screen'));
         rootcnt.awake();
         r3ka.awake($('#output'));
 

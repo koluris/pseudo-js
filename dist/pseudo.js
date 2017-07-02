@@ -802,6 +802,7 @@ pseudo.CstrR3ka = (function() {
     pseudo.CstrCounters.update();
     pseudo.CstrInterrupts.update();
 
+    // Exceptions
     if (pseudo.CstrMem._hwr.uw[((0x1070)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&pseudo.CstrMem._hwr.uw[((0x1074)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]) {
       if ((copr[12]&0x401) === 0x401) {
         copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80;
@@ -876,7 +877,7 @@ pseudo.CstrMain = (function() {
   return {
     awake() {
       $(function() {
-        pseudo.CstrGraphics.awake();
+        pseudo.CstrGraphics.awake($('#screen'));
         pseudo.CstrCounters.awake();
         pseudo.CstrR3ka.awake($('#output'));
 
@@ -916,10 +917,18 @@ pseudo.CstrMain = (function() {
 
 
 
+
+
+
 pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
   let modeDMA;
+  let screen;
+
+  const resMode = [
+    256, 320, 512, 640, 368, 384, 512, 640
+  ];
 
   const sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
@@ -971,13 +980,25 @@ pseudo.CstrGraphics = (function() {
     }
   }
 
+  function resize(res) {
+    if (res.h > 0 && res.v > 0) {
+      screen.width = res.h;
+      screen.hei   = res.v;
+    
+      $('#resolution').text(res.h+' x '+res.v);
+    }
+  }
+
   // Exposed class functions/variables
   return {
-    awake() {
+    awake(element) {
       // Command Pipe
       pipe = {
         data: new Uint32Array(100)
       };
+
+      // Canvas
+      screen = element;
     },
 
     reset() {
@@ -993,11 +1014,11 @@ pseudo.CstrGraphics = (function() {
 
     scopeW(addr, data) {
       switch(addr&0xf) {
-        case 0: // Data
+        case 0:
           write.data(data);
           return;
 
-        case 4: // Status
+        case 4:
           switch ((data>>>24)&0xff) {
             case 0x00:
               status = 0x14802000;
@@ -1011,6 +1032,10 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x08:
+              resize({
+                h: resMode[(data&3)|((data&0x40)>>>4)],
+                v: (data&4) ? 480 : 240
+              });
               return;
 
             
@@ -1019,21 +1044,19 @@ pseudo.CstrGraphics = (function() {
             case 0x07:
               return;
           }
-          pseudo.CstrMain.error('pseudo / GPU write status -> '+('0x'+((data>>>24)&0xff>>>0).toString(16)));
+          pseudo.CstrMain.error('pseudo / GPU write status -> '+('0x'+((addr>>>24)&0xff>>>0).toString(16)));
           return;
       }
-      pseudo.CstrMain.error('pseudo / GPU write '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
     },
 
     scopeR(addr) {
       switch(addr&0xf) {
-        case 0: // Data
+        case 0:
           return 0; // Nope: data
 
-        case 4: // Status
+        case 4:
           return status;
       }
-      pseudo.CstrMain.error('pseudo / GPU read '+('0x'+(addr>>>0).toString(16)));
     }
   };
 })();
