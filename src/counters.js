@@ -31,8 +31,8 @@ pseudo.CstrCounters = (function() {
     },
 
     update() {
-      if ((vbk += PSX_CYCLE) === PSX_VSYNC) {
-        vbk = 0;
+      if ((vbk += PSX_CYCLE) === PSX_VSYNC) { vbk = 0;
+        interrupts.set(IRQ_VSYNC);
       }
     }
   };

@@ -105,6 +105,20 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrCounters = (function() {
   var timer;
   var vbk;
@@ -126,8 +140,8 @@ pseudo.CstrCounters = (function() {
     },
 
     update() {
-      if ((vbk += 64) === 33868800/60) {
-        vbk = 0;
+      if ((vbk += 64) === 33868800/60) { vbk = 0;
+        pseudo.CstrInterrupts.set(0);
       }
     }
   };
@@ -156,18 +170,36 @@ pseudo.CstrDMA = (function() {
     }
   };
 })();
+pseudo.CstrInterrupts = (function() {
+  const ints = [{
+    code: 0,
+    dest: 1
+  }];
 
+  return {
+    reset() {
+      for (let i=0; i<1; i++) {
+        ints[i].queued = 0;
+      }
+    },
 
+    update() {
+      for (var i=0; i<1; i++) {
+        if (ints[i].queued) {
+          if (ints[i].queued++ === ints[i].dest) {
+            pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] |= (1<<ints[i].code);
+            ints[i].queued = 0;
+            break;
+          }
+        }
+      }
+    },
 
-
-
-
-
-
-
-
-
-
+    set(code) {
+      ints[code].queued = 1;
+    }
+  };
+})();
 
 
 pseudo.CstrHardware = (function() {
@@ -243,6 +275,10 @@ pseudo.CstrHardware = (function() {
         }
 
         switch(addr) {
+          case 0x1070:
+            pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] &= data&pseudo.CstrMem._hwr.uh[((0x1074)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
+            return;
+
           
           case 0x1074:
             pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
@@ -282,6 +318,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           
+          case 0x1070:
           case 0x1074:
           case 0x10f0:
           case 0x10f4:
@@ -299,6 +336,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           
+          case 0x1070:
           case 0x1074:
             return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
         }
@@ -307,6 +345,9 @@ pseudo.CstrHardware = (function() {
     }
   };
 })();
+
+
+
 
 
 
@@ -704,7 +745,7 @@ pseudo.CstrR3ka = (function() {
 
       case 34: // LWL
         cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[0][cacheAddr&3])|(pseudo.CstrMem.read.w(cacheAddr&~3)<<shift[0][cacheAddr&3]);
+        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[0][cacheAddr&3]) | (pseudo.CstrMem.read.w(cacheAddr&~3)<<shift[0][cacheAddr&3]);
         return;
 
       case 35: // LW
@@ -721,7 +762,7 @@ pseudo.CstrR3ka = (function() {
 
       case 38: // LWR
         cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[1][cacheAddr&3])|(pseudo.CstrMem.read.w(cacheAddr&~3)>>shift[1][cacheAddr&3]);
+        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[1][cacheAddr&3]) | (pseudo.CstrMem.read.w(cacheAddr&~3)>>shift[1][cacheAddr&3]);
         return;
 
       case 40: // SB
@@ -734,7 +775,7 @@ pseudo.CstrR3ka = (function() {
 
       case 42: // SWL
         cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        pseudo.CstrMem.write.w(cacheAddr&~3, (r[((code>>>16)&0x1f)]>>shift[2][cacheAddr&3])|(pseudo.CstrMem.read.w(cacheAddr&~3)&mask[2][cacheAddr&3]));
+        pseudo.CstrMem.write.w(cacheAddr&~3, (r[((code>>>16)&0x1f)]>>shift[2][cacheAddr&3]) | (pseudo.CstrMem.read.w(cacheAddr&~3)&mask[2][cacheAddr&3]));
         return;
 
       case 43: // SW
@@ -743,7 +784,7 @@ pseudo.CstrR3ka = (function() {
 
       case 46: // SWR
         cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        pseudo.CstrMem.write.w(cacheAddr&~3, (r[((code>>>16)&0x1f)]<<shift[3][cacheAddr&3])|(pseudo.CstrMem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
+        pseudo.CstrMem.write.w(cacheAddr&~3, (r[((code>>>16)&0x1f)]<<shift[3][cacheAddr&3]) | (pseudo.CstrMem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
         return;
     }
     pseudo.CstrMain.error('pseudo / Basic CPU instruction -> '+((code>>>26)&0x3f));
@@ -754,8 +795,15 @@ pseudo.CstrR3ka = (function() {
     step(true);
     r[32] = addr;
 
-    // Rootcounters, interrupts
+    // Rootcounters, pseudo.CstrInterrupts
     pseudo.CstrCounters.update();
+    pseudo.CstrInterrupts.update();
+
+    if (pseudo.CstrMem._hwr.uw[((0x1070)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&pseudo.CstrMem._hwr.uw[((0x1074)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]) {
+      if ((copr[12]&0x401) === 0x401) {
+        copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80;
+      }
+    }
   }
 
   // Exposed class functions/variables
@@ -780,16 +828,13 @@ pseudo.CstrR3ka = (function() {
       opcodeCount = 0;
 
       // Bootstrap
-      //for (let i=0; i<50; i++) { // Benchmark
       const start = performance.now();
-      //r[32] = 0xbfc00000;
 
       while (r[32] !== 0x80030000) {
         step(false);
       }
       const delta = parseFloat(performance.now()-start).toFixed(2);
       pseudo.CstrR3ka.consoleWrite('PSeudo / Bootstrap completed in '+delta+' ms', true);
-      //}
     },
 
     run() {
@@ -828,9 +873,9 @@ pseudo.CstrMain = (function() {
   return {
     awake() {
       $(function() {
-        pseudo.CstrGraphics     .awake();
+        pseudo.CstrGraphics.awake();
         pseudo.CstrCounters.awake();
-        pseudo.CstrR3ka   .awake($('#output'));
+        pseudo.CstrR3ka.awake($('#output'));
 
         file('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
@@ -845,10 +890,11 @@ pseudo.CstrMain = (function() {
 
     reset() {
       // Reset all emulator components
-      pseudo.CstrGraphics     .reset();
-      pseudo.CstrMem    .reset();
+      pseudo.CstrGraphics.reset();
+      pseudo.CstrMem.reset();
       pseudo.CstrCounters.reset();
-      pseudo.CstrR3ka   .reset();
+      pseudo.CstrInterrupts.reset();
+      pseudo.CstrR3ka.reset();
 
       // Run emulator
       pseudo.CstrR3ka.run();

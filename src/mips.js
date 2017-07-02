@@ -271,7 +271,7 @@ pseudo.CstrR3ka = (function() {
 
       case 34: // LWL
         cacheAddr = ob;
-        r[rt] = (r[rt]&mask[0][cacheAddr&3])|(mem.read.w(cacheAddr&~3)<<shift[0][cacheAddr&3]);
+        r[rt] = (r[rt]&mask[0][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)<<shift[0][cacheAddr&3]);
         return;
 
       case 35: // LW
@@ -288,7 +288,7 @@ pseudo.CstrR3ka = (function() {
 
       case 38: // LWR
         cacheAddr = ob;
-        r[rt] = (r[rt]&mask[1][cacheAddr&3])|(mem.read.w(cacheAddr&~3)>>shift[1][cacheAddr&3]);
+        r[rt] = (r[rt]&mask[1][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)>>shift[1][cacheAddr&3]);
         return;
 
       case 40: // SB
@@ -301,7 +301,7 @@ pseudo.CstrR3ka = (function() {
 
       case 42: // SWL
         cacheAddr = ob;
-        mem.write.w(cacheAddr&~3, (r[rt]>>shift[2][cacheAddr&3])|(mem.read.w(cacheAddr&~3)&mask[2][cacheAddr&3]));
+        mem.write.w(cacheAddr&~3, (r[rt]>>shift[2][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)&mask[2][cacheAddr&3]));
         return;
 
       case 43: // SW
@@ -310,7 +310,7 @@ pseudo.CstrR3ka = (function() {
 
       case 46: // SWR
         cacheAddr = ob;
-        mem.write.w(cacheAddr&~3, (r[rt]<<shift[3][cacheAddr&3])|(mem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
+        mem.write.w(cacheAddr&~3, (r[rt]<<shift[3][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
         return;
     }
     psx.error('pseudo / Basic CPU instruction -> '+opcode);
@@ -323,6 +323,13 @@ pseudo.CstrR3ka = (function() {
 
     // Rootcounters, interrupts
     rootcnt.update();
+    interrupts.update();
+
+    if (data32&mask32) {
+      if ((copr[12]&0x401) === 0x401) {
+        exception(0x400, false);
+      }
+    }
   }
 
   // Exposed class functions/variables
@@ -347,16 +354,13 @@ pseudo.CstrR3ka = (function() {
       opcodeCount = 0;
 
       // Bootstrap
-      //for (let i=0; i<50; i++) { // Benchmark
       const start = performance.now();
-      //pc = 0xbfc00000;
 
       while (pc !== 0x80030000) {
         step(false);
       }
       const delta = parseFloat(performance.now()-start).toFixed(2);
       r3ka.consoleWrite('PSeudo / Bootstrap completed in '+delta+' ms', true);
-      //}
     },
 
     run() {

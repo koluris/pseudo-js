@@ -2,6 +2,9 @@
 #define rom mem._rom
 #define hwr mem._hwr
 
+#define MSB(x)\
+  x>>>24
+
 pseudo.CstrMem = (function() {
   // Exposed class functions/variables
   return {
@@ -17,7 +20,7 @@ pseudo.CstrMem = (function() {
 
     write: {
       w(addr, data) {
-        switch(addr>>>24) {
+        switch(MSB(addr)) {
           case 0x00: // Base
           case 0x80: // Mirror
           case 0xa0: // Mirror
@@ -38,7 +41,7 @@ pseudo.CstrMem = (function() {
       },
 
       h(addr, data) {
-        switch(addr>>>24) {
+        switch(MSB(addr)) {
           case 0x00: // Base
           case 0x80: // Mirror
             directMemH(ram.uh, addr) = data;
@@ -52,7 +55,7 @@ pseudo.CstrMem = (function() {
       },
 
       b(addr, data) {
-        switch(addr>>>24) {
+        switch(MSB(addr)) {
           case 0x00: // Base
           case 0x80: // Mirror
           case 0xa0: // Mirror
@@ -69,7 +72,7 @@ pseudo.CstrMem = (function() {
 
     read: {
       w(addr) {
-        switch(addr>>>24) {
+        switch(MSB(addr)) {
           case 0x00: // Base
           case 0x80: // Mirror
           case 0xa0: // Mirror
@@ -86,7 +89,7 @@ pseudo.CstrMem = (function() {
       },
 
       h(addr) {
-        switch(addr>>>24) {
+        switch(MSB(addr)) {
           case 0x80: // Mirror
             return directMemH(ram.uh, addr);
 
@@ -98,7 +101,7 @@ pseudo.CstrMem = (function() {
       },
 
       b(addr) {
-        switch(addr>>>24) {
+        switch(MSB(addr)) {
           case 0x00: // Base
           case 0x80: // Mirror
             return directMemB(ram.ub, addr);

@@ -1,17 +1,5 @@
 #define hwr mem._hwr
 
-#define data32\
-  directMemW(mem._hwr.uw, 0x1070)
-
-#define mask32\
-  directMemW(mem._hwr.uw, 0x1074)
-
-#define data16\
-  directMemH(mem._hwr.uh, 0x1070)
-
-#define mask16\
-  directMemH(mem._hwr.uh, 0x1074)
-
 pseudo.CstrHardware = (function() {
   // Exposed class functions/variables
   return {
@@ -85,6 +73,10 @@ pseudo.CstrHardware = (function() {
         }
 
         switch(addr) {
+          case 0x1070:
+            data16 &= data&mask16;
+            return;
+
           /* unused */
           case 0x1074:
             directMemH(hwr.uh, addr) = data;
@@ -124,6 +116,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           /* unused */
+          case 0x1070:
           case 0x1074:
           case 0x10f0:
           case 0x10f4:
@@ -141,6 +134,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           /* unused */
+          case 0x1070:
           case 0x1074:
             return directMemH(hwr.uh, addr);
         }
