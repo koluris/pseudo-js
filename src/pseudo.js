@@ -23,7 +23,7 @@ pseudo.CstrMain = (function() {
         file('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
           rom.ub.set(new UintBcap(resp));
-          r3ka.consoleWrite('PSeudo / BIOS file has been written to ROM', false);
+          r3ka.consoleWrite('BIOS file has been written to ROM', false);
 
           psx.reset();
         });
@@ -43,7 +43,7 @@ pseudo.CstrMain = (function() {
     },
 
     error(out) {
-      throw new Error(out);
+      throw new Error('PSeudo / '+out);
     }
   };
 })();

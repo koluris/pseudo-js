@@ -86,7 +86,7 @@ pseudo.CstrBus = (function() {
           case 6: mem.executeDMA(addr); break; // OTC
 
           default:
-            psx.error('DMA chan -> '+chan);
+            psx.error('DMA Channel '+chan);
             break;
         }
         chcr = data&(~(0x01000000));

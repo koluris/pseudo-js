@@ -37,7 +37,7 @@ pseudo.CstrMem = (function() {
         if (addr === 0xfffe0130) { // Mem Access
           return;
         }
-        psx.error('pseudo / Mem write w '+hex(addr)+' <- '+hex(data));
+        psx.error('Mem Write w '+hex(addr)+' <- '+hex(data));
       },
 
       h(addr, data) {
@@ -51,7 +51,7 @@ pseudo.CstrMem = (function() {
             io.write.h(addr, data);
             return;
         }
-        psx.error('pseudo / Mem write h '+hex(addr)+' <- '+hex(data));
+        psx.error('Mem Write h '+hex(addr)+' <- '+hex(data));
       },
 
       b(addr, data) {
@@ -66,7 +66,7 @@ pseudo.CstrMem = (function() {
             io.write.b(addr, data);
             return;
         }
-        psx.error('pseudo / Mem write b '+hex(addr)+' <- '+hex(data));
+        psx.error('Mem Write b '+hex(addr)+' <- '+hex(data));
       }
     },
 
@@ -84,7 +84,7 @@ pseudo.CstrMem = (function() {
           case 0x1f: // Hardware
             return io.read.w(addr);
         }
-        psx.error('pseudo / Mem read w '+hex(addr));
+        psx.error('Mem Read w '+hex(addr));
         return 0;
       },
 
@@ -96,7 +96,7 @@ pseudo.CstrMem = (function() {
           case 0x1f: // Hardware
             return io.read.h(addr);
         }
-        psx.error('pseudo / Mem read h '+hex(addr));
+        psx.error('Mem Read h '+hex(addr));
         return 0;
       },
 
@@ -113,7 +113,7 @@ pseudo.CstrMem = (function() {
         if (addr === 0x1f000084) { // PIO?
           return 0;
         }
-        psx.error('pseudo / Mem read b '+hex(addr));
+        psx.error('Mem Read b '+hex(addr));
         return 0;
       }
     },

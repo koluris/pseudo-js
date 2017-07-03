@@ -56,7 +56,7 @@ pseudo.CstrHardware = (function() {
             directMemW(hwr.uw, addr) = data;
             return;
         }
-        psx.error('pseudo / Hardware write w '+hex(addr)+' <- '+hex(data));
+        psx.error('Hardware Write w '+hex(addr)+' <- '+hex(data));
       },
 
       h(addr, data) {
@@ -82,7 +82,7 @@ pseudo.CstrHardware = (function() {
             directMemH(hwr.uh, addr) = data;
             return;
         }
-        psx.error('pseudo / Hardware write h '+hex(addr)+' <- '+hex(data));
+        psx.error('Hardware Write h '+hex(addr)+' <- '+hex(data));
       },
 
       b(addr, data) {
@@ -94,7 +94,7 @@ pseudo.CstrHardware = (function() {
             directMemB(hwr.ub, addr) = data;
             return;
         }
-        psx.error('pseudo / Hardware write b '+hex(addr)+' <- '+hex(data));
+        psx.error('Hardware Write b '+hex(addr)+' <- '+hex(data));
       }
     },
 
@@ -122,7 +122,7 @@ pseudo.CstrHardware = (function() {
           case 0x10f4:
             return directMemW(hwr.uw, addr);
         }
-        psx.error('pseudo / Hardware read w '+hex(addr));
+        psx.error('Hardware Read w '+hex(addr));
       },
 
       h(addr) {
@@ -138,7 +138,7 @@ pseudo.CstrHardware = (function() {
           case 0x1074:
             return directMemH(hwr.uh, addr);
         }
-        psx.error('pseudo / Hardware read h '+hex(addr));
+        psx.error('Hardware Read h '+hex(addr));
       }
     }
   };

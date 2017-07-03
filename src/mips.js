@@ -163,7 +163,7 @@ pseudo.CstrR3ka = (function() {
             r[rd] = r[rs] < r[rt];
             return;
         }
-        psx.error('pseudo / Special CPU instruction -> '+(code&0x3f));
+        psx.error('Special CPU instruction '+(code&0x3f));
         return;
 
       case 1: // REGIMM
@@ -180,7 +180,7 @@ pseudo.CstrR3ka = (function() {
             }
             return;
         }
-        psx.error('pseudo / Bcond CPU instruction -> '+rt);
+        psx.error('Bcond CPU instruction '+rt);
         return;
 
       case 2: // J
@@ -258,7 +258,7 @@ pseudo.CstrR3ka = (function() {
             copr[12] = (copr[12]&0xfffffff0)|((copr[12]>>>2)&0xf);
             return;
         }
-        psx.error('pseudo / Coprocessor 0 CPU instruction -> '+rs);
+        psx.error('Coprocessor 0 instruction '+rs);
         return;
 
       case 32: // LB
@@ -313,7 +313,7 @@ pseudo.CstrR3ka = (function() {
         mem.write.w(cacheAddr&~3, (r[rt]<<shift[3][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
         return;
     }
-    psx.error('pseudo / Basic CPU instruction -> '+opcode);
+    psx.error('Basic CPU instruction '+opcode);
   }
 
   function branch(addr) {
@@ -361,7 +361,7 @@ pseudo.CstrR3ka = (function() {
         step(false);
       }
       const delta = parseFloat(performance.now()-start).toFixed(2);
-      r3ka.consoleWrite('PSeudo / Bootstrap completed in '+delta+' ms', true);
+      r3ka.consoleWrite('Bootstrap completed in '+delta+' ms', true);
     },
 
     run() {
@@ -376,7 +376,7 @@ pseudo.CstrR3ka = (function() {
     },
 
     consoleWrite(out, space) {
-      output.append((space ? '<br/>' : ' ')+'<div class="pseudoText">'+out+'</div>'+(space ? '<br/>' : ' '));
+      output.append((space ? '<br/>' : ' ')+'<div class="pseudoText">PSeudo / '+out+'</div>'+(space ? '<br/>' : ' '));
     }
   };
 })();

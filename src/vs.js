@@ -64,7 +64,7 @@ pseudo.CstrGraphics = (function() {
         pipe.size = 0;
         pipe.row  = 0;
         
-        console.dir('pseudo / GPU render primitive');
+        console.dir('GPU Render Primitive '+hex(pipe.prim));
       }
     }
   }
@@ -133,7 +133,7 @@ pseudo.CstrGraphics = (function() {
             case 0x07:
               return;
           }
-          psx.error('pseudo / GPU write status -> '+hex(GPU_COMMAND(addr)));
+          psx.error('GPU Write Status '+hex(GPU_COMMAND(addr)));
           return;
       }
     },
@@ -161,7 +161,7 @@ pseudo.CstrGraphics = (function() {
         case 0x01000401:
           return;
       }
-      psx.error('GPU DMA case -> '+hex(chcr));
+      psx.error('GPU DMA '+hex(chcr));
     }
   };
 })();
