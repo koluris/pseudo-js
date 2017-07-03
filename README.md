@@ -3,6 +3,7 @@
 
 ## Completion
 Here's a list with the overall progress of the emulator, broken down in distinct hardware parts. Components with 0% progress are not listed.
+* `PSX-EXE Loader` -> 95%
 * `CPU Mips R3000A` -> 90%
 * `Mem IO` -> 75%
 * `DMA` -> 20%
