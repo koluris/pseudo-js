@@ -972,12 +972,11 @@ pseudo.CstrMain = (function() {
       else { // Homebrew run
         file(path, function(resp) {
           const header = new Uint32Array(resp, 0, 0x800);
-          const offset = header[2+4];
+          const offset = header[2+4]&(pseudo.CstrMem._ram.ub.byteLength-1); // Offset needs boundaries... huh?
           const size   = header[2+5];
 
           // Prepare pseudo.CstrMem
-          pseudo.CstrMem._ram.ub.set(new Uint8Array(resp, 0x800, size), offset&(pseudo.CstrMem._ram.ub.byteLength-1)); // Offset needs boundaries... huh?
-          //pseudo.CstrMem._ram.ub.set(exe.slice(0, size), offset&(pseudo.CstrMem._ram.ub.byteLength-1)); // Offset needs boundaries... huh?
+          pseudo.CstrMem._ram.ub.set(new Uint8Array(resp, 0x800, size), offset);
           
           // Prepare processor
           pseudo.CstrR3ka.exeHeader(header);
