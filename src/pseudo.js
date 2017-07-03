@@ -44,12 +44,12 @@ pseudo.CstrMain = (function() {
       else { // Homebrew run
         file(path, function(resp) {
           const header = new UintWcap(resp, 0, EXE_HEADER_SIZE);
-          const exe    = new UintBcap(resp, EXE_HEADER_SIZE);
           const offset = header[2+4];
           const size   = header[2+5];
 
           // Prepare mem
-          ram.ub.set(exe.slice(0, size), offset&(ram.ub.bLen-1)); // Offset needs boundaries... huh?
+          ram.ub.set(new UintBcap(resp, EXE_HEADER_SIZE, size), offset&(ram.ub.bLen-1)); // Offset needs boundaries... huh?
+          //ram.ub.set(exe.slice(0, size), offset&(ram.ub.bLen-1)); // Offset needs boundaries... huh?
           
           // Prepare processor
           r3ka.exeHeader(header);

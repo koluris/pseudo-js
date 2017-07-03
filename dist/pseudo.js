@@ -929,6 +929,8 @@ pseudo.CstrR3ka = (function() {
 
 
 
+
+
 pseudo.CstrMain = (function() {
   // Generic function for file read
   function file(path, fn) {
@@ -970,12 +972,12 @@ pseudo.CstrMain = (function() {
       else { // Homebrew run
         file(path, function(resp) {
           const header = new Uint32Array(resp, 0, 0x800);
-          const exe    = new Uint8Array(resp, 0x800);
           const offset = header[2+4];
           const size   = header[2+5];
 
           // Prepare pseudo.CstrMem
-          pseudo.CstrMem._ram.ub.set(exe.slice(0, size), offset&(pseudo.CstrMem._ram.ub.byteLength-1)); // Offset needs boundaries... huh?
+          pseudo.CstrMem._ram.ub.set(new Uint8Array(resp, 0x800, size), offset&(pseudo.CstrMem._ram.ub.byteLength-1)); // Offset needs boundaries... huh?
+          //pseudo.CstrMem._ram.ub.set(exe.slice(0, size), offset&(pseudo.CstrMem._ram.ub.byteLength-1)); // Offset needs boundaries... huh?
           
           // Prepare processor
           pseudo.CstrR3ka.exeHeader(header);
