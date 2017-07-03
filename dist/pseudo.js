@@ -125,18 +125,48 @@ pseudo.CstrBus = (function() {
   const interrupt = [{
     code: 0,
     dest: 1
+  }, {
+    code: 1,
+    dest: 1
+  }, {
+    code: 2,
+    dest: 4
+  }, {
+    code: 3,
+    dest: 1
+  }, {
+    code: 4,
+    dest: 1
+  }, {
+    code: 5,
+    dest: 1
+  }, {
+    code: 6,
+    dest: 1
+  }, {
+    code: 7,
+    dest: 8
+  }, {
+    code: 8,
+    dest: 8
+  }, {
+    code: 9,
+    dest: 1
+  }, {
+    code: 10,
+    dest: 1
   }];
 
   return {
     reset() {
       // Interrupts
-      for (let i=0; i<1; i++) {
+      for (let i=0; i<11; i++) {
         interrupt[i].queued = 0;
       }
     },
 
     interruptsUpdate() {
-      for (let i=0; i<1; i++) { // Turn it up to 11 :)
+      for (let i=0; i<11; i++) { // Turn it up to 11 :)
         var irq = interrupt[i];
         if (irq.queued) {
           if (irq.queued++ === irq.dest) {
@@ -154,7 +184,17 @@ pseudo.CstrBus = (function() {
 
     executeDMA(addr, data) {
       const chan = ((addr>>>4)&0xf) - 8;
-      console.dir(chan);
+
+      if (pseudo.CstrMem._hwr.uw[((0x10f0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&(8<<(chan*4))) { //GPU does not execute sometimes.
+        pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
+        console.dir(chan);
+        pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data&(~(0x01000000));
+
+        if (pseudo.CstrMem._hwr.uw[((0x10f4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&(1<<(16+chan))) {
+          pseudo.CstrMem._hwr.uw[((0x10f4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] |= 1<<(24+chan);
+          pseudo.CstrBus.interruptSet(3);
+        }
+      }
     }
   };
 })();

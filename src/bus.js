@@ -20,18 +20,48 @@ pseudo.CstrBus = (function() {
   const interrupt = [{
     code: IRQ_VSYNC,
     dest: 1
+  }, {
+    code: IRQ_GPU,
+    dest: 1
+  }, {
+    code: IRQ_CD,
+    dest: 4
+  }, {
+    code: IRQ_DMA,
+    dest: 1
+  }, {
+    code: IRQ_RTC0,
+    dest: 1
+  }, {
+    code: IRQ_RTC1,
+    dest: 1
+  }, {
+    code: IRQ_RTC2,
+    dest: 1
+  }, {
+    code: IRQ_SIO0,
+    dest: 8
+  }, {
+    code: IRQ_SIO1,
+    dest: 8
+  }, {
+    code: IRQ_SPU,
+    dest: 1
+  }, {
+    code: IRQ_PIO,
+    dest: 1
   }];
 
   return {
     reset() {
       // Interrupts
-      for (let i=0; i<1; i++) {
+      for (let i=0; i<11; i++) {
         interrupt[i].queued = IRQ_QUEUED_NO;
       }
     },
 
     interruptsUpdate() {
-      for (let i=0; i<1; i++) { // Turn it up to 11 :)
+      for (let i=0; i<11; i++) { // Turn it up to 11 :)
         var irq = interrupt[i];
         if (irq.queued) {
           if (irq.queued++ === irq.dest) {
@@ -49,7 +79,17 @@ pseudo.CstrBus = (function() {
 
     executeDMA(addr, data) {
       const chan = ((addr>>>4)&0xf) - 8;
-      console.dir(chan);
+
+      if (pcr&(8<<(chan*4))) { //GPU does not execute sometimes.
+        chcr = data;
+        console.dir(chan);
+        chcr = data&(~(0x01000000));
+
+        if (icr&(1<<(16+chan))) {
+          icr |= 1<<(24+chan);
+          bus.interruptSet(IRQ_DMA);
+        }
+      }
     }
   };
 })();
