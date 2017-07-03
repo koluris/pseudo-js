@@ -14,7 +14,7 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
           if (addr&8) {
-            dma.execute(addr, data);
+            bus.executeDMA(addr, data);
             return;
           }
           directMemW(hwr.uw, addr) = data;

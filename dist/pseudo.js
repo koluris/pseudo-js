@@ -119,6 +119,57 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+pseudo.CstrBus = (function() {
+  const interrupt = [{
+    code: 0,
+    dest: 1
+  }];
+
+  return {
+    reset() {
+      // Interrupts
+      for (let i=0; i<1; i++) {
+        interrupt[i].queued = 0;
+      }
+    },
+
+    interruptsUpdate() {
+      for (let i=0; i<1; i++) { // Turn it up to 11 :)
+        var irq = interrupt[i];
+        if (irq.queued) {
+          if (irq.queued++ === irq.dest) {
+            pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] |= (1<<irq.code);
+            irq.queued = 0;
+            break;
+          }
+        }
+      }
+    },
+
+    interruptSet(n) {
+      interrupt[n].queued = 1;
+    },
+
+    executeDMA(addr, data) {
+      const chan = ((addr>>>4)&0xf) - 8;
+      console.dir(chan);
+    }
+  };
+})();
+
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrCounters = (function() {
   let timer;
   let vbk;
@@ -141,65 +192,8 @@ pseudo.CstrCounters = (function() {
 
     update() {
       if ((vbk += 64) === 33868800/60) { vbk = 0;
-        pseudo.CstrInterrupts.set(0);
+        pseudo.CstrBus.interruptSet(0);
       }
-    }
-  };
-})();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-pseudo.CstrDMA = (function() {
-  return {
-    execute(addr, data) {
-      const chan = ((addr>>>4)&0xf) - 8;
-
-      console.dir(chan);
-    }
-  };
-})();
-
-
-
-pseudo.CstrInterrupts = (function() {
-  const ints = [{
-    code: 0,
-    dest: 1
-  }];
-
-  return {
-    reset() {
-      for (let i=0; i<1; i++) {
-        ints[i].queued = 0;
-      }
-    },
-
-    update() {
-      for (let i=0; i<1; i++) {
-        if (ints[i].queued) {
-          if (ints[i].queued++ === ints[i].dest) {
-            pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] |= (1<<ints[i].code);
-            ints[i].queued = 0;
-            break;
-          }
-        }
-      }
-    },
-
-    set(code) {
-      ints[code].queued = 1;
     }
   };
 })();
@@ -219,7 +213,7 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
           if (addr&8) {
-            pseudo.CstrDMA.execute(addr, data);
+            pseudo.CstrBus.executeDMA(addr, data);
             return;
           }
           pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
@@ -798,9 +792,9 @@ pseudo.CstrR3ka = (function() {
     step(true);
     r[32] = addr;
 
-    // Rootcounters, pseudo.CstrInterrupts
+    // Rootcounters, interrupts
     pseudo.CstrCounters.update();
-    pseudo.CstrInterrupts.update();
+    pseudo.CstrBus.interruptsUpdate();
 
     // Exceptions
     if (pseudo.CstrMem._hwr.uw[((0x1070)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&pseudo.CstrMem._hwr.uw[((0x1074)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]) {
@@ -877,9 +871,9 @@ pseudo.CstrMain = (function() {
   return {
     awake() {
       $(function() {
-        pseudo.CstrGraphics.awake($('#screen'));
+        pseudo.CstrGraphics     .awake($('#screen'));
         pseudo.CstrCounters.awake();
-        pseudo.CstrR3ka.awake($('#output'));
+        pseudo.CstrR3ka   .awake($('#output'));
 
         file('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
@@ -894,11 +888,11 @@ pseudo.CstrMain = (function() {
 
     reset() {
       // Reset all emulator components
-      pseudo.CstrGraphics.reset();
-      pseudo.CstrMem.reset();
+      pseudo.CstrGraphics     .reset();
+      pseudo.CstrMem    .reset();
       pseudo.CstrCounters.reset();
-      pseudo.CstrInterrupts.reset();
-      pseudo.CstrR3ka.reset();
+      pseudo.CstrBus    .reset();
+      pseudo.CstrR3ka   .reset();
 
       // Run emulator
       pseudo.CstrR3ka.run();

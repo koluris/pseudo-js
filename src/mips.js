@@ -323,7 +323,7 @@ pseudo.CstrR3ka = (function() {
 
     // Rootcounters, interrupts
     rootcnt.update();
-    interrupts.update();
+    bus.interruptsUpdate();
 
     // Exceptions
     if (data32&mask32) {
