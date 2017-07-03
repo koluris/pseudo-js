@@ -1,3 +1,5 @@
+#define rom mem._rom
+
 pseudo.CstrMain = (function() {
   // Generic function for file read
   function file(path, fn) {
@@ -13,15 +15,14 @@ pseudo.CstrMain = (function() {
   // Exposed class functions/variables
   return {
     awake() {
-      $(function() {
+      $(function() { // DOMContentLoaded
         vs     .awake($('#screen'));
         rootcnt.awake();
         r3ka   .awake($('#output'));
 
         file('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
-          const bios = new UintBcap(resp);
-          mem._rom.ub.set(bios);
+          rom.ub.set(new UintBcap(resp));
           r3ka.consoleWrite('PSeudo / BIOS file has been written to ROM', false);
 
           psx.reset();
@@ -46,3 +47,5 @@ pseudo.CstrMain = (function() {
     }
   };
 })();
+
+#undef rom

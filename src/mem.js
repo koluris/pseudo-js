@@ -116,6 +116,19 @@ pseudo.CstrMem = (function() {
         psx.error('pseudo / Mem read b '+hex(addr));
         return 0;
       }
+    },
+
+    executeDMA: function(addr) {
+      if (!bcr || chcr !== 0x11000002) {
+        return;
+      }
+      madr&=0xffffff;
+
+      while(--bcr) {
+        directMemW(ram.uw, madr) = (madr-4)&0xffffff;
+        madr-=4;
+      }
+      directMemW(ram.uw, madr) = 0xffffff;
     }
   };
 })();

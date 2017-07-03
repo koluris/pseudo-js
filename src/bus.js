@@ -75,12 +75,20 @@ pseudo.CstrBus = (function() {
       interrupt[n].queued = IRQ_QUEUED_YES;
     },
 
-    executeDMA(addr, data) {
+    checkDMA(addr, data) {
       const chan = ((addr>>>4)&0xf) - 8;
 
-      if (pcr&(8<<(chan*4))) { //GPU does not execute sometimes.
+      if (pcr&(8<<(chan*4))) { // GPU does not execute sometimes
         chcr = data;
-        console.dir(chan);
+
+        switch(chan) {
+          case 2: vs .executeDMA(addr); break; // GPU
+          case 6: mem.executeDMA(addr); break; // OTC
+
+          default:
+            psx.error('DMA chan -> '+chan);
+            break;
+        }
         chcr = data&(~(0x01000000));
 
         if (icr&(1<<(16+chan))) {

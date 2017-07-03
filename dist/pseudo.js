@@ -181,12 +181,20 @@ pseudo.CstrBus = (function() {
       interrupt[n].queued = 1;
     },
 
-    executeDMA(addr, data) {
+    checkDMA(addr, data) {
       const chan = ((addr>>>4)&0xf) - 8;
 
-      if (pseudo.CstrMem._hwr.uw[((0x10f0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&(8<<(chan*4))) { //GPU does not execute sometimes.
+      if (pseudo.CstrMem._hwr.uw[((0x10f0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&(8<<(chan*4))) { // GPU does not execute sometimes
         pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
-        console.dir(chan);
+
+        switch(chan) {
+          case 2: pseudo.CstrGraphics .executeDMA(addr); break; // GPU
+          case 6: pseudo.CstrMem.executeDMA(addr); break; // OTC
+
+          default:
+            pseudo.CstrMain.error('DMA chan -> '+chan);
+            break;
+        }
         pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data&(~(0x01000000));
 
         if (pseudo.CstrMem._hwr.uw[((0x10f4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&(1<<(16+chan))) {
@@ -252,7 +260,7 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
           if (addr&8) {
-            pseudo.CstrBus.executeDMA(addr, data);
+            pseudo.CstrBus.checkDMA(addr, data);
             return;
           }
           pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
@@ -501,6 +509,19 @@ pseudo.CstrMem = (function() {
         pseudo.CstrMain.error('pseudo / Mem read b '+('0x'+(addr>>>0).toString(16)));
         return 0;
       }
+    },
+
+    executeDMA: function(addr) {
+      if (!pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] || pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] !== 0x11000002) {
+        return;
+      }
+      pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&=0xffffff;
+
+      while(--pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]) {
+        pseudo.CstrMem._ram.uw[(( pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = (pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]-4)&0xffffff;
+        pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]-=4;
+      }
+      pseudo.CstrMem._ram.uw[(( pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = 0xffffff;
     }
   };
 })();
@@ -894,6 +915,8 @@ pseudo.CstrR3ka = (function() {
 
 
 
+
+
 pseudo.CstrMain = (function() {
   // Generic function for file read
   function file(path, fn) {
@@ -909,15 +932,14 @@ pseudo.CstrMain = (function() {
   // Exposed class functions/variables
   return {
     awake() {
-      $(function() {
+      $(function() { // DOMContentLoaded
         pseudo.CstrGraphics     .awake($('#screen'));
         pseudo.CstrCounters.awake();
         pseudo.CstrR3ka   .awake($('#output'));
 
         file('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
-          const bios = new Uint8Array(resp);
-          pseudo.CstrMem._rom.ub.set(bios);
+          pseudo.CstrMem._rom.ub.set(new Uint8Array(resp));
           pseudo.CstrR3ka.consoleWrite('PSeudo / BIOS file has been written to ROM', false);
 
           pseudo.CstrMain.reset();
@@ -942,6 +964,8 @@ pseudo.CstrMain = (function() {
     }
   };
 })();
+
+
 
 
 
@@ -1052,7 +1076,7 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 4:
-          switch ((data>>>24)&0xff) {
+          switch((data>>>24)&0xff) {
             case 0x00:
               status = 0x14802000;
               return;
@@ -1090,6 +1114,22 @@ pseudo.CstrGraphics = (function() {
         case 4:
           return status;
       }
+    },
+
+    executeDMA(addr) {
+      var size = (pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&0xffff);
+
+      switch (pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]) {
+        case 0x00000401: // Disable DMA?
+          return;
+
+        case 0x01000201:
+          return;
+
+        case 0x01000401:
+          return;
+      }
+      pseudo.CstrMain.error('GPU DMA case -> '+('0x'+(pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]>>>0).toString(16)));
     }
   };
 })();

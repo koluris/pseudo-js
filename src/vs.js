@@ -108,7 +108,7 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case GPU_STATUS:
-          switch (GPU_COMMAND(data)) {
+          switch(GPU_COMMAND(data)) {
             case 0x00:
               status = 0x14802000;
               return;
@@ -146,6 +146,22 @@ pseudo.CstrGraphics = (function() {
         case GPU_STATUS:
           return status;
       }
+    },
+
+    executeDMA(addr) {
+      var size = (bcr>>16)*(bcr&0xffff);
+
+      switch (chcr) {
+        case 0x00000401: // Disable DMA?
+          return;
+
+        case 0x01000201:
+          return;
+
+        case 0x01000401:
+          return;
+      }
+      psx.error('GPU DMA case -> '+hex(chcr));
     }
   };
 })();
