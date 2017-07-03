@@ -1,7 +1,8 @@
 #define ram mem._ram
 #define rom mem._rom
 
-#define EXE_HEADER_SIZE 0x800
+#define EXE_HEADER_SIZE\
+  0x800
 
 pseudo.CstrMain = (function() {
   // Generic function for file read
@@ -42,18 +43,18 @@ pseudo.CstrMain = (function() {
         r3ka.run();
       }
       else { // Homebrew run
-        file(path, function(resp) {
-          const header = new UintWcap(resp, 0, EXE_HEADER_SIZE);
-          const offset = header[2+4]&(ram.ub.bLen-1); // Offset needs boundaries... huh?
-          const size   = header[2+5];
+        // file(path, function(resp) {
+        //   const header = new UintWcap(resp, 0, EXE_HEADER_SIZE);
+        //   const offset = header[2+4]&(ram.ub.bLen-1); // Offset needs boundaries... huh?
+        //   const size   = header[2+5];
 
-          // Prepare mem
-          ram.ub.set(new UintBcap(resp, EXE_HEADER_SIZE, size), offset);
+        //   // Prepare mem
+        //   ram.ub.set(new UintBcap(resp, EXE_HEADER_SIZE, size), offset);
           
-          // Prepare processor
-          r3ka.exeHeader(header);
-          r3ka.run();
-        });
+        //   // Prepare processor
+        //   r3ka.exeHeader(header);
+        //   r3ka.run();
+        // });
       }
     },
 
