@@ -17,6 +17,7 @@
       box-sizing: border-box;
     }
     BODY {
+      color: #555;
       font: normal 13px 'Andale Mono', sans-serif;
     }
     #main {
@@ -66,19 +67,17 @@
     }
     #homebrew > .item {
       background: white;
-      font: normal 12px 'Helvetica Neue', sans-serif;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      height: 35px;
-      line-height: 35px;
-      padding-left: 15px;
+      text-align: right;
+      height: 32px;
+      line-height: 32px;
+      padding: 0 7px;
       cursor: pointer;
     }
     #homebrew > .item:nth-child(even) {
       background: #f0f0f0;
     }
     #homebrew > .item:hover {
-      color: #f46823;
+      color: #368bc2;
       text-decoration: underline;
     }
   </STYLE>
@@ -98,19 +97,6 @@
       <div id="output">
       </div>
       <div id="homebrew">
-        <div class="item">deuce-beta</div>
-        <div class="item">ff9</div>
-        <div class="item">pactro</div>
-        <div class="item">lightastic</div>
-        <div class="item">t-rex</div>
-        <div class="item">manta</div>
-        <div class="item">pdx-012</div>
-        <div class="item">20th-anniverse</div>
-        <div class="item">dentro</div>
-        <div class="item">flaptron</div>
-        <div class="item">va</div>
-        <div class="item">roots</div>
-        <div class="item">pdx-032</div>
       </div>
     </div>
   </div>
@@ -119,6 +105,24 @@
   <script src="dist/pseudo.js"></script>
 
   <script>
+    // List all homebrew demos
+    $([
+      'bad-004.psx',
+      'before-time.psx',
+      'casper.psx',
+      'deub-intr.psx',
+      'far-brausch.psx',
+      'ff9.psx',
+      'flaptron.psx',
+      'print-text.psx',
+      'stc-020.psx',
+      'stuntmaster.psx',
+      'va.psx'
+    ]).each(function(i, s) { // Add action to run
+      $('#homebrew').append('<div class="item" onclick="pseudo.CstrMain.reset(\''+s+'\')">'+s+'</div>');
+    });
+
+    // Startup
     pseudo.CstrMain.awake();
   </script>
 </BODY>
