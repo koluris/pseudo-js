@@ -1,5 +1,5 @@
 ## Overview
-This emulator is being developed using **.h headers** in addition to **.js files**. It helps me keep the workspace clean and simple, while at the same time code gets inlined for further optimization. The codebase is compatible with **ES6 Javascript** onwards. Also, please use **Chrome** for best results (this is due to V8 optimization).
+**PSeudo** emulator is being developed using **.h headers** in addition to **.js files**. It helps me keep the workspace clean and simple, while at the same time code gets inlined for further optimization. The codebase is compatible with **ES6 Javascript** onwards. Also, please use **Chrome** for best results (this is due to V8 optimization).
 
 ## Completion
 Here's a list with the overall progress of the emulator, broken down in distinctive hardware parts. Components with 0% progress are not listed.
