@@ -10,6 +10,6 @@ In order to build it, just run the `build` command on the terminal. You must als
 
 ### Completion
 Here's a list with the overall progress of the emulator, broken down in distinctive hardware parts. Components with 0% progress are not listed.
-* `CPU Mips R3000A` / 90%
-* `Graphics` / 15%
-* `GTE` / 5%
+* `CPU Mips R3000A` -> 90%
+* `Graphics` -> 15%
+* `GTE` -> 5%
