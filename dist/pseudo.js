@@ -975,10 +975,8 @@ pseudo.CstrMain = (function() {
           const size   = header[2+5];
 
           // Prepare pseudo.CstrMem
-          for (let i=0; i<size; i++) {
-            pseudo.CstrMem._ram.ub[(( offset+i)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0] = exe[i];
-          }
-
+          pseudo.CstrMem._ram.ub.set(exe.slice(0, size), offset&(pseudo.CstrMem._ram.ub.byteLength-1)); // Offset needs boundaries... huh?
+          
           // Prepare processor
           pseudo.CstrR3ka.exeHeader(header);
           pseudo.CstrR3ka.run();

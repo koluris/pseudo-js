@@ -47,10 +47,8 @@ pseudo.CstrMain = (function() {
           const size   = header[2+5];
 
           // Prepare mem
-          for (let i=0; i<size; i++) {
-            directMemB(ram.ub, offset+i) = exe[i];
-          }
-
+          ram.ub.set(exe.slice(0, size), offset&(ram.ub.bLen-1)); // Offset needs boundaries... huh?
+          
           // Prepare processor
           r3ka.exeHeader(header);
           r3ka.run();
