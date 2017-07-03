@@ -1,6 +1,8 @@
 #define ram mem._ram
 #define rom mem._rom
 
+#define EXE_HEADER_SIZE 0x800
+
 pseudo.CstrMain = (function() {
   // Generic function for file read
   function file(path, fn) {
@@ -41,8 +43,8 @@ pseudo.CstrMain = (function() {
       }
       else { // Homebrew run
         file(path, function(resp) {
-          const header = new UintWcap(resp, 0, 0x800);
-          const exe    = new UintBcap(resp, 0x800);
+          const header = new UintWcap(resp, 0, EXE_HEADER_SIZE);
+          const exe    = new UintBcap(resp, EXE_HEADER_SIZE);
           const offset = header[2+4];
           const size   = header[2+5];
 
