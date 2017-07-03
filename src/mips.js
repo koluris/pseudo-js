@@ -354,7 +354,11 @@ pseudo.CstrR3ka = (function() {
       pc = 0xbfc00000;
       opcodeCount = 0;
 
+      // Clear console out
+      output.text(' ');
+
       // Bootstrap
+      r3ka.consoleWrite('BIOS file has been written to ROM', false);
       const start = performance.now();
 
       while (pc !== 0x80030000) {
@@ -369,6 +373,12 @@ pseudo.CstrR3ka = (function() {
         step(false);
       }
       requestAnimationFrame(r3ka.run);
+    },
+
+    exeHeader(hdr) {
+      pc    = hdr[2+ 2];
+      r[28] = hdr[2+ 3];
+      r[29] = hdr[2+10];
     },
 
     writeOK() {

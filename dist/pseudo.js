@@ -158,6 +158,7 @@ pseudo.CstrBus = (function() {
     dest: 1
   }];
 
+  // Exposed class functions/variables
   return {
     reset() {
       for (let irq of interrupt) {
@@ -885,7 +886,11 @@ pseudo.CstrR3ka = (function() {
       r[32] = 0xbfc00000;
       opcodeCount = 0;
 
+      // Clear console out
+      output.text(' ');
+
       // Bootstrap
+      pseudo.CstrR3ka.consoleWrite('BIOS file has been written to ROM', false);
       const start = performance.now();
 
       while (r[32] !== 0x80030000) {
@@ -902,6 +907,12 @@ pseudo.CstrR3ka = (function() {
       requestAnimationFrame(pseudo.CstrR3ka.run);
     },
 
+    exeHeader(hdr) {
+      r[32]    = hdr[2+ 2];
+      r[28] = hdr[2+ 3];
+      r[29] = hdr[2+10];
+    },
+
     writeOK() {
       return !(copr[12]&0x10000);
     },
@@ -911,6 +922,7 @@ pseudo.CstrR3ka = (function() {
     }
   };
 })();
+
 
 
 
@@ -940,7 +952,6 @@ pseudo.CstrMain = (function() {
         file('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
           pseudo.CstrMem._rom.ub.set(new Uint8Array(resp));
-          pseudo.CstrR3ka.consoleWrite('BIOS file has been written to ROM', false);
         });
       });
     },
@@ -958,6 +969,18 @@ pseudo.CstrMain = (function() {
       }
       else { // Homebrew run
         file(path, function(resp) {
+          const header = new Uint32Array(resp, 0, 0x800);
+          const exe    = new Uint8Array(resp, 0x800);
+          const offset = header[2+4];
+          const size   = header[2+5];
+
+          // Prepare pseudo.CstrMem
+          for (let i=0; i<size; i++) {
+            pseudo.CstrMem._ram.ub[(( offset+i)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0] = exe[i];
+          }
+
+          // Prepare processor
+          pseudo.CstrR3ka.exeHeader(header);
           pseudo.CstrR3ka.run();
         });
       }
@@ -968,6 +991,7 @@ pseudo.CstrMain = (function() {
     }
   };
 })();
+
 
 
 

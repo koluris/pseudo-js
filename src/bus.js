@@ -52,6 +52,7 @@ pseudo.CstrBus = (function() {
     dest: 1
   }];
 
+  // Exposed class functions/variables
   return {
     reset() {
       for (let irq of interrupt) {

@@ -1,3 +1,4 @@
+#define ram mem._ram
 #define rom mem._rom
 
 pseudo.CstrMain = (function() {
@@ -23,7 +24,6 @@ pseudo.CstrMain = (function() {
         file('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
           rom.ub.set(new UintBcap(resp));
-          r3ka.consoleWrite('BIOS file has been written to ROM', false);
         });
       });
     },
@@ -41,6 +41,18 @@ pseudo.CstrMain = (function() {
       }
       else { // Homebrew run
         file(path, function(resp) {
+          const header = new UintWcap(resp, 0, 0x800);
+          const exe    = new UintBcap(resp, 0x800);
+          const offset = header[2+4];
+          const size   = header[2+5];
+
+          // Prepare mem
+          for (let i=0; i<size; i++) {
+            directMemB(ram.ub, offset+i) = exe[i];
+          }
+
+          // Prepare processor
+          r3ka.exeHeader(header);
           r3ka.run();
         });
       }
@@ -52,4 +64,5 @@ pseudo.CstrMain = (function() {
   };
 })();
 
+#undef ram
 #undef rom
