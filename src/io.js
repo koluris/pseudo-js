@@ -36,7 +36,7 @@ pseudo.CstrHardware = (function() {
             data32 &= data&mask32;
             return;
 
-          case 0x10f4:
+          case 0x10f4: // Thanks Calb, Galtor :)
             icr = (icr&(~((data&0xff000000)|0xffffff)))|(data&0xffffff);
             return;
 
