@@ -1,6 +1,6 @@
 # PSeudo
 
-### JS/WebGL/WebAudio based PLAYSTATION emulator (aka PSX, PS1)
+### JavaScript/WebGL based PLAYSTATION emulator (aka PSX)
 *******
 
 This emulator is being developed using **.h headers** in addition to **.js files**. It helps me keep the workspace clean and simple, while at the same time I can inline code for further optimization. The whole code is compatible with **ES6 Javascript** onwards. Also, please use **Chrome** for best results (this is due to V8 optimization).
