@@ -24,13 +24,11 @@ pseudo.CstrMain = (function() {
           // Move BIOS to Mem
           rom.ub.set(new UintBcap(resp));
           r3ka.consoleWrite('BIOS file has been written to ROM', false);
-
-          psx.reset();
         });
       });
     },
 
-    reset() {
+    reset(path) {
       // Reset all emulator components
       vs     .reset();
       mem    .reset();
@@ -38,8 +36,14 @@ pseudo.CstrMain = (function() {
       bus    .reset();
       r3ka   .reset();
 
-      // Run emulator
-      r3ka.run();
+      if (path === 'bios') { // BIOS run
+        r3ka.run();
+      }
+      else { // Homebrew run
+        file(path, function(resp) {
+          r3ka.run();
+        });
+      }
     },
 
     error(out) {

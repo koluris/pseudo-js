@@ -941,13 +941,11 @@ pseudo.CstrMain = (function() {
           // Move BIOS to Mem
           pseudo.CstrMem._rom.ub.set(new Uint8Array(resp));
           pseudo.CstrR3ka.consoleWrite('BIOS file has been written to ROM', false);
-
-          pseudo.CstrMain.reset();
         });
       });
     },
 
-    reset() {
+    reset(path) {
       // Reset all emulator components
       pseudo.CstrGraphics     .reset();
       pseudo.CstrMem    .reset();
@@ -955,8 +953,14 @@ pseudo.CstrMain = (function() {
       pseudo.CstrBus    .reset();
       pseudo.CstrR3ka   .reset();
 
-      // Run emulator
-      pseudo.CstrR3ka.run();
+      if (path === 'bios') { // BIOS run
+        pseudo.CstrR3ka.run();
+      }
+      else { // Homebrew run
+        file(path, function(resp) {
+          pseudo.CstrR3ka.run();
+        });
+      }
     },
 
     error(out) {
