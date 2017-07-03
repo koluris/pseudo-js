@@ -159,15 +159,13 @@ pseudo.CstrBus = (function() {
 
   return {
     reset() {
-      // Interrupts
-      for (let i=0; i<11; i++) {
-        interrupt[i].queued = 0;
+      for (let irq of interrupt) {
+        irq.queued = 0;
       }
     },
 
     interruptsUpdate() {
-      for (let i=0; i<11; i++) { // Turn it up to 11 :)
-        var irq = interrupt[i];
+      for (let irq of interrupt) {
         if (irq.queued) {
           if (irq.queued++ === irq.dest) {
             pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] |= (1<<irq.code);

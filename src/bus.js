@@ -54,15 +54,13 @@ pseudo.CstrBus = (function() {
 
   return {
     reset() {
-      // Interrupts
-      for (let i=0; i<11; i++) {
-        interrupt[i].queued = IRQ_QUEUED_NO;
+      for (let irq of interrupt) {
+        irq.queued = IRQ_QUEUED_NO;
       }
     },
 
     interruptsUpdate() {
-      for (let i=0; i<11; i++) { // Turn it up to 11 :)
-        var irq = interrupt[i];
+      for (let irq of interrupt) {
         if (irq.queued) {
           if (irq.queued++ === irq.dest) {
             data16 |= (1<<irq.code);
