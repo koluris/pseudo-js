@@ -4,18 +4,19 @@
     <meta charset="utf-8"/>
     <title>PSeudo PSX Emulator</title>
 
-    <STYLE>
+    <style>
       @import url('css/normalize.css');
 
       @font-face {
         src: url('css/oswald.woff2');
-        font-FAMILY: 'Oswald';
+        font-family: 'Oswald';
       }
       BODY {
         background: #1f1f1f;
+        font: normal 13px 'Helvetica Neue', sans-serif;
       }
       #main {
-        DISPLAY: flex;
+        display: flex;
         flex-direction: column;
         position: absolute;
         top: 0;
@@ -46,27 +47,62 @@
         left: 12%;
       }
       #bar-panels {
-        DISPLAY: flex;
+        display: flex;
         flex: 1;
         margin: 30px 12%;
       }
       #panel-console {
+        display: flex;
+        flex-direction: column;
         flex: 1;
-        border-right: 1px solid #252525;
+        border-right: 1px solid rgba(255, 255, 255, .02);
         padding-right: 20px;
       }
       #panel-dropzone {
-        flex: 1;
-        border-left: 1px solid #252525;
+        display: flex;
+        flex-direction: column;
+        min-width: 300px;
+        border-left: 1px solid rgba(255, 255, 255, .02);
         padding-left: 20px;
       }
       .panel-header {
         color: white;
         font: normal 27px 'Oswald', sans-serif;
+        margin-bottom: 10px;
       }
-    </STYLE>
+      #console {
+        flex: 1;
+        background: #0d2936;
+        border: 3px solid rgba(255, 255, 255, .2);
+      }
+      #dropzone {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        flex: 1;
+        border: 3px solid rgba(255, 255, 255, .2);
+      }
+      #dropzone > div:nth-child(1) {
+        background: url('res/drop.png') no-repeat;
+        background-size: 100%;
+        width: 58px;
+        height: 58px;
+        margin-bottom: 15px;
+        opacity: .5;
+      }
+      #dropzone > div:nth-child(2) {
+        color: #fff;
+        font: normal 16px 'Oswald', sans-serif;
+        margin-bottom: 5px;
+      }
+      #dropzone > div:nth-child(3) {
+        color: #999;
+        font-size: 11px;
+      }
+    </style>
 </head>
-<BODY>
+<body>
   <div id="main">
     <!-- Contact -->
     <div id="bar-contact">
@@ -89,6 +125,8 @@
         <div class="panel-header">
           CONSOLE
         </div>
+        <div id="console">
+        </div>
       </div>
 
       <!-- DropZone -->
@@ -96,10 +134,15 @@
         <div class="panel-header">
           DROP-ZONE
         </div>
+        <div id="dropzone">
+          <div></div>
+          <div>DRAG & DROP PSX FILES HERE</div>
+          <div>BIOS (.bin), EXE (.psx, .bin), CD ISO (.iso), etc.</div>
+        </div>
       </div>
     </div>
   </div>
 
   <script src=""></script>
-</BODY>
+</body>
 </html>
