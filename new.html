@@ -34,7 +34,17 @@
         min-height: 320px;
       }
       #bar-panels {
+        DISPLAY: flex;
         flex: 1;
+        margin: 30px 0;
+      }
+      #panel-console {
+        flex: 1;
+        border-right: 1px solid #252525;
+      }
+      #panel-dropzone {
+        flex: 1;
+        border-left: 1px solid #252525;
       }
     </STYLE>
 </head>
@@ -56,6 +66,13 @@
 
     <!-- Panels -->
     <div id="bar-panels">
+      <!-- Console -->
+      <div id="panel-console">
+      </div>
+
+      <!-- DropZone -->
+      <div id="panel-dropzone">
+      </div>
     </div>
   </div>
 
