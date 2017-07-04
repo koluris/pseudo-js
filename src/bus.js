@@ -55,17 +55,17 @@ pseudo.CstrBus = (function() {
   // Exposed class functions/variables
   return {
     reset() {
-      for (let irq of interrupt) {
-        irq.queued = IRQ_QUEUED_NO;
+      for (let item of interrupt) {
+        item.queued = IRQ_QUEUED_NO;
       }
     },
 
     interruptsUpdate() {
-      for (let irq of interrupt) {
-        if (irq.queued) {
-          if (irq.queued++ === irq.dest) {
-            data16 |= (1<<irq.code);
-            irq.queued = IRQ_QUEUED_NO;
+      for (let item of interrupt) {
+        if (item.queued) {
+          if (item.queued++ === item.dest) {
+            data16 |= (1<<item.code);
+            item.queued = IRQ_QUEUED_NO;
             break;
           }
         }
