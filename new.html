@@ -8,8 +8,22 @@
       @import url('css/normalize.css');
 
       @font-face {
-        src: url('css/oswald.woff2');
-        font-family: 'Oswald';
+        src: url('css/oswald-300.woff2');
+        font-family: 'Oswald-300';
+      }
+      @font-face {
+        src: url('css/oswald-400.woff2');
+        font-family: 'Oswald-400';
+      }
+      ::-webkit-scrollbar {
+        width: 3px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #93a0a8;
+        //border-radius: 7px;
+      }
+      * {
+        box-sizing: border-box;
       }
       BODY {
         background: #1f1f1f;
@@ -32,7 +46,7 @@
         DISPLAY: flex;
         background: linear-gradient(to bottom, #292929 0%, #1f1f1f 15%, #1f1f1f 100%);
         border-top: 1px solid #4d4d4d;
-        min-height: 60px;
+        min-height: 70px;
       }
       #bar-screen {
         position: relative;
@@ -50,7 +64,7 @@
       #bar-panels {
         display: flex;
         flex: 1;
-        margin: 30px 12%;
+        margin: 21px 12% 21px 12%;
       }
       #panel-console {
         display: flex;
@@ -68,13 +82,21 @@
       }
       .panel-header {
         color: white;
-        font: normal 27px 'Oswald', sans-serif;
+        font: normal 27px 'Oswald-400', sans-serif;
         margin-bottom: 10px;
       }
-      #console {
+      #output {
         flex: 1;
-        background: #0d2936;
-        border: 3px solid rgba(255, 255, 255, .2);
+        color: #93a0a8;
+        font: normal 15px 'Andale Mono', sans-serif;
+        line-height: 19px;
+        overflow-Y: scroll;
+        border-top: 1px solid rgba(255, 255, 255, .1);
+        border-bottom: 1px solid rgba(255, 255, 255, .1);
+        padding: 7px 0;
+      }
+      .pseudoText {
+        color: #1ba1a4;
       }
       #dropzone {
         display: flex;
@@ -82,7 +104,7 @@
         justify-content: center;
         align-items: center;
         flex: 1;
-        border: 3px solid rgba(255, 255, 255, .2);
+        border: 3px dashed #93a0a8;
       }
       #dropzone > div:nth-child(1) {
         background: url('res/drop.png') no-repeat;
@@ -90,20 +112,64 @@
         width: 58px;
         height: 58px;
         margin-bottom: 15px;
-        opacity: .5;
+        //opacity: .5;
       }
       #dropzone > div:nth-child(2) {
         color: #fff;
-        font: normal 16px 'Oswald', sans-serif;
+        font: normal 16px 'Oswald-400', sans-serif;
         margin-bottom: 5px;
       }
       #dropzone > div:nth-child(3) {
-        color: #999;
-        font-size: 11px;
+        color: #93a0a8;
+        font: normal 10px 'Oswald-300', sans-serif;
+      }
+
+      #homebrew {
+        z-index: 2;
+        position: absolute;
+        background: white;
+        width: 130px;
+        height: 100%;
+        top: 0;
+        right: 0;
+        overflow-Y: scroll;
+      }
+      #homebrew > .item {
+        color: #555;
+        background: white;
+        font: normal 14px 'Oswald-400', sans-serif;
+        text-align: right;
+        height: 32px;
+        line-height: 32px;
+        padding: 0 7px;
+        cursor: pointer;
+      }
+      #homebrew > .item:nth-child(even) {
+        background: #f0f0f0;
+      }
+      #homebrew > .item:hover {
+        color: #1ba1a4;
+        text-decoration: underline;
+      }
+
+      #screen {
+        display: block;
+        background: black;
+        margin: 0 auto;
+      }
+      #resolution {
+        position: absolute;
+        color: #f5cb0f;
+        top: 0;
+        right: 0;
+        padding: 5px 7px;
       }
     </style>
 </head>
 <body>
+  <div id="homebrew">
+  </div>
+
   <div id="main">
     <!-- Contact -->
     <div id="bar-contact">
@@ -119,6 +185,12 @@
     <!-- Screen -->
     <div id="bar-screen">
       <div id="container-screen">
+        <canvas id="screen" width="320" height="240">
+          No support for <code>canvas</code> element.
+        </canvas>
+        <div id="resolution">
+          320 x 240
+        </div>
       </div>
     </div>
 
@@ -129,7 +201,7 @@
         <div class="panel-header">
           CONSOLE
         </div>
-        <div id="console">
+        <div id="output">
         </div>
       </div>
 
@@ -147,6 +219,29 @@
     </div>
   </div>
 
-  <script src=""></script>
+  <script src="js/quer-3.2.1.min.js"></script>
+  <script src="dist/pseudo.js"></script>
+
+  <script>
+    // List all homebrew demos
+    $([
+      'bad-004.psx',
+      'before-time.psx',
+      'casper.psx',
+      'deub-intr.psx',
+      'far-brausch.psx',
+      'ff9.psx',
+      'flaptron.psx',
+      'print-text.psx',
+      'stc-020.psx',
+      'stuntmaster.psx',
+      'va.psx'
+    ]).each(function(i, s) { // Add action to run
+      $('#homebrew').append('<div class="item" onclick="pseudo.CstrMain.reset(\'homebrew/'+s+'\')">'+s+'</div>');
+    });
+
+    // Startup
+    pseudo.CstrMain.awake();
+  </script>
 </body>
 </html>
