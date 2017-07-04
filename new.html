@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>PSeudo PSX Emulator</title>
+
+    <STYLE>
+      @import url('css/normalize.css');
+
+      BODY {
+        background: #1f1f1f;
+      }
+      #main {
+        DISPLAY: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+      #bar-contact {
+        background: #161616;
+        min-height: 35px;
+      }
+      #bar-header {
+        background: linear-gradient(to bottom, #292929 0%, #1f1f1f 15%, #1f1f1f 100%);
+        border-top: 1px solid #4d4d4d;
+        min-height: 70px;
+      }
+      #bar-screen {
+        position: relative;
+        background: linear-gradient(to bottom, transparent 0%, transparent 15%, #191919 15%, #191919 85%, transparent 85%, transparent 100%);
+        min-height: 320px;
+      }
+      #bar-panels {
+        flex: 1;
+      }
+    </STYLE>
+</head>
+<BODY>
+  <div id="main">
+    <!-- Contact -->
+    <div id="bar-contact">
+    </div>
+
+    <!-- Header -->
+    <div id="bar-header">
+    </div>
+
+    <!-- Screen -->
+    <div id="bar-screen">
+      <div STYLE="position:absolute;background:black;top:0;right:120px;bottom:0;left:120px">
+      </div>
+    </div>
+
+    <!-- Panels -->
+    <div id="bar-panels">
+    </div>
+  </div>
+
+  <script src=""></script>
+</BODY>
+</html>
