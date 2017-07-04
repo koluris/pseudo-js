@@ -113,9 +113,6 @@ pseudo.CstrGraphics = (function() {
               status = 0x14802000;
               return;
 
-            case 0x03:
-              return;
-
             case 0x04:
               modeDMA = data&3;
               return;
@@ -127,13 +124,13 @@ pseudo.CstrGraphics = (function() {
               });
               return;
 
-            case 0x10:
-              return;
-
             /* unused */
+            case 0x01:
+            case 0x03:
             case 0x05:
             case 0x06:
             case 0x07:
+            case 0x10:
               return;
           }
           psx.error('GPU Write Status '+hex(GPU_COMMAND(data)));

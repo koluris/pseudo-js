@@ -109,10 +109,12 @@ pseudo.CstrMem = (function() {
 
           case 0xbf: // BIOS
             return directMemB(rom.ub, addr);
-        }
 
-        if (addr === 0x1f000084) { // PIO?
-          return 0;
+          case 0x1f: // Hardware
+            if (addr === 0x1f000084) { // PIO?
+              return 0;
+            }
+            return io.read.b(addr);
         }
         psx.error('Mem Read b '+hex(addr));
         return 0;

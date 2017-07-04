@@ -325,6 +325,10 @@ pseudo.CstrHardware = (function() {
             return;
 
           
+          case 0x1048: // SIO
+          case 0x104a: // SIO
+          case 0x104e: // SIO
+
           case 0x1074:
             pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
             return;
@@ -375,17 +379,30 @@ pseudo.CstrHardware = (function() {
       h(addr) {
         addr&=0xffff;
 
-        if (addr >= 0x1c0c && addr <= 0x1dae) { // Audio
+        if (addr >= 0x1c08 && addr <= 0x1dae) { // Audio
           return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
         }
 
         switch(addr) {
           
+          case 0x1044: // SIO
+
           case 0x1070:
           case 0x1074:
             return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
         }
         pseudo.CstrMain.error('Hardware Read h '+('0x'+(addr>>>0).toString(16)));
+      },
+
+      b(addr) {
+        addr&=0xffff;
+
+        switch(addr) {
+          
+          case 0x1040: // SIO
+            return pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0];
+        }
+        pseudo.CstrMain.error('Hardware Read b '+('0x'+(addr>>>0).toString(16)));
       }
     }
   };
@@ -503,10 +520,12 @@ pseudo.CstrMem = (function() {
 
           case 0xbf: // BIOS
             return pseudo.CstrMem._rom.ub[(( addr)&(pseudo.CstrMem._rom.ub.byteLength-1))>>>0];
-        }
 
-        if (addr === 0x1f000084) { // PIO?
-          return 0;
+          case 0x1f: // Hardware
+            if (addr === 0x1f000084) { // PIO?
+              return 0;
+            }
+            return pseudo.CstrHardware.read.b(addr);
         }
         pseudo.CstrMain.error('Mem Read b '+('0x'+(addr>>>0).toString(16)));
         return 0;
@@ -1135,9 +1154,6 @@ pseudo.CstrGraphics = (function() {
               status = 0x14802000;
               return;
 
-            case 0x03:
-              return;
-
             case 0x04:
               modeDMA = data&3;
               return;
@@ -1149,13 +1165,13 @@ pseudo.CstrGraphics = (function() {
               });
               return;
 
-            case 0x10:
-              return;
-
             
+            case 0x01:
+            case 0x03:
             case 0x05:
             case 0x06:
             case 0x07:
+            case 0x10:
               return;
           }
           pseudo.CstrMain.error('GPU Write Status '+('0x'+((data>>>24)&0xff>>>0).toString(16)));
