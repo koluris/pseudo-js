@@ -127,13 +127,16 @@ pseudo.CstrGraphics = (function() {
               });
               return;
 
+            case 0x10:
+              return;
+
             /* unused */
             case 0x05:
             case 0x06:
             case 0x07:
               return;
           }
-          psx.error('GPU Write Status '+hex(GPU_COMMAND(addr)));
+          psx.error('GPU Write Status '+hex(GPU_COMMAND(data)));
           return;
       }
     },

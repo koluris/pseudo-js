@@ -3,7 +3,7 @@
 #define hi r[34]
 
 // Inline functions for speedup
-#define opcodeMult(a, b)\
+#define opcodeMul(a, b)\
   cacheAddr = a * b;\
   \
   lo = cacheAddr&0xffffffff;\
@@ -99,6 +99,9 @@ pseudo.CstrR3ka = (function() {
             exception(0x20, inslot);
             return;
 
+          case 13: // BREAK
+            return;
+
           case 16: // MFHI
             r[rd] = hi;
             return;
@@ -115,8 +118,12 @@ pseudo.CstrR3ka = (function() {
             lo = r[rs];
             return;
 
+          case 24: // MULT
+            opcodeMul(SIGN_EXT_32(r[rs]), SIGN_EXT_32(r[rt]));
+            return;
+
           case 25: // MULTU
-            opcodeMult(r[rs], r[rt]);
+            opcodeMul(r[rs], r[rt]);
             return;
 
           case 26: // DIV
@@ -133,6 +140,10 @@ pseudo.CstrR3ka = (function() {
 
           case 33: // ADDU
             r[rd] = r[rs] + r[rt];
+            return;
+
+          case 34: // SUB
+            r[rd] = r[rs] - r[rt];
             return;
 
           case 35: // SUBU
@@ -175,6 +186,13 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 1: // BGEZ
+            if (SIGN_EXT_32(r[rs]) >= 0) {
+              branch(b_addr);
+            }
+            return;
+
+          case 17: // BGEZAL
+            r[31] = pc+4;
             if (SIGN_EXT_32(r[rs]) >= 0) {
               branch(b_addr);
             }
@@ -240,6 +258,10 @@ pseudo.CstrR3ka = (function() {
         r[rt] = r[rs] | imm_u;
         return;
 
+      case 14: // XORI
+        r[rt] = r[rs] ^ imm_u;
+        return;
+
       case 15: // LUI
         r[rt] = code<<16;
         return;
@@ -259,6 +281,9 @@ pseudo.CstrR3ka = (function() {
             return;
         }
         psx.error('Coprocessor 0 instruction '+rs);
+        return;
+
+      case 18: // COP2
         return;
 
       case 32: // LB

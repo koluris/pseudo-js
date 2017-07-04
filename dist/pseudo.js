@@ -632,6 +632,9 @@ pseudo.CstrR3ka = (function() {
             copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x20; copr[14] = r[32]; r[32] = 0x80;
             return;
 
+          case 13: // BREAK
+            return;
+
           case 16: // MFHI
             r[((code>>>11)&0x1f)] = r[34];
             return;
@@ -646,6 +649,10 @@ pseudo.CstrR3ka = (function() {
 
           case 19: // MTLO
             r[33] = r[((code>>>21)&0x1f)];
+            return;
+
+          case 24: // MULT
+            cacheAddr = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = cacheAddr&0xffffffff; r[34] = (cacheAddr/power32) | 0;
             return;
 
           case 25: // MULTU
@@ -666,6 +673,10 @@ pseudo.CstrR3ka = (function() {
 
           case 33: // ADDU
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
+            return;
+
+          case 34: // SUB
+            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] - r[((code>>>16)&0x1f)];
             return;
 
           case 35: // SUBU
@@ -708,6 +719,13 @@ pseudo.CstrR3ka = (function() {
             return;
 
           case 1: // BGEZ
+            if (((r[((code>>>21)&0x1f)])<<0>>0) >= 0) {
+              branch((r[32]+((((code)<<16>>16))<<2)));
+            }
+            return;
+
+          case 17: // BGEZAL
+            r[31] = r[32]+4;
             if (((r[((code>>>21)&0x1f)])<<0>>0) >= 0) {
               branch((r[32]+((((code)<<16>>16))<<2)));
             }
@@ -773,6 +791,10 @@ pseudo.CstrR3ka = (function() {
         r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] | (code&0xffff);
         return;
 
+      case 14: // XORI
+        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] ^ (code&0xffff);
+        return;
+
       case 15: // LUI
         r[((code>>>16)&0x1f)] = code<<16;
         return;
@@ -792,6 +814,9 @@ pseudo.CstrR3ka = (function() {
             return;
         }
         pseudo.CstrMain.error('Coprocessor 0 instruction '+((code>>>21)&0x1f));
+        return;
+
+      case 18: // COP2
         return;
 
       case 32: // LB
@@ -1124,13 +1149,16 @@ pseudo.CstrGraphics = (function() {
               });
               return;
 
+            case 0x10:
+              return;
+
             
             case 0x05:
             case 0x06:
             case 0x07:
               return;
           }
-          pseudo.CstrMain.error('GPU Write Status '+('0x'+((addr>>>24)&0xff>>>0).toString(16)));
+          pseudo.CstrMain.error('GPU Write Status '+('0x'+((data>>>24)&0xff>>>0).toString(16)));
           return;
       }
     },
