@@ -90,7 +90,7 @@ pseudo.CstrBus = (function() {
             psx.error('DMA Channel '+chan);
             break;
         }
-        chcr = data&(~(0x01000000));
+        chcr = data&(~0x01000000);
 
         if (icr&(1<<(16+chan))) {
           icr |= 1<<(24+chan);

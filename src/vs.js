@@ -70,11 +70,11 @@ pseudo.CstrGraphics = (function() {
   }
 
   function resize(res) {
-    if (res.h > 0 && res.v > 0) {
-      screen.width = res.h;
-      screen.hei   = res.v;
+    if (res.w > 0 && res.h > 0) {
+      screen.width = res.w;
+      screen.hei   = res.h;
     
-      $('#resolution').text(res.h+' x '+res.v);
+      $('#resolution').text(res.w+' x '+res.h);
     }
   }
 
@@ -122,8 +122,8 @@ pseudo.CstrGraphics = (function() {
 
             case 0x08:
               resize({
-                h: resMode[(data&3)|((data&0x40)>>>4)],
-                v: (data&4) ? 480 : 240
+                w: resMode[(data&3)|((data&0x40)>>>4)],
+                h: (data&4) ? 480 : 240
               });
               return;
 

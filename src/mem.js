@@ -90,6 +90,7 @@ pseudo.CstrMem = (function() {
 
       h(addr) {
         switch(MSB(addr)) {
+          case 0x00: // Base
           case 0x80: // Mirror
             return directMemH(ram.uh, addr);
 

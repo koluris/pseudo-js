@@ -161,17 +161,17 @@ pseudo.CstrBus = (function() {
   // Exposed class functions/variables
   return {
     reset() {
-      for (let irq of interrupt) {
-        irq.queued = 0;
+      for (let item of interrupt) {
+        item.queued = 0;
       }
     },
 
     interruptsUpdate() {
-      for (let irq of interrupt) {
-        if (irq.queued) {
-          if (irq.queued++ === irq.dest) {
-            pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] |= (1<<irq.code);
-            irq.queued = 0;
+      for (let item of interrupt) {
+        if (item.queued) {
+          if (item.queued++ === item.dest) {
+            pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] |= (1<<item.code);
+            item.queued = 0;
             break;
           }
         }
@@ -196,7 +196,7 @@ pseudo.CstrBus = (function() {
             pseudo.CstrMain.error('DMA Channel '+chan);
             break;
         }
-        pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data&(~(0x01000000));
+        pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data&(~0x01000000);
 
         if (pseudo.CstrMem._hwr.uw[((0x10f4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&(1<<(16+chan))) {
           pseudo.CstrMem._hwr.uw[((0x10f4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] |= 1<<(24+chan);
@@ -484,6 +484,7 @@ pseudo.CstrMem = (function() {
 
       h(addr) {
         switch(addr>>>24) {
+          case 0x00: // Base
           case 0x80: // Mirror
             return pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1];
 
@@ -1066,11 +1067,11 @@ pseudo.CstrGraphics = (function() {
   }
 
   function resize(res) {
-    if (res.h > 0 && res.v > 0) {
-      screen.width = res.h;
-      screen.hei   = res.v;
+    if (res.w > 0 && res.h > 0) {
+      screen.width = res.w;
+      screen.hei   = res.h;
     
-      $('#resolution').text(res.h+' x '+res.v);
+      $('#resolution').text(res.w+' x '+res.h);
     }
   }
 
@@ -1118,8 +1119,8 @@ pseudo.CstrGraphics = (function() {
 
             case 0x08:
               resize({
-                h: resMode[(data&3)|((data&0x40)>>>4)],
-                v: (data&4) ? 480 : 240
+                w: resMode[(data&3)|((data&0x40)>>>4)],
+                h: (data&4) ? 480 : 240
               });
               return;
 
