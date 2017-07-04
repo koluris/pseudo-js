@@ -7,6 +7,10 @@
     <STYLE>
       @import url('css/normalize.css');
 
+      @font-face {
+        src: url('css/oswald.woff2');
+        font-FAMILY: 'Oswald';
+      }
       BODY {
         background: #1f1f1f;
       }
@@ -33,18 +37,32 @@
         background: linear-gradient(to bottom, transparent 0%, transparent 15%, #191919 15%, #191919 85%, transparent 85%, transparent 100%);
         min-height: 320px;
       }
+      #container-screen {
+        position: absolute;
+        background: black;
+        top: 0;
+        right: 12%;
+        bottom: 0;
+        left: 12%;
+      }
       #bar-panels {
         DISPLAY: flex;
         flex: 1;
-        margin: 30px 0;
+        margin: 30px 12%;
       }
       #panel-console {
         flex: 1;
         border-right: 1px solid #252525;
+        padding-right: 20px;
       }
       #panel-dropzone {
         flex: 1;
         border-left: 1px solid #252525;
+        padding-left: 20px;
+      }
+      .panel-header {
+        color: white;
+        font: normal 27px 'Oswald', sans-serif;
       }
     </STYLE>
 </head>
@@ -60,7 +78,7 @@
 
     <!-- Screen -->
     <div id="bar-screen">
-      <div STYLE="position:absolute;background:black;top:0;right:120px;bottom:0;left:120px">
+      <div id="container-screen">
       </div>
     </div>
 
@@ -68,10 +86,16 @@
     <div id="bar-panels">
       <!-- Console -->
       <div id="panel-console">
+        <div class="panel-header">
+          CONSOLE
+        </div>
       </div>
 
       <!-- DropZone -->
       <div id="panel-dropzone">
+        <div class="panel-header">
+          DROP-ZONE
+        </div>
       </div>
     </div>
   </div>
