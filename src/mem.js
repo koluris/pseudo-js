@@ -127,7 +127,7 @@ pseudo.CstrMem = (function() {
       }
       madr&=0xffffff;
 
-      while(--bcr) {
+      while (--bcr) {
         directMemW(ram.uw, madr) = (madr-4)&0xffffff;
         madr-=4;
       }

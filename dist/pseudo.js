@@ -538,7 +538,7 @@ pseudo.CstrMem = (function() {
       }
       pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&=0xffffff;
 
-      while(--pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]) {
+      while (--pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]) {
         pseudo.CstrMem._ram.uw[(( pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = (pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]-4)&0xffffff;
         pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]-=4;
       }
