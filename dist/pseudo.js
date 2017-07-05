@@ -1095,7 +1095,10 @@ pseudo.CstrMain = (function() {
 
 pseudo.CstrRender = (function() {
   let screen, resolution;
-  let ctx, attrib, bfr;
+  
+  let ctx;    // 'webgl' Context
+  let attrib; // Enable/Disable Attributes on demand
+  let bfr;    // Draw buffers
 
   // Generic function for shaders
   function createShader(kind, content) {
