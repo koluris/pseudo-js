@@ -68,15 +68,6 @@ pseudo.CstrGraphics = (function() {
     }
   }
 
-  function resize(res) {
-    if (res.w > 0 && res.h > 0) {
-      screen.width = res.w;
-      screen.hei   = res.h;
-    
-      $('#resolution').text(res.w+' x '+res.h);
-    }
-  }
-
   // Exposed class functions/variables
   return {
     awake() {
@@ -114,7 +105,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x08:
-              resize({
+              render.resize({
                 w: resMode[(data&3)|((data&0x40)>>>4)],
                 h: (data&4) ? 480 : 240
               });

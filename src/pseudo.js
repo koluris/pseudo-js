@@ -30,7 +30,7 @@ pseudo.CstrMain = (function() {
       unusable = false;
 
       $(function() { // DOMContentLoaded
-        render .awake($('#screen'));
+        render .awake($('#screen'), $('#resolution'));
         vs     .awake();
         rootcnt.awake();
         r3ka   .awake($('#output'));
