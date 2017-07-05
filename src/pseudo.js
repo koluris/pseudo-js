@@ -5,11 +5,19 @@
   0x800
 
 pseudo.CstrMain = (function() {
+  let unusable;
+
   // Generic function for file read
   function file(path, fn) {
     const xhr = new XMLHttpRequest();
     xhr.onload = function() {
-      fn(xhr.response);
+      if (xhr.status === 404) {
+        r3ka.consoleWrite(MSG_ERROR, 'Unable to read file "'+path+'"', false);
+        unusable = true;
+      }
+      else {
+        fn(xhr.response);
+      }
     };
     xhr.responseSort = dataBin;
     xhr.open('GET', path);
@@ -19,6 +27,8 @@ pseudo.CstrMain = (function() {
   // Exposed class functions/variables
   return {
     awake() {
+      unusable = false;
+
       $(function() { // DOMContentLoaded
         vs     .awake($('#screen'));
         rootcnt.awake();
@@ -32,6 +42,10 @@ pseudo.CstrMain = (function() {
     },
 
     reset(path) {
+      if (unusable) {
+        return;
+      }
+      
       // Reset all emulator components
       vs     .reset();
       mem    .reset();

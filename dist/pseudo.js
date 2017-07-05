@@ -91,9 +91,15 @@ const pseudo = window.pseudo || {};
 
 
 
+// Console output
 
 
 
+// Format to Hexadecimal
+
+
+
+// Arithmetic operations
 
 
 
@@ -935,14 +941,14 @@ pseudo.CstrR3ka = (function() {
       output.text(' ');
 
       // Bootstrap
-      pseudo.CstrR3ka.consoleWrite('BIOS file has been written to ROM', false);
+      pseudo.CstrR3ka.consoleWrite('info', 'BIOS file has been written to ROM', false);
       const start = performance.now();
 
       while (r[32] !== 0x80030000) {
         step(false);
       }
       const delta = parseFloat(performance.now()-start).toFixed(2);
-      pseudo.CstrR3ka.consoleWrite('Bootstrap completed in '+delta+' ms', true);
+      pseudo.CstrR3ka.consoleWrite('info', 'Bootstrap completed in '+delta+' ms', true);
     },
 
     run() {
@@ -962,8 +968,9 @@ pseudo.CstrR3ka = (function() {
       return !(copr[12]&0x10000);
     },
 
-    consoleWrite(out, space) {
-      output.append((space ? '<br/>' : ' ')+'<div class="pseudoText">PSeudo / '+out+'</div>'+(space ? '<br/>' : ' '));
+    consoleWrite(kind, str, space) {
+      space = space ? '<br/>' : ' ';
+      output.append(space+'<div class="'+kind+'"><span>PSeudo</span> :: '+str+'</div>'+space);
     }
   };
 })();
@@ -978,11 +985,19 @@ pseudo.CstrR3ka = (function() {
 
 
 pseudo.CstrMain = (function() {
+  let unusable;
+
   // Generic function for file read
   function file(path, fn) {
     const xhr = new XMLHttpRequest();
     xhr.onload = function() {
-      fn(xhr.response);
+      if (xhr.status === 404) {
+        pseudo.CstrR3ka.consoleWrite('error', 'Unable to read file "'+path+'"', false);
+        unusable = true;
+      }
+      else {
+        fn(xhr.response);
+      }
     };
     xhr.responseType = 'arraybuffer';
     xhr.open('GET', path);
@@ -992,6 +1007,8 @@ pseudo.CstrMain = (function() {
   // Exposed class functions/variables
   return {
     awake() {
+      unusable = false;
+
       $(function() { // DOMContentLoaded
         pseudo.CstrGraphics     .awake($('#screen'));
         pseudo.CstrCounters.awake();
@@ -1005,6 +1022,10 @@ pseudo.CstrMain = (function() {
     },
 
     reset(path) {
+      if (unusable) {
+        return;
+      }
+      
       // Reset all emulator components
       pseudo.CstrGraphics     .reset();
       pseudo.CstrMem    .reset();

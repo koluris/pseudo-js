@@ -383,14 +383,14 @@ pseudo.CstrR3ka = (function() {
       output.text(' ');
 
       // Bootstrap
-      r3ka.consoleWrite('BIOS file has been written to ROM', false);
+      r3ka.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM', false);
       const start = performance.now();
 
       while (pc !== 0x80030000) {
         step(false);
       }
       const delta = parseFloat(performance.now()-start).toFixed(2);
-      r3ka.consoleWrite('Bootstrap completed in '+delta+' ms', true);
+      r3ka.consoleWrite(MSG_INFO, 'Bootstrap completed in '+delta+' ms', true);
     },
 
     run() {
@@ -410,8 +410,9 @@ pseudo.CstrR3ka = (function() {
       return !(copr[12]&0x10000);
     },
 
-    consoleWrite(out, space) {
-      output.append((space ? '<br/>' : ' ')+'<div class="pseudoText">PSeudo / '+out+'</div>'+(space ? '<br/>' : ' '));
+    consoleWrite(kind, str, space) {
+      space = space ? '<br/>' : ' ';
+      output.append(space+'<div class="'+kind+'"><span>PSeudo</span> :: '+str+'</div>'+space);
     }
   };
 })();
