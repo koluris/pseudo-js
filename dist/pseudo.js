@@ -969,8 +969,7 @@ pseudo.CstrR3ka = (function() {
     },
 
     consoleWrite(kind, str, space) {
-      space = space ? '<br/>' : ' ';
-      output.append(space+'<div class="'+kind+'"><span>PSeudo</span> :: '+str+'</div>'+space);
+      output.append('<div class="'+kind+'"><span>PSeudo</span> :: '+str+'</div>');
     }
   };
 })();
@@ -1047,6 +1046,8 @@ pseudo.CstrMain = (function() {
           
           // Prepare processor
           pseudo.CstrR3ka.exeHeader(header);
+          pseudo.CstrR3ka.consoleWrite('info', 'PSX-EXE "'+path+'" has been transferred to RAM', true);
+
           pseudo.CstrR3ka.run();
         });
       }

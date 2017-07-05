@@ -67,6 +67,8 @@ pseudo.CstrMain = (function() {
           
           // Prepare processor
           r3ka.exeHeader(header);
+          r3ka.consoleWrite(MSG_INFO, 'PSX-EXE "'+path+'" has been transferred to RAM', true);
+
           r3ka.run();
         });
       }
