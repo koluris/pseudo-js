@@ -1018,7 +1018,7 @@ pseudo.CstrMain = (function() {
       }
     };
     xhr.responseType = 'arraybuffer';
-    xhr.open('GET', path, false);
+    xhr.open('GET', path);
     xhr.send();
   }
 
