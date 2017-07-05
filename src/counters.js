@@ -1,15 +1,3 @@
-#define PSX_CLK\
-  33868800
-
-#define PSX_VSYNC\
-  PSX_CLK/60
-
-#define PSX_CYCLE\
-  64
-
-#define PSX_BOUND\
-  0xffff
-
 pseudo.CstrCounters = (function() {
   let timer;
   let vbk;
@@ -33,6 +21,7 @@ pseudo.CstrCounters = (function() {
     update() {
       if ((vbk += PSX_CYCLE) === PSX_VSYNC) { vbk = 0;
         bus.interruptSet(IRQ_VSYNC);
+        r3ka.setbp();
       }
     }
   };

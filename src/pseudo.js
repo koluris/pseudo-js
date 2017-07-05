@@ -12,7 +12,7 @@ pseudo.CstrMain = (function() {
     const xhr = new XMLHttpRequest();
     xhr.onload = function() {
       if (xhr.status === 404) {
-        r3ka.consoleWrite(MSG_ERROR, 'Unable to read file "'+path+'"', false);
+        r3ka.consoleWrite(MSG_ERROR, 'Unable to read file "'+path+'"');
         unusable = true;
       }
       else {
@@ -67,7 +67,7 @@ pseudo.CstrMain = (function() {
           
           // Prepare processor
           r3ka.exeHeader(header);
-          r3ka.consoleWrite(MSG_INFO, 'PSX-EXE "'+path+'" has been transferred to RAM', true);
+          r3ka.consoleWrite(MSG_INFO, 'PSX-EXE "'+path+'" has been transferred to RAM');
 
           r3ka.run();
         });

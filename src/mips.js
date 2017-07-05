@@ -35,6 +35,7 @@ pseudo.CstrR3ka = (function() {
   let opcodeCount;
   let cacheAddr, power32; // Cache for expensive calculation
   let output;
+  let bp;
 
   const mask = [
     [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
@@ -346,15 +347,18 @@ pseudo.CstrR3ka = (function() {
     step(true);
     pc = addr;
 
-    // Rootcounters, interrupts
-    rootcnt.update();
-    bus.interruptsUpdate();
+    if (opcodeCount >= PSX_CYCLE) {
+      // Rootcounters, interrupts
+      rootcnt.update();
+      bus.interruptsUpdate();
 
-    // Exceptions
-    if (data32&mask32) {
-      if ((copr[12]&0x401) === 0x401) {
-        exception(0x400, false);
+      // Exceptions
+      if (data32&mask32) {
+        if ((copr[12]&0x401) === 0x401) {
+          exception(0x400, false);
+        }
       }
+      opcodeCount %= PSX_CYCLE;
     }
   }
 
@@ -383,18 +387,20 @@ pseudo.CstrR3ka = (function() {
       output.text(' ');
 
       // Bootstrap
-      r3ka.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM', false);
+      r3ka.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM');
       const start = performance.now();
 
       while (pc !== 0x80030000) {
         step(false);
       }
       const delta = parseFloat(performance.now()-start).toFixed(2);
-      r3ka.consoleWrite(MSG_INFO, 'Bootstrap completed in '+delta+' ms', true);
+      r3ka.consoleWrite(MSG_INFO, 'Bootstrap completed in '+delta+' ms');
     },
 
     run() {
-      for (let i=0; i<350000; i++) {
+      bp = false;
+
+      while (!bp) {
         step(false);
       }
       requestAnimationFrame(r3ka.run);
@@ -412,6 +418,10 @@ pseudo.CstrR3ka = (function() {
 
     consoleWrite(kind, str, space) {
       output.append('<div class="'+kind+'"><span>PSeudo</span> :: '+str+'</div>');
+    },
+
+    setbp() {
+      bp = true;
     }
   };
 })();

@@ -91,6 +91,20 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Console output
 
 
@@ -212,18 +226,6 @@ pseudo.CstrBus = (function() {
     }
   };
 })();
-
-
-
-
-
-
-
-
-
-
-
-
 pseudo.CstrCounters = (function() {
   let timer;
   let vbk;
@@ -247,6 +249,7 @@ pseudo.CstrCounters = (function() {
     update() {
       if ((vbk += 64) === 33868800/60) { vbk = 0;
         pseudo.CstrBus.interruptSet(0);
+        pseudo.CstrR3ka.setbp();
       }
     }
   };
@@ -593,6 +596,7 @@ pseudo.CstrR3ka = (function() {
   let opcodeCount;
   let cacheAddr, power32; // Cache for expensive calculation
   let output;
+  let bp;
 
   const mask = [
     [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
@@ -904,15 +908,18 @@ pseudo.CstrR3ka = (function() {
     step(true);
     r[32] = addr;
 
-    // Rootcounters, interrupts
-    pseudo.CstrCounters.update();
-    pseudo.CstrBus.interruptsUpdate();
+    if (opcodeCount >= 64) {
+      // Rootcounters, interrupts
+      pseudo.CstrCounters.update();
+      pseudo.CstrBus.interruptsUpdate();
 
-    // Exceptions
-    if (pseudo.CstrMem._hwr.uw[((0x1070)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&pseudo.CstrMem._hwr.uw[((0x1074)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]) {
-      if ((copr[12]&0x401) === 0x401) {
-        copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80;
+      // Exceptions
+      if (pseudo.CstrMem._hwr.uw[((0x1070)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]&pseudo.CstrMem._hwr.uw[((0x1074)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]) {
+        if ((copr[12]&0x401) === 0x401) {
+          copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80;
+        }
       }
+      opcodeCount %= 64;
     }
   }
 
@@ -941,18 +948,20 @@ pseudo.CstrR3ka = (function() {
       output.text(' ');
 
       // Bootstrap
-      pseudo.CstrR3ka.consoleWrite('info', 'BIOS file has been written to ROM', false);
+      pseudo.CstrR3ka.consoleWrite('info', 'BIOS file has been written to ROM');
       const start = performance.now();
 
       while (r[32] !== 0x80030000) {
         step(false);
       }
       const delta = parseFloat(performance.now()-start).toFixed(2);
-      pseudo.CstrR3ka.consoleWrite('info', 'Bootstrap completed in '+delta+' ms', true);
+      pseudo.CstrR3ka.consoleWrite('info', 'Bootstrap completed in '+delta+' ms');
     },
 
     run() {
-      for (let i=0; i<350000; i++) {
+      bp = false;
+
+      while (!bp) {
         step(false);
       }
       requestAnimationFrame(pseudo.CstrR3ka.run);
@@ -970,6 +979,10 @@ pseudo.CstrR3ka = (function() {
 
     consoleWrite(kind, str, space) {
       output.append('<div class="'+kind+'"><span>PSeudo</span> :: '+str+'</div>');
+    },
+
+    setbp() {
+      bp = true;
     }
   };
 })();
@@ -991,7 +1004,7 @@ pseudo.CstrMain = (function() {
     const xhr = new XMLHttpRequest();
     xhr.onload = function() {
       if (xhr.status === 404) {
-        pseudo.CstrR3ka.consoleWrite('error', 'Unable to read file "'+path+'"', false);
+        pseudo.CstrR3ka.consoleWrite('error', 'Unable to read file "'+path+'"');
         unusable = true;
       }
       else {
@@ -1046,7 +1059,7 @@ pseudo.CstrMain = (function() {
           
           // Prepare processor
           pseudo.CstrR3ka.exeHeader(header);
-          pseudo.CstrR3ka.consoleWrite('info', 'PSX-EXE "'+path+'" has been transferred to RAM', true);
+          pseudo.CstrR3ka.consoleWrite('info', 'PSX-EXE "'+path+'" has been transferred to RAM');
 
           pseudo.CstrR3ka.run();
         });
