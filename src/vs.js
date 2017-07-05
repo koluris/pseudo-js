@@ -13,7 +13,6 @@ pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
   let modeDMA;
-  let screen;
 
   const resMode = [
     256, 320, 512, 640, 368, 384, 512, 640
@@ -80,14 +79,11 @@ pseudo.CstrGraphics = (function() {
 
   // Exposed class functions/variables
   return {
-    awake(element) {
+    awake() {
       // Command Pipe
       pipe = {
         data: new UintWcap(100)
       };
-
-      // Canvas
-      screen = element;
     },
 
     reset() {

@@ -5,12 +5,6 @@
 // Preprocessor
 
 
-
-
-
-
-
-
 // A kind of helper for various data manipulation
 function union(size) {
   const bfr = new ArrayBuffer(size);
@@ -114,6 +108,8 @@ const pseudo = window.pseudo || {};
 
 
 // Arithmetic operations
+
+
 
 
 
@@ -1030,7 +1026,8 @@ pseudo.CstrMain = (function() {
       unusable = false;
 
       $(function() { // DOMContentLoaded
-        pseudo.CstrGraphics     .awake($('#screen'));
+        pseudo.CstrRender .awake($('#screen'));
+        pseudo.CstrGraphics     .awake();
         pseudo.CstrCounters.awake();
         pseudo.CstrR3ka   .awake($('#output'));
 
@@ -1048,6 +1045,7 @@ pseudo.CstrMain = (function() {
       }
       
       // Reset all emulator components
+      pseudo.CstrRender .reset();
       pseudo.CstrGraphics     .reset();
       pseudo.CstrMem    .reset();
       pseudo.CstrCounters.reset();
@@ -1083,6 +1081,23 @@ pseudo.CstrMain = (function() {
 
 
 
+pseudo.CstrRender = (function() {
+  let screen, ctx;
+
+  // Exposed class functions/variables
+  return {
+    awake(element) {
+      // Canvas
+      screen = element;
+      ctx = screen[0].getContext('webgl');
+      ctx.clearColor(0.1, 0.2, 0.3, 1.0);
+    },
+
+    reset() {
+      ctx.clear(ctx.COLOR_BUFFER_BIT);
+    }
+  };
+})();
 
 
 
@@ -1098,7 +1113,6 @@ pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
   let modeDMA;
-  let screen;
 
   const resMode = [
     256, 320, 512, 640, 368, 384, 512, 640
@@ -1165,14 +1179,11 @@ pseudo.CstrGraphics = (function() {
 
   // Exposed class functions/variables
   return {
-    awake(element) {
+    awake() {
       // Command Pipe
       pipe = {
         data: new Uint32Array(100)
       };
-
-      // Canvas
-      screen = element;
     },
 
     reset() {

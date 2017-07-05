@@ -1,0 +1,2 @@
+#define render\
+  pseudo.CstrRender

@@ -1,11 +1,13 @@
 // Preprocessor
-#define UintWcap      Uint32Array
-#define UintBcap      Uint8Array
-#define Chars         String
-#define toChars       toString
-#define responseSort  responseType
-#define dataBin       'arraybuffer'
 #define bLen          byteLength
+#define Chars         String
+#define dataBin       'arraybuffer'
+#define fetchContext  getContext
+#define responseSort  responseType
+#define toChars       toString
+#define UintBcap      Uint8Array
+#define UintWcap      Uint32Array
+#define WebGL         'webgl'
 
 // A kind of helper for various data manipulation
 function union(size) {

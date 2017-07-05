@@ -30,7 +30,8 @@ pseudo.CstrMain = (function() {
       unusable = false;
 
       $(function() { // DOMContentLoaded
-        vs     .awake($('#screen'));
+        render .awake($('#screen'));
+        vs     .awake();
         rootcnt.awake();
         r3ka   .awake($('#output'));
 
@@ -48,6 +49,7 @@ pseudo.CstrMain = (function() {
       }
       
       // Reset all emulator components
+      render .reset();
       vs     .reset();
       mem    .reset();
       rootcnt.reset();
