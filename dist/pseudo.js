@@ -1034,6 +1034,7 @@ pseudo.CstrMain = (function() {
     },
 
     reset(path) {
+      // Prohibit all user actions
       if (unusable) {
         return;
       }
