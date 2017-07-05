@@ -9,9 +9,11 @@ Here's a list with the overall progress of the emulator, broken down in distinct
 * `95% -> PSX-EXE Loader`
 * `90% -> CPU Mips R3000A`
 * `75% -> Mem IO`
-* `20% -> DMA`
+* `25% -> DMA`
 * `20% -> Interrupts`
 * `15% -> Graphics`
+* `10% -> Audio`
+* `10% -> Rootcounters`
 
 ## How-to
 You need to run this project from a localhost server, like **Apache**. In order to build **PSeudo**, just run the `build` command on the terminal. You must also include a valid **BIOS** file on the `bios` folder in order to test the emulator. I will not provide information on how and where to find that.
