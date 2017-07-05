@@ -31,9 +31,11 @@ const pseudo = window.pseudo || {};
 
 
 
+// Assume NTSC for now
 
 
 
+// This is uttermost experimental, it's the Achilles' heel
 
 
 
@@ -182,7 +184,7 @@ pseudo.CstrBus = (function() {
       }
     },
 
-    interruptsUpdate() {
+    interruptsUpdate() { // A method to tweak when IRQs should fire
       for (let item of interrupt) {
         if (item.queued) {
           if (item.queued++ === item.dest) {
@@ -1016,7 +1018,7 @@ pseudo.CstrMain = (function() {
       }
     };
     xhr.responseType = 'arraybuffer';
-    xhr.open('GET', path);
+    xhr.open('GET', path, false);
     xhr.send();
   }
 
@@ -1129,10 +1131,6 @@ pseudo.CstrGraphics = (function() {
   let pipe;
   let modeDMA;
 
-  const resMode = [
-    256, 320, 512, 640, 368, 384, 512, 640
-  ];
-
   const sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x10
@@ -1150,6 +1148,10 @@ pseudo.CstrGraphics = (function() {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xd0
     0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xe0
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xf0
+  ];
+
+  const resMode = [
+    256, 320, 512, 640, 368, 384, 512, 640
   ];
 
   const write = {

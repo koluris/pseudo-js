@@ -20,7 +20,7 @@ pseudo.CstrMain = (function() {
       }
     };
     xhr.responseSort = dataBin;
-    xhr.open('GET', path);
+    xhr.open('GET', path, false);
     xhr.send();
   }
 
