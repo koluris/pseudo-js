@@ -31,11 +31,14 @@
   }
 
 pseudo.CstrR3ka = (function() {
-  let r, copr; // Base + Coprocessor
+  // Base + Coprocessor
+  let r, copr;
   let opcodeCount;
   let cacheAddr, power32; // Cache for expensive calculation
+
+  // Emulation loop handlers
+  let bp, requestAF;
   let output;
-  let bp;
 
   const mask = [
     [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
@@ -374,6 +377,11 @@ pseudo.CstrR3ka = (function() {
     },
 
     reset() {
+      // Break emulation loop
+      cancelAnimationFrame(requestAF);
+      requestAF = undefined;
+
+      // Reset processors
          r.fill(0);
       copr.fill(0);
 
@@ -386,7 +394,7 @@ pseudo.CstrR3ka = (function() {
       // Clear console out
       output.text(' ');
 
-      // Bootstrap
+      // BIOS bootstrap
       r3ka.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM');
       const start = performance.now();
 
@@ -400,10 +408,10 @@ pseudo.CstrR3ka = (function() {
     run() {
       bp = false;
 
-      while (!bp) {
+      while (!bp) { // No sleep till BROOKLYN
         step(false);
       }
-      requestAnimationFrame(r3ka.run);
+      requestAF = requestAnimationFrame(r3ka.run);
     },
 
     exeHeader(hdr) {
