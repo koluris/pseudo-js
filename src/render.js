@@ -1,7 +1,8 @@
 pseudo.CstrRender = (function() {
   let screen, resolution;
-  let ctx;
+  let ctx, attrib, bfr;
 
+  // Generic function for shaders
   function createShader(kind, content) {
     var shader = ctx.createShader(kind);
     ctx.shaderSource (shader, content);
@@ -32,6 +33,23 @@ pseudo.CstrRender = (function() {
       ctx.linkFunction(func);
       ctx.fetchFunctionParameter(func, ctx.LINK_STATUS);
       ctx.useFunction (func);
+
+      // Attributes
+      attrib = {
+        _c: ctx.fetchAttribute(func, 'a_color'),
+        _p: ctx.fetchAttribute(func, 'a_position'),
+        _r: ctx.fetchUniform  (func, 'u_resolution')
+      };
+
+      ctx.enableVertexAttrib(attrib._c);
+      ctx.enableVertexAttrib(attrib._p);
+
+      // Buffers
+      bfr = {
+        _c: ctx.createBuffer(),
+        _v: ctx.createBuffer(),
+        _t: ctx.createBuffer(),
+      };
     },
 
     reset() {
@@ -40,10 +58,12 @@ pseudo.CstrRender = (function() {
     },
 
     resize(res) {
-      // Check, if we have a valid resolution
+      // Check if we have a valid resolution
       if (res.w > 0 && res.h > 0) {
         screen.width = res.w;
         screen.hei   = res.h;
+        ctx.viewport(0, 0, res.w, res.h);
+        ctx.uniform2f(attrib._r, res.w/2, res.h/2);
 
         resolution.text(res.w+' x '+res.h);
       }

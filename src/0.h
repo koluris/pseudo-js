@@ -3,9 +3,12 @@
 #define createFunction          createProgram
 #define Chars                   String
 #define dataBin                 'arraybuffer'
+#define enableVertexAttrib      enableVertexAttribArray
+#define fetchAttribute          getAttribLocation
 #define fetchContext            getContext
 #define fetchFunctionParameter  getProgramParameter
 #define fetchShaderParameter    getShaderParameter
+#define fetchUniform            getUniformLocation
 #define linkFunction            linkProgram
 #define responseSort            responseType
 #define toChars                 toString
