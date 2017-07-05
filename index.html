@@ -61,9 +61,12 @@
       #bar-screen {
         position: relative;
         background: linear-gradient(to bottom, transparent 0%, transparent 15%, #191919 15%, #191919 85%, transparent 85%, transparent 100%);
-        min-height: 320px;
+        min-height: 280px;
       }
       #container-screen {
+        DISPLAY: flex;
+        justify-content: center;
+        align-items: center;
         position: absolute;
         background: black;
         top: 0;
@@ -73,7 +76,7 @@
       }
       #screen {
         display: block;
-        background: black;
+        background: #111;
         margin: 0 auto;
       }
       #resolution {
@@ -88,7 +91,7 @@
       #bar-panels {
         display: flex;
         flex: 1;
-        margin: 21px 12% 21px 12%;
+        margin: 20px 12% 30px 12%;
       }
       .panel-header {
         color: white;
