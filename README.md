@@ -1,3 +1,5 @@
+![PSeudo](https://raw.githubusercontent.com/dkoliris/pseudo/master/res/motto.png)
+
 ## Overview
 **PSeudo** emulator is being developed using **.h headers** in addition to **.js files**. It helps me keep the workspace clean and simple, while at the same time code gets inlined for further optimization. The codebase is compatible with **ES6 Javascript** onwards. Also, please use **Chrome** for best results (this is due to V8 optimization).
 
