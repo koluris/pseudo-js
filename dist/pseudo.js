@@ -1151,7 +1151,7 @@ pseudo.CstrRender = (function() {
 
   // Generic function for shaders
   function createShader(kind, content) {
-    var shader = ctx.createShader(kind);
+    const shader = ctx.createShader(kind);
     ctx.shaderSource (shader, content);
     ctx.compileShader(shader);
     ctx.getShaderParameter(shader, ctx.COMPILE_STATUS);
@@ -1174,7 +1174,7 @@ pseudo.CstrRender = (function() {
       ctx.clearColor(0.0, 0.0, 0.0, 1.0);
 
       // Shaders
-      var func = ctx.createProgram();
+      const func = ctx.createProgram();
       ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '  attribute vec2 a_position;  attribute vec4 a_color;  uniform vec2 u_resolution;  varying vec4 v_color;    void main() {    gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);    v_color = a_color;  }'));
       ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '  precision mediump float;  varying vec4 v_color;    void main() {    gl_FragColor = v_color;  }'));
       ctx.linkProgram(func);

@@ -103,7 +103,7 @@ pseudo.CstrRender = (function() {
 
   // Generic function for shaders
   function createShader(kind, content) {
-    var shader = ctx.createShader(kind);
+    const shader = ctx.createShader(kind);
     ctx.shaderSource (shader, content);
     ctx.compileShader(shader);
     ctx.fetchShaderParameter(shader, ctx.COMPILE_STATUS);
@@ -126,7 +126,7 @@ pseudo.CstrRender = (function() {
       ctx.clearColor(0.0, 0.0, 0.0, 1.0);
 
       // Shaders
-      var func = ctx.createFunction();
+      const func = ctx.createFunction();
       ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, SHADER_VERTEX));
       ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, SHADER_FRAGMENT));
       ctx.linkFunction(func);
