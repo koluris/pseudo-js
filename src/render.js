@@ -31,6 +31,18 @@
     Primitive Structures
 ***/
 
+#define PFx(data) {\
+  cr: [\
+    RGBC(data[0])\
+  ],\
+  vx: [\
+    POINT(data[1]),\
+    POINT(data[2]),\
+    POINT(data[3]),\
+    POINT(data[4]),\
+  ]\
+}
+
 #define PGx(data) {\
   cr: [\
     RGBC(data[0]),\
@@ -45,6 +57,24 @@
     POINT(data[7]),\
   ]\
 }
+
+/***
+    Vertices
+***/
+
+#define drawF(size, mode)\
+  const k  = PFx(data);\
+  const cr = [];\
+  const vx = [];\
+  \
+  for (let i=0; i<size; i++) {\
+    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
+    vx.push(k.vx[i]._X, k.vx[i]._Y);\
+  }\
+  \
+  iColor(cr);\
+  iVertex(vx);\
+  ctx.drawVertices(mode, 0, size)
 
 /***
     Gouraud Vertices
@@ -146,6 +176,12 @@ pseudo.CstrRender = (function() {
         case 0x33: // POLY G3
           {
             drawG(3, ctx.TRIANGLE_STRIP);
+          }
+          return;
+
+        case 0x40: // LINE F2
+          {
+            drawF(2, ctx.LINE_STRIP);
           }
           return;
 
