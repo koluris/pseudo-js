@@ -55,13 +55,13 @@ pseudo.CstrBus = (function() {
   // Exposed class functions/variables
   return {
     reset() {
-      for (let item of interrupt) {
+      for (const item of interrupt) {
         item.queued = IRQ_QUEUED_NO;
       }
     },
 
     interruptsUpdate() { // A method to tweak when IRQs should fire
-      for (let item of interrupt) {
+      for (const item of interrupt) {
         if (item.queued) {
           if (item.queued++ === item.dest) {
             data16 |= (1<<item.code);

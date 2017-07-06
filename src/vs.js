@@ -1,3 +1,5 @@
+#define ram mem._ram
+
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
 
@@ -68,7 +70,7 @@ pseudo.CstrGraphics = (function() {
 
     dataMem(addr, size) {
       while (size--) {
-        const data = directMemW(mem._ram.uw, addr);
+        const data = directMemW(ram.uw, addr);
         addr += 4;
         write.data(data);
       }
@@ -155,7 +157,7 @@ pseudo.CstrGraphics = (function() {
 
         case 0x01000401:
           do {
-            const count = directMemW(mem._ram.uw, madr);
+            const count = directMemW(ram.uw, madr);
             write.dataMem((madr+4)&0x1ffffc, count>>>24);
             madr = count&0xffffff;
           }
@@ -166,3 +168,5 @@ pseudo.CstrGraphics = (function() {
     }
   };
 })();
+
+#undef ram

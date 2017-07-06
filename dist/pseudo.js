@@ -189,13 +189,13 @@ pseudo.CstrBus = (function() {
   // Exposed class functions/variables
   return {
     reset() {
-      for (let item of interrupt) {
+      for (const item of interrupt) {
         item.queued = 0;
       }
     },
 
     interruptsUpdate() { // A method to tweak when IRQs should fire
-      for (let item of interrupt) {
+      for (const item of interrupt) {
         if (item.queued) {
           if (item.queued++ === item.dest) {
             pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] |= (1<<item.code);
@@ -1375,6 +1375,8 @@ pseudo.CstrRender = (function() {
 
 
 
+
+
 pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
@@ -1532,4 +1534,5 @@ pseudo.CstrGraphics = (function() {
     }
   };
 })();
+
 
