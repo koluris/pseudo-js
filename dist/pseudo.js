@@ -1508,6 +1508,15 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000201:
+          {
+            let madrVal = pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
+
+            while (size--) {
+              const data = pseudo.CstrMem._ram.uw[(( madrVal)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
+              madrVal += 4;
+              write.data(data);
+            }
+          }
           return;
 
         case 0x01000401:

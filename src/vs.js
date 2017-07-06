@@ -142,6 +142,15 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000201:
+          {
+            let madrVal = madr;
+
+            while (size--) {
+              const data = directMemW(mem._ram.uw, madrVal);
+              madrVal += 4;
+              write.data(data);
+            }
+          }
           return;
 
         case 0x01000401:
