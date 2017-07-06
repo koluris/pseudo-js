@@ -58,6 +58,16 @@
   ]\
 }
 
+#define SPRTx(data) {\
+  cr: [\
+    RGBC(data[0])\
+  ],\
+  vx: [\
+    POINT(data[1]),\
+    POINT(data[3]),\
+  ]\
+}
+
 /***
     Vertices
 ***/
@@ -93,6 +103,34 @@
   iColor(cr);\
   iVertex(vx);\
   ctx.drawVertices(mode, 0, size)
+
+/***
+    Sprites
+***/
+
+#define drawSprite(size)\
+  const k  = SPRTx(data);\
+  const cr = [];\
+  \
+  if (size) {\
+    k.vx[1]._X = size;\
+    k.vx[1]._Y = size;\
+  }\
+  \
+  for (let i=0; i<4; i++) {\
+    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
+  }\
+  \
+  var vx = [\
+    k.vx[0]._X,            k.vx[0]._Y,\
+    k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,\
+    k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,\
+    k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y+k.vx[1]._Y,\
+  ];\
+  \
+  iColor(cr);\
+  iVertex(vx);\
+  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4)
 
 pseudo.CstrRender = (function() {
   let screen, resolution;
@@ -185,10 +223,26 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x74:
+        case 0x76: // SPRITE 8
+          {
+            drawSprite(8);
+          }
+          return;
+
         case 0xa0: // LOAD IMAGE
           return;
 
         case 0xe1: // TEXTURE PAGE
+          return;
+
+        case 0xe3: // DRAW AREA START
+          return;
+
+        case 0xe4: // DRAW AREA END
+          return;
+
+        case 0xe5: // DRAW OFFSET
           return;
       }
       r3ka.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
