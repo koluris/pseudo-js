@@ -255,6 +255,12 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x67: // SPRITE S
+          {
+            drawSprite(0);
+          }
+          return;
+
         case 0x74:
         case 0x76: // SPRITE 8
           {
