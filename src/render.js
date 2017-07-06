@@ -58,6 +58,16 @@
   ]\
 }
 
+#define BLKFx(data) {\
+  cr: [\
+    RGBC(data[0])\
+  ],\
+  vx: [\
+    POINT(data[1]),\
+    POINT(data[2]),\
+  ]\
+}
+
 #define SPRTx(data) {\
   cr: [\
     RGBC(data[0])\
@@ -211,6 +221,28 @@ pseudo.CstrRender = (function() {
         case 0x01: // FLUSH
           return;
 
+        case 0x02: // BLOCK FILL
+          {
+            const k  = BLKFx(data);
+            const cr = [];
+
+            for (let i=0; i<4; i++) {
+              cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);
+            }
+
+            var vx = [
+              k.vx[0]._X,            k.vx[0]._Y,
+              k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,
+              k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,
+              k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y+k.vx[1]._Y,
+            ];
+
+            iColor(cr);
+            iVertex(vx);
+            ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
+          }
+          return;
+
         case 0x33: // POLY G3
           {
             drawG(3, ctx.TRIANGLE_STRIP);
@@ -230,10 +262,19 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x7f: // SPRITE 16
+          {
+            drawSprite(16);
+          }
+          return;
+
         case 0xa0: // LOAD IMAGE
           return;
 
         case 0xe1: // TEXTURE PAGE
+          return;
+
+        case 0xe2: // TEXTURE WINDOW
           return;
 
         case 0xe3: // DRAW AREA START
@@ -243,6 +284,9 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe5: // DRAW OFFSET
+          return;
+
+        case 0xe6: // STP
           return;
       }
       r3ka.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
