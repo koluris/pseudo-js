@@ -250,6 +250,7 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x28:
         case 0x29: // POLY F4
           {
             drawF(4, ctx.TRIANGLE_STRIP);
@@ -276,9 +277,21 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x4a: // LINE F3
+          {
+            drawF(3, ctx.LINE_STRIP);
+          }
+          return;
+
         case 0x4e: // LINE F4
           {
             drawF(4, ctx.LINE_STRIP);
+          }
+          return;
+
+        case 0x52: // LINE G2
+          {
+            drawG(2, ctx.LINE_STRIP);
           }
           return;
 
@@ -314,6 +327,9 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xa0: // LOAD IMAGE
+          return;
+
+        case 0xc0: // STORE IMAGE
           return;
 
         case 0xe1: // TEXTURE PAGE
