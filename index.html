@@ -1,232 +1,243 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8"/>
-    <title>PSeudo PSX Emulator</title>
+  <meta charset="utf-8"/>
+  <title>PSeudo PSX Emulator</title>
 
-    <style>
-      @import url('css/normalize.css');
+  <STYLE>
+    @import url('css/normalize.css');
 
-      /* Fonts */
-      @font-face {
-        src: url('css/oswald-300.woff2');
-        font-family: 'Oswald-300';
-      }
-      @font-face {
-        src: url('css/oswald-400.woff2');
-        font-family: 'Oswald-400';
-      }
+    /* Fonts */
+    @font-face {
+      src: url('css/oswald-300.woff2');
+      font-FAMILY: 'Oswald-300';
+    }
+    @font-face {
+      src: url('css/oswald-400.woff2');
+      font-FAMILY: 'Oswald-400';
+    }
+    @font-face {
+      src: url('css/ps.woff2');
+      font-FAMILY: 'PS';
+    }
 
-      /* ScrollBar */
-      ::-webkit-scrollbar {
-        width: 3px;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #93a0a8;
-      }
+    /* ScrollBar */
+    ::-webkit-scrollbar {
+      width: 3px;
+    }
+    ::-webkit-scrollbar-thumb {
+      BACKGROUND: #93a0a8;
+    }
 
-      /* General */
-      * {
-        box-sizing: border-box;
-      }
-      BODY {
-        background: #1f1f1f;
-        font: normal 13px 'Helvetica Neue', sans-serif;
-      }
-      #main {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-      }
+    /* General */
+    BODY {
+      color: white;
+      BACKGROUND: #1f1f1f;
+      font: normal 13px 'Helvetica Neue', sans-serif;
+    }
+    #root {
+      DISPLAY: flex;
+      flex-direction: column;
+      position: absolute;
+      width: 100%;
+      HEIGHT: 100%;
+    }
+    #top {
+      BACKGROUND: #161616;
+      min-HEIGHT: 28px;
+      border-bottom: 1px solid RGBA(255, 255, 255, .2);
+    }
+    #bottom {
+      DISPLAY: flex;
+      flex: 1;
+    }
+    #pane-left {
+      DISPLAY: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    #pane-r {
+      width: 130px;
+      border-left: 1px solid RGBA(255, 255, 255, .2);
+      overflow-Y: scroll;
+    }
 
-      /* Contact */
-      #bar-contact {
-        background: #161616;
-        min-height: 28px;
-      }
+    /* Header */
+    #bar-header {
+      DISPLAY: flex;
+      min-HEIGHT: 60px;
+    }
 
-      /* Header */
-      #bar-header {
-        DISPLAY: flex;
-        background: linear-gradient(to bottom, #292929 0%, #1f1f1f 15%, #1f1f1f 100%);
-        border-top: 1px solid #4d4d4d;
-        min-height: 60px;
-      }
+    /* Screen */
+    #bar-screen {
+      position: relative;
+      BACKGROUND: linear-Gradient(to bottom, transparent 0%, transparent 15%, #191919 15%, #191919 85%, transparent 85%, transparent 100%);
+      min-HEIGHT: 280px;
+    }
+    #container-screen {
+      DISPLAY: flex;
+      JUSTIFY-content: center;
+      ALIGN-items: center;
+      position: absolute;
+      BACKGROUND: black;
+      top: 0;
+      RIGHT: 12%;
+      bottom: 0;
+      left: 12%;
+    }
+    #screen {
+      DISPLAY: block;
+      BACKGROUND: black;
+      MARGIN: 0 auto;
+    }
+    #resolution {
+      position: absolute;
+      color: #f5cb0f;
+      top: 0;
+      RIGHT: 0;
+      PADDING: 5px 7px;
+    }
 
-      /* Screen */
-      #bar-screen {
-        position: relative;
-        background: linear-gradient(to bottom, transparent 0%, transparent 15%, #191919 15%, #191919 85%, transparent 85%, transparent 100%);
-        min-height: 280px;
-      }
-      #container-screen {
-        DISPLAY: flex;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        background: black;
-        top: 0;
-        right: 12%;
-        bottom: 0;
-        left: 12%;
-      }
-      #screen {
-        display: block;
-        background: black;
-        margin: 0 auto;
-      }
-      #resolution {
-        position: absolute;
-        color: #f5cb0f;
-        top: 0;
-        right: 0;
-        padding: 5px 7px;
-      }
+    /* Boxes */
+    #bar-boxes {
+      flex: 1;
+      DISPLAY: flex;
+      MARGIN: 20px 12% 30px 12%;
+    }
+    .box-header {
+      font: normal 27px 'Oswald-400', sans-serif;
+      MARGIN-bottom: 10px;
+    }
 
-      /* Panels */
-      #bar-panels {
-        display: flex;
-        flex: 1;
-        margin: 20px 12% 30px 12%;
-      }
-      .panel-header {
-        color: white;
-        font: normal 27px 'Oswald-400', sans-serif;
-        margin-bottom: 10px;
-      }
-      #panel-console {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        border-right: 1px solid rgba(255, 255, 255, .02);
-        padding-right: 20px;
-      }
-      #output {
-        flex: 1;
-        color: #93a0a8;
-        font: normal 14px 'Andale Mono', sans-serif;
-        overflow-Y: scroll;
-        border-top: 1px solid rgba(255, 255, 255, .1);
-        border-bottom: 1px solid rgba(255, 255, 255, .1);
-        padding: 7px 0;
-      }
-      #output > .info {
-        color: #1ba1a4;
-      }
-      #output > .error {
-        color: #de1429;
-      }
-      #output > .info > span, #output > .error > span {
-        color: #f5cb0f;
-      }
-      #panel-dropzone {
-        display: flex;
-        flex-direction: column;
-        min-width: 300px;
-        border-left: 1px solid rgba(255, 255, 255, .02);
-        padding-left: 20px;
-      }
-      #dropzone {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        flex: 1;
-        border: 1px solid rgba(255, 255, 255, .1);
-      }
-      #dropzone > img:nth-child(1) {
-        margin-bottom: 20px;
-      }
-      #dropzone > div:nth-child(2) {
-        color: #fff;
-        font: normal 16px 'Oswald-400', sans-serif;
-      }
-      #dropzone > div:nth-child(3) {
-        color: #93a0a8;
-        font: normal 11px 'Oswald-300', sans-serif;
-      }
+    /* Output */
+    #box-output {
+      DISPLAY: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    #output {
+      flex: 1;
+      color: #93a0a8;
+      font: normal 14px 'Andale Mono', sans-serif;
+      border-top: 1px solid RGBA(255, 255, 255, .1);
+      border-bottom: 1px solid RGBA(255, 255, 255, .1);
+      PADDING: 7px 0;
+      overflow-Y: scroll;
+    }
+    #output > .info {
+      color: #1ba1a4;
+    }
+    #output > .error {
+      color: #de1429;
+    }
+    #output > .info > span, #output > .error > span {
+      color: #f5cb0f;
+    }
 
-      /* Homebrew */
-      #homebrew {
-        z-index: 2;
-        position: absolute;
-        background: white;
-        width: 130px;
-        height: 100%;
-        top: 0;
-        right: 0;
-        overflow-Y: scroll;
-      }
-      #homebrew > .item {
-        color: #555;
-        background: white;
-        text-align: right;
-        height: 36px;
-        line-height: 36px;
-        padding: 0 7px;
-        cursor: pointer;
-      }
-      #homebrew > .item:nth-child(even) {
-        background: #f0f0f0;
-      }
-      #homebrew > .item:hover {
-        color: #1ba1a4;
-        text-decoration: underline;
-      }
-    </style>
+    /* Dropzone */
+    #box-dropzone {
+      DISPLAY: flex;
+      flex-direction: column;
+      min-width: 300px;
+      PADDING-left: 30px;
+    }
+    #dropzone {
+      DISPLAY: flex;
+      flex-direction: column;
+      JUSTIFY-content: center;
+      ALIGN-items: center;
+      flex: 1;
+      border: 1px solid RGBA(255, 255, 255, .1);
+    }
+    #dropzone > IMG {
+      width: 58px;
+      MARGIN-bottom: 20px;
+    }
+    #dropzone > div:nth-child(2) {
+      color: #fff;
+      font: normal 16px 'Oswald-400', sans-serif;
+    }
+    #dropzone > div:nth-child(3) {
+      color: #93a0a8;
+      font: normal 11px 'Oswald-300', sans-serif;
+    }
+
+    /* Homebrew */
+    #homebrew {
+      overflow-Y: scroll;
+    }
+    #homebrew > .item {
+      color: #93a0a8;
+      text-ALIGN: RIGHT;
+      HEIGHT: 36px;
+      line-HEIGHT: 36px;
+      PADDING: 0 7px;
+      cursor: pointer;
+    }
+    #homebrew > .item:nth-child(even) {
+      BACKGROUND: RGBA(0, 0, 0, .25);
+    }
+    #homebrew > .item:hover {
+      color: #1ba1a4;
+      text-decoration: underline;
+    }
+  </STYLE>
 </head>
-<body>
-  <div id="homebrew">
-  </div>
+<BODY>
+  <div id="root">
 
-  <div id="main">
-    <!-- Contact -->
-    <div id="bar-contact">
+    <!-- Top -->
+    <div id="top">
     </div>
 
-    <!-- Header -->
-    <div id="bar-header">
-      <div STYLE="display:flex;align-items:center;flex:1;margin:0 12%">
-        <img src="res/ps.png" width="40"/>
-      </div>
-    </div>
+    <!-- Bottom -->
+    <div id="bottom">
 
-    <!-- Screen -->
-    <div id="bar-screen">
-      <div id="container-screen">
-        <canvas id="screen" width="320" height="240">
-          No support for <code>canvas</code> element.
-        </canvas>
-        <div id="resolution">
+      <!-- Pane L -->
+      <div id="pane-left">
+
+        <!-- Header -->
+        <div id="bar-header">
+          <div STYLE="display:flex;align-items:center;flex:1;margin:0 12%">
+            <IMG src="res/ps.png" width="40"/>
+            <div STYLE="font:normal 42px 'PS', sans-serif;letter-spacing:1px;margin-left:20px">PSeudo</div>
+          </div>
+        </div>
+
+        <!-- Screen -->
+        <div id="bar-screen">
+          <div id="container-screen">
+            <canvas id="screen" width="320" height="240">
+              No support for <code>canvas</code> element.
+            </canvas>
+            <div id="resolution"></div>
+          </div>
+        </div>
+
+        <!-- Boxes -->
+        <div id="bar-boxes">
+
+          <!-- Output -->
+          <div id="box-output">
+            <div class="box-header">CONSOLE</div>
+            <div id="output"></div>
+          </div>
+
+          <!-- DropZone -->
+          <div id="box-dropzone">
+            <div class="box-header">DROP-ZONE</div>
+            <div id="dropzone">
+              <IMG src="res/drop.png" width="58"/>
+              <div>DRAG & DROP PSX FILES HERE</div>
+              <div>BIOS (.bin), EXE (.psx, .bin), CD ISO (.iso), etc.</div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Panels -->
-    <div id="bar-panels">
-      <!-- Console -->
-      <div id="panel-console">
-        <div class="panel-header">
-          CONSOLE
-        </div>
-        <div id="output">
-        </div>
-      </div>
-
-      <!-- DropZone -->
-      <div id="panel-dropzone">
-        <div class="panel-header">
-          DROP-ZONE
-        </div>
-        <div id="dropzone">
-          <img src="res/drop.png" width="58"/>
-          <div>DRAG & DROP PSX FILES HERE</div>
-          <div>BIOS (.bin), EXE (.psx, .bin), CD ISO (.iso), etc.</div>
-        </div>
+      <!-- Pane R -->
+      <div id="pane-r">
+        <div id="homebrew"></div>
       </div>
     </div>
   </div>
@@ -255,5 +266,5 @@
     // Startup
     pseudo.CstrMain.awake();
   </script>
-</body>
+</BODY>
 </html>
