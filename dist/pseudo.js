@@ -1430,6 +1430,14 @@ pseudo.CstrGraphics = (function() {
         pipe.row  = 0;
         pseudo.CstrRender.prim(pipe.prim, pipe.data);
       }
+    },
+
+    dataMem(addr, size) {
+      while (size--) {
+        const data = pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
+        addr += 4;
+        write.data(data);
+      }
     }
   }
 
@@ -1508,18 +1516,16 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000201:
-          {
-            let madrVal = pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
-
-            while (size--) {
-              const data = pseudo.CstrMem._ram.uw[(( madrVal)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
-              madrVal += 4;
-              write.data(data);
-            }
-          }
+          write.dataMem(pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2], size);
           return;
 
         case 0x01000401:
+          do {
+            const count = pseudo.CstrMem._ram.uw[(( pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
+            write.dataMem((pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]+4)&0x1ffffc, count>>>24);
+            pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = count&0xffffff;
+          }
+          while (pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] !== 0xffffff);
           return;
       }
       pseudo.CstrMain.error('GPU DMA '+('0x'+(pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]>>>0).toString(16)));

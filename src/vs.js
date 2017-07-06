@@ -64,6 +64,14 @@ pseudo.CstrGraphics = (function() {
         pipe.row  = 0;
         render.prim(pipe.prim, pipe.data);
       }
+    },
+
+    dataMem(addr, size) {
+      while (size--) {
+        const data = directMemW(mem._ram.uw, addr);
+        addr += 4;
+        write.data(data);
+      }
     }
   }
 
@@ -142,18 +150,16 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000201:
-          {
-            let madrVal = madr;
-
-            while (size--) {
-              const data = directMemW(mem._ram.uw, madrVal);
-              madrVal += 4;
-              write.data(data);
-            }
-          }
+          write.dataMem(madr, size);
           return;
 
         case 0x01000401:
+          do {
+            const count = directMemW(mem._ram.uw, madr);
+            write.dataMem((madr+4)&0x1ffffc, count>>>24);
+            madr = count&0xffffff;
+          }
+          while (madr !== 0xffffff);
           return;
       }
       psx.error('GPU DMA '+hex(chcr));
