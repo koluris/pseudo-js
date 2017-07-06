@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>PSeudo PSX Emulator</title>
+  <title>PSeudo™</title>
 
   <STYLE>
     @import url('css/normalize.css');
@@ -67,11 +67,25 @@
       border-left: 1px solid RGBA(255, 255, 255, .2);
       overflow-Y: scroll;
     }
+    .spacer {
+      DISPLAY: flex;
+      ALIGN-items: center;
+      flex: 1;
+      MARGIN: 0 12%;
+    }
 
     /* Header */
     #bar-header {
       DISPLAY: flex;
       min-HEIGHT: 60px;
+    }
+    #bar-header > .spacer > IMG {
+      width: 40px;
+    }
+    #brand {
+      font: normal 42px 'PS', sans-serif;
+      letter-SPACING: 1px;
+      MARGIN-left: 20px;
     }
 
     /* Screen */
@@ -205,9 +219,10 @@
 
         <!-- Header -->
         <div id="bar-header">
-          <div STYLE="display:flex;align-items:center;flex:1;margin:0 12%">
-            <IMG src="res/ps.png" width="40"/>
-            <div STYLE="font:normal 42px 'PS', sans-serif;letter-spacing:1px;margin-left:20px">PSeudo</div>
+          <div class="spacer">
+            <IMG src="res/ps.png"/>
+            <div id="brand">PSeudo</div>
+            <div STYLE="color:white;flex:1;font:normal 14px 'Oswald-400', sans-serif;text-ALIGN:RIGHT">hide panels ></div>
           </div>
         </div>
 
@@ -234,7 +249,7 @@
           <div id="box-dropzone">
             <div class="box-header">DROP-ZONE</div>
             <div id="dropzone">
-              <IMG src="res/drop.png" width="58"/>
+              <IMG src="res/drop.png"/>
               <div>DRAG & DROP PSX FILES HERE</div>
               <div>BIOS (.bin), EXE (.psx, .bin), CD ISO (.iso), etc.</div>
             </div>
