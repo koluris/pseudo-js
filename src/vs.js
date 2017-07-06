@@ -62,8 +62,7 @@ pseudo.CstrGraphics = (function() {
       if (pipe.size === pipe.row) {
         pipe.size = 0;
         pipe.row  = 0;
-        
-        console.dir('GPU Render Primitive '+hex(pipe.prim));
+        render.prim(pipe.prim, pipe.data);
       }
     }
   }

@@ -70,6 +70,26 @@ pseudo.CstrRender = (function() {
 
         resolution.text(res.w+' x '+res.h);
       }
+    },
+
+    prim(addr, data) {
+      switch(addr) {
+        case 0x01: // FLUSH
+          return;
+
+        case 0x33: // POLY G3
+          {
+            drawG(3, ctx.TRIANGLE_STRIP);
+          }
+          return;
+
+        case 0xa0: // LOAD IMAGE
+          return;
+
+        case 0xe1: // TEXTURE PAGE
+          return;
+      }
+      r3ka.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
     }
   };
 })();

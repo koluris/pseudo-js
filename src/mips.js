@@ -425,7 +425,7 @@ pseudo.CstrR3ka = (function() {
     },
 
     consoleWrite(kind, str, space) {
-      output.append('<div class="'+kind+'"><span>PSeudo</span> :: '+str+'</div>');
+      output.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
     },
 
     setbp() {

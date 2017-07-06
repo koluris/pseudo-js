@@ -994,7 +994,7 @@ pseudo.CstrR3ka = (function() {
     },
 
     consoleWrite(kind, str, space) {
-      output.append('<div class="'+kind+'"><span>PSeudo</span> :: '+str+'</div>');
+      output.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
     },
 
     setbp() {
@@ -1165,6 +1165,20 @@ pseudo.CstrRender = (function() {
 
         resolution.text(res.w+' x '+res.h);
       }
+    },
+
+    prim(addr, data) {
+      switch(addr) {
+        case 0x01: // FLUSH
+          return;
+
+        case 0xa0: // LOAD IMAGE
+          return;
+
+        case 0xe1: // TEXTURE PAGE
+          return;
+      }
+      pseudo.CstrR3ka.consoleWrite('error', 'GPU Render Primitive '+('0x'+(addr>>>0).toString(16)));
     }
   };
 })();
@@ -1232,8 +1246,7 @@ pseudo.CstrGraphics = (function() {
       if (pipe.size === pipe.row) {
         pipe.size = 0;
         pipe.row  = 0;
-        
-        console.dir('GPU Render Primitive '+('0x'+(pipe.prim>>>0).toString(16)));
+        pseudo.CstrRender.prim(pipe.prim, pipe.data);
       }
     }
   }
