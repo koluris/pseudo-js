@@ -243,6 +243,7 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x21:
         case 0x22: // POLY F3
           {
             drawF(3, ctx.TRIANGLE_STRIP);
@@ -255,15 +256,41 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x31:
         case 0x33: // POLY G3
           {
             drawG(3, ctx.TRIANGLE_STRIP);
           }
           return;
 
-        case 0x40: // LINE F2
+        case 0x39: // POLY G4
+          {
+            drawG(4, ctx.TRIANGLE_STRIP);
+          }
+          return;
+
+        case 0x40:
+        case 0x42: // LINE F2
           {
             drawF(2, ctx.LINE_STRIP);
+          }
+          return;
+
+        case 0x4e: // LINE F4
+          {
+            drawF(4, ctx.LINE_STRIP);
+          }
+          return;
+
+        case 0x5a: // LINE G3
+          {
+            drawG(3, ctx.LINE_STRIP);
+          }
+          return;
+
+        case 0x5e: // LINE G4
+          {
+            drawG(4, ctx.LINE_STRIP);
           }
           return;
 
