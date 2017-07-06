@@ -243,6 +243,18 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x22: // POLY F3
+          {
+            drawF(3, ctx.TRIANGLE_STRIP);
+          }
+          return;
+
+        case 0x29: // POLY F4
+          {
+            drawF(4, ctx.TRIANGLE_STRIP);
+          }
+          return;
+
         case 0x33: // POLY G3
           {
             drawG(3, ctx.TRIANGLE_STRIP);
