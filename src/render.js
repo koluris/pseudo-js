@@ -115,6 +115,34 @@
   ctx.drawVertices(mode, 0, size)
 
 /***
+    Tiles
+***/
+
+#define drawTile(size)\
+  const k  = BLKFx(data);\
+  const cr = [];\
+  \
+  if (size) {\
+      k.vx[1]._X = size;\
+      k.vx[1]._Y = size;\
+  }\
+  \
+  for (var i=0; i<4; i++) {\
+    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
+  }\
+  \
+  const vx = [\
+    k.vx[0]._X,            k.vx[0]._Y,\
+    k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,\
+    k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,\
+    k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y+k.vx[1]._Y,\
+  ];\
+  \
+  iColor(cr);\
+  iVertex(vx);\
+  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4)
+
+/***
     Sprites
 ***/
 
@@ -333,6 +361,15 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x60:
+        case 0x61:
+        case 0x62:
+        case 0x63: // TILE S
+          {
+            drawTile(0);
+          }
+          return;
+
         case 0x64:
         case 0x65:
         case 0x66:
@@ -342,12 +379,39 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x68:
+        case 0x69:
+        case 0x6a:
+        case 0x6b: // TILE 1
+          {
+            drawTile(1);
+          }
+          return;
+
+        case 0x70:
+        case 0x71:
+        case 0x72:
+        case 0x73: // TILE 8
+          {
+            drawTile(8);
+          }
+          return;
+
         case 0x74:
         case 0x75:
         case 0x76:
         case 0x77: // SPRITE 8
           {
             drawSprite(8);
+          }
+          return;
+
+        case 0x78:
+        case 0x79:
+        case 0x7a:
+        case 0x7b: // TILE 16
+          {
+            drawTile(16);
           }
           return;
 
