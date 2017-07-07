@@ -242,7 +242,7 @@ pseudo.CstrCop2 = (function() {
     },
 
     execute(code) {
-      pseudo.CstrMain.error('COP2 Execute '+('0x'+(code&63>>>0).toString(16)));
+      console.dir('COP2 Execute '+('0x'+(code&63>>>0).toString(16)));
     }
   };
 })();

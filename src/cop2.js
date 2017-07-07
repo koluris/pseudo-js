@@ -9,7 +9,7 @@ pseudo.CstrCop2 = (function() {
     },
 
     execute(code) {
-      psx.error('COP2 Execute '+hex(code&63));
+      console.dir('COP2 Execute '+hex(code&63));
     }
   };
 })();
