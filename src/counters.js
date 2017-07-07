@@ -20,7 +20,8 @@ pseudo.CstrCounters = (function() {
 
     update() {
       if ((vbk += PSX_CYCLE) === PSX_VSYNC) { vbk = 0;
-        bus.interruptSet(IRQ_VSYNC);
+         bus.interruptSet(IRQ_VSYNC);
+          vs.redraw();
         r3ka.setbp();
       }
     }

@@ -131,7 +131,7 @@
     cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
   }\
   \
-  var vx = [\
+  const vx = [\
     k.vx[0]._X,            k.vx[0]._Y,\
     k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,\
     k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,\
@@ -230,7 +230,7 @@ pseudo.CstrRender = (function() {
               cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);
             }
 
-            var vx = [
+            const vx = [
               k.vx[0]._X,            k.vx[0]._Y,
               k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,
               k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,
@@ -251,7 +251,8 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0x28:
-        case 0x29: // POLY F4
+        case 0x29:
+        case 0x2b: // POLY F4
           {
             drawF(4, ctx.TRIANGLE_STRIP);
           }
@@ -264,14 +265,18 @@ pseudo.CstrRender = (function() {
           }
           return;
 
-        case 0x39: // POLY G4
+        case 0x39:
+        case 0x3a:
+        case 0x3b: // POLY G4
           {
             drawG(4, ctx.TRIANGLE_STRIP);
           }
           return;
 
         case 0x40:
-        case 0x42: // LINE F2
+        case 0x41:
+        case 0x42:
+        case 0x43: // LINE F2
           {
             drawF(2, ctx.LINE_STRIP);
           }
@@ -283,12 +288,14 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x4d:
         case 0x4e: // LINE F4
           {
             drawF(4, ctx.LINE_STRIP);
           }
           return;
 
+        case 0x51:
         case 0x52: // LINE G2
           {
             drawG(2, ctx.LINE_STRIP);
@@ -301,6 +308,7 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x5c:
         case 0x5e: // LINE G4
           {
             drawG(4, ctx.LINE_STRIP);
@@ -324,6 +332,9 @@ pseudo.CstrRender = (function() {
           {
             drawSprite(16);
           }
+          return;
+
+        case 0x80: // MOVE IMAGE
           return;
 
         case 0xa0: // LOAD IMAGE

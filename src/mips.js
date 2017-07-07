@@ -424,7 +424,7 @@ pseudo.CstrR3ka = (function() {
       return !(copr[12]&0x10000);
     },
 
-    consoleWrite(kind, str, space) {
+    consoleWrite(kind, str) {
       output.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
     },
 

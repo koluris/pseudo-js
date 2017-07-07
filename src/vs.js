@@ -11,6 +11,8 @@
 #define GPU_DMA_MEM2VRAM 2
 #define GPU_DMA_VRAM2MEM 3
 
+#define GPU_ODDLINES 0x80000000
+
 pseudo.CstrGraphics = (function() {
   let status;
   let pipe;
@@ -97,6 +99,10 @@ pseudo.CstrGraphics = (function() {
       pipe.row  = 0;
     },
 
+    redraw() {
+      status ^= GPU_ODDLINES;
+    },
+
     scopeW(addr, data) {
       switch(addr&0xf) {
         case GPU_DATA:
@@ -145,9 +151,9 @@ pseudo.CstrGraphics = (function() {
     },
 
     executeDMA(addr) {
-      var size = (bcr>>16)*(bcr&0xffff);
+      const size = (bcr>>16)*(bcr&0xffff);
 
-      switch (chcr) {
+      switch(chcr) {
         case 0x00000401: // Disable DMA?
           return;
 
