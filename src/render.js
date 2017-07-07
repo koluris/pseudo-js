@@ -243,8 +243,10 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x20:
         case 0x21:
-        case 0x22: // POLY F3
+        case 0x22:
+        case 0x23: // POLY F3
           {
             drawF(3, ctx.TRIANGLE_STRIP);
           }
@@ -252,19 +254,23 @@ pseudo.CstrRender = (function() {
 
         case 0x28:
         case 0x29:
+        case 0x2a:
         case 0x2b: // POLY F4
           {
             drawF(4, ctx.TRIANGLE_STRIP);
           }
           return;
 
+        case 0x30:
         case 0x31:
+        case 0x32:
         case 0x33: // POLY G3
           {
             drawG(3, ctx.TRIANGLE_STRIP);
           }
           return;
 
+        case 0x38:
         case 0x39:
         case 0x3a:
         case 0x3b: // POLY G4
@@ -282,39 +288,54 @@ pseudo.CstrRender = (function() {
           }
           return;
 
-        case 0x4a: // LINE F3
+        case 0x48:
+        case 0x49:
+        case 0x4a:
+        case 0x4b: // LINE F3
           {
             drawF(3, ctx.LINE_STRIP);
           }
           return;
 
+        case 0x4c:
         case 0x4d:
-        case 0x4e: // LINE F4
+        case 0x4e:
+        case 0x4f: // LINE F4
           {
             drawF(4, ctx.LINE_STRIP);
           }
           return;
 
+        case 0x50:
         case 0x51:
-        case 0x52: // LINE G2
+        case 0x52:
+        case 0x53: // LINE G2
           {
             drawG(2, ctx.LINE_STRIP);
           }
           return;
 
-        case 0x5a: // LINE G3
+        case 0x58:
+        case 0x59:
+        case 0x5a:
+        case 0x5b: // LINE G3
           {
             drawG(3, ctx.LINE_STRIP);
           }
           return;
 
         case 0x5c:
-        case 0x5e: // LINE G4
+        case 0x5d:
+        case 0x5e:
+        case 0x5f: // LINE G4
           {
             drawG(4, ctx.LINE_STRIP);
           }
           return;
 
+        case 0x64:
+        case 0x65:
+        case 0x66:
         case 0x67: // SPRITE S
           {
             drawSprite(0);
@@ -322,12 +343,17 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0x74:
-        case 0x76: // SPRITE 8
+        case 0x75:
+        case 0x76:
+        case 0x77: // SPRITE 8
           {
             drawSprite(8);
           }
           return;
 
+        case 0x7c:
+        case 0x7d:
+        case 0x7e:
         case 0x7f: // SPRITE 16
           {
             drawSprite(16);
