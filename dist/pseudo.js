@@ -1070,16 +1070,16 @@ pseudo.CstrMain = (function() {
       }
       else { // Homebrew run
         file(path, function(resp) {
-          // const header = new Uint32Array(resp, 0, 0x800);
-          // const offset = header[2+4]&(pseudo.CstrMem._ram.ub.byteLength-1); // Offset needs boundaries... huh?
-          // const size   = header[2+5];
+          const header = new Uint32Array(resp, 0, 0x800);
+          const offset = header[2+4]&(pseudo.CstrMem._ram.ub.byteLength-1); // Offset needs boundaries... huh?
+          const size   = header[2+5];
 
-          // // Prepare pseudo.CstrMem
-          // pseudo.CstrMem._ram.ub.set(new Uint8Array(resp, 0x800, size), offset);
+          // Prepare pseudo.CstrMem
+          pseudo.CstrMem._ram.ub.set(new Uint8Array(resp, 0x800, size), offset);
           
-          // // Prepare processor
-          // pseudo.CstrR3ka.exeHeader(header);
-          // pseudo.CstrR3ka.consoleWrite('info', 'PSX-EXE "'+path+'" has been transferred to RAM');
+          // Prepare processor
+          pseudo.CstrR3ka.exeHeader(header);
+          pseudo.CstrR3ka.consoleWrite('info', 'PSX-EXE "'+path+'" has been transferred to RAM');
 
           pseudo.CstrR3ka.run();
         });
