@@ -273,7 +273,8 @@ pseudo.CstrCounters = (function() {
     },
 
     scopeW(addr, data) {
-      const p = (addr&0x30)>>>4;
+      //console.dir(((addr&0xf)>>>2)+' '+((addr>>>4)&3));
+      const p = (addr>>>4)&3;
 
       switch (addr&0xf) {
         case 0:
@@ -295,7 +296,7 @@ pseudo.CstrCounters = (function() {
     },
 
     scopeR(addr) {
-      const p = (addr&0x30)>>>4;
+      const p = (addr>>>4)&3;
 
       switch (addr&0xf) {
         case 0:

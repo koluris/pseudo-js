@@ -1,5 +1,5 @@
 #define RTC_PORT(addr)\
-  (addr&0x30)>>>4
+  (addr>>>4)&3
 
 #define RTC_COUNT  0
 #define RTC_MODE   4
@@ -40,6 +40,7 @@ pseudo.CstrCounters = (function() {
     },
 
     scopeW(addr, data) {
+      //console.dir(((addr&0xf)>>>2)+' '+(RTC_PORT(addr)));
       const p = RTC_PORT(addr);
 
       switch (addr&0xf) {
