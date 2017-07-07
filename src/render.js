@@ -58,6 +58,21 @@
   ]\
 }
 
+#define PGTx(data) {\
+  cr: [\
+    RGBC(data[0]),\
+    RGBC(data[3]),\
+    RGBC(data[6]),\
+    RGBC(data[9]),\
+  ],\
+  vx: [\
+    POINT(data[ 1]),\
+    POINT(data[ 4]),\
+    POINT(data[ 7]),\
+    POINT(data[10]),\
+  ]\
+}
+
 #define BLKFx(data) {\
   cr: [\
     RGBC(data[0])\
@@ -115,6 +130,24 @@
   ctx.drawVertices(mode, 0, size)
 
 /***
+    Gouraud/Textured Vertices
+***/
+
+#define drawGT(size)\
+  const k  = PGTx(data);\
+  const cr = [];\
+  const vx = [];\
+  \
+  for (let i=0; i<size; i++) {\
+    cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, COLOR_MAX);\
+    vx.push(k.vx[i]._X, k.vx[i]._Y);\
+  }\
+  \
+  iColor(cr);\
+  iVertex(vx);\
+  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size)
+
+/***
     Tiles
 ***/
 
@@ -127,7 +160,7 @@
       k.vx[1]._Y = size;\
   }\
   \
-  for (var i=0; i<4; i++) {\
+  for (let i=0; i<4; i++) {\
     cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
   }\
   \
@@ -298,12 +331,30 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x34:
+        case 0x35:
+        case 0x36:
+        case 0x37: // POLY GT3
+          {
+            drawGT(3);
+          }
+          return;
+
         case 0x38:
         case 0x39:
         case 0x3a:
         case 0x3b: // POLY G4
           {
             drawG(4, ctx.TRIANGLE_STRIP);
+          }
+          return;
+
+        case 0x3c:
+        case 0x3d:
+        case 0x3e:
+        case 0x3f: // POLY GT4
+          {
+            drawGT(4);
           }
           return;
 
