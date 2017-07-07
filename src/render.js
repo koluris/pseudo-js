@@ -1,6 +1,9 @@
 #define COLOR_MAX\
   255
 
+#define COLOR_HALF\
+  COLOR_MAX>>>1
+
 #define iColor(a)\
   ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);\
   ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);\
@@ -49,6 +52,18 @@
     RGBC(data[2]),\
     RGBC(data[4]),\
     RGBC(data[6]),\
+  ],\
+  vx: [\
+    POINT(data[1]),\
+    POINT(data[3]),\
+    POINT(data[5]),\
+    POINT(data[7]),\
+  ]\
+}
+
+#define PFTx(data) {\
+  cr: [\
+    RGBC(data[0])\
   ],\
   vx: [\
     POINT(data[1]),\
@@ -128,6 +143,29 @@
   iColor(cr);\
   iVertex(vx);\
   ctx.drawVertices(mode, 0, size)
+
+/***
+    Textured Vertices
+***/
+
+#define drawFT(size)\
+  const k  = PFTx(data);\
+  const cr = [];\
+  const vx = [];\
+  \
+  for (let i=0; i<size; i++) {\
+    if (k.cr._A&1) {\
+      cr.push(COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX);\
+    }\
+    else {\
+      cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
+    }\
+    vx.push(k.vx[i]._X, k.vx[i]._Y);\
+  }\
+  \
+  iColor(cr);\
+  iVertex(vx);\
+  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size)
 
 /***
     Gouraud/Textured Vertices
@@ -313,12 +351,30 @@ pseudo.CstrRender = (function() {
           }
           return;
 
+        case 0x24:
+        case 0x25:
+        case 0x26:
+        case 0x27: // POLY FT3
+          {
+            drawFT(3);
+          }
+          return;
+
         case 0x28:
         case 0x29:
         case 0x2a:
         case 0x2b: // POLY F4
           {
             drawF(4, ctx.TRIANGLE_STRIP);
+          }
+          return;
+
+        case 0x2c:
+        case 0x2d:
+        case 0x2e:
+        case 0x2f: // POLY FT4
+          {
+            drawFT(4);
           }
           return;
 
