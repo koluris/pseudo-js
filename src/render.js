@@ -25,6 +25,7 @@
   _A: (data>>>24)&0xff,\
 }
 
+// Fix: SIGN_EXT_16
 #define POINT(data) {\
   _X: (data>> 0)&0xffff,\
   _Y: (data>>16)&0xffff,\
