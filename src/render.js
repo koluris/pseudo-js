@@ -262,11 +262,11 @@ pseudo.CstrRender = (function() {
   return {
     awake(divScreen, divResolution) {
       // Get HTML elements
-      screen     = divScreen;
-      resolution = divResolution;
+      screen     = divScreen[0];
+      resolution = divResolution[0];
 
       // WebGL Canvas
-      ctx = screen[0].fetchContext(WebGL);
+      ctx = screen.fetchContext(WebGL);
       ctx. enable(ctx.BLEND);
       ctx.disable(ctx.DEPTH_TEST);
       ctx.disable(ctx.CULL_FACE);
@@ -311,7 +311,7 @@ pseudo.CstrRender = (function() {
         ctx.viewport(0, 0, res.w, res.h);
         ctx.uniform2f(attrib._r, res.w/2, res.h/2);
 
-        resolution.text(res.w+' x '+res.h);
+        resolution.innerText = res.w+' x '+res.h;
       }
     },
 

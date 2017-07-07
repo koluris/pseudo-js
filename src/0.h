@@ -10,6 +10,7 @@
 #define fetchFunctionParameter  getProgramParameter
 #define fetchShaderParameter    getShaderParameter
 #define fetchUniform            getUniformLocation
+#define hei                     height
 #define linkFunction            linkProgram
 #define responseSort            responseType
 #define SintHcap                Int16Array
