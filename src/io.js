@@ -23,7 +23,6 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x1114 && addr <= 0x1118) { // Rootcounters
           rootcnt.scopeW(addr, data);
-          // directMemW(hwr.uw, addr) = data;
           return;
         }
 
@@ -65,7 +64,6 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
           rootcnt.scopeW(addr, data);
-          // directMemH(hwr.uh, addr) = data;
           return;
         }
         
@@ -114,7 +112,6 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
           return rootcnt.scopeR(addr);
-          // return directMemW(hwr.uw, addr);
         }
 
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics

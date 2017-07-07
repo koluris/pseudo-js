@@ -288,6 +288,7 @@ pseudo.CstrR3ka = (function() {
         return;
 
       case 18: // COP2
+        cop2.execute(code);
         return;
 
       case 32: // LB

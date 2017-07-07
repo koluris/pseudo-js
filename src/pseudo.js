@@ -54,6 +54,7 @@ pseudo.CstrMain = (function() {
       mem    .reset();
       rootcnt.reset();
       bus    .reset();
+      cop2   .reset();
       r3ka   .reset();
 
       if (path === 'bios') { // BIOS run

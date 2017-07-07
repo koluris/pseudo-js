@@ -231,6 +231,21 @@ pseudo.CstrBus = (function() {
     }
   };
 })();
+pseudo.CstrCop2 = (function() {
+  let cop2c = union(32*4);
+  let cop2d = union(32*4);
+
+  return {
+    reset() {
+      cop2c.ub.fill(0);
+      cop2d.ub.fill(0);
+    },
+
+    execute(code) {
+      pseudo.CstrMain.error('COP2 Execute '+('0x'+(code&63>>>0).toString(16)));
+    }
+  };
+})();
 
 
 
@@ -339,7 +354,6 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x1114 && addr <= 0x1118) { // Rootcounters
           pseudo.CstrCounters.scopeW(addr, data);
-          // pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
           return;
         }
 
@@ -381,7 +395,6 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
           pseudo.CstrCounters.scopeW(addr, data);
-          // pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
           return;
         }
         
@@ -430,7 +443,6 @@ pseudo.CstrHardware = (function() {
 
         if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
           return pseudo.CstrCounters.scopeR(addr);
-          // return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
         }
 
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
@@ -912,6 +924,7 @@ pseudo.CstrR3ka = (function() {
         return;
 
       case 18: // COP2
+        pseudo.CstrCop2.execute(code);
         return;
 
       case 32: // LB
@@ -1117,6 +1130,7 @@ pseudo.CstrMain = (function() {
       pseudo.CstrMem    .reset();
       pseudo.CstrCounters.reset();
       pseudo.CstrBus    .reset();
+      pseudo.CstrCop2   .reset();
       pseudo.CstrR3ka   .reset();
 
       if (path === 'bios') { // BIOS run
@@ -1635,6 +1649,13 @@ pseudo.CstrGraphics = (function() {
     }
   }
 
+  function pipeReset() {
+    pipe.data.fill(0);
+    pipe.prim = 0;
+    pipe.size = 0;
+    pipe.row  = 0;
+  }
+
   // Exposed class functions/variables
   return {
     awake() {
@@ -1649,10 +1670,7 @@ pseudo.CstrGraphics = (function() {
       modeDMA = 0;
 
       // Command Pipe
-      pipe.data.fill(0);
-      pipe.prim = 0;
-      pipe.size = 0;
-      pipe.row  = 0;
+      pipeReset();
     },
 
     redraw() {
@@ -1671,6 +1689,10 @@ pseudo.CstrGraphics = (function() {
               status = 0x14802000;
               return;
 
+            case 0x01:
+              pipeReset();
+              return;
+
             case 0x04:
               modeDMA = data&3;
               return;
@@ -1683,7 +1705,6 @@ pseudo.CstrGraphics = (function() {
               return;
 
             
-            case 0x01:
             case 0x03:
             case 0x05:
             case 0x06:

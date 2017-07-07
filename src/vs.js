@@ -79,6 +79,13 @@ pseudo.CstrGraphics = (function() {
     }
   }
 
+  function pipeReset() {
+    pipe.data.fill(0);
+    pipe.prim = 0;
+    pipe.size = 0;
+    pipe.row  = 0;
+  }
+
   // Exposed class functions/variables
   return {
     awake() {
@@ -93,10 +100,7 @@ pseudo.CstrGraphics = (function() {
       modeDMA = GPU_DMA_NONE;
 
       // Command Pipe
-      pipe.data.fill(0);
-      pipe.prim = 0;
-      pipe.size = 0;
-      pipe.row  = 0;
+      pipeReset();
     },
 
     redraw() {
@@ -115,6 +119,10 @@ pseudo.CstrGraphics = (function() {
               status = 0x14802000;
               return;
 
+            case 0x01:
+              pipeReset();
+              return;
+
             case 0x04:
               modeDMA = data&3;
               return;
@@ -127,7 +135,6 @@ pseudo.CstrGraphics = (function() {
               return;
 
             /* unused */
-            case 0x01:
             case 0x03:
             case 0x05:
             case 0x06:
