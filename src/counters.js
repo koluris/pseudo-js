@@ -1,3 +1,13 @@
+#define RTC_PORT(addr)\
+  (addr&0x30)>>>4
+
+#define RTC_COUNT  0
+#define RTC_MODE   4
+#define RTC_TARGET 8
+
+#define RTC_BOUND\
+  0xffff
+
 pseudo.CstrCounters = (function() {
   let timer;
   let vbk;
@@ -11,7 +21,10 @@ pseudo.CstrCounters = (function() {
     reset() {
       for (let i=0; i<3; i++) {
         timer[i] = {
-          bound: PSX_BOUND
+          mode  : 0,
+          count : 0,
+          dest  : 0,
+          bound : RTC_BOUND
         };
       }
 
@@ -24,6 +37,46 @@ pseudo.CstrCounters = (function() {
           vs.redraw();
         r3ka.setbp();
       }
+    },
+
+    scopeW(addr, data) {
+      const p = RTC_PORT(addr);
+
+      switch (addr&0xf) {
+        case RTC_COUNT:
+          timer[p].count = data&0xffff;
+          return;
+
+        case RTC_MODE:
+          timer[p].mode  = data;
+          timer[p].bound = timer[p].mode&8 ? timer[p].dest : RTC_BOUND;
+          return;
+
+        case RTC_TARGET:
+          timer[p].dest  = data&0xffff;
+          timer[p].bound = timer[p].mode&8 ? timer[p].dest : RTC_BOUND;
+          return;
+      }
+
+      psx.error('RTC Write '+hex(addr&0xf)+' <- '+hex(data));
+    },
+
+    scopeR(addr) {
+      const p = RTC_PORT(addr);
+
+      switch (addr&0xf) {
+        case RTC_COUNT:
+          return timer[p].count;
+
+        case RTC_MODE:
+          return timer[p].mode;
+
+        case RTC_TARGET:
+          return timer[p].dest;
+      }
+
+      psx.error('RTC Read '+hex(addr&0xf));
+      return 0;
     }
   };
 })();

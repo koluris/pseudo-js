@@ -11,6 +11,3 @@
 // This is uttermost experimental, it's the Achilles' heel
 #define PSX_CYCLE\
   64
-
-#define PSX_BOUND\
-  0xffff

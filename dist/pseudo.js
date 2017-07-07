@@ -108,9 +108,6 @@ const pseudo = window.pseudo || {};
 
 
 
-
-
-
 // Console output
 
 
@@ -234,6 +231,16 @@ pseudo.CstrBus = (function() {
     }
   };
 })();
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrCounters = (function() {
   let timer;
   let vbk;
@@ -247,7 +254,10 @@ pseudo.CstrCounters = (function() {
     reset() {
       for (let i=0; i<3; i++) {
         timer[i] = {
-          bound: 0xffff
+          mode  : 0,
+          count : 0,
+          dest  : 0,
+          bound : 0xffff
         };
       }
 
@@ -260,6 +270,46 @@ pseudo.CstrCounters = (function() {
           pseudo.CstrGraphics.redraw();
         pseudo.CstrR3ka.setbp();
       }
+    },
+
+    scopeW(addr, data) {
+      const p = (addr&0x30)>>>4;
+
+      switch (addr&0xf) {
+        case 0:
+          timer[p].count = data&0xffff;
+          return;
+
+        case 4:
+          timer[p].mode  = data;
+          timer[p].bound = timer[p].mode&8 ? timer[p].dest : 0xffff;
+          return;
+
+        case 8:
+          timer[p].dest  = data&0xffff;
+          timer[p].bound = timer[p].mode&8 ? timer[p].dest : 0xffff;
+          return;
+      }
+
+      pseudo.CstrMain.error('RTC Write '+('0x'+(addr&0xf>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+    },
+
+    scopeR(addr) {
+      const p = (addr&0x30)>>>4;
+
+      switch (addr&0xf) {
+        case 0:
+          return timer[p].count;
+
+        case 4:
+          return timer[p].mode;
+
+        case 8:
+          return timer[p].dest;
+      }
+
+      pseudo.CstrMain.error('RTC Read '+('0x'+(addr&0xf>>>0).toString(16)));
+      return 0;
     }
   };
 })();
@@ -287,7 +337,8 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1114 && addr <= 0x1118) { // Rootcounters
-          pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
+          pseudo.CstrCounters.scopeW(addr, data);
+          // pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
           return;
         }
 
@@ -328,7 +379,8 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
 
         if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
-          pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
+          pseudo.CstrCounters.scopeW(addr, data);
+          // pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
           return;
         }
         
@@ -376,7 +428,8 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
-          return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
+          return pseudo.CstrCounters.scopeR(addr);
+          // return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
         }
 
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics

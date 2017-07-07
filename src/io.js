@@ -22,7 +22,8 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1114 && addr <= 0x1118) { // Rootcounters
-          directMemW(hwr.uw, addr) = data;
+          rootcnt.scopeW(addr, data);
+          // directMemW(hwr.uw, addr) = data;
           return;
         }
 
@@ -63,7 +64,8 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
 
         if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
-          directMemH(hwr.uh, addr) = data;
+          rootcnt.scopeW(addr, data);
+          // directMemH(hwr.uh, addr) = data;
           return;
         }
         
@@ -111,7 +113,8 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
-          return directMemW(hwr.uw, addr);
+          return rootcnt.scopeR(addr);
+          // return directMemW(hwr.uw, addr);
         }
 
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
