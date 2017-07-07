@@ -19,5 +19,7 @@ Here's a list with the overall progress of the emulator, broken down in distinct
 * `10% -> Audio`
 * `10% -> Rootcounters`
 
+**PSeudo** does not run Games at this point. I want to be able to run all demo/cractros available first, then proceed for the CD-ROM and MDEC implementation.
+
 ## How-to
 You need to run this project from a localhost server, like **Apache**. In order to build **PSeudo**, just run the `build` command on the terminal. You must also include a valid **BIOS** file on the `bios` folder in order to test the emulator. I will not provide information on how and where to find that.
