@@ -381,7 +381,7 @@ pseudo.CstrR3ka = (function() {
       copr = new UintWcap(16);
 
       // Cache
-      power32 = Math.pow(32, 2); // Btw, pure multiplication is faster
+      power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
       output  = element;
     },
 
