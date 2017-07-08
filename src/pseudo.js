@@ -42,6 +42,11 @@ pseudo.CstrMain = (function() {
       });
     },
 
+    chars2int(bunch, pos) {
+      pos <<= 2;
+      return bunch[pos] | (bunch[pos+1]<<8) | (bunch[pos+2]<<16) | (bunch[pos+3]<<24);
+    },
+
     reset(path) {
       // Prohibit all user actions
       if (unusable) {

@@ -41,6 +41,8 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
 // Assume NTSC for now
 
 
@@ -132,6 +134,12 @@ const pseudo = window.pseudo || {};
 
 
 
+pseudo.CstrAudio = (function() {
+  return {
+    awake() {
+    }
+  };
+})();
 
 
 
@@ -218,6 +226,7 @@ pseudo.CstrBus = (function() {
 
         switch(chan) {
           case 2: pseudo.CstrGraphics .executeDMA(addr); break; // GPU
+          case 4: break; // SPU
           case 6: pseudo.CstrMem.executeDMA(addr); break; // OTC
 
           default:
@@ -1161,6 +1170,11 @@ pseudo.CstrMain = (function() {
           pseudo.CstrMem._rom.ub.set(new Uint8Array(resp));
         });
       });
+    },
+
+    chars2int(bunch, pos) {
+      pos <<= 2;
+      return bunch[pos] | (bunch[pos+1]<<8) | (bunch[pos+2]<<16) | (bunch[pos+3]<<24);
     },
 
     reset(path) {

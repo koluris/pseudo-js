@@ -84,6 +84,7 @@ pseudo.CstrBus = (function() {
 
         switch(chan) {
           case 2: vs .executeDMA(addr); break; // GPU
+          case 4: break; // SPU
           case 6: mem.executeDMA(addr); break; // OTC
 
           default:

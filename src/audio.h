@@ -1,0 +1,2 @@
+#define audio\
+  pseudo.CstrAudio
