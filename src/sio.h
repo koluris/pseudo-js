@@ -1,0 +1,2 @@
+#define sio\
+  pseudo.CstrSerial

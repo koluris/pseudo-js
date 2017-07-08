@@ -59,6 +59,7 @@ pseudo.CstrMain = (function() {
       mem    .reset();
       rootcnt.reset();
       bus    .reset();
+      sio    .reset();
       cop2   .reset();
       r3ka   .reset();
 

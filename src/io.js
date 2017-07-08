@@ -62,6 +62,11 @@ pseudo.CstrHardware = (function() {
       h(addr, data) {
         addr&=0xffff;
 
+        if (addr >= 0x1048 && addr <= 0x104e) { // Controls
+          sio.write.h(addr, data);
+          return;
+        }
+
         if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
           rootcnt.scopeW(addr, data);
           return;
@@ -76,12 +81,9 @@ pseudo.CstrHardware = (function() {
           case 0x1070:
             data16 &= data&mask16;
             return;
-
+          
           /* unused */
-          case 0x1048: // SIO
-          case 0x104a: // SIO
-          case 0x104e: // SIO
-
+          case 0x1014:
           case 0x1074:
             directMemH(hwr.uh, addr) = data;
             return;
@@ -93,6 +95,10 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
         
         switch(addr) {
+          case 0x1040:
+            sio.write.b(addr, data);
+            return;
+
           /* unused */
           case 0x2041: // DIP Switch?
             directMemB(hwr.ub, addr) = data;
@@ -120,6 +126,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           /* unused */
+          case 0x1014:
           case 0x1070:
           case 0x1074:
           case 0x10f0:
@@ -132,14 +139,17 @@ pseudo.CstrHardware = (function() {
       h(addr) {
         addr&=0xffff;
 
+        if (addr >= 0x1044 && addr <= 0x104a) { // Controls
+          return sio.read.h(addr);
+        }
+
         if (addr >= 0x1c08 && addr <= 0x1dae) { // Audio
           return directMemH(hwr.uh, addr);
         }
 
         switch(addr) {
           /* unused */
-          case 0x1044: // SIO
-
+          case 0x1014:
           case 0x1070:
           case 0x1074:
             return directMemH(hwr.uh, addr);
@@ -151,9 +161,8 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
 
         switch(addr) {
-          /* unused */
-          case 0x1040: // SIO
-            return directMemB(hwr.ub, addr);
+          case 0x1040: // Controls
+            return sio.read.b(addr);
         }
         psx.error('Hardware Read b '+hex(addr));
       }

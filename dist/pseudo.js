@@ -134,6 +134,8 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
 pseudo.CstrAudio = (function() {
   return {
     awake() {
@@ -270,7 +272,7 @@ pseudo.CstrCop2 = (function() {
 
 pseudo.CstrCounters = (function() {
   let timer;
-  let vbk, dec1;
+  let vbk;//, dec1;
 
   // Exposed class functions/variables
   return {
@@ -447,6 +449,11 @@ pseudo.CstrHardware = (function() {
       h(addr, data) {
         addr&=0xffff;
 
+        if (addr >= 0x1048 && addr <= 0x104e) { // Controls
+          pseudo.CstrSerial.write.h(addr, data);
+          return;
+        }
+
         if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
           pseudo.CstrCounters.scopeW(addr, data);
           return;
@@ -461,12 +468,9 @@ pseudo.CstrHardware = (function() {
           case 0x1070:
             pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] &= data&pseudo.CstrMem._hwr.uh[((0x1074)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
             return;
-
           
-          case 0x1048: // SIO
-          case 0x104a: // SIO
-          case 0x104e: // SIO
-
+          
+          case 0x1014:
           case 0x1074:
             pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
             return;
@@ -478,6 +482,10 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
         
         switch(addr) {
+          case 0x1040:
+            pseudo.CstrSerial.write.b(addr, data);
+            return;
+
           
           case 0x2041: // DIP Switch?
             pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0] = data;
@@ -505,6 +513,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           
+          case 0x1014:
           case 0x1070:
           case 0x1074:
           case 0x10f0:
@@ -517,14 +526,17 @@ pseudo.CstrHardware = (function() {
       h(addr) {
         addr&=0xffff;
 
+        if (addr >= 0x1044 && addr <= 0x104a) { // Controls
+          return pseudo.CstrSerial.read.h(addr);
+        }
+
         if (addr >= 0x1c08 && addr <= 0x1dae) { // Audio
           return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
         }
 
         switch(addr) {
           
-          case 0x1044: // SIO
-
+          case 0x1014:
           case 0x1070:
           case 0x1074:
             return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
@@ -536,9 +548,8 @@ pseudo.CstrHardware = (function() {
         addr&=0xffff;
 
         switch(addr) {
-          
-          case 0x1040: // SIO
-            return pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0];
+          case 0x1040: // Controls
+            return pseudo.CstrSerial.read.b(addr);
         }
         pseudo.CstrMain.error('Hardware Read b '+('0x'+(addr>>>0).toString(16)));
       }
@@ -1189,6 +1200,7 @@ pseudo.CstrMain = (function() {
       pseudo.CstrMem    .reset();
       pseudo.CstrCounters.reset();
       pseudo.CstrBus    .reset();
+      pseudo.CstrSerial    .reset();
       pseudo.CstrCop2   .reset();
       pseudo.CstrR3ka   .reset();
 
@@ -1638,6 +1650,173 @@ pseudo.CstrRender = (function() {
           return;
       }
       pseudo.CstrR3ka.consoleWrite('error', 'GPU Render Primitive '+('0x'+(addr>>>0).toString(16)));
+    }
+  };
+})();
+
+
+
+
+
+
+
+
+
+
+pseudo.CstrSerial = (function() {
+  let baud, control, mode, status, bfr, bfrCount, padst, parp;
+
+  return {
+    reset() {
+      baud     = 0;
+      control  = 0;
+      mode     = 0;
+      status   = 0x001 | 0x004;
+      bfr      = new Uint8Array(256);
+      bufcount = 0;
+      padst    = 0;
+      parp     = 0;
+    },
+
+    write: {
+      h(addr, data) {
+        switch(addr) {
+          case 0x1048: // Mode
+            mode = data;
+            return;
+
+          case 0x104a: // Control
+            control = data;
+
+            if (control&0x010) {
+              status  &= (~0x200);
+              control &= (~0x010);
+            }
+
+            if (control&0x040 || !control) {
+              status = 0x001 | 0x004;
+              padst  = 0;
+              parp   = 0;
+            }
+            return;
+
+          case 0x104e: // Baud
+            baud = data;
+            return;
+        }
+        pseudo.CstrMain.error('SIO write h '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+      },
+
+      b(addr, data) {
+        switch(addr) {
+          case 0x1040:
+            {
+              switch(padst) {
+                case 1:
+                  if (data&0x40) {
+                    padst = 2;
+                    parp  = 1;
+
+                    switch(data) {
+                      case 0x42:
+                        bfr[1] = 0x41; //parp
+                        break;
+
+                      default:
+                        console.dir('SIO write b data '+('0x'+(data>>>0).toString(16)));
+                        break;
+                    }
+                  }
+                  else {
+                    pseudo.CstrMain.error('SIO write b else');
+                  }
+                  pseudo.CstrBus.interruptSet(7);
+                  return;
+
+                case 2:
+                  parp++;
+                  
+                  if (parp !== bfrCount) {
+                    pseudo.CstrBus.interruptSet(7);
+                  }
+                  else {
+                    padst = 0;
+                  }
+                  return;
+
+                default:
+                  console.dir('SIO write b 0x1040 padst '+padst);
+                  break;
+              }
+
+              if (data === 1) {
+                status &= !0x004;
+                status |=  0x002;
+                padst = 1;
+                parp  = 0;
+
+                if (control&0x002) {
+                  switch(control) {
+                    case 0x1003:
+                    case 0x3003:
+                      bfrCount = 4;
+                      bfr[0] = 0x00;
+                      bfr[1] = 0x41;
+                      bfr[2] = 0x5a;
+                      bfr[3] = 0xff;
+                      bfr[4] = 0xff;
+                      pseudo.CstrBus.interruptSet(7);
+                      return;
+                  }
+                  pseudo.CstrMain.error('SIO write b control '+('0x'+(control>>>0).toString(16)));
+                }
+              }
+              else if (data === 0x81) {
+                pseudo.CstrMain.error('SIO write b data === 0x81');
+              }
+            }
+            return;
+        }
+        pseudo.CstrMain.error('SIO write b '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+      }
+    },
+
+    read: {
+      h(addr) {
+        switch(addr) {
+          case 0x1044:
+            return status;
+
+          case 0x104a:
+            return control;
+        }
+        pseudo.CstrMain.error('SIO read h '+('0x'+(addr>>>0).toString(16)));
+      },
+
+      b(addr) {
+        switch(addr) {
+          case 0x1040:
+            {
+              if (!(status&0x002)) {
+                return 0;
+              }
+
+              const data = bfr[parp];
+
+              if (parp === bfrCount) {
+                status &= (~(0x002));
+                status |= 0x004;
+
+                if (padst === 2) {
+                  //padst = 0;
+                  pseudo.CstrMain.error('SIO read b padst == 2');
+                }
+              }
+              return data;
+            }
+        }
+        pseudo.CstrMain.error('SIO read b '+('0x'+(addr>>>0).toString(16)));
+      }
     }
   };
 })();
