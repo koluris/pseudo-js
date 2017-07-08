@@ -342,6 +342,14 @@ pseudo.CstrR3ka = (function() {
         cacheAddr = ob;
         mem.write.w(cacheAddr&~3, (r[rt]<<shift[3][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
         return;
+
+      case 50: // LWC2
+        //cop2.opcodeMTC2(mem.read.w(ob), rt);
+        return;
+
+      case 58: // SWC2
+        //mem.write.w(ob, cop2.opcodeMFC2(rt));
+        return;
     }
     psx.error('Basic CPU instruction '+opcode);
   }

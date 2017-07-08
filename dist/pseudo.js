@@ -1043,6 +1043,14 @@ pseudo.CstrR3ka = (function() {
         cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
         pseudo.CstrMem.write.w(cacheAddr&~3, (r[((code>>>16)&0x1f)]<<shift[3][cacheAddr&3]) | (pseudo.CstrMem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
         return;
+
+      case 50: // LWC2
+        //pseudo.CstrCop2.opcodeMTC2(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))), ((code>>>16)&0x1f));
+        return;
+
+      case 58: // SWC2
+        //pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), pseudo.CstrCop2.opcodeMFC2(((code>>>16)&0x1f)));
+        return;
     }
     pseudo.CstrMain.error('Basic CPU instruction '+((code>>>26)&0x3f));
   }
@@ -1728,6 +1736,7 @@ pseudo.CstrSerial = (function() {
                     }
                   }
                   else {
+                    //padst = 0;
                     pseudo.CstrMain.error('SIO write b else');
                   }
                   pseudo.CstrBus.interruptSet(7);
@@ -1745,15 +1754,15 @@ pseudo.CstrSerial = (function() {
                   return;
 
                 default:
-                  console.dir('SIO write b 0x1040 padst '+padst);
+                  //console.dir('SIO write b 0x1040 padst '+padst);
                   break;
               }
 
               if (data === 1) {
                 status &= !0x004;
                 status |=  0x002;
-                padst = 1;
                 parp  = 0;
+                padst = 1;
 
                 if (control&0x002) {
                   switch(control) {

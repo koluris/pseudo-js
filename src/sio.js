@@ -82,6 +82,7 @@ pseudo.CstrSerial = (function() {
                     }
                   }
                   else {
+                    //padst = 0;
                     psx.error('SIO write b else');
                   }
                   bus.interruptSet(IRQ_SIO0);
@@ -99,15 +100,15 @@ pseudo.CstrSerial = (function() {
                   return;
 
                 default:
-                  console.dir('SIO write b 0x1040 padst '+padst);
+                  //console.dir('SIO write b 0x1040 padst '+padst);
                   break;
               }
 
               if (data === 1) {
                 status &= !SIO_STAT_TX_EMPTY;
                 status |=  SIO_STAT_RX_READY;
-                padst = 1;
                 parp  = 0;
+                padst = 1;
 
                 if (control&SIO_CTRL_DTR) {
                   switch(control) {
