@@ -45,6 +45,9 @@ const pseudo = window.pseudo || {};
 
 
 
+// #define PSX_HSYNC//   (33868800/15734)
+
+
 // This is uttermost experimental, it's the Achilles' heel
 
 
@@ -258,7 +261,7 @@ pseudo.CstrCop2 = (function() {
 
 pseudo.CstrCounters = (function() {
   let timer;
-  let vbk;
+  let vbk, dec1;
 
   // Exposed class functions/variables
   return {
@@ -280,11 +283,53 @@ pseudo.CstrCounters = (function() {
     },
 
     update() {
-      if ((vbk += 64) === 33868800/60) { vbk = 0;
+      if ((vbk += 64) === (33868800/60)) { vbk = 0;
          pseudo.CstrBus.interruptSet(0);
           pseudo.CstrGraphics.redraw();
         pseudo.CstrR3ka.setbp();
       }
+
+      // timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
+
+      // if (timer[0].count >= timer[0].bound) {
+      //   timer[0].count = 0;
+      //   if (timer[0].mode&0x50) {
+      //     //pseudo.CstrBus.interruptSet(4);
+      //     pseudo.CstrMain.error('dude 1');
+      //   }
+      // }
+
+      // if (!(timer[1].mode&0x100)) {
+      //   timer[1].count += 64;
+
+      //   if (timer[1].count >= timer[1].bound) {
+      //     timer[1].count = 0;
+      //     if (timer[1].mode&0x50) {
+      //       //pseudo.CstrBus.interruptSet(5);
+      //       pseudo.CstrMain.error('dude 2');
+      //     }
+      //   }
+      // }
+      // else if ((dec1+=64) >= PSX_HSYNC) {
+      //   dec1 = 0;
+      //   if (++timer[1].count >= timer[1].bound) {
+      //     timer[1].count = 0;
+      //     if (timer[1].mode&0x50) {
+      //       pseudo.CstrBus.interruptSet(5);
+      //     }
+      //   }
+      // }
+
+      // if (!(timer[2].mode&1)) {
+      //   timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
+
+      //   if (timer[2].count >= timer[2].bound) {
+      //     timer[2].count = 0;
+      //     if (timer[2].mode&0x50) {
+      //       pseudo.CstrBus.interruptSet(6);
+      //     }
+      //   }
+      // }
     },
 
     scopeW(addr, data) {
@@ -1254,6 +1299,11 @@ pseudo.CstrRender = (function() {
   let attrib; // Enable/Disable Attributes on demand
   let bfr;    // Draw buffers
 
+  // Resolution Override
+  let overrideRes = {
+    w: 320, h: 240
+  };
+
   // Generic function for shaders
   function createShader(kind, content) {
     const shader = ctx.createShader(kind);
@@ -1312,12 +1362,21 @@ pseudo.CstrRender = (function() {
     resize(res) {
       // Check if we have a valid resolution
       if (res.w > 0 && res.h > 0) {
+        // Native PSX resolution
+        ctx.uniform2f(attrib._r, res.w/2, res.h/2);
+        resolution.innerText = res.w+' x '+res.h;
+
+        // Override resolution
+        if (overrideRes.w > 0 && overrideRes.h > 0) {
+          res.w = overrideRes.w;
+          res.h = overrideRes.h;
+        }
         screen.width = res.w;
         screen.height   = res.h;
         ctx.viewport(0, 0, res.w, res.h);
-        ctx.uniform2f(attrib._r, res.w/2, res.h/2);
-
-        resolution.innerText = res.w+' x '+res.h;
+      }
+      else {
+        pseudo.CstrMain.error('Not a valid resolution');
       }
     },
 
@@ -1584,7 +1643,7 @@ pseudo.CstrRender = (function() {
 
 
 pseudo.CstrGraphics = (function() {
-  let status;
+  let inn;
   let pipe;
   let modeDMA;
 
@@ -1642,9 +1701,9 @@ pseudo.CstrGraphics = (function() {
 
     dataMem(addr, size) {
       while (size--) {
-        const data = pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
+        inn.data = pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
         addr += 4;
-        write.data(data);
+        write.data(inn.data);
       }
     }
   }
@@ -1666,7 +1725,9 @@ pseudo.CstrGraphics = (function() {
     },
 
     reset() {
-      status  = 0x14802000;
+      inn = {
+        data: 0x400, status: 0x14802000
+      }
       modeDMA = 0;
 
       // Command Pipe
@@ -1674,7 +1735,7 @@ pseudo.CstrGraphics = (function() {
     },
 
     redraw() {
-      status ^= 0x80000000;
+      inn.status ^= 0x80000000;
     },
 
     scopeW(addr, data) {
@@ -1686,7 +1747,7 @@ pseudo.CstrGraphics = (function() {
         case 4:
           switch((data>>>24)&0xff) {
             case 0x00:
-              status = 0x14802000;
+              inn.status = 0x14802000;
               return;
 
             case 0x01:
@@ -1720,10 +1781,10 @@ pseudo.CstrGraphics = (function() {
     scopeR(addr) {
       switch(addr&0xf) {
         case 0:
-          return 0; // Nope: data
+          return inn.data;
 
         case 4:
-          return status;
+          return inn.status;
       }
     },
 

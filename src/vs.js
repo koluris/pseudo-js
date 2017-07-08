@@ -14,7 +14,7 @@
 #define GPU_ODDLINES 0x80000000
 
 pseudo.CstrGraphics = (function() {
-  let status;
+  let inn;
   let pipe;
   let modeDMA;
 
@@ -72,9 +72,9 @@ pseudo.CstrGraphics = (function() {
 
     dataMem(addr, size) {
       while (size--) {
-        const data = directMemW(ram.uw, addr);
+        inn.data = directMemW(ram.uw, addr);
         addr += 4;
-        write.data(data);
+        write.data(inn.data);
       }
     }
   }
@@ -96,7 +96,9 @@ pseudo.CstrGraphics = (function() {
     },
 
     reset() {
-      status  = 0x14802000;
+      inn = {
+        data: 0x400, status: 0x14802000
+      }
       modeDMA = GPU_DMA_NONE;
 
       // Command Pipe
@@ -104,7 +106,7 @@ pseudo.CstrGraphics = (function() {
     },
 
     redraw() {
-      status ^= GPU_ODDLINES;
+      inn.status ^= GPU_ODDLINES;
     },
 
     scopeW(addr, data) {
@@ -116,7 +118,7 @@ pseudo.CstrGraphics = (function() {
         case GPU_STATUS:
           switch(GPU_COMMAND(data)) {
             case 0x00:
-              status = 0x14802000;
+              inn.status = 0x14802000;
               return;
 
             case 0x01:
@@ -150,10 +152,10 @@ pseudo.CstrGraphics = (function() {
     scopeR(addr) {
       switch(addr&0xf) {
         case GPU_DATA:
-          return 0; // Nope: data
+          return inn.data;
 
         case GPU_STATUS:
-          return status;
+          return inn.status;
       }
     },
 

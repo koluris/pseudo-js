@@ -249,6 +249,11 @@ pseudo.CstrRender = (function() {
   let attrib; // Enable/Disable Attributes on demand
   let bfr;    // Draw buffers
 
+  // Resolution Override
+  let overrideRes = {
+    w: 320, h: 240
+  };
+
   // Generic function for shaders
   function createShader(kind, content) {
     const shader = ctx.createShader(kind);
@@ -307,12 +312,21 @@ pseudo.CstrRender = (function() {
     resize(res) {
       // Check if we have a valid resolution
       if (res.w > 0 && res.h > 0) {
+        // Native PSX resolution
+        ctx.uniform2f(attrib._r, res.w/2, res.h/2);
+        resolution.innerText = res.w+' x '+res.h;
+
+        // Override resolution
+        if (overrideRes.w > 0 && overrideRes.h > 0) {
+          res.w = overrideRes.w;
+          res.h = overrideRes.h;
+        }
         screen.width = res.w;
         screen.hei   = res.h;
         ctx.viewport(0, 0, res.w, res.h);
-        ctx.uniform2f(attrib._r, res.w/2, res.h/2);
-
-        resolution.innerText = res.w+' x '+res.h;
+      }
+      else {
+        psx.error('Not a valid resolution');
       }
     },
 
