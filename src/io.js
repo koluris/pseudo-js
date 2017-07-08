@@ -143,6 +143,10 @@ pseudo.CstrHardware = (function() {
           return sio.read.h(addr);
         }
 
+        if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
+          return rootcnt.scopeR(addr);
+        }
+
         if (addr >= 0x1c08 && addr <= 0x1dae) { // Audio
           return directMemH(hwr.uh, addr);
         }

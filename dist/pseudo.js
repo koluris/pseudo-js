@@ -530,6 +530,10 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrSerial.read.h(addr);
         }
 
+        if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
+          return pseudo.CstrCounters.scopeR(addr);
+        }
+
         if (addr >= 0x1c08 && addr <= 0x1dae) { // Audio
           return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
         }
