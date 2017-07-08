@@ -102,8 +102,8 @@ pseudo.CstrSerial = (function() {
             if (data === 1) {
               status &= !SIO_STAT_TX_EMPTY;
               status |=  SIO_STAT_RX_READY;
-              parp  = 0;
               padst = 1;
+              parp  = 0;
 
               if (control&SIO_CTRL_DTR) {
                 switch(control) {
