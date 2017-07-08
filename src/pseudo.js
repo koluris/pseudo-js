@@ -33,6 +33,7 @@ pseudo.CstrMain = (function() {
         render .awake($('#screen'), $('#resolution'));
         vs     .awake();
         rootcnt.awake();
+        sio    .awake();
         r3ka   .awake($('#output'));
 
         file('bios/scph1001.bin', function(resp) {
@@ -40,11 +41,6 @@ pseudo.CstrMain = (function() {
           rom.ub.set(new UintBcap(resp));
         });
       });
-    },
-
-    chars2int(bunch, pos) {
-      pos <<= 2;
-      return bunch[pos] | (bunch[pos+1]<<8) | (bunch[pos+2]<<16) | (bunch[pos+3]<<24);
     },
 
     reset(path) {

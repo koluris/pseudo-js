@@ -21,13 +21,17 @@ pseudo.CstrSerial = (function() {
   let baud, control, mode, status, bfr, bfrCount, padst, parp;
 
   return {
+    awake() {
+      bfr = new UintBcap(256);
+    },
+
     reset() {
+      bfr.fill(0);
       baud     = 0;
       control  = 0;
       mode     = 0;
       status   = SIO_STAT_TX_READY | SIO_STAT_TX_EMPTY;
-      bfr      = new UintBcap(256);
-      bufcount = 0;
+      bfrCount = 0;
       padst    = 0;
       parp     = 0;
     },
@@ -64,70 +68,56 @@ pseudo.CstrSerial = (function() {
       b(addr, data) {
         switch(addr) {
           case 0x1040:
-            {
-              switch(padst) {
-                case 1:
-                  if (data&0x40) {
-                    padst = 2;
-                    parp  = 1;
+            switch(padst) {
+              case 1:
+                if (data&0x40) {
+                  padst = 2;
+                  parp  = 1;
 
-                    switch(data) {
-                      case 0x42:
-                        bfr[1] = 0x41; //parp
-                        break;
+                  switch(data) {
+                    case 0x42:
+                      bfr[1] = 0x41; //parp
+                      break;
 
-                      default:
-                        console.dir('SIO write b data '+hex(data));
-                        break;
-                    }
+                    default:
+                      console.dir('SIO write b data '+hex(data));
+                      break;
                   }
-                  else {
-                    //padst = 0;
-                    psx.error('SIO write b else');
-                  }
-                  bus.interruptSet(IRQ_SIO0);
-                  return;
-
-                case 2:
-                  parp++;
-                  
-                  if (parp !== bfrCount) {
-                    bus.interruptSet(IRQ_SIO0);
-                  }
-                  else {
-                    padst = 0;
-                  }
-                  return;
-
-                default:
-                  //console.dir('SIO write b 0x1040 padst '+padst);
-                  break;
-              }
-
-              if (data === 1) {
-                status &= !SIO_STAT_TX_EMPTY;
-                status |=  SIO_STAT_RX_READY;
-                parp  = 0;
-                padst = 1;
-
-                if (control&SIO_CTRL_DTR) {
-                  switch(control) {
-                    case 0x1003:
-                    case 0x3003:
-                      bfrCount = 4;
-                      bfr[0] = 0x00;
-                      bfr[1] = 0x41;
-                      bfr[2] = 0x5a;
-                      bfr[3] = 0xff;
-                      bfr[4] = 0xff;
-                      bus.interruptSet(IRQ_SIO0);
-                      return;
-                  }
-                  psx.error('SIO write b control '+hex(control));
                 }
-              }
-              else if (data === 0x81) {
-                psx.error('SIO write b data === 0x81');
+                bus.interruptSet(IRQ_SIO0);
+                return;
+
+              case 2:
+                parp++;
+                
+                if (parp !== bfrCount) {
+                  bus.interruptSet(IRQ_SIO0);
+                }
+                else {
+                  padst = 0;
+                }
+                return;
+            }
+
+            if (data === 1) {
+              status &= !SIO_STAT_TX_EMPTY;
+              status |=  SIO_STAT_RX_READY;
+              parp  = 0;
+              padst = 1;
+
+              if (control&SIO_CTRL_DTR) {
+                switch(control) {
+                  case 0x1003:
+                  case 0x3003:
+                    bfrCount = 4;
+                    bfr[0] = 0x00;
+                    bfr[1] = 0x41;
+                    bfr[2] = 0x5a;
+                    bfr[3] = 0xff;
+                    bfr[4] = 0xff;
+                    bus.interruptSet(IRQ_SIO0);
+                    return;
+                }
               }
             }
             return;
@@ -156,18 +146,11 @@ pseudo.CstrSerial = (function() {
                 return 0;
               }
 
-              const data = bfr[parp];
-
               if (parp === bfrCount) {
-                status &= (~(SIO_STAT_RX_READY));
-                status |= SIO_STAT_TX_EMPTY;
-
-                if (padst === 2) {
-                  //padst = 0;
-                  psx.error('SIO read b padst == 2');
-                }
+                status &= ~SIO_STAT_RX_READY;
+                status |=  SIO_STAT_TX_EMPTY;
               }
-              return data;
+              return bfr[parp];
             }
         }
         psx.error('SIO read b '+hex(addr));

@@ -1182,6 +1182,7 @@ pseudo.CstrMain = (function() {
         pseudo.CstrRender .awake($('#screen'), $('#resolution'));
         pseudo.CstrGraphics     .awake();
         pseudo.CstrCounters.awake();
+        pseudo.CstrSerial    .awake();
         pseudo.CstrR3ka   .awake($('#output'));
 
         file('bios/scph1001.bin', function(resp) {
@@ -1189,11 +1190,6 @@ pseudo.CstrMain = (function() {
           pseudo.CstrMem._rom.ub.set(new Uint8Array(resp));
         });
       });
-    },
-
-    chars2int(bunch, pos) {
-      pos <<= 2;
-      return bunch[pos] | (bunch[pos+1]<<8) | (bunch[pos+2]<<16) | (bunch[pos+3]<<24);
     },
 
     reset(path) {
@@ -1675,13 +1671,17 @@ pseudo.CstrSerial = (function() {
   let baud, control, mode, status, bfr, bfrCount, padst, parp;
 
   return {
+    awake() {
+      bfr = new Uint8Array(256);
+    },
+
     reset() {
+      bfr.fill(0);
       baud     = 0;
       control  = 0;
       mode     = 0;
       status   = 0x001 | 0x004;
-      bfr      = new Uint8Array(256);
-      bufcount = 0;
+      bfrCount = 0;
       padst    = 0;
       parp     = 0;
     },
@@ -1718,70 +1718,56 @@ pseudo.CstrSerial = (function() {
       b(addr, data) {
         switch(addr) {
           case 0x1040:
-            {
-              switch(padst) {
-                case 1:
-                  if (data&0x40) {
-                    padst = 2;
-                    parp  = 1;
+            switch(padst) {
+              case 1:
+                if (data&0x40) {
+                  padst = 2;
+                  parp  = 1;
 
-                    switch(data) {
-                      case 0x42:
-                        bfr[1] = 0x41; //parp
-                        break;
+                  switch(data) {
+                    case 0x42:
+                      bfr[1] = 0x41; //parp
+                      break;
 
-                      default:
-                        console.dir('SIO write b data '+('0x'+(data>>>0).toString(16)));
-                        break;
-                    }
+                    default:
+                      console.dir('SIO write b data '+('0x'+(data>>>0).toString(16)));
+                      break;
                   }
-                  else {
-                    //padst = 0;
-                    pseudo.CstrMain.error('SIO write b else');
-                  }
-                  pseudo.CstrBus.interruptSet(7);
-                  return;
-
-                case 2:
-                  parp++;
-                  
-                  if (parp !== bfrCount) {
-                    pseudo.CstrBus.interruptSet(7);
-                  }
-                  else {
-                    padst = 0;
-                  }
-                  return;
-
-                default:
-                  //console.dir('SIO write b 0x1040 padst '+padst);
-                  break;
-              }
-
-              if (data === 1) {
-                status &= !0x004;
-                status |=  0x002;
-                parp  = 0;
-                padst = 1;
-
-                if (control&0x002) {
-                  switch(control) {
-                    case 0x1003:
-                    case 0x3003:
-                      bfrCount = 4;
-                      bfr[0] = 0x00;
-                      bfr[1] = 0x41;
-                      bfr[2] = 0x5a;
-                      bfr[3] = 0xff;
-                      bfr[4] = 0xff;
-                      pseudo.CstrBus.interruptSet(7);
-                      return;
-                  }
-                  pseudo.CstrMain.error('SIO write b control '+('0x'+(control>>>0).toString(16)));
                 }
-              }
-              else if (data === 0x81) {
-                pseudo.CstrMain.error('SIO write b data === 0x81');
+                pseudo.CstrBus.interruptSet(7);
+                return;
+
+              case 2:
+                parp++;
+                
+                if (parp !== bfrCount) {
+                  pseudo.CstrBus.interruptSet(7);
+                }
+                else {
+                  padst = 0;
+                }
+                return;
+            }
+
+            if (data === 1) {
+              status &= !0x004;
+              status |=  0x002;
+              parp  = 0;
+              padst = 1;
+
+              if (control&0x002) {
+                switch(control) {
+                  case 0x1003:
+                  case 0x3003:
+                    bfrCount = 4;
+                    bfr[0] = 0x00;
+                    bfr[1] = 0x41;
+                    bfr[2] = 0x5a;
+                    bfr[3] = 0xff;
+                    bfr[4] = 0xff;
+                    pseudo.CstrBus.interruptSet(7);
+                    return;
+                }
               }
             }
             return;
@@ -1810,18 +1796,11 @@ pseudo.CstrSerial = (function() {
                 return 0;
               }
 
-              const data = bfr[parp];
-
               if (parp === bfrCount) {
-                status &= (~(0x002));
-                status |= 0x004;
-
-                if (padst === 2) {
-                  //padst = 0;
-                  pseudo.CstrMain.error('SIO read b padst == 2');
-                }
+                status &= ~0x002;
+                status |=  0x004;
               }
-              return data;
+              return bfr[parp];
             }
         }
         pseudo.CstrMain.error('SIO read b '+('0x'+(addr>>>0).toString(16)));
