@@ -1752,8 +1752,8 @@ pseudo.CstrSerial = (function() {
             if (data === 1) {
               status &= !0x004;
               status |=  0x002;
-              parp  = 0;
               padst = 1;
+              parp  = 0;
 
               if (control&0x002) {
                 switch(control) {
