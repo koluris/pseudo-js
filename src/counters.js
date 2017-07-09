@@ -85,7 +85,7 @@ pseudo.CstrCounters = (function() {
       //console.dir(((addr&0xf)>>>2)+' '+(RTC_PORT(addr)));
       const p = RTC_PORT(addr);
 
-      switch (addr&0xf) {
+      switch(addr&0xf) {
         case RTC_COUNT:
           timer[p].count = data&0xffff;
           return;
@@ -107,7 +107,7 @@ pseudo.CstrCounters = (function() {
     scopeR(addr) {
       const p = RTC_PORT(addr);
 
-      switch (addr&0xf) {
+      switch(addr&0xf) {
         case RTC_COUNT:
           return timer[p].count;
 

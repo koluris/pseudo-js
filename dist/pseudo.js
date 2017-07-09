@@ -347,7 +347,7 @@ pseudo.CstrCounters = (function() {
       //console.dir(((addr&0xf)>>>2)+' '+((addr>>>4)&3));
       const p = (addr>>>4)&3;
 
-      switch (addr&0xf) {
+      switch(addr&0xf) {
         case 0:
           timer[p].count = data&0xffff;
           return;
@@ -369,7 +369,7 @@ pseudo.CstrCounters = (function() {
     scopeR(addr) {
       const p = (addr>>>4)&3;
 
-      switch (addr&0xf) {
+      switch(addr&0xf) {
         case 0:
           return timer[p].count;
 
