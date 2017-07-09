@@ -1,3 +1,5 @@
+// Based on PCSX 1.5
+
 #define SIO_STAT_TX_READY      0x001
 #define SIO_STAT_RX_READY      0x002
 #define SIO_STAT_TX_EMPTY      0x004
