@@ -12,7 +12,7 @@
     a&2 ? bit[inn.blend].opaque : COLOR_MAX\
   ];\
   \
-  ctx.blendFunc(bit[b[0]].src, bit[b[0]].dst)
+  ctx.blendFunc(bit[b[0]].src, bit[b[0]].dest)
 
 #define iColor(a)\
   ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);\
