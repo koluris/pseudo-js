@@ -588,6 +588,8 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe1: // TEXTURE PAGE
+          inn.blend  = (data[0]>>>5)&3;
+          ctx.blendFunc(bit[inn.blend].src, bit[inn.blend].dest);
           return;
 
         case 0xe2: // TEXTURE WINDOW
@@ -603,6 +605,7 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe6: // STP
+          inn.status = (inn.status&(~(3<<11))) | ((data[0]&3)<<11);
           return;
       }
       r3ka.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));

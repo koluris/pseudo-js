@@ -1659,6 +1659,8 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe1: // TEXTURE PAGE
+          pseudo.CstrGraphics._inn.blend  = (data[0]>>>5)&3;
+          ctx.blendFunc(bit[pseudo.CstrGraphics._inn.blend].src, bit[pseudo.CstrGraphics._inn.blend].dest);
           return;
 
         case 0xe2: // TEXTURE WINDOW
@@ -1674,6 +1676,7 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe6: // STP
+          pseudo.CstrGraphics._inn.status = (pseudo.CstrGraphics._inn.status&(~(3<<11))) | ((data[0]&3)<<11);
           return;
       }
       pseudo.CstrR3ka.consoleWrite('error', 'GPU Render Primitive '+('0x'+(addr>>>0).toString(16)));
