@@ -1,8 +1,18 @@
+#define inn vs._inn
+
 #define COLOR_MAX\
   255
 
 #define COLOR_HALF\
   COLOR_MAX>>>1
+
+#define iBlend(a)\
+  const b = [\
+    a&2 ? inn.blend : 0,\
+    a&2 ? bit[inn.blend].opaque : COLOR_MAX\
+  ];\
+  \
+  ctx.blendFunc(bit[b[0]].src, bit[b[0]].dst)
 
 #define iColor(a)\
   ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);\
@@ -118,8 +128,10 @@
   const cr = [];\
   const vx = [];\
   \
+  iBlend(k.cr[0]._A);\
+  \
   for (let i=0; i<size; i++) {\
-    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
+    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
     vx.push(k.vx[i]._X, k.vx[i]._Y);\
   }\
   \
@@ -136,8 +148,10 @@
   const cr = [];\
   const vx = [];\
   \
+  iBlend(k.cr[0]._A);\
+  \
   for (let i=0; i<size; i++) {\
-    cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, COLOR_MAX);\
+    cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, b[1]);\
     vx.push(k.vx[i]._X, k.vx[i]._Y);\
   }\
   \
@@ -194,13 +208,15 @@
   const k  = BLKFx(data);\
   const cr = [];\
   \
+  iBlend(k.cr[0]._A);\
+  \
   if (size) {\
       k.vx[1]._X = size;\
       k.vx[1]._Y = size;\
   }\
   \
   for (let i=0; i<4; i++) {\
-    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
+    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
   }\
   \
   const vx = [\
@@ -222,13 +238,20 @@
   const k  = SPRTx(data);\
   const cr = [];\
   \
+  iBlend(k.cr[0]._A);\
+  \
   if (size) {\
     k.vx[1]._X = size;\
     k.vx[1]._Y = size;\
   }\
   \
   for (let i=0; i<4; i++) {\
-    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
+    if (k.cr[0]._A&1) {\
+      cr.push(COLOR_HALF, COLOR_HALF, COLOR_HALF, b[1]);\
+    }\
+    else {\
+      cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
+    }\
   }\
   \
   const vx = [\
@@ -248,6 +271,7 @@ pseudo.CstrRender = (function() {
   let ctx;    // WebGL Context
   let attrib; // Enable/Disable Attributes on demand
   let bfr;    // Draw buffers
+  let bit;    // Blend bits
 
   // Resolution Override
   let overrideRes = {
@@ -302,6 +326,14 @@ pseudo.CstrRender = (function() {
         _v: ctx.createBuffer(),
         _t: ctx.createBuffer(),
       };
+
+      // Blend
+      bit = [
+        { src: ctx.SRC_ALPHA, dest: ctx.ONE_MINUS_SRC_ALPHA, opaque: 128 },
+        { src: ctx.ONE,       dest: ctx.ONE_MINUS_SRC_ALPHA, opaque:   0 },
+        { src: ctx.ZERO,      dest: ctx.ONE_MINUS_SRC_COLOR, opaque:   0 },
+        { src: ctx.SRC_ALPHA, dest: ctx.ONE,                 opaque:  64 },
+      ];
     },
 
     reset() {
@@ -577,3 +609,5 @@ pseudo.CstrRender = (function() {
     }
   };
 })();
+
+#undef inn

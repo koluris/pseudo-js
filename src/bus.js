@@ -60,7 +60,7 @@ pseudo.CstrBus = (function() {
       }
     },
 
-    interruptsUpdate() { // A method to tweak when IRQs should fire
+    interruptsUpdate() { // A method to schedule when IRQs should fire
       for (const item of interrupt) {
         if (item.queued) {
           if (item.queued++ === item.dest) {

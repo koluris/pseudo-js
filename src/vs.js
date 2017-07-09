@@ -1,4 +1,5 @@
 #define ram mem._ram
+#define inn vs._inn
 
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
@@ -14,7 +15,6 @@
 #define GPU_ODDLINES 0x80000000
 
 pseudo.CstrGraphics = (function() {
-  let inn;
   let pipe;
   let modeDMA;
 
@@ -88,6 +88,8 @@ pseudo.CstrGraphics = (function() {
 
   // Exposed class functions/variables
   return {
+    _inn: undefined,
+
     awake() {
       // Command Pipe
       pipe = {
@@ -97,8 +99,10 @@ pseudo.CstrGraphics = (function() {
 
     reset() {
       inn = {
-        data: 0x400, status: 0x14802000
-      }
+        blend  : 0,
+        data   : 0x400,
+        status : 0x14802000
+      };
       modeDMA = GPU_DMA_NONE;
 
       // Command Pipe
@@ -185,3 +189,4 @@ pseudo.CstrGraphics = (function() {
 })();
 
 #undef ram
+#undef inn
