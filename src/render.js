@@ -274,9 +274,11 @@ pseudo.CstrRender = (function() {
   let bit;    // Blend bits
 
   // Resolution Override
-  let overrideRes = {
-    w: 320, h: 240
-  };
+  let res;
+  // let resolutionMultiplier;
+  // let overrideRes = {
+  //   w: 320, h: 240
+  // };
 
   // Generic function for shaders
   function createShader(kind, content) {
@@ -334,6 +336,13 @@ pseudo.CstrRender = (function() {
         { src: ctx.ZERO,      dest: ctx.ONE_MINUS_SRC_COLOR, opaque:   0 },
         { src: ctx.SRC_ALPHA, dest: ctx.ONE,                 opaque:  64 },
       ];
+
+      // Standard value
+      res = {
+        native     : { w:   0, h:   0 },
+        override   : { w: 320, h: 240 },
+        multiplier : 1
+      };
     },
 
     reset() {
@@ -341,25 +350,43 @@ pseudo.CstrRender = (function() {
       ctx.clear(ctx.COLOR_BUFFER_BIT);
     },
 
-    resize(res) {
+    resize(data) {
       // Check if we have a valid resolution
-      if (res.w > 0 && res.h > 0) {
-        // Native PSX resolution
-        ctx.uniform2f(attrib._r, res.w/2, res.h/2);
-        resolution.innerText = res.w+' x '+res.h;
+      if (data.w > 0 && data.h > 0) {
+        // Store valid resolution
+        res.native.w = data.w;
+        res.native.h = data.h;
 
-        // Override resolution
-        if (overrideRes.w > 0 && overrideRes.h > 0) {
-          res.w = overrideRes.w;
-          res.h = overrideRes.h;
-        }
-        screen.width = res.w;
-        screen.hei   = res.h;
-        ctx.viewport(0, 0, res.w, res.h);
+        // Native PSX resolution
+        ctx.uniform2f(attrib._r, data.w/2, data.h/2);
+        resolution.innerText = data.w+' x '+data.h;
+
+        // Construct desired resolution
+        let w = (res.override.w || data.w) * res.multiplier;
+        let h = (res.override.h || data.h) * res.multiplier;
+
+        screen.width = w;
+        screen.hei   = h;
+        ctx.viewport(0, 0, w, h);
       }
       else {
         psx.error('Not a valid resolution');
       }
+    },
+
+    doubleResolution() {
+      res.multiplier = res.multiplier === 1 ? 2 : 1;
+
+      // Show/hide elements
+      if (res.multiplier === 1) {
+        $('#bar-boxes').show();
+      }
+      else {
+        $('#bar-boxes').hide();
+      }
+
+      // Redraw
+      render.resize({ w: res.native.w, h: res.native.h });
     },
 
     prim(addr, data) {

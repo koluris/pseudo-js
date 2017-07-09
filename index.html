@@ -89,39 +89,52 @@
 
     /* Screen */
     #bar-screen {
+      DISPLAY: flex;
+      flex: 1;
       position: relative;
       BACKGROUND: linear-Gradient(to bottom, transparent 0%, transparent 15%, #191919 15%, #191919 85%, transparent 85%, transparent 100%);
       min-HEIGHT: 280px;
+      MARGIN: 0 12% 20px 12%;
     }
     #container-screen {
       DISPLAY: flex;
       JUSTIFY-content: center;
       ALIGN-items: center;
-      position: absolute;
+      flex: 1;
       BACKGROUND: black;
-      top: 0;
-      RIGHT: 12%;
-      bottom: 0;
-      left: 12%;
     }
     #screen {
       DISPLAY: block;
-      BACKGROUND: black;
       MARGIN: 0 auto;
     }
-    #resolution {
+    #screen-properties {
+      DISPLAY: flex;
+      ALIGN-items: center;
       position: absolute;
+      top: 8px;
+      RIGHT: 8px;
+    }
+    #resolution {
       color: #f5cb0f;
-      top: 0;
-      RIGHT: 0;
-      PADDING: 5px 7px;
+      MARGIN-RIGHT: 8px;
+    }
+    #double {
+      color: white;
+      font-size: 12px;
+      text-ALIGN: center;
+      width: 24px;
+      HEIGHT: 24px;
+      line-HEIGHT: 24px;
+      border-radius: 14px;
+      border: 2px solid white;
+      cursor: pointer;
     }
 
     /* Boxes */
     #bar-boxes {
       flex: 1;
       DISPLAY: flex;
-      MARGIN: 20px 12% 30px 12%;
+      MARGIN: 0 12% 30px 12%;
     }
     .box-header {
       font: normal 27px 'Oswald-400', sans-serif;
@@ -231,7 +244,10 @@
             <canvas id="screen" width="320" height="240">
               No support for <code>canvas</code> element.
             </canvas>
-            <div id="resolution"></div>
+            <div id="screen-properties">
+              <div id="resolution"></div>
+              <div id="double" onclick="pseudo.CstrRender.doubleResolution()">x2</div>
+            </div>
           </div>
         </div>
 
