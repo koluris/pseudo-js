@@ -266,19 +266,13 @@
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4)
 
 pseudo.CstrRender = (function() {
+  // HTML elements
   let screen, resolution;
   
-  let ctx;    // WebGL Context
-  let attrib; // Enable/Disable Attributes on demand
-  let bfr;    // Draw buffers
-  let bit;    // Blend bits
-
-  // Resolution Override
-  let res;
-  // let resolutionMultiplier;
-  // let overrideRes = {
-  //   w: 320, h: 240
-  // };
+  let ctx;      // WebGL Context
+  let attrib;   // Enable/Disable Attributes on demand
+  let bfr;      // Draw buffers
+  let res, bit; // Resolution & Blend
 
   // Generic function for shaders
   function createShader(kind, content) {

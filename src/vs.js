@@ -135,7 +135,7 @@ pseudo.CstrGraphics = (function() {
 
             case 0x08:
               render.resize({
-                w: resMode[(data&3)|((data&0x40)>>>4)],
+                w: resMode[(data&3) | ((data&0x40)>>>4)],
                 h: (data&4) ? 480 : 240
               });
               return;
