@@ -1264,7 +1264,7 @@ pseudo.CstrMain = (function() {
       const dt = e.dataTransfer;
 
       if (dt.files) {
-        file = dt.files[0];//.getAsFile();
+        file = dt.files[0];
         
         // PS-X EXE
         chunkReader(file, 0x0000, 0x08, function(res) {
