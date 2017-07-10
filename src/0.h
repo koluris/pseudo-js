@@ -3,8 +3,10 @@
 #define createFunction          createProgram
 #define Chars                   String
 #define dataBin                 'arraybuffer'
+#define dest                    target
 #define drawVertices            drawArrays
 #define enableVertexAttrib      enableVertexAttribArray
+#define fetchAsFile             getAsFile
 #define fetchAttribute          getAttribLocation
 #define fetchContext            getContext
 #define fetchFunctionParameter  getProgramParameter
@@ -12,8 +14,10 @@
 #define fetchUniform            getUniformLocation
 #define hei                     height
 #define linkFunction            linkProgram
+#define readAsBuffer            readAsArrayBuffer
 #define responseSort            responseType
 #define SintHcap                Int16Array
+#define len                     length
 #define toChars                 toString
 #define UintBcap                Uint8Array
 #define UintWcap                Uint32Array

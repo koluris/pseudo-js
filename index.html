@@ -263,7 +263,7 @@
           <!-- DropZone -->
           <div id="box-dropzone">
             <div class="box-header">DROP-ZONE</div>
-            <div id="dropzone" ondrop="drop(event)" ONDRAGOVER="dropPrevent(event)">
+            <div id="dropzone" ondrop="pseudo.CstrMain.fileDrop(event)" ONDRAGOVER="pseudo.CstrMain.dropPrevent(event)">
               <IMG src="res/drop.png"/>
               <div>DRAG & DROP PSX FILES HERE</div>
               <div>BIOS (.bin), EXE (.psx, .bin), CD ISO (.iso), etc.</div>
@@ -279,88 +279,13 @@
     </div>
   </div>
 
+  <!-- Fork me on GitHub -->
+  <a href="https://github.com/dkoliris"><IMG STYLE="position:absolute;width:120px;top:0;left:0" src="https://camo.githubusercontent.com/82b228a3648bf44fc1163ef44c62fcc60081495e/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f7265645f6161303030302e706e67" alt="Fork me on GitHub"></a>
+
   <script src="dist/quer-3.2.1.min.js"></script>
   <script src="dist/pseudo.js"></script>
 
   <script>
-    let file;
-
-    // function fileRead(file, offset, size) {
-    //   var reader = new FileReader();
-    //   var blob = file.slice(offset, offset+size);
-    //   reader.onload = function(e) {
-    //     let header = e.target.result;
-    //     header = header.trim();
-    //     header = header.replace(/\u0000/, '');
-    //     header = header.replace(/\s+/, ' ');
-    //     var splits = header.split(' ');
-        
-    //     if (splits.length === 2) {
-    //       alert(splits[0]+' / '+splits[1]);
-    //     }
-    //   };
-    //   reader.readAsText(blob);
-    // }
-
-    function fileRead(file, start, size, fn) {
-      const end = start+size;
-
-      // Check boundaries
-      if (file.size > end) {
-        const reader  = new FileReader();
-        reader.onload = function(e) { // Callback
-          fn(e.target.result);
-        };
-
-        reader.readAsText(file.slice(start, end));
-      }
-    }
-
-    function drop(e) {
-      e.preventDefault();
-      const dt = e.dataTransfer;
-
-      if (dt.items) {
-        if (dt.items[0].kind === 'file') {
-          file = dt.items[0].getAsFile();
-          
-          // PS-X EXE
-          fileRead(file, 0, 8, function(res) {
-            if (res === 'PS-X EXE') {
-              console.dir('File is PS-X EXE');
-            }
-          });
-
-          // CD001PLAYSTATION
-          fileRead(file, 0x9318, 0x48, function(res) {
-            res = res.trim();
-            res = res.replace(/\u0000/, '');
-            res = res.replace(/\u0001/, '');
-            res = res.replace(/\u0001/, '');
-            res = res.replace(/\s+/, ' ');
-
-            // res = res.replace(/[^\x20-\x7E]+/, '');
-
-            // Header
-            const parts = res.split(' ');
-        
-            if (parts.length === 2) {
-              const iso  = parts[0];
-              const name = parts[1];
-
-              if (iso === 'CD001PLAYSTATION') {
-                console.dir('File is ISO with name '+name);
-              }
-            }
-          });
-        }
-      }
-    }
-
-    function dropPrevent(e) {
-      e.preventDefault();
-    }
-
     // List all homebrew demos
     $([
       'another-fix.psx',
@@ -381,7 +306,7 @@
       'stuntmaster.psx',
       'va.psx'
     ]).each(function(i, s) { // Add action to run
-      $('#homebrew').append('<div class="item" onclick="pseudo.CstrMain.reset(\'homebrew/'+s+'\')">'+s+'</div>');
+      $('#homebrew').append('<div class="item" onclick="pseudo.CstrMain.run(\'homebrew/'+s+'\')">'+s+'</div>');
     });
 
     // Startup
