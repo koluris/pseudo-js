@@ -6,7 +6,6 @@
 #define dest                    target
 #define drawVertices            drawArrays
 #define enableVertexAttrib      enableVertexAttribArray
-#define fetchAsFile             getAsFile
 #define fetchAttribute          getAttribLocation
 #define fetchContext            getContext
 #define fetchFunctionParameter  getProgramParameter

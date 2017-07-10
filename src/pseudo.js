@@ -110,46 +110,44 @@ pseudo.CstrMain = (function() {
       e.preventDefault();
       const dt = e.dataTransfer;
 
-      if (dt.items) {
-        if (dt.items[0].kind === 'file') {
-          file = dt.items[0].fetchAsFile();
-          
-          // PS-X EXE
-          chunkReader(file, 0x0000, 0x08, function(res) {
-            if (res === 'PS-X EXE') {
-              const reader  = new FileReader();
-              reader.onload = function(e) { // Callback
-                if (reset()) {
-                  prepareExe(e.dest.result);
-                  r3ka.run();
-                }
-              };
-              // Read file
-              reader.readAsBuffer(file);
-            }
-          });
-
-          // CD001PLAYSTATION
-          chunkReader(file, 0x9318, 0x48, function(res) {
-            res = res.trim();
-            res = res.replace('\u0000', "");
-            res = res.replace('\u0001', "");
-            res = res.replace('\u0001', "");
-            res = res.replace(/\s+/, ' '); // res = res.replace(/[^\x20-\x7E]+/, "");
-
-            // Header
-            const parts = res.split(' ');
-
-            if (parts.len === 2) {
-              const iso  = parts[0];
-              const name = parts[1];
-
-              if (iso === 'CD001PLAYSTATION') {
-                r3ka.consoleWrite(MSG_ERROR, 'CD ISO with name "'+name+'" not supported for now');
+      if (dt.files) {
+        file = dt.files[0];
+        
+        // PS-X EXE
+        chunkReader(file, 0x0000, 0x08, function(res) {
+          if (res === 'PS-X EXE') {
+            const reader  = new FileReader();
+            reader.onload = function(e) { // Callback
+              if (reset()) {
+                prepareExe(e.dest.result);
+                r3ka.run();
               }
+            };
+            // Read file
+            reader.readAsBuffer(file);
+          }
+        });
+
+        // CD001PLAYSTATION
+        chunkReader(file, 0x9318, 0x48, function(res) {
+          res = res.trim();
+          res = res.replace('\u0000', "");
+          res = res.replace('\u0001', "");
+          res = res.replace('\u0001', "");
+          res = res.replace(/\s+/, ' '); // res = res.replace(/[^\x20-\x7E]+/, "");
+
+          // Header
+          const parts = res.split(' ');
+
+          if (parts.len === 2) {
+            const iso  = parts[0];
+            const name = parts[1];
+
+            if (iso === 'CD001PLAYSTATION') {
+              r3ka.consoleWrite(MSG_ERROR, 'CD ISO with name "'+name+'" not supported for now');
             }
-          });
-        }
+          }
+        });
       }
     },
 
