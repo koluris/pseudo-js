@@ -16,7 +16,6 @@
 #define readAsBuffer            readAsArrayBuffer
 #define responseSort            responseType
 #define SintHcap                Int16Array
-#define len                     length
 #define toChars                 toString
 #define UintBcap                Uint8Array
 #define UintWcap                Uint32Array
