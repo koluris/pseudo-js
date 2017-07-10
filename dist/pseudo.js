@@ -1337,19 +1337,13 @@ pseudo.CstrMain = (function() {
 
 
 pseudo.CstrRender = (function() {
+  // HTML elements
   let screen, resolution;
   
-  let ctx;    // 'webgl' Context
-  let attrib; // Enable/Disable Attributes on demand
-  let bfr;    // Draw buffers
-  let bit;    // Blend bits
-
-  // Resolution Override
-  let res;
-  // let resolutionMultiplier;
-  // let overrideRes = {
-  //   w: 320, h: 240
-  // };
+  let ctx;      // 'webgl' Context
+  let attrib;   // Enable/Disable Attributes on demand
+  let bfr;      // Draw buffers
+  let res, bit; // Resolution & Blend
 
   // Generic function for shaders
   function createShader(kind, content) {
@@ -2002,7 +1996,7 @@ pseudo.CstrGraphics = (function() {
 
             case 0x08:
               pseudo.CstrRender.resize({
-                w: resMode[(data&3)|((data&0x40)>>>4)],
+                w: resMode[(data&3) | ((data&0x40)>>>4)],
                 h: (data&4) ? 480 : 240
               });
               return;

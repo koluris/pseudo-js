@@ -263,7 +263,7 @@
           <!-- DropZone -->
           <div id="box-dropzone">
             <div class="box-header">DROP-ZONE</div>
-            <div id="dropzone">
+            <div id="dropzone" ondrop="drop(event)" ONDRAGOVER="dropPrevent(event)">
               <IMG src="res/drop.png"/>
               <div>DRAG & DROP PSX FILES HERE</div>
               <div>BIOS (.bin), EXE (.psx, .bin), CD ISO (.iso), etc.</div>
@@ -283,6 +283,84 @@
   <script src="dist/pseudo.js"></script>
 
   <script>
+    let file;
+
+    // function fileRead(file, offset, size) {
+    //   var reader = new FileReader();
+    //   var blob = file.slice(offset, offset+size);
+    //   reader.onload = function(e) {
+    //     let header = e.target.result;
+    //     header = header.trim();
+    //     header = header.replace(/\u0000/, '');
+    //     header = header.replace(/\s+/, ' ');
+    //     var splits = header.split(' ');
+        
+    //     if (splits.length === 2) {
+    //       alert(splits[0]+' / '+splits[1]);
+    //     }
+    //   };
+    //   reader.readAsText(blob);
+    // }
+
+    function fileRead(file, start, size, fn) {
+      const end = start+size;
+
+      // Check boundaries
+      if (file.size > end) {
+        const reader  = new FileReader();
+        reader.onload = function(e) { // Callback
+          fn(e.target.result);
+        };
+
+        reader.readAsText(file.slice(start, end));
+      }
+    }
+
+    function drop(e) {
+      e.preventDefault();
+      const dt = e.dataTransfer;
+
+      if (dt.items) {
+        if (dt.items[0].kind === 'file') {
+          file = dt.items[0].getAsFile();
+          
+          // PS-X EXE
+          fileRead(file, 0, 8, function(res) {
+            if (res === 'PS-X EXE') {
+              console.dir('File is PS-X EXE');
+            }
+          });
+
+          // CD001PLAYSTATION
+          fileRead(file, 0x9318, 0x48, function(res) {
+            res = res.trim();
+            res = res.replace(/\u0000/, '');
+            res = res.replace(/\u0001/, '');
+            res = res.replace(/\u0001/, '');
+            res = res.replace(/\s+/, ' ');
+
+            // res = res.replace(/[^\x20-\x7E]+/, '');
+
+            // Header
+            const parts = res.split(' ');
+        
+            if (parts.length === 2) {
+              const iso  = parts[0];
+              const name = parts[1];
+
+              if (iso === 'CD001PLAYSTATION') {
+                console.dir('File is ISO with name '+name);
+              }
+            }
+          });
+        }
+      }
+    }
+
+    function dropPrevent(e) {
+      e.preventDefault();
+    }
+
     // List all homebrew demos
     $([
       'another-fix.psx',
