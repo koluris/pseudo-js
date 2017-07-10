@@ -54,7 +54,7 @@ pseudo.CstrMain = (function() {
     bus    .reset();
     sio    .reset();
     cop2   .reset();
-    cpu   .reset();
+    cpu    .reset();
 
     return true;
   }
