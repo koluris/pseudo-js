@@ -503,7 +503,7 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
         }
 
-        if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
+        if (addr >= 0x1100 && addr <= 0x1110) { // Rootcounters
           return pseudo.CstrCounters.scopeR(addr);
         }
 
@@ -530,11 +530,11 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrSerial.read.h(addr);
         }
 
-        if (addr >= 0x1110 && addr <= 0x1110) { // Rootcounters
+        if (addr >= 0x1110 && addr <= 0x1124) { // Rootcounters
           return pseudo.CstrCounters.scopeR(addr);
         }
 
-        if (addr >= 0x1c08 && addr <= 0x1dae) { // Audio
+        if (addr >= 0x1c00 && addr <= 0x1dae) { // Audio
           return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
         }
 
