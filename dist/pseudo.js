@@ -295,9 +295,9 @@ pseudo.CstrCounters = (function() {
 
     update() {
       if ((vbk += 64) === (33868800/60)) { vbk = 0;
-         pseudo.CstrBus.interruptSet(0);
-          pseudo.CstrGraphics.redraw();
-        pseudo.CstrR3ka.setbp();
+        pseudo.CstrBus.interruptSet(0);
+         pseudo.CstrGraphics.redraw();
+        pseudo.CstrMips.setbp();
       }
 
       // timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
@@ -588,7 +588,7 @@ pseudo.CstrMem = (function() {
           case 0x00: // Base
           case 0x80: // Mirror
           case 0xa0: // Mirror
-            if (pseudo.CstrR3ka.writeOK()) {
+            if (pseudo.CstrMips.writeOK()) {
               pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = data;
             }
             return;
@@ -735,7 +735,7 @@ pseudo.CstrMem = (function() {
 
 
 
-pseudo.CstrR3ka = (function() {
+pseudo.CstrMips = (function() {
   // Base + Coprocessor
   let r, copr;
   let opcodeCount;
@@ -1109,14 +1109,14 @@ pseudo.CstrR3ka = (function() {
       output.text(' ');
 
       // BIOS bootstrap
-      pseudo.CstrR3ka.consoleWrite('info', 'BIOS file has been written to ROM');
+      pseudo.CstrMips.consoleWrite('info', 'BIOS file has been written to ROM');
       const start = performance.now();
 
       while (r[32] !== 0x80030000) {
         step(false);
       }
       const delta = parseFloat(performance.now()-start).toFixed(2);
-      pseudo.CstrR3ka.consoleWrite('info', 'Bootstrap completed in '+delta+' ms');
+      pseudo.CstrMips.consoleWrite('info', 'Bootstrap completed in '+delta+' ms');
     },
 
     run() {
@@ -1125,7 +1125,7 @@ pseudo.CstrR3ka = (function() {
       while (!bp) { // No sleep till BROOKLYN
         step(false);
       }
-      requestAF = requestAnimationFrame(pseudo.CstrR3ka.run);
+      requestAF = requestAnimationFrame(pseudo.CstrMips.run);
     },
 
     exeHeader(hdr) {
@@ -1166,7 +1166,7 @@ pseudo.CstrMain = (function() {
     const xhr = new XMLHttpRequest();
     xhr.onload = function() {
       if (xhr.status === 404) {
-        pseudo.CstrR3ka.consoleWrite('error', 'Unable to read file "'+path+'"');
+        pseudo.CstrMips.consoleWrite('error', 'Unable to read file "'+path+'"');
         unusable = true;
       }
       else {
@@ -1207,7 +1207,7 @@ pseudo.CstrMain = (function() {
     pseudo.CstrBus    .reset();
     pseudo.CstrSerial    .reset();
     pseudo.CstrCop2   .reset();
-    pseudo.CstrR3ka   .reset();
+    pseudo.CstrMips   .reset();
 
     return true;
   }
@@ -1217,12 +1217,12 @@ pseudo.CstrMain = (function() {
     const offset = header[2+4]&(pseudo.CstrMem._ram.ub.byteLength-1); // Offset needs boundaries... huh?
     const size   = header[2+5];
 
-    // Prepare pseudo.CstrMem
+    // Set pseudo.CstrMem
     pseudo.CstrMem._ram.ub.set(new Uint8Array(resp, 0x800, size), offset);
     
-    // Prepare processor
-    pseudo.CstrR3ka.exeHeader(header);
-    pseudo.CstrR3ka.consoleWrite('info', 'PSX-EXE has been transferred to RAM');
+    // Set processor
+    pseudo.CstrMips.exeHeader(header);
+    pseudo.CstrMips.consoleWrite('info', 'PSX-EXE has been transferred to RAM');
   }
 
   // Exposed class functions/variables
@@ -1232,11 +1232,11 @@ pseudo.CstrMain = (function() {
       file = undefined;
 
       $(function() { // DOMContentLoaded
-        pseudo.CstrRender .awake($('#screen'), $('#resolution'));
-        pseudo.CstrGraphics     .awake();
+         pseudo.CstrRender.awake($('#screen'), $('#resolution'));
+             pseudo.CstrGraphics.awake();
         pseudo.CstrCounters.awake();
-        pseudo.CstrSerial    .awake();
-        pseudo.CstrR3ka   .awake($('#output'));
+            pseudo.CstrSerial.awake();
+            pseudo.CstrMips.awake($('#output'));
 
         request('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
@@ -1248,12 +1248,12 @@ pseudo.CstrMain = (function() {
     run(path) {
       if (reset()) {
         if (path === 'bios') { // BIOS run
-          pseudo.CstrR3ka.run();
+          pseudo.CstrMips.run();
         }
         else { // Homebrew run
           request(path, function(resp) {
             prepareExe(resp);
-            pseudo.CstrR3ka.run();
+            pseudo.CstrMips.run();
           });
         }
       }
@@ -1273,7 +1273,7 @@ pseudo.CstrMain = (function() {
             reader.onload = function(e) { // Callback
               if (reset()) {
                 prepareExe(e.target.result);
-                pseudo.CstrR3ka.run();
+                pseudo.CstrMips.run();
               }
             };
             // Read file
@@ -1297,7 +1297,7 @@ pseudo.CstrMain = (function() {
             const name = parts[1];
 
             if (iso === 'CD001PLAYSTATION') {
-              pseudo.CstrR3ka.consoleWrite('error', 'CD ISO with name "'+name+'" not supported for now');
+              pseudo.CstrMips.consoleWrite('error', 'CD ISO with name "'+name+'" not supported for now');
             }
           }
         });
@@ -1775,7 +1775,7 @@ pseudo.CstrRender = (function() {
           pseudo.CstrGraphics._inn.status = (pseudo.CstrGraphics._inn.status&(~(3<<11))) | ((data[0]&3)<<11);
           return;
       }
-      pseudo.CstrR3ka.consoleWrite('error', 'GPU Render Primitive '+('0x'+(addr>>>0).toString(16)));
+      pseudo.CstrMips.consoleWrite('error', 'GPU Render Primitive '+('0x'+(addr>>>0).toString(16)));
     }
   };
 })();

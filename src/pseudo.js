@@ -13,7 +13,7 @@ pseudo.CstrMain = (function() {
     const xhr = new XMLHttpRequest();
     xhr.onload = function() {
       if (xhr.status === 404) {
-        r3ka.consoleWrite(MSG_ERROR, 'Unable to read file "'+path+'"');
+        cpu.consoleWrite(MSG_ERROR, 'Unable to read file "'+path+'"');
         unusable = true;
       }
       else {
@@ -54,7 +54,7 @@ pseudo.CstrMain = (function() {
     bus    .reset();
     sio    .reset();
     cop2   .reset();
-    r3ka   .reset();
+    cpu   .reset();
 
     return true;
   }
@@ -64,12 +64,12 @@ pseudo.CstrMain = (function() {
     const offset = header[2+4]&(ram.ub.bLen-1); // Offset needs boundaries... huh?
     const size   = header[2+5];
 
-    // Prepare mem
+    // Set mem
     ram.ub.set(new UintBcap(resp, EXE_HEADER_SIZE, size), offset);
     
-    // Prepare processor
-    r3ka.exeHeader(header);
-    r3ka.consoleWrite(MSG_INFO, 'PSX-EXE has been transferred to RAM');
+    // Set processor
+    cpu.exeHeader(header);
+    cpu.consoleWrite(MSG_INFO, 'PSX-EXE has been transferred to RAM');
   }
 
   // Exposed class functions/variables
@@ -79,11 +79,11 @@ pseudo.CstrMain = (function() {
       file = undefined;
 
       $(function() { // DOMContentLoaded
-        render .awake($('#screen'), $('#resolution'));
-        vs     .awake();
+         render.awake($('#screen'), $('#resolution'));
+             vs.awake();
         rootcnt.awake();
-        sio    .awake();
-        r3ka   .awake($('#output'));
+            sio.awake();
+            cpu.awake($('#output'));
 
         request('bios/scph1001.bin', function(resp) {
           // Move BIOS to Mem
@@ -95,12 +95,12 @@ pseudo.CstrMain = (function() {
     run(path) {
       if (reset()) {
         if (path === 'bios') { // BIOS run
-          r3ka.run();
+          cpu.run();
         }
         else { // Homebrew run
           request(path, function(resp) {
             prepareExe(resp);
-            r3ka.run();
+            cpu.run();
           });
         }
       }
@@ -120,7 +120,7 @@ pseudo.CstrMain = (function() {
             reader.onload = function(e) { // Callback
               if (reset()) {
                 prepareExe(e.dest.result);
-                r3ka.run();
+                cpu.run();
               }
             };
             // Read file
@@ -144,7 +144,7 @@ pseudo.CstrMain = (function() {
             const name = parts[1];
 
             if (iso === 'CD001PLAYSTATION') {
-              r3ka.consoleWrite(MSG_ERROR, 'CD ISO with name "'+name+'" not supported for now');
+              cpu.consoleWrite(MSG_ERROR, 'CD ISO with name "'+name+'" not supported for now');
             }
           }
         });

@@ -629,7 +629,7 @@ pseudo.CstrRender = (function() {
           inn.status = (inn.status&(~(3<<11))) | ((data[0]&3)<<11);
           return;
       }
-      r3ka.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
+      cpu.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
     }
   };
 })();

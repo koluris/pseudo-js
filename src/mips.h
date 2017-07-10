@@ -1,5 +1,5 @@
-#define r3ka\
-  pseudo.CstrR3ka
+#define cpu\
+  pseudo.CstrMips
 
 #define opcode\
   ((code>>>26)&0x3f)

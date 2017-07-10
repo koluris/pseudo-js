@@ -33,9 +33,9 @@ pseudo.CstrCounters = (function() {
 
     update() {
       if ((vbk += PSX_CYCLE) === PSX_VSYNC) { vbk = 0;
-         bus.interruptSet(IRQ_VSYNC);
-          vs.redraw();
-        r3ka.setbp();
+        bus.interruptSet(IRQ_VSYNC);
+         vs.redraw();
+        cpu.setbp();
       }
 
       // timer[0].count += timer[0].mode&0x100 ? PSX_CYCLE : PSX_CYCLE/8;

@@ -30,7 +30,7 @@
     }\
   }
 
-pseudo.CstrR3ka = (function() {
+pseudo.CstrMips = (function() {
   // Base + Coprocessor
   let r, copr;
   let opcodeCount;
@@ -404,14 +404,14 @@ pseudo.CstrR3ka = (function() {
       output.text(' ');
 
       // BIOS bootstrap
-      r3ka.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM');
+      cpu.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM');
       const start = performance.now();
 
       while (pc !== 0x80030000) {
         step(false);
       }
       const delta = parseFloat(performance.now()-start).toFixed(2);
-      r3ka.consoleWrite(MSG_INFO, 'Bootstrap completed in '+delta+' ms');
+      cpu.consoleWrite(MSG_INFO, 'Bootstrap completed in '+delta+' ms');
     },
 
     run() {
@@ -420,7 +420,7 @@ pseudo.CstrR3ka = (function() {
       while (!bp) { // No sleep till BROOKLYN
         step(false);
       }
-      requestAF = requestAnimationFrame(r3ka.run);
+      requestAF = requestAnimationFrame(cpu.run);
     },
 
     exeHeader(hdr) {

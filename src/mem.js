@@ -24,7 +24,7 @@ pseudo.CstrMem = (function() {
           case 0x00: // Base
           case 0x80: // Mirror
           case 0xa0: // Mirror
-            if (r3ka.writeOK()) {
+            if (cpu.writeOK()) {
               directMemW(ram.uw, addr) = data;
             }
             return;
