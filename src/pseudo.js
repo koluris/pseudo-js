@@ -132,7 +132,7 @@ pseudo.CstrMain = (function() {
         chunkReader(file, 0x9319, 5, function(id) {
           if (id === 'CD001') {
             chunkReader(file, 0x9340, 32, function(name) { // Get Name
-              cpu.consoleWrite(MSG_ERROR, 'CD ISO with name "'+name.trim()+'" not supported for now');
+              cpu.consoleWrite(MSG_ERROR, 'CD ISO with code "'+name.trim()+'" not supported for now');
             });
           }
         });

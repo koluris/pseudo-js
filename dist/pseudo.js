@@ -1207,7 +1207,7 @@ pseudo.CstrMain = (function() {
     pseudo.CstrBus    .reset();
     pseudo.CstrSerial    .reset();
     pseudo.CstrCop2   .reset();
-    pseudo.CstrMips   .reset();
+    pseudo.CstrMips    .reset();
 
     return true;
   }
@@ -1285,7 +1285,7 @@ pseudo.CstrMain = (function() {
         chunkReader(file, 0x9319, 5, function(id) {
           if (id === 'CD001') {
             chunkReader(file, 0x9340, 32, function(name) { // Get Name
-              pseudo.CstrMips.consoleWrite('error', 'CD ISO with name "'+name.trim()+'" not supported for now');
+              pseudo.CstrMips.consoleWrite('error', 'CD ISO with code "'+name.trim()+'" not supported for now');
             });
           }
         });
