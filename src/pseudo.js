@@ -47,14 +47,14 @@ pseudo.CstrMain = (function() {
     }
 
     // Reset all emulator components
-    render .reset();
-    vs     .reset();
-    mem    .reset();
+     render.reset();
+         vs.reset();
+        mem.reset();
     rootcnt.reset();
-    bus    .reset();
-    sio    .reset();
-    cop2   .reset();
-    cpu    .reset();
+        bus.reset();
+        sio.reset();
+       cop2.reset();
+        cpu.reset();
 
     return true;
   }

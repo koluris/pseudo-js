@@ -364,7 +364,7 @@ pseudo.CstrRender = (function() {
         ctx.viewport(0, 0, w, h);
       }
       else {
-        psx.error('Not a valid resolution');
+        console.info('Not a valid resolution');
       }
     },
 

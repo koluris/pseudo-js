@@ -1200,14 +1200,14 @@ pseudo.CstrMain = (function() {
     }
 
     // Reset all emulator components
-    pseudo.CstrRender .reset();
-    pseudo.CstrGraphics     .reset();
-    pseudo.CstrMem    .reset();
+     pseudo.CstrRender.reset();
+         pseudo.CstrGraphics.reset();
+        pseudo.CstrMem.reset();
     pseudo.CstrCounters.reset();
-    pseudo.CstrBus    .reset();
-    pseudo.CstrSerial    .reset();
-    pseudo.CstrCop2   .reset();
-    pseudo.CstrMips    .reset();
+        pseudo.CstrBus.reset();
+        pseudo.CstrSerial.reset();
+       pseudo.CstrCop2.reset();
+        pseudo.CstrMips.reset();
 
     return true;
   }
@@ -1498,7 +1498,7 @@ pseudo.CstrRender = (function() {
         ctx.viewport(0, 0, w, h);
       }
       else {
-        pseudo.CstrMain.error('Not a valid resolution');
+        console.info('Not a valid resolution');
       }
     },
 

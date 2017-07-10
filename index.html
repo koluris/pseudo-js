@@ -76,13 +76,13 @@
     /* Header */
     #bar-header {
       DISPLAY: flex;
-      min-HEIGHT: 60px;
+      min-HEIGHT: 55px;
     }
     #bar-header > .spacer > IMG {
-      width: 40px;
+      width: 35px;
     }
     #brand {
-      font: normal 42px 'PS', sans-serif;
+      font: normal 32px 'PS', sans-serif;
       letter-SPACING: 1px;
       MARGIN-left: 20px;
     }
@@ -134,11 +134,11 @@
     #bar-boxes {
       flex: 1;
       DISPLAY: flex;
-      MARGIN: 0 12% 30px 12%;
+      MARGIN: 0 12% 20px 12%;
     }
     .box-header {
-      font: normal 27px 'Oswald-400', sans-serif;
-      MARGIN-bottom: 10px;
+      font: normal 26px 'Oswald-400', sans-serif;
+      MARGIN-bottom: 8px;
     }
 
     /* Output */
@@ -170,7 +170,7 @@
     #box-dropzone {
       DISPLAY: flex;
       flex-direction: column;
-      min-width: 300px;
+      min-width: 250px;
       PADDING-left: 30px;
     }
     #dropzone {
@@ -182,16 +182,16 @@
       border: 5px dashed RGBA(255, 255, 255, .1);
     }
     #dropzone > IMG {
-      width: 58px;
+      width: 52px;
       MARGIN-bottom: 20px;
     }
     #dropzone > div:nth-child(2) {
       color: #fff;
-      font: normal 16px 'Oswald-400', sans-serif;
+      font: normal 15px 'Oswald-400', sans-serif;
     }
     #dropzone > div:nth-child(3) {
       color: #93a0a8;
-      font: normal 11px 'Oswald-300', sans-serif;
+      font: normal 13px 'Oswald-300', sans-serif;
     }
 
     /* Homebrew */
@@ -266,7 +266,7 @@
             <div id="dropzone" ondrop="pseudo.CstrMain.fileDrop(event)" ONDRAGOVER="pseudo.CstrMain.dropPrevent(event)">
               <IMG src="res/drop.png"/>
               <div>DRAG & DROP PSX FILES HERE</div>
-              <div>BIOS (.bin), EXE (.psx, .bin), CD ISO (.iso), etc.</div>
+              <div>Extension .iso, .bin, .psx, .exe</div>
             </div>
           </div>
         </div>
