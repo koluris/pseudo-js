@@ -145,7 +145,7 @@ pseudo.CstrMain = (function() {
               const name = parts[1];
 
               if (iso === 'CD001PLAYSTATION') {
-                r3ka.consoleWrite(MSG_ERROR, iso+' with name "'+name+'" not supported for now');
+                r3ka.consoleWrite(MSG_ERROR, 'CD ISO with name "'+name+'" not supported for now');
               }
             }
           });
