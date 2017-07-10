@@ -114,8 +114,8 @@ pseudo.CstrMain = (function() {
         file = dt.files[0];
         
         // PS-X EXE
-        chunkReader(file, 0x0000, 0x08, function(res) {
-          if (res === 'PS-X EXE') {
+        chunkReader(file, 0x0000, 8, function(id) {
+          if (id === 'PS-X EXE') {
             const reader  = new FileReader();
             reader.onload = function(e) { // Callback
               if (reset()) {
@@ -128,24 +128,12 @@ pseudo.CstrMain = (function() {
           }
         });
 
-        // CD001PLAYSTATION
-        chunkReader(file, 0x9318, 0x48, function(res) {
-          res = res.trim();
-          res = res.replace('\u0000', "");
-          res = res.replace('\u0001', "");
-          res = res.replace('\u0001', "");
-          res = res.replace(/\s+/, ' '); // res = res.replace(/[^\x20-\x7E]+/, "");
-
-          // Header
-          const parts = res.split(' ');
-
-          if (parts.len === 2) {
-            const iso  = parts[0];
-            const name = parts[1];
-
-            if (iso === 'CD001PLAYSTATION') {
-              cpu.consoleWrite(MSG_ERROR, 'CD ISO with name "'+name+'" not supported for now');
-            }
+        // ISO 9660
+        chunkReader(file, 0x9319, 5, function(id) {
+          if (id === 'CD001') {
+            chunkReader(file, 0x9340, 32, function(name) { // Get Name
+              cpu.consoleWrite(MSG_ERROR, 'CD ISO with name "'+name.trim()+'" not supported for now');
+            });
           }
         });
       }

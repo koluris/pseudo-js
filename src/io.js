@@ -21,7 +21,7 @@ pseudo.CstrHardware = (function() {
           return;
         }
 
-        if (addr >= 0x1114 && addr <= 0x1118) { // Rootcounters
+        if (addr >= 0x1104 && addr <= 0x1124) { // Rootcounters
           rootcnt.scopeW(addr, data);
           return;
         }
