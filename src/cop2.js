@@ -1,13 +1,16 @@
-#define oooo(r, p)\
-  r[p]
+// 32-bit accessor
+#define oooo(base, index)\
+  base[(index)]
 
-#define __oo(r, p, s)\
-  r[(p<<1)+s]
+// 16-bit accessor
+#define __oo(base, index, offset)\
+  base[(index<<1)+offset]
 
-#define ___o(r, p, s)\
-  r[(p<<2)+s]
+// 08-bit accessor
+#define ___o(base, index, offset)\
+  base[(index<<2)+offset]
 
-// COP2 C
+// Cop2c
 #define R11R12 oooo(cop2c.sw,  0)
 #define R11    __oo(cop2c.sh,  0, 0)
 #define R12    __oo(cop2c.sh,  0, 1)
@@ -55,7 +58,7 @@
 #define ZSF4   __oo(cop2c.sh, 30, 0)
 #define FLAG   oooo(cop2c.uw, 31)
 
-// COP2 D
+// Cop2d
 #define VXY0   oooo(cop2d.uw,  0)
 #define VX0    __oo(cop2d.sh,  0, 0)
 #define VY0    __oo(cop2d.sh,  0, 1)
@@ -128,8 +131,8 @@
 #define SZ(n)  __oo(cop2d.uh, n+17, 0)
 
 pseudo.CstrCop2 = (function() {
-  let cop2c = union(32*4);
-  let cop2d = union(32*4);
+  const cop2c = union(32*4);
+  const cop2d = union(32*4);
 
   return {
     reset() {
@@ -150,11 +153,11 @@ pseudo.CstrCop2 = (function() {
               return;
 
             case 4: // MTC2
-              cop2.opcodeMTC2(cpu.readbase(rt), rd);
+              cop2.opcodeMTC2(rd, cpu.readbase(rt));
               return;
 
             case 6: // CTC2
-              cop2.opcodeCTC2(cpu.readbase(rt), rd);
+              cop2.opcodeCTC2(rd, cpu.readbase(rt));
               return;
           }
           psx.error('COP2 Basic '+(rs&7));
@@ -163,8 +166,8 @@ pseudo.CstrCop2 = (function() {
       //psx.error('COP2 Execute '+hex(code&0x3f));
     },
 
-    opcodeMFC2: function(r) {
-      switch(r) {
+    opcodeMFC2: function(addr) {
+      switch(addr) {
         case  1:
         case  3:
         case  5:
@@ -172,7 +175,7 @@ pseudo.CstrCop2 = (function() {
         case  9:
         case 10:
         case 11:
-          oooo(cop2d.sw, r) = __oo(cop2d.sh, r, 0);
+          oooo(cop2d.sw, addr) = __oo(cop2d.sh, addr, 0);
           break;
 
         case  7:
@@ -180,44 +183,44 @@ pseudo.CstrCop2 = (function() {
         case 17:
         case 18:
         case 19:
-          oooo(cop2d.uw, r) = __oo(cop2d.uh, r, 0);
+          oooo(cop2d.uw, addr) = __oo(cop2d.uh, addr, 0);
           break;
 
         case 15:
-          psx.error('opcodeMFC2 -> '+r);
+          psx.error('opcodeMFC2 -> '+addr);
           break;
 
         case 28:
         case 29:
-          psx.error('opcodeMFC2 -> '+r);
+          psx.error('opcodeMFC2 -> '+addr);
           break;
 
         case 30:
           return 0;
       }
 
-      return oooo(cop2d.uw, r);
+      return oooo(cop2d.uw, addr);
     },
 
-    opcodeMTC2: function(v, r) {
-      switch(r) {
+    opcodeMTC2: function(addr, data) {
+      switch(addr) {
         case 15:
           SXY0 = SXY1;
           SXY1 = SXY2;
-          SXY2 = v;
-          SXYP = v;
+          SXY2 = data;
+          SXYP = data;
           return;
 
         case 28:
-          IRGB = v;
-          IR1  =(v&0x001f)<<7;
-          IR2  =(v&0x03e0)<<2;
-          IR3  =(v&0x7c00)>>3;
+          IRGB = data;
+          IR1  =(data&0x001f)<<7;
+          IR2  =(data&0x03e0)<<2;
+          IR3  =(data&0x7c00)>>3;
           return;
 
         case 30:
           {
-            LZCS = v;
+            LZCS = data;
             LZCR = 0;
             let sbit = (LZCS&0x80000000) ? LZCS : (~(LZCS));
 
@@ -233,11 +236,11 @@ pseudo.CstrCop2 = (function() {
           return;
       }
 
-      oooo(cop2d.uw, r) = v;
+      oooo(cop2d.uw, addr) = data;
     },
 
-    opcodeCTC2: function(v, r) {
-      switch(r) {
+    opcodeCTC2: function(addr, data) {
+      switch(addr) {
         case  4:
         case 12:
         case 20:
@@ -245,16 +248,16 @@ pseudo.CstrCop2 = (function() {
         case 27:
         case 29:
         case 30:
-          v = SIGN_EXT_16(v); // ?
+          data = SIGN_EXT_16(data); // ?
           break;
 
         /* unused */
         case 31:
-          psx.error('opcodeCTC2 -> '+r+' <- '+hex(v));
+          psx.error('opcodeCTC2 -> '+addr+' <- '+hex(data));
           break;
       }
 
-      oooo(cop2c.uw, r) = v;
+      oooo(cop2c.uw, addr) = data;
     }
   };
 })();

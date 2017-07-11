@@ -17,7 +17,7 @@
   directMemW(mem._hwr.uw, (addr&0xfff0)|8)
 
 pseudo.CstrBus = (function() {
-  const interrupt = [{
+  const interrupts = [{
     code: IRQ_VSYNC,
     dest: 1
   }, {
@@ -55,13 +55,13 @@ pseudo.CstrBus = (function() {
   // Exposed class functions/variables
   return {
     reset() {
-      for (const item of interrupt) {
+      for (const item of interrupts) {
         item.queued = IRQ_QUEUED_NO;
       }
     },
 
     interruptsUpdate() { // A method to schedule when IRQs should fire
-      for (const item of interrupt) {
+      for (const item of interrupts) {
         if (item.queued) {
           if (item.queued++ === item.dest) {
             data16 |= (1<<item.code);
@@ -73,7 +73,7 @@ pseudo.CstrBus = (function() {
     },
 
     interruptSet(n) {
-      interrupt[n].queued = IRQ_QUEUED_YES;
+      interrupts[n].queued = IRQ_QUEUED_YES;
     },
 
     checkDMA(addr, data) {

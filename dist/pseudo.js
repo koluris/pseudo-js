@@ -161,7 +161,7 @@ pseudo.CstrAudio = (function() {
 
 
 pseudo.CstrBus = (function() {
-  const interrupt = [{
+  const interrupts = [{
     code: 0,
     target: 1
   }, {
@@ -199,13 +199,13 @@ pseudo.CstrBus = (function() {
   // Exposed class functions/variables
   return {
     reset() {
-      for (const item of interrupt) {
+      for (const item of interrupts) {
         item.queued = 0;
       }
     },
 
     interruptsUpdate() { // A method to schedule when IRQs should fire
-      for (const item of interrupt) {
+      for (const item of interrupts) {
         if (item.queued) {
           if (item.queued++ === item.target) {
             pseudo.CstrMem._hwr.uh[((0x1070)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] |= (1<<item.code);
@@ -217,7 +217,7 @@ pseudo.CstrBus = (function() {
     },
 
     interruptSet(n) {
-      interrupt[n].queued = 1;
+      interrupts[n].queued = 1;
     },
 
     checkDMA(addr, data) {
@@ -245,19 +245,22 @@ pseudo.CstrBus = (function() {
     }
   };
 })();
+// 32-bit accessor
 
 
 
+// 16-bit accessor
 
 
 
+// 08-bit accessor
 
 
 
-// COP2 C
+// Cop2c
 
 
-// COP2 D
+// Cop2d
 
 
 
@@ -269,8 +272,8 @@ pseudo.CstrBus = (function() {
 
 
 pseudo.CstrCop2 = (function() {
-  let cop2c = union(32*4);
-  let cop2d = union(32*4);
+  const cop2c = union(32*4);
+  const cop2d = union(32*4);
 
   return {
     reset() {
@@ -287,15 +290,15 @@ pseudo.CstrCop2 = (function() {
               return;
 
             case 2: // CFC2
-              pseudo.CstrMips.setbase(((code>>>16)&0x1f), cop2c.uw[ ((code>>>11)&0x1f)]);
+              pseudo.CstrMips.setbase(((code>>>16)&0x1f), cop2c.uw[( ((code>>>11)&0x1f))]);
               return;
 
             case 4: // MTC2
-              pseudo.CstrCop2.opcodeMTC2(pseudo.CstrMips.readbase(((code>>>16)&0x1f)), ((code>>>11)&0x1f));
+              pseudo.CstrCop2.opcodeMTC2(((code>>>11)&0x1f), pseudo.CstrMips.readbase(((code>>>16)&0x1f)));
               return;
 
             case 6: // CTC2
-              pseudo.CstrCop2.opcodeCTC2(pseudo.CstrMips.readbase(((code>>>16)&0x1f)), ((code>>>11)&0x1f));
+              pseudo.CstrCop2.opcodeCTC2(((code>>>11)&0x1f), pseudo.CstrMips.readbase(((code>>>16)&0x1f)));
               return;
           }
           pseudo.CstrMain.error('COP2 Basic '+(((code>>>21)&0x1f)&7));
@@ -304,8 +307,8 @@ pseudo.CstrCop2 = (function() {
       //pseudo.CstrMain.error('COP2 Execute '+('0x'+(code&0x3f>>>0).toString(16)));
     },
 
-    opcodeMFC2: function(r) {
-      switch(r) {
+    opcodeMFC2: function(addr) {
+      switch(addr) {
         case  1:
         case  3:
         case  5:
@@ -313,7 +316,7 @@ pseudo.CstrCop2 = (function() {
         case  9:
         case 10:
         case 11:
-          cop2d.sw[ r] = cop2d.sh[( r<<1)+ 0];
+          cop2d.sw[( addr)] = cop2d.sh[( addr<<1)+ 0];
           break;
 
         case  7:
@@ -321,49 +324,49 @@ pseudo.CstrCop2 = (function() {
         case 17:
         case 18:
         case 19:
-          cop2d.uw[ r] = cop2d.uh[( r<<1)+ 0];
+          cop2d.uw[( addr)] = cop2d.uh[( addr<<1)+ 0];
           break;
 
         case 15:
-          pseudo.CstrMain.error('opcodeMFC2 -> '+r);
+          pseudo.CstrMain.error('opcodeMFC2 -> '+addr);
           break;
 
         case 28:
         case 29:
-          pseudo.CstrMain.error('opcodeMFC2 -> '+r);
+          pseudo.CstrMain.error('opcodeMFC2 -> '+addr);
           break;
 
         case 30:
           return 0;
       }
 
-      return cop2d.uw[ r];
+      return cop2d.uw[( addr)];
     },
 
-    opcodeMTC2: function(v, r) {
-      switch(r) {
+    opcodeMTC2: function(addr, data) {
+      switch(addr) {
         case 15:
-          cop2d.uw[12] = cop2d.uw[13];
-          cop2d.uw[13] = cop2d.uw[14];
-          cop2d.uw[14] = v;
-          cop2d.uw[15] = v;
+          cop2d.uw[(12)] = cop2d.uw[(13)];
+          cop2d.uw[(13)] = cop2d.uw[(14)];
+          cop2d.uw[(14)] = data;
+          cop2d.uw[(15)] = data;
           return;
 
         case 28:
-          cop2d.uw[28] = v;
-          cop2d.sh[(9<<1)+0]  =(v&0x001f)<<7;
-          cop2d.sh[(10<<1)+0]  =(v&0x03e0)<<2;
-          cop2d.sh[(11<<1)+0]  =(v&0x7c00)>>3;
+          cop2d.uw[(28)] = data;
+          cop2d.sh[(9<<1)+0]  =(data&0x001f)<<7;
+          cop2d.sh[(10<<1)+0]  =(data&0x03e0)<<2;
+          cop2d.sh[(11<<1)+0]  =(data&0x7c00)>>3;
           return;
 
         case 30:
           {
-            cop2d.uw[30] = v;
-            cop2d.uw[31] = 0;
-            let sbit = (cop2d.uw[30]&0x80000000) ? cop2d.uw[30] : (~(cop2d.uw[30]));
+            cop2d.uw[(30)] = data;
+            cop2d.uw[(31)] = 0;
+            let sbit = (cop2d.uw[(30)]&0x80000000) ? cop2d.uw[(30)] : (~(cop2d.uw[(30)]));
 
             for ( ; sbit&0x80000000; sbit<<=1) {
-              cop2d.uw[31]++;
+              cop2d.uw[(31)]++;
             }
           }
           return;
@@ -374,11 +377,11 @@ pseudo.CstrCop2 = (function() {
           return;
       }
 
-      cop2d.uw[ r] = v;
+      cop2d.uw[( addr)] = data;
     },
 
-    opcodeCTC2: function(v, r) {
-      switch(r) {
+    opcodeCTC2: function(addr, data) {
+      switch(addr) {
         case  4:
         case 12:
         case 20:
@@ -386,16 +389,16 @@ pseudo.CstrCop2 = (function() {
         case 27:
         case 29:
         case 30:
-          v = ((v)<<16>>16); // ?
+          data = ((data)<<16>>16); // ?
           break;
 
         
         case 31:
-          pseudo.CstrMain.error('opcodeCTC2 -> '+r+' <- '+('0x'+(v>>>0).toString(16)));
+          pseudo.CstrMain.error('opcodeCTC2 -> '+addr+' <- '+('0x'+(data>>>0).toString(16)));
           break;
       }
 
-      cop2c.uw[ r] = v;
+      cop2c.uw[( addr)] = data;
     }
   };
 })();
