@@ -708,16 +708,21 @@ pseudo.CstrMem = (function() {
 
     write: {
       w(addr, data) {
-        switch(addr>>>24) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
-          case 0xa0: // Mirror
+        switch(addr>>>20) {
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
+
+          case 0xa00: // Mirror
             if (pseudo.CstrMips.writeOK()) {
               pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] = data;
             }
             return;
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
@@ -734,13 +739,17 @@ pseudo.CstrMem = (function() {
       },
 
       h(addr, data) {
-        switch(addr>>>24) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
+        switch(addr>>>20) {
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
             pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1] = data;
             return;
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
@@ -753,14 +762,19 @@ pseudo.CstrMem = (function() {
       },
 
       b(addr, data) {
-        switch(addr>>>24) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
-          case 0xa0: // Mirror
+        switch(addr>>>20) {
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
+
+          case 0xa00: // Mirror
             pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0] = data;
             return;
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0] = data;
@@ -775,16 +789,21 @@ pseudo.CstrMem = (function() {
 
     read: {
       w(addr) {
-        switch(addr>>>24) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
-          case 0xa0: // Mirror
+        switch(addr>>>20) {
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
+
+          case 0xa00: // Mirror
             return pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
 
-          case 0xbf: // BIOS
+          case 0xbfc: // BIOS
             return pseudo.CstrMem._rom.uw[(( addr)&(pseudo.CstrMem._rom.uw.byteLength-1))>>>2];
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
@@ -796,13 +815,16 @@ pseudo.CstrMem = (function() {
       },
 
       h(addr) {
-        switch(addr>>>24) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
-            console.log(('0x'+(addr>>>0).toString(16)));
+        switch(addr>>>20) {
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
             return pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1];
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
@@ -814,23 +836,27 @@ pseudo.CstrMem = (function() {
       },
 
       b(addr) {
-        switch(addr>>>24) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
+        switch(addr>>>20) {
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+          
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
             return pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0];
 
-          case 0xbf: // BIOS
+          case 0xbfc: // BIOS
             return pseudo.CstrMem._rom.ub[(( addr)&(pseudo.CstrMem._rom.ub.byteLength-1))>>>0];
 
-          case 0x1f: // Scratchpad + Hardware
-            // if (addr === 0x1f000084) { // PIO?
-            //   return 0;
-            // }
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               return pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0];
             }
             return pseudo.CstrHardware.read.b(addr);
+
+          case 0x1f0: // PIO?
+            return 0;
         }
         pseudo.CstrMain.error('Mem Read b '+('0x'+(addr>>>0).toString(16)));
         return 0;

@@ -3,7 +3,7 @@
 #define hwr mem._hwr
 
 #define MSB(x)\
-  x>>>24
+  x>>>20
 
 pseudo.CstrMem = (function() {
   // Exposed class functions/variables
@@ -21,15 +21,20 @@ pseudo.CstrMem = (function() {
     write: {
       w(addr, data) {
         switch(MSB(addr)) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
-          case 0xa0: // Mirror
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
+
+          case 0xa00: // Mirror
             if (cpu.writeOK()) {
               directMemW(ram.uw, addr) = data;
             }
             return;
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               directMemW(hwr.uw, addr) = data;
@@ -47,12 +52,16 @@ pseudo.CstrMem = (function() {
 
       h(addr, data) {
         switch(MSB(addr)) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
             directMemH(ram.uh, addr) = data;
             return;
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               directMemH(hwr.uh, addr) = data;
@@ -66,13 +75,18 @@ pseudo.CstrMem = (function() {
 
       b(addr, data) {
         switch(MSB(addr)) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
-          case 0xa0: // Mirror
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
+
+          case 0xa00: // Mirror
             directMemB(ram.ub, addr) = data;
             return;
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               directMemB(hwr.ub, addr) = data;
@@ -88,15 +102,20 @@ pseudo.CstrMem = (function() {
     read: {
       w(addr) {
         switch(MSB(addr)) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
-          case 0xa0: // Mirror
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
+
+          case 0xa00: // Mirror
             return directMemW(ram.uw, addr);
 
-          case 0xbf: // BIOS
+          case 0xbfc: // BIOS
             return directMemW(rom.uw, addr);
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               return directMemW(hwr.uw, addr);
@@ -109,11 +128,15 @@ pseudo.CstrMem = (function() {
 
       h(addr) {
         switch(MSB(addr)) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
             return directMemH(ram.uh, addr);
 
-          case 0x1f: // Scratchpad + Hardware
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               return directMemH(hwr.uh, addr);
@@ -126,22 +149,26 @@ pseudo.CstrMem = (function() {
 
       b(addr) {
         switch(MSB(addr)) {
-          case 0x00: // Base RAM
-          case 0x80: // Mirror
+          case 0x000: // Base RAM
+          case 0x001: // Base RAM
+          
+          case 0x800: // Mirror
+          case 0x801: // Mirror
+          case 0x807: // Mirror
             return directMemB(ram.ub, addr);
 
-          case 0xbf: // BIOS
+          case 0xbfc: // BIOS
             return directMemB(rom.ub, addr);
 
-          case 0x1f: // Scratchpad + Hardware
-            // if (addr === 0x1f000084) { // PIO?
-            //   return 0;
-            // }
+          case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               return directMemB(hwr.ub, addr);
             }
             return io.read.b(addr);
+
+          case 0x1f0: // PIO?
+            return 0;
         }
         psx.error('Mem Read b '+hex(addr));
         return 0;
