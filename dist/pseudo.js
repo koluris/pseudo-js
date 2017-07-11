@@ -839,7 +839,7 @@ pseudo.CstrMem = (function() {
         switch(addr>>>20) {
           case 0x000: // Base RAM
           case 0x001: // Base RAM
-          
+
           case 0x800: // Mirror
           case 0x801: // Mirror
           case 0x807: // Mirror
@@ -855,7 +855,7 @@ pseudo.CstrMem = (function() {
             }
             return pseudo.CstrHardware.read.b(addr);
 
-          case 0x1f0: // PIO?
+          case 0x1f0: // PIO? What do u want?
             return 0;
         }
         pseudo.CstrMain.error('Mem Read b '+('0x'+(addr>>>0).toString(16)));

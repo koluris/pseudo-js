@@ -151,7 +151,7 @@ pseudo.CstrMem = (function() {
         switch(MSB(addr)) {
           case 0x000: // Base RAM
           case 0x001: // Base RAM
-          
+
           case 0x800: // Mirror
           case 0x801: // Mirror
           case 0x807: // Mirror
@@ -167,7 +167,7 @@ pseudo.CstrMem = (function() {
             }
             return io.read.b(addr);
 
-          case 0x1f0: // PIO?
+          case 0x1f0: // PIO? What do u want?
             return 0;
         }
         psx.error('Mem Read b '+hex(addr));
