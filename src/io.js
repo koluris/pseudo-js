@@ -62,6 +62,11 @@ pseudo.CstrHardware = (function() {
       h(addr, data) {
         addr&=0xffff;
 
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          directMemH(hwr.uh, addr) = data;
+          return;
+        }
+
         if (addr >= 0x1048 && addr <= 0x104e) { // Controls
           sio.write.h(addr, data);
           return;
@@ -93,6 +98,11 @@ pseudo.CstrHardware = (function() {
 
       b(addr, data) {
         addr&=0xffff;
+
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          directMemB(hwr.ub, addr) = data;
+          return;
+        }
         
         switch(addr) {
           case 0x1040:
@@ -111,6 +121,10 @@ pseudo.CstrHardware = (function() {
     read: {
       w(addr) {
         addr&=0xffff;
+
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          return directMemW(hwr.uw, addr);
+        }
 
         if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
           return directMemW(hwr.uw, addr);
@@ -139,6 +153,10 @@ pseudo.CstrHardware = (function() {
       h(addr) {
         addr&=0xffff;
 
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          return directMemH(hwr.uh, addr);
+        }
+
         if (addr >= 0x1044 && addr <= 0x104a) { // Controls
           return sio.read.h(addr);
         }
@@ -147,7 +165,7 @@ pseudo.CstrHardware = (function() {
           return rootcnt.scopeR(addr);
         }
 
-        if (addr >= 0x1c00 && addr <= 0x1dae) { // Audio
+        if (addr >= 0x1c00 && addr <= 0x1e0e) { // Audio
           return directMemH(hwr.uh, addr);
         }
 
@@ -163,6 +181,10 @@ pseudo.CstrHardware = (function() {
 
       b(addr) {
         addr&=0xffff;
+
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          return directMemB(hwr.ub, addr);
+        }
 
         switch(addr) {
           case 0x1040: // Controls

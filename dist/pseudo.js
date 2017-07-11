@@ -590,6 +590,11 @@ pseudo.CstrHardware = (function() {
       h(addr, data) {
         addr&=0xffff;
 
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1] = data;
+          return;
+        }
+
         if (addr >= 0x1048 && addr <= 0x104e) { // Controls
           pseudo.CstrSerial.write.h(addr, data);
           return;
@@ -621,6 +626,11 @@ pseudo.CstrHardware = (function() {
 
       b(addr, data) {
         addr&=0xffff;
+
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0] = data;
+          return;
+        }
         
         switch(addr) {
           case 0x1040:
@@ -639,6 +649,10 @@ pseudo.CstrHardware = (function() {
     read: {
       w(addr) {
         addr&=0xffff;
+
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
+        }
 
         if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
           return pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2];
@@ -667,6 +681,10 @@ pseudo.CstrHardware = (function() {
       h(addr) {
         addr&=0xffff;
 
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
+        }
+
         if (addr >= 0x1044 && addr <= 0x104a) { // Controls
           return pseudo.CstrSerial.read.h(addr);
         }
@@ -675,7 +693,7 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrCounters.scopeR(addr);
         }
 
-        if (addr >= 0x1c00 && addr <= 0x1dae) { // Audio
+        if (addr >= 0x1c00 && addr <= 0x1e0e) { // Audio
           return pseudo.CstrMem._hwr.uh[(( addr)&(pseudo.CstrMem._hwr.uh.byteLength-1))>>>1];
         }
 
@@ -691,6 +709,10 @@ pseudo.CstrHardware = (function() {
 
       b(addr) {
         addr&=0xffff;
+
+        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
+          return pseudo.CstrMem._hwr.ub[(( addr)&(pseudo.CstrMem._hwr.ub.byteLength-1))>>>0];
+        }
 
         switch(addr) {
           case 0x1040: // Controls
@@ -2214,6 +2236,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             
+            case 0x02:
             case 0x03:
             case 0x05:
             case 0x06:

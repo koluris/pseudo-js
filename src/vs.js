@@ -141,6 +141,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             /* unused */
+            case 0x02:
             case 0x03:
             case 0x05:
             case 0x06:
