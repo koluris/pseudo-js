@@ -21,7 +21,7 @@ pseudo.CstrMem = (function() {
     write: {
       w(addr, data) {
         switch(MSB(addr)) {
-          case 0x00: // Base
+          case 0x00: // Base RAM
           case 0x80: // Mirror
           case 0xa0: // Mirror
             if (cpu.writeOK()) {
@@ -29,7 +29,12 @@ pseudo.CstrMem = (function() {
             }
             return;
 
-          case 0x1f: // Hardware
+          case 0x1f: // Scratchpad + Hardware
+            addr&=0xffff;
+            if (addr <= 0x3ff) {
+              directMemW(hwr.uw, addr) = data;
+              return;
+            }
             io.write.w(addr, data);
             return;
         }
@@ -42,12 +47,17 @@ pseudo.CstrMem = (function() {
 
       h(addr, data) {
         switch(MSB(addr)) {
-          case 0x00: // Base
+          case 0x00: // Base RAM
           case 0x80: // Mirror
             directMemH(ram.uh, addr) = data;
             return;
 
           case 0x1f: // Hardware
+            addr&=0xffff;
+            if (addr <= 0x3ff) {
+              directMemH(hwr.uh, addr) = data;
+              return;
+            }
             io.write.h(addr, data);
             return;
         }
@@ -56,13 +66,18 @@ pseudo.CstrMem = (function() {
 
       b(addr, data) {
         switch(MSB(addr)) {
-          case 0x00: // Base
+          case 0x00: // Base RAM
           case 0x80: // Mirror
           case 0xa0: // Mirror
             directMemB(ram.ub, addr) = data;
             return;
 
           case 0x1f: // Hardware
+            addr&=0xffff;
+            if (addr <= 0x3ff) {
+              directMemB(hwr.ub, addr) = data;
+              return;
+            }
             io.write.b(addr, data);
             return;
         }
@@ -73,7 +88,7 @@ pseudo.CstrMem = (function() {
     read: {
       w(addr) {
         switch(MSB(addr)) {
-          case 0x00: // Base
+          case 0x00: // Base RAM
           case 0x80: // Mirror
           case 0xa0: // Mirror
             return directMemW(ram.uw, addr);
@@ -82,6 +97,10 @@ pseudo.CstrMem = (function() {
             return directMemW(rom.uw, addr);
 
           case 0x1f: // Hardware
+            addr&=0xffff;
+            if (addr <= 0x3ff) {
+              return directMemW(hwr.uw, addr);
+            }
             return io.read.w(addr);
         }
         psx.error('Mem Read w '+hex(addr));
@@ -90,11 +109,15 @@ pseudo.CstrMem = (function() {
 
       h(addr) {
         switch(MSB(addr)) {
-          case 0x00: // Base
+          case 0x00: // Base RAM
           case 0x80: // Mirror
             return directMemH(ram.uh, addr);
 
           case 0x1f: // Hardware
+            addr&=0xffff;
+            if (addr <= 0x3ff) {
+              return directMemH(hwr.uh, addr);
+            }
             return io.read.h(addr);
         }
         psx.error('Mem Read h '+hex(addr));
@@ -103,7 +126,7 @@ pseudo.CstrMem = (function() {
 
       b(addr) {
         switch(MSB(addr)) {
-          case 0x00: // Base
+          case 0x00: // Base RAM
           case 0x80: // Mirror
             return directMemB(ram.ub, addr);
 
@@ -111,8 +134,12 @@ pseudo.CstrMem = (function() {
             return directMemB(rom.ub, addr);
 
           case 0x1f: // Hardware
-            if (addr === 0x1f000084) { // PIO?
-              return 0;
+            // if (addr === 0x1f000084) { // PIO?
+            //   return 0;
+            // }
+            addr&=0xffff;
+            if (addr <= 0x3ff) {
+              return directMemB(hwr.ub, addr);
             }
             return io.read.b(addr);
         }

@@ -5,13 +5,6 @@ pseudo.CstrHardware = (function() {
   return {
     write: {
       w(addr, data) {
-        addr&=0xffff;
-
-        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
-          directMemW(hwr.uw, addr) = data;
-          return;
-        }
-
         if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
           if (addr&8) {
             bus.checkDMA(addr, data);
@@ -60,13 +53,6 @@ pseudo.CstrHardware = (function() {
       },
 
       h(addr, data) {
-        addr&=0xffff;
-
-        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
-          directMemH(hwr.uh, addr) = data;
-          return;
-        }
-
         if (addr >= 0x1048 && addr <= 0x104e) { // Controls
           sio.write.h(addr, data);
           return;
@@ -97,13 +83,6 @@ pseudo.CstrHardware = (function() {
       },
 
       b(addr, data) {
-        addr&=0xffff;
-
-        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
-          directMemB(hwr.ub, addr) = data;
-          return;
-        }
-        
         switch(addr) {
           case 0x1040:
             sio.write.b(addr, data);
@@ -120,12 +99,6 @@ pseudo.CstrHardware = (function() {
 
     read: {
       w(addr) {
-        addr&=0xffff;
-
-        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
-          return directMemW(hwr.uw, addr);
-        }
-
         if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
           return directMemW(hwr.uw, addr);
         }
@@ -151,12 +124,6 @@ pseudo.CstrHardware = (function() {
       },
 
       h(addr) {
-        addr&=0xffff;
-
-        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
-          return directMemH(hwr.uh, addr);
-        }
-
         if (addr >= 0x1044 && addr <= 0x104a) { // Controls
           return sio.read.h(addr);
         }
@@ -180,12 +147,6 @@ pseudo.CstrHardware = (function() {
       },
 
       b(addr) {
-        addr&=0xffff;
-
-        if (addr >= 0x0000 && addr <= 0x03ff) { // Scratchpad
-          return directMemB(hwr.ub, addr);
-        }
-
         switch(addr) {
           case 0x1040: // Controls
             return sio.read.b(addr);
