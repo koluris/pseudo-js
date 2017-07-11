@@ -245,6 +245,29 @@ pseudo.CstrBus = (function() {
     }
   };
 })();
+
+
+
+
+
+
+
+
+
+// COP2 C
+
+
+// COP2 D
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrCop2 = (function() {
   let cop2c = union(32*4);
   let cop2d = union(32*4);
@@ -256,7 +279,123 @@ pseudo.CstrCop2 = (function() {
     },
 
     execute(code) {
-      console.dir('COP2 Execute '+('0x'+(code&63>>>0).toString(16)));
+      switch(code&0x3f) {
+        case 0: // BASIC
+          switch(((code>>>21)&0x1f)&7) {
+            case 0: // MFC2
+              pseudo.CstrMips.setbase(((code>>>16)&0x1f), pseudo.CstrCop2.opcodeMFC2(((code>>>11)&0x1f)));
+              return;
+
+            case 2: // CFC2
+              pseudo.CstrMips.setbase(((code>>>16)&0x1f), cop2c.uw[ ((code>>>11)&0x1f)]);
+              return;
+
+            case 4: // MTC2
+              pseudo.CstrCop2.opcodeMTC2(pseudo.CstrMips.readbase(((code>>>16)&0x1f)), ((code>>>11)&0x1f));
+              return;
+
+            case 6: // CTC2
+              pseudo.CstrCop2.opcodeCTC2(pseudo.CstrMips.readbase(((code>>>16)&0x1f)), ((code>>>11)&0x1f));
+              return;
+          }
+          pseudo.CstrMain.error('COP2 Basic '+(((code>>>21)&0x1f)&7));
+          return;
+      }
+      //pseudo.CstrMain.error('COP2 Execute '+('0x'+(code&0x3f>>>0).toString(16)));
+    },
+
+    opcodeMFC2: function(r) {
+      switch(r) {
+        case  1:
+        case  3:
+        case  5:
+        case  8:
+        case  9:
+        case 10:
+        case 11:
+          cop2d.sw[ r] = cop2d.sh[( r<<1)+ 0];
+          break;
+
+        case  7:
+        case 16:
+        case 17:
+        case 18:
+        case 19:
+          cop2d.uw[ r] = cop2d.uh[( r<<1)+ 0];
+          break;
+
+        case 15:
+          pseudo.CstrMain.error('opcodeMFC2 -> '+r);
+          break;
+
+        case 28:
+        case 29:
+          pseudo.CstrMain.error('opcodeMFC2 -> '+r);
+          break;
+
+        case 30:
+          return 0;
+      }
+
+      return cop2d.uw[ r];
+    },
+
+    opcodeMTC2: function(v, r) {
+      switch(r) {
+        case 15:
+          cop2d.uw[12] = cop2d.uw[13];
+          cop2d.uw[13] = cop2d.uw[14];
+          cop2d.uw[14] = v;
+          cop2d.uw[15] = v;
+          return;
+
+        case 28:
+          cop2d.uw[28] = v;
+          cop2d.sh[(9<<1)+0]  =(v&0x001f)<<7;
+          cop2d.sh[(10<<1)+0]  =(v&0x03e0)<<2;
+          cop2d.sh[(11<<1)+0]  =(v&0x7c00)>>3;
+          return;
+
+        case 30:
+          {
+            cop2d.uw[30] = v;
+            cop2d.uw[31] = 0;
+            let sbit = (cop2d.uw[30]&0x80000000) ? cop2d.uw[30] : (~(cop2d.uw[30]));
+
+            for ( ; sbit&0x80000000; sbit<<=1) {
+              cop2d.uw[31]++;
+            }
+          }
+          return;
+
+        case  7:
+        case 29:
+        case 31:
+          return;
+      }
+
+      cop2d.uw[ r] = v;
+    },
+
+    opcodeCTC2: function(v, r) {
+      switch(r) {
+        case  4:
+        case 12:
+        case 20:
+        case 26:
+        case 27:
+        case 29:
+        case 30:
+          v = ((v)<<16>>16); // ?
+          break;
+
+        
+        case 31:
+          pseudo.CstrMain.error('opcodeCTC2 -> '+r+' <- '+('0x'+(v>>>0).toString(16)));
+          break;
+      }
+
+      cop2c.uw[ r] = v;
     }
   };
 })();
@@ -344,8 +483,7 @@ pseudo.CstrCounters = (function() {
     },
 
     scopeW(addr, data) {
-      //console.dir(((addr&0xf)>>>2)+' '+((addr>>>4)&3));
-      const p = (addr>>>4)&3;
+      const p = (addr>>>4)&3; // ((addr&0xf)>>>2)
 
       switch(addr&0xf) {
         case 0:
@@ -993,7 +1131,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 18: // COP2
-        //pseudo.CstrCop2.execute(code);
+        pseudo.CstrCop2.execute(code);
         return;
 
       case 32: // LB
@@ -1049,11 +1187,11 @@ pseudo.CstrMips = (function() {
         return;
 
       case 50: // LWC2
-        //pseudo.CstrCop2.opcodeMTC2(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))), ((code>>>16)&0x1f));
+        pseudo.CstrCop2.opcodeMTC2(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))), ((code>>>16)&0x1f));
         return;
 
       case 58: // SWC2
-        //pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), pseudo.CstrCop2.opcodeMFC2(((code>>>16)&0x1f)));
+        pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), pseudo.CstrCop2.opcodeMFC2(((code>>>16)&0x1f)));
         return;
     }
     pseudo.CstrMain.error('Basic CPU instruction '+((code>>>26)&0x3f));
@@ -1144,7 +1282,15 @@ pseudo.CstrMips = (function() {
 
     setbp() {
       bp = true;
-    }
+    },
+
+    setbase: function(addr, data) {
+      r[addr] = data;
+    },
+
+    readbase: function(addr) {
+      return r[addr];
+    },
   };
 })();
 
@@ -1646,7 +1792,7 @@ pseudo.CstrRender = (function() {
         case 0x50:
         case 0x51:
         case 0x52:
-        case 0x53: // LINE G2
+        case 0x53: // LINE cop2d.ub[(22<<2)+1]
           {
             const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,}, { _R: (data[2]>>> 0)&0xff, _G: (data[2]>>> 8)&0xff, _B: (data[2]>>>16)&0xff, _A: (data[2]>>>24)&0xff,}, { _R: (data[4]>>> 0)&0xff, _G: (data[4]>>> 8)&0xff, _B: (data[4]>>>16)&0xff, _A: (data[4]>>>24)&0xff,}, { _R: (data[6]>>> 0)&0xff, _G: (data[6]>>> 8)&0xff, _B: (data[6]>>>16)&0xff, _A: (data[6]>>>24)&0xff,}, ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[5]>> 0)&0xffff, _Y: (data[5]>>16)&0xffff,}, { _X: (data[7]>> 0)&0xffff, _Y: (data[7]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<2; i++) { cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.drawArrays( ctx.LINE_STRIP, 0, 2);
           }

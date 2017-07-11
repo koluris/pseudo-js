@@ -288,7 +288,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 18: // COP2
-        //cop2.execute(code);
+        cop2.execute(code);
         return;
 
       case 32: // LB
@@ -344,11 +344,11 @@ pseudo.CstrMips = (function() {
         return;
 
       case 50: // LWC2
-        //cop2.opcodeMTC2(mem.read.w(ob), rt);
+        cop2.opcodeMTC2(mem.read.w(ob), rt);
         return;
 
       case 58: // SWC2
-        //mem.write.w(ob, cop2.opcodeMFC2(rt));
+        mem.write.w(ob, cop2.opcodeMFC2(rt));
         return;
     }
     psx.error('Basic CPU instruction '+opcode);
@@ -439,7 +439,15 @@ pseudo.CstrMips = (function() {
 
     setbp() {
       bp = true;
-    }
+    },
+
+    setbase: function(addr, data) {
+      r[addr] = data;
+    },
+
+    readbase: function(addr) {
+      return r[addr];
+    },
   };
 })();
 

@@ -82,8 +82,7 @@ pseudo.CstrCounters = (function() {
     },
 
     scopeW(addr, data) {
-      //console.dir(((addr&0xf)>>>2)+' '+(RTC_PORT(addr)));
-      const p = RTC_PORT(addr);
+      const p = RTC_PORT(addr); // ((addr&0xf)>>>2)
 
       switch(addr&0xf) {
         case RTC_COUNT:
