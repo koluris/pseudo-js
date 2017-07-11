@@ -1022,17 +1022,11 @@ pseudo.CstrMips = (function() {
             return;
 
           case 32: // ADD
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
-            return;
-
           case 33: // ADDU
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
             return;
 
           case 34: // SUB
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] - r[((code>>>16)&0x1f)];
-            return;
-
           case 35: // SUBU
             r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] - r[((code>>>16)&0x1f)];
             return;
@@ -1122,9 +1116,6 @@ pseudo.CstrMips = (function() {
         return;
 
       case 8: // ADDI
-        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
-        return;
-
       case 9: // ADDIU
         r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
         return;
