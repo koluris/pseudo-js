@@ -1580,7 +1580,7 @@ pseudo.CstrRender = (function() {
   // HTML elements
   let screen, resolution;
   
-  let ctx;      // 'webgl' Context
+  let ctx;      // 'webgl', { preserveDrawingBuffer: true } Context
   let attrib;   // Enable/Disable Attributes on demand
   let bfr;      // Draw buffers
   let res, bit; // Resolution & Blend
@@ -1602,8 +1602,8 @@ pseudo.CstrRender = (function() {
       screen     = divScreen[0];
       resolution = divResolution[0];
 
-      // 'webgl' Canvas
-      ctx = screen.getContext('webgl');
+      // 'webgl', { preserveDrawingBuffer: true } Canvas
+      ctx = screen.getContext('webgl', { preserveDrawingBuffer: true });
       ctx. enable(ctx.BLEND);
       ctx.disable(ctx.DEPTH_TEST);
       ctx.disable(ctx.CULL_FACE);

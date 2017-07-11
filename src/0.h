@@ -20,7 +20,7 @@
 #define UintBcap                Uint8Array
 #define UintWcap                Uint32Array
 #define useFunction             useProgram
-#define WebGL                   'webgl'
+#define WebGL                   'webgl', { preserveDrawingBuffer: true }
 
 #define SHADER_VERTEX '\
   attribute vec2 a_position;\
