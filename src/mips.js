@@ -139,17 +139,11 @@ pseudo.CstrMips = (function() {
             return;
 
           case 32: // ADD
-            r[rd] = r[rs] + r[rt];
-            return;
-
           case 33: // ADDU
             r[rd] = r[rs] + r[rt];
             return;
 
           case 34: // SUB
-            r[rd] = r[rs] - r[rt];
-            return;
-
           case 35: // SUBU
             r[rd] = r[rs] - r[rt];
             return;
@@ -239,9 +233,6 @@ pseudo.CstrMips = (function() {
         return;
 
       case 8: // ADDI
-        r[rt] = r[rs] + imm_s;
-        return;
-
       case 9: // ADDIU
         r[rt] = r[rs] + imm_s;
         return;
