@@ -52,7 +52,7 @@ pseudo.CstrMem = (function() {
             directMemH(ram.uh, addr) = data;
             return;
 
-          case 0x1f: // Hardware
+          case 0x1f: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               directMemH(hwr.uh, addr) = data;
@@ -72,7 +72,7 @@ pseudo.CstrMem = (function() {
             directMemB(ram.ub, addr) = data;
             return;
 
-          case 0x1f: // Hardware
+          case 0x1f: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               directMemB(hwr.ub, addr) = data;
@@ -96,7 +96,7 @@ pseudo.CstrMem = (function() {
           case 0xbf: // BIOS
             return directMemW(rom.uw, addr);
 
-          case 0x1f: // Hardware
+          case 0x1f: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               return directMemW(hwr.uw, addr);
@@ -113,7 +113,7 @@ pseudo.CstrMem = (function() {
           case 0x80: // Mirror
             return directMemH(ram.uh, addr);
 
-          case 0x1f: // Hardware
+          case 0x1f: // Scratchpad + Hardware
             addr&=0xffff;
             if (addr <= 0x3ff) {
               return directMemH(hwr.uh, addr);
@@ -133,7 +133,7 @@ pseudo.CstrMem = (function() {
           case 0xbf: // BIOS
             return directMemB(rom.ub, addr);
 
-          case 0x1f: // Hardware
+          case 0x1f: // Scratchpad + Hardware
             // if (addr === 0x1f000084) { // PIO?
             //   return 0;
             // }
