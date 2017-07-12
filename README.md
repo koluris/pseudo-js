@@ -12,11 +12,12 @@ Here's a list with the overall progress of the emulator, broken down in distinct
 * `99% -> BIOS Bootstrap`
 * `95% -> PSX-EXE Loader`
 * `90% -> CPU Mips R3000A`
-* `80% -> Mem IO`
+* `85% -> Mem IO`
 * `45% -> Interrupts`
-* `35% -> Graphics`
-* `30% -> DMA`
-* `15% -> Serial IO`
+* `40% -> Graphics`
+* `35% -> DMA`
+* `20% -> Serial IO`
+* `20% -> GPU Textures`
 * `10% -> Audio`
 * `10% -> Rootcounters`
 
