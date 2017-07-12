@@ -4,6 +4,7 @@
 #define Chars                   String
 #define dataBin                 'arraybuffer'
 #define dest                    target
+#define disableVertexAttrib     disableVertexAttribArray
 #define drawVertices            drawArrays
 #define enableVertexAttrib      enableVertexAttribArray
 #define F32cap                  Float32Array
@@ -26,20 +27,31 @@
 #define SHADER_VERTEX '\
   attribute vec2 a_position;\
   attribute vec4 a_color;\
+  attribute vec2 a_texCoord;\
   uniform vec2 u_resolution;\
   varying vec4 v_color;\
+  varying vec2 v_texCoord;\
   \
   void main() {\
     gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);\
     v_color = a_color;\
+    v_texCoord = a_texCoord;\
   }'
 
 #define SHADER_FRAGMENT '\
   precision mediump float;\
+  uniform sampler2D u_texture;\
+  uniform bool u_enabled;\
   varying vec4 v_color;\
+  varying vec2 v_texCoord;\
   \
   void main() {\
-    gl_FragColor = v_color;\
+    if (u_enabled) {\
+      gl_FragColor = texture2D(u_texture, v_texCoord) * v_color;\
+    }\
+    else {\
+      gl_FragColor = v_color;\
+    }\
   }'
 
 // A kind of helper for various data manipulation

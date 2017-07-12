@@ -56,6 +56,14 @@
   _Y: (data>>16)&0xffff,\
 }
 
+#define UV(data) {\
+  _U: (data>>>0)&0xff,\
+  _V: (data>>>8)&0xff,\
+}
+
+#define TPAGE(data)\
+  (data>>>16)&0xffff\
+
 /***
     Primitive Structures
 ***/
@@ -96,6 +104,16 @@
     POINT(data[3]),\
     POINT(data[5]),\
     POINT(data[7]),\
+  ],\
+  tx: [\
+    UV(data[2]),\
+    UV(data[4]),\
+    UV(data[6]),\
+    UV(data[8]),\
+  ],\
+  tp: [\
+    TPAGE(data[2]),\
+    TPAGE(data[4]),\
   ]\
 }
 
@@ -172,6 +190,7 @@
   \
   iColor(cr);\
   iVertex(vx);\
+  iTextureNone();\
   ctx.drawVertices(mode, 0, size)
 
 /***
@@ -182,6 +201,7 @@
   const k  = PFTx(data);\
   const cr = [];\
   const vx = [];\
+  const tx = [];\
   \
   for (let i=0; i<size; i++) {\
     if (k.cr._A&1) {\
@@ -191,10 +211,13 @@
       cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
     }\
     vx.push(k.vx[i]._X, k.vx[i]._Y);\
+    tx.push(k.tx[i]._U, k.tx[i]._V);\
   }\
+  tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
   \
   iColor(cr);\
   iVertex(vx);\
+  iTexture(tx);\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size)
 
 /***
@@ -213,6 +236,7 @@
   \
   iColor(cr);\
   iVertex(vx);\
+  iTextureNone();\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size)
 
 /***
@@ -243,6 +267,7 @@
   \
   iColor(cr);\
   iVertex(vx);\
+  iTextureNone();\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4)
 
 /***
@@ -278,6 +303,7 @@
   \
   iColor(cr);\
   iVertex(vx);\
+  iTextureNone();\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4)
 
 pseudo.CstrRender = (function() {
@@ -325,11 +351,14 @@ pseudo.CstrRender = (function() {
       attrib = {
         _c: ctx.fetchAttribute(func, 'a_color'),
         _p: ctx.fetchAttribute(func, 'a_position'),
-        _r: ctx.fetchUniform  (func, 'u_resolution')
+        _t: ctx.fetchAttribute(func, 'a_texCoord'),
+        _r: ctx.fetchUniform  (func, 'u_resolution'),
+        _e: ctx.fetchUniform  (func, 'u_enabled')
       };
 
       ctx.enableVertexAttrib(attrib._c);
       ctx.enableVertexAttrib(attrib._p);
+      ctx.enableVertexAttrib(attrib._t);
 
       // Buffers
       bfr = {
@@ -421,6 +450,7 @@ pseudo.CstrRender = (function() {
 
             iColor(cr);
             iVertex(vx);
+            iTextureNone();
             ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
           }
           return;
