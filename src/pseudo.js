@@ -80,6 +80,7 @@ pseudo.CstrMain = (function() {
       file = undefined;
 
       $(function() { // DOMContentLoaded
+         tcache.awake();
          render.awake($('#screen'), $('#resolution'));
              vs.awake();
         rootcnt.awake();

@@ -123,6 +123,9 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+
 pseudo.CstrAudio = (function() {
   return {
     awake() {
@@ -1397,6 +1400,7 @@ pseudo.CstrMain = (function() {
       file = undefined;
 
       $(function() { // DOMContentLoaded
+         pseudo.CstrTexCache.awake();
          pseudo.CstrRender.awake($('#screen'), $('#resolution'));
              pseudo.CstrGraphics.awake();
         pseudo.CstrCounters.awake();
@@ -2112,9 +2116,25 @@ pseudo.CstrSerial = (function() {
 
 
 pseudo.CstrTexCache = (function() {
-  let stack;
+  let stack, bTex, ctbl2, idx;
+
+  function pixel2texel(tx, p, n) {
+    do {
+      const c = bi.vram.uh[p++];
+      tx.ub[idx++] = (c>>0x0)<<3;
+      tx.ub[idx++] = (c>>0x5)<<3;
+      tx.ub[idx++] = (c>>0xa)<<3;
+      tx.ub[idx++] = c ? 255 : 0;
+    }
+    while (--n);
+  }
 
   return {
+    awake: function() {
+      bTex  = union(256*256*4);
+      ctbl2 = union(256*4);
+    },
+
     reset() {
       stack = [];
     },
@@ -2126,9 +2146,24 @@ pseudo.CstrTexCache = (function() {
         console.dir('Texture in cache '+id);
       }
 
+      var tex  = (tp&15)*64+(tp&16)*(1024*256/16);
+      var ctbl = (clut&0x7fff)*16;
+
       switch((tp>>7)&3) {
         case 0: // 04-bit
-          pseudo.CstrMain.error('Texture cache '+((tp>>7)&3));
+          idx = 0;
+          pixel2texel(ctbl2, ctbl, 16);
+          idx = 0;
+          for (let v=0; v<256; v++) {
+            for (let h=0; h<256/4; h++) {
+              const c = bi.vram.uh[tex+h];
+              bTex.uw[idx++] = ctbl2.uw[(c>> 0)&15];
+              bTex.uw[idx++] = ctbl2.uw[(c>> 4)&15];
+              bTex.uw[idx++] = ctbl2.uw[(c>> 8)&15];
+              bTex.uw[idx++] = ctbl2.uw[(c>>12)&15];
+            }
+            tex += 1024;
+          }
           break;
 
         case 1: // 08-bit
