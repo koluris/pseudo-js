@@ -47,6 +47,7 @@ pseudo.CstrMain = (function() {
     }
 
     // Reset all emulator components
+     tcache.reset();
      render.reset();
          vs.reset();
         mem.reset();

@@ -129,13 +129,6 @@ const pseudo = window.pseudo || {};
 
 
 
-
-
-
-
-
-
-
 pseudo.CstrAudio = (function() {
   return {
     awake() {
@@ -567,11 +560,11 @@ pseudo.CstrHardware = (function() {
           case 0x1008:
           case 0x100c:
           case 0x1010:
-          case 0x1014:
-          case 0x1018:
+          case 0x1014: // SPU
+          case 0x1018: // DV5
           case 0x101c:
-          case 0x1020:
-          case 0x1060:
+          case 0x1020: // COM
+          case 0x1060: // RAM Size
           case 0x1074:
           case 0x10f0:
             pseudo.CstrMem._hwr.uw[(( addr)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = data;
@@ -1377,6 +1370,7 @@ pseudo.CstrMain = (function() {
     }
 
     // Reset all emulator components
+     pseudo.CstrTexCache.reset();
      pseudo.CstrRender.reset();
          pseudo.CstrGraphics.reset();
         pseudo.CstrMem.reset();
@@ -1478,6 +1472,12 @@ pseudo.CstrMain = (function() {
     }
   };
 })();
+
+
+
+
+
+
 
 
 
@@ -2095,6 +2095,43 @@ pseudo.CstrSerial = (function() {
             }
         }
         pseudo.CstrMain.error('SIO read b '+('0x'+(addr>>>0).toString(16)));
+      }
+    }
+  };
+})();
+
+
+
+
+
+
+pseudo.CstrTexCache = (function() {
+  let stack;
+
+  return {
+    reset() {
+      stack = [];
+    },
+
+    fetchTexture(ctx, tp, clut) {
+      const id = tp | (clut<<16);
+      
+      if (stack[id]) {
+        console.dir('Texture in cache '+id);
+      }
+
+      switch((tp>>7)&3) {
+        case 0: // 04-bit
+          pseudo.CstrMain.error('Texture cache '+((tp>>7)&3));
+          break;
+
+        case 1: // 08-bit
+          pseudo.CstrMain.error('Texture cache '+((tp>>7)&3));
+          break;
+
+        case 2: // 16-bit
+          pseudo.CstrMain.error('Texture cache '+((tp>>7)&3));
+          break;
       }
     }
   };

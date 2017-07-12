@@ -24,6 +24,21 @@
   ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);\
   ctx.bufferData(ctx.ARRAY_BUFFER, new SintHcap(a), ctx.DYNAMIC_DRAW)
 
+#define iTexture(a)\
+  for (let i in a) {\
+    a[i]/=256.0;\
+  }\
+  \
+  ctx.uniform1i(attrib._e, true);\
+  ctx.enableVertexAttrib(attrib._t);\
+  ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._t);\
+  ctx.vertexAttribPointer(attrib._t, 2, ctx.FLOAT, false, 0, 0);\
+  ctx.bufferData(ctx.ARRAY_BUFFER, new F32cap(a), ctx.DYNAMIC_DRAW)
+
+#define iTextureNone()\
+  ctx.uniform1i(attrib._e, false);\
+  ctx.disableVertexAttrib(attrib._t)
+
 /***
     Base components
 ***/
