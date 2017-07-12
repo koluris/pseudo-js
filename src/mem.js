@@ -58,6 +58,8 @@ pseudo.CstrMem = (function() {
           case 0x800: // Mirror
           case 0x801: // Mirror
           case 0x807: // Mirror
+
+          case 0xa00: // Mirror
             directMemH(ram.uh, addr) = data;
             return;
 

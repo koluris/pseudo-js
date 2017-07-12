@@ -741,6 +741,8 @@ pseudo.CstrMem = (function() {
           case 0x800: // Mirror
           case 0x801: // Mirror
           case 0x807: // Mirror
+
+          case 0xa00: // Mirror
             pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1] = data;
             return;
 
@@ -2136,6 +2138,8 @@ pseudo.CstrSerial = (function() {
     }
   };
 })();
+// Based on FPSE 0.08
+
 
 
 
