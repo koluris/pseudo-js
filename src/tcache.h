@@ -1,2 +1,0 @@
-#define tcache\
-  pseudo.CstrTexCache

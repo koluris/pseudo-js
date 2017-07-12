@@ -73,4 +73,4 @@ function union(size) {
 
 // Declare our namespace
 'use strict';
-const pseudo = window.pseudo || {};
+//let pseudo = window.pseudo || {};
