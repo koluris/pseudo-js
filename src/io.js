@@ -39,11 +39,11 @@ pseudo.CstrHardware = (function() {
           case 0x1008:
           case 0x100c:
           case 0x1010:
-          case 0x1014:
-          case 0x1018:
+          case 0x1014: // SPU
+          case 0x1018: // DV5
           case 0x101c:
-          case 0x1020:
-          case 0x1060:
+          case 0x1020: // COM
+          case 0x1060: // RAM Size
           case 0x1074:
           case 0x10f0:
             directMemW(hwr.uw, addr) = data;
