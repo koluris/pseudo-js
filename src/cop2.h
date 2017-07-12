@@ -1,2 +1,2 @@
-// #define cop2\
-//   pseudo.CstrCop2
+#define cop2\
+  pseudo.CstrCop2
