@@ -1,2 +1,2 @@
-#define sio\
-  pseudo.CstrSerial
+// #define sio\
+//   pseudo.CstrSerial
