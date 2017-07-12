@@ -1,3 +1,5 @@
+// Based on FPSE 0.08
+
 #define inn vs._inn
 
 #define	TCACHE_MAX\
