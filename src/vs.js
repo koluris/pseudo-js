@@ -41,6 +41,51 @@ pseudo.CstrGraphics = (function() {
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
+  function fetchFromVRAM(addr, size) {
+    let count = 0;
+
+    if (!vac.enabled) {
+      modeDMA = GPU_DMA_NONE;
+      return 0;
+    }
+    size <<= 1;
+
+    while (vac.v.p < vac.v.end) {
+      while (vac.h.p < vac.h.end) {
+        // Keep position of vram.
+        const pos = (vac.v.p<<10)+vac.h.p;
+        bi.vram.uh[pos] = directMemH(ram.uh, addr);
+
+        addr+=2;
+        vac.h.p++;
+
+        if (++count === size) {
+          if (vac.h.p === vac.h.end) {
+            vac.h.p = vac.h.start;
+            vac.v.p++;
+          }
+          return fetchEnd(count);
+        }
+      }
+
+      vac.h.p = vac.h.start;
+      vac.v.p++;
+    }
+    return fetchEnd(count);
+  }
+
+  function fetchEnd(count) {
+    if (vac.v.p >= vac.v.end) {
+      vac.enabled = false;
+      modeDMA = GPU_DMA_NONE;
+
+      /*if (count%2 === 1) {
+          count++;
+      }*/
+    }
+    return count>>1;
+  }
+
   const write = {
     data(addr) {
       if (!pipe.size) {
@@ -71,7 +116,16 @@ pseudo.CstrGraphics = (function() {
     },
 
     dataMem(addr, size) {
+      let i = 0;
+
       while (size--) {
+        if (modeDMA === GPU_DMA_MEM2VRAM) {
+          if ((i += fetchFromVRAM(addr, size-i)) >= size) {
+            continue;
+          }
+          addr += i;
+        }
+
         inn.data = directMemW(ram.uw, addr);
         addr += 4;
         write.data(inn.data);
@@ -91,6 +145,10 @@ pseudo.CstrGraphics = (function() {
     _inn: undefined,
 
     awake() {
+      inn = {
+        vram: union(FRAME_W*FRAME_H*2),
+      };
+
       // Command Pipe
       pipe = {
         data: new UintWcap(100)
@@ -98,6 +156,7 @@ pseudo.CstrGraphics = (function() {
     },
 
     reset() {
+      inn.vram.uh.fill(0);
       inn = {
         blend  : 0,
         data   : 0x400,
