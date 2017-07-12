@@ -1,4 +1,5 @@
 #define inn vs._inn
+#define vac vs._vac
 
 #define COLOR_MAX\
   255
@@ -170,6 +171,7 @@
   \
   iColor(cr);\
   iVertex(vx);\
+  iTextureNone();\
   ctx.drawVertices(mode, 0, size)
 
 /***
@@ -323,6 +325,15 @@ pseudo.CstrRender = (function() {
     ctx.fetchShaderParameter(shader, ctx.COMPILE_STATUS);
 
     return shader;
+  }
+
+  function READIMG(data) {
+    return {
+      _2: (data[1]>>> 0)&0xffff,
+      _3: (data[1]>>>16)&0xffff,
+      _4: (data[2]>>> 0)&0xffff,
+      _5: (data[2]>>>16)&0xffff,
+    };
   }
 
   // Exposed class functions/variables
@@ -648,6 +659,17 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xa0: // LOAD IMAGE
+          {
+            const k = READIMG(data);
+
+            inn.modeDMA = GPU_DMA_MEM2VRAM;
+            vac.h.p     = vac.h.start = k._2;
+            vac.v.p     = vac.v.start = k._3;
+            vac.h.end   = vac.h.start + k._4;
+            vac.v.end   = vac.v.start + k._5;
+            vac.pvaddr  = vac.v.p*FRAME_W;
+            vac.enabled = true;
+          }
           return;
 
         case 0xc0: // STORE IMAGE
@@ -680,3 +702,4 @@ pseudo.CstrRender = (function() {
 })();
 
 #undef inn
+#undef vac

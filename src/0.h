@@ -18,8 +18,10 @@
 #define readAsBuffer            readAsArrayBuffer
 #define responseSort            responseType
 #define SintHcap                Int16Array
+#define texPhoto2D              texImage2D
 #define toChars                 toString
 #define UintBcap                Uint8Array
+#define UintHcap                Uint16Array
 #define UintWcap                Uint32Array
 #define useFunction             useProgram
 #define WebGL                   'webgl', { preserveDrawingBuffer: true }

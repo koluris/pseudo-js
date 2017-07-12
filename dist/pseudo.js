@@ -126,6 +126,11 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
 pseudo.CstrAudio = (function() {
   return {
     awake() {
@@ -1516,6 +1521,7 @@ pseudo.CstrMain = (function() {
 
 
 
+
 // Fix: SIGN_EXT_16
 
 
@@ -1599,6 +1605,15 @@ pseudo.CstrRender = (function() {
     ctx.getShaderParameter(shader, ctx.COMPILE_STATUS);
 
     return shader;
+  }
+
+  function READIMG(data) {
+    return {
+      _2: (data[1]>>> 0)&0xffff,
+      _3: (data[1]>>>16)&0xffff,
+      _4: (data[2]>>> 0)&0xffff,
+      _5: (data[2]>>>16)&0xffff,
+    };
   }
 
   // Exposed class functions/variables
@@ -1736,7 +1751,7 @@ pseudo.CstrRender = (function() {
         case 0x22:
         case 0x23: // POLY F3
           {
-            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<3; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.drawArrays( ctx.TRIANGLE_STRIP, 0, 3);
+            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<3; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.uniform1i(attrib._e, false); ctx.disableVertexAttribArray(attrib._t); ctx.drawArrays( ctx.TRIANGLE_STRIP, 0, 3);
           }
           return;
 
@@ -1754,7 +1769,7 @@ pseudo.CstrRender = (function() {
         case 0x2a:
         case 0x2b: // POLY F4
           {
-            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<4; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.drawArrays( ctx.TRIANGLE_STRIP, 0, 4);
+            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<4; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.uniform1i(attrib._e, false); ctx.disableVertexAttribArray(attrib._t); ctx.drawArrays( ctx.TRIANGLE_STRIP, 0, 4);
           }
           return;
 
@@ -1808,7 +1823,7 @@ pseudo.CstrRender = (function() {
         case 0x42:
         case 0x43: // LINE F2
           {
-            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<2; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.drawArrays( ctx.LINE_STRIP, 0, 2);
+            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<2; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.uniform1i(attrib._e, false); ctx.disableVertexAttribArray(attrib._t); ctx.drawArrays( ctx.LINE_STRIP, 0, 2);
           }
           return;
 
@@ -1817,7 +1832,7 @@ pseudo.CstrRender = (function() {
         case 0x4a:
         case 0x4b: // LINE F3
           {
-            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<3; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.drawArrays( ctx.LINE_STRIP, 0, 3);
+            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<3; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.uniform1i(attrib._e, false); ctx.disableVertexAttribArray(attrib._t); ctx.drawArrays( ctx.LINE_STRIP, 0, 3);
           }
           return;
 
@@ -1826,7 +1841,7 @@ pseudo.CstrRender = (function() {
         case 0x4e:
         case 0x4f: // LINE F4
           {
-            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<4; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.drawArrays( ctx.LINE_STRIP, 0, 4);
+            const k = { cr: [ { _R: (data[0]>>> 0)&0xff, _G: (data[0]>>> 8)&0xff, _B: (data[0]>>>16)&0xff, _A: (data[0]>>>24)&0xff,} ], vx: [ { _X: (data[1]>> 0)&0xffff, _Y: (data[1]>>16)&0xffff,}, { _X: (data[2]>> 0)&0xffff, _Y: (data[2]>>16)&0xffff,}, { _X: (data[3]>> 0)&0xffff, _Y: (data[3]>>16)&0xffff,}, { _X: (data[4]>> 0)&0xffff, _Y: (data[4]>>16)&0xffff,}, ]}; const cr = []; const vx = []; const b = [ k.cr[0]._A&2 ? pseudo.CstrGraphics._inn.blend : 0, k.cr[0]._A&2 ? bit[pseudo.CstrGraphics._inn.blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (let i=0; i<4; i++) { cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]); vx.push(k.vx[i]._X, k.vx[i]._Y); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.uniform1i(attrib._e, false); ctx.disableVertexAttribArray(attrib._t); ctx.drawArrays( ctx.LINE_STRIP, 0, 4);
           }
           return;
 
@@ -1924,6 +1939,17 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xa0: // LOAD IMAGE
+          {
+            const k = READIMG(data);
+
+            pseudo.CstrGraphics._inn.modeDMA = 2;
+            pseudo.CstrGraphics._vac.h.p     = pseudo.CstrGraphics._vac.h.start = k._2;
+            pseudo.CstrGraphics._vac.v.p     = pseudo.CstrGraphics._vac.v.start = k._3;
+            pseudo.CstrGraphics._vac.h.end   = pseudo.CstrGraphics._vac.h.start + k._4;
+            pseudo.CstrGraphics._vac.v.end   = pseudo.CstrGraphics._vac.v.start + k._5;
+            pseudo.CstrGraphics._vac.pvaddr  = pseudo.CstrGraphics._vac.v.p*1024;
+            pseudo.CstrGraphics._vac.enabled = true;
+          }
           return;
 
         case 0xc0: // STORE IMAGE
@@ -1954,6 +1980,7 @@ pseudo.CstrRender = (function() {
     }
   };
 })();
+
 
 
 // Based on PCSX 1.5
@@ -2115,12 +2142,14 @@ pseudo.CstrSerial = (function() {
 
 
 
+
+
 pseudo.CstrTexCache = (function() {
   let stack, bTex, ctbl2, idx;
 
   function pixel2texel(tx, p, n) {
     do {
-      const c = bi.vram.uh[p++];
+      const c = pseudo.CstrGraphics._inn.vram.uh[p++];
       tx.ub[idx++] = (c>>0x0)<<3;
       tx.ub[idx++] = (c>>0x5)<<3;
       tx.ub[idx++] = (c>>0xa)<<3;
@@ -2143,7 +2172,8 @@ pseudo.CstrTexCache = (function() {
       const id = tp | (clut<<16);
       
       if (stack[id]) {
-        console.dir('Texture in cache '+id);
+        ctx.bindTexture(ctx.TEXTURE_2D, stack[id]);
+        return;
       }
 
       var tex  = (tp&15)*64+(tp&16)*(1024*256/16);
@@ -2156,7 +2186,7 @@ pseudo.CstrTexCache = (function() {
           idx = 0;
           for (let v=0; v<256; v++) {
             for (let h=0; h<256/4; h++) {
-              const c = bi.vram.uh[tex+h];
+              const c = pseudo.CstrGraphics._inn.vram.uh[tex+h];
               bTex.uw[idx++] = ctbl2.uw[(c>> 0)&15];
               bTex.uw[idx++] = ctbl2.uw[(c>> 4)&15];
               bTex.uw[idx++] = ctbl2.uw[(c>> 8)&15];
@@ -2167,13 +2197,33 @@ pseudo.CstrTexCache = (function() {
           break;
 
         case 1: // 08-bit
-          pseudo.CstrMain.error('Texture cache '+((tp>>7)&3));
+          idx = 0;
+          pixel2texel(ctbl2, ctbl, 256);
+          idx = 0;
+          for (let v=0; v<256; v++) {
+            for (let h=0; h<256/2; h++) {
+              const c = pseudo.CstrGraphics._inn.vram.uh[tex+h];
+              bTex.uw[idx++] = ctbl2.uw[(c>>0)&255];
+              bTex.uw[idx++] = ctbl2.uw[(c>>8)&255];
+            }
+            tex += 1024;
+          }
           break;
 
         case 2: // 16-bit
-          pseudo.CstrMain.error('Texture cache '+((tp>>7)&3));
+          idx = 0;
+          for (let v=0; v<256; v++) {
+            pixel2texel(bTex, tex, 256);
+            tex += 1024;
+          }
           break;
       }
+
+      // Create texture
+      ctx.bindTexture(ctx.TEXTURE_2D, (stack[id] = ctx.createTexture()));
+      ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+      ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
+      ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, 256, 256, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, bTex.ub);
     }
   };
 })();
@@ -2191,11 +2241,8 @@ pseudo.CstrTexCache = (function() {
 
 
 
-
-
 pseudo.CstrGraphics = (function() {
   let pipe;
-  let modeDMA;
 
   const sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
@@ -2219,6 +2266,51 @@ pseudo.CstrGraphics = (function() {
   const resMode = [
     256, 320, 512, 640, 368, 384, 512, 640
   ];
+
+  function fetchFromVRAM(addr, size) {
+    let count = 0;
+
+    if (!pseudo.CstrGraphics._vac.enabled) {
+      pseudo.CstrGraphics._inn.modeDMA = 0;
+      return 0;
+    }
+    size <<= 1;
+
+    while (pseudo.CstrGraphics._vac.v.p < pseudo.CstrGraphics._vac.v.end) {
+      while (pseudo.CstrGraphics._vac.h.p < pseudo.CstrGraphics._vac.h.end) {
+        // Keep position of vram.
+        const pos = (pseudo.CstrGraphics._vac.v.p<<10)+pseudo.CstrGraphics._vac.h.p;
+        pseudo.CstrGraphics._inn.vram.uh[pos] = pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1];
+
+        addr+=2;
+        pseudo.CstrGraphics._vac.h.p++;
+
+        if (++count === size) {
+          if (pseudo.CstrGraphics._vac.h.p === pseudo.CstrGraphics._vac.h.end) {
+            pseudo.CstrGraphics._vac.h.p = pseudo.CstrGraphics._vac.h.start;
+            pseudo.CstrGraphics._vac.v.p++;
+          }
+          return fetchEnd(count);
+        }
+      }
+
+      pseudo.CstrGraphics._vac.h.p = pseudo.CstrGraphics._vac.h.start;
+      pseudo.CstrGraphics._vac.v.p++;
+    }
+    return fetchEnd(count);
+  }
+
+  function fetchEnd(count) {
+    if (pseudo.CstrGraphics._vac.v.p >= pseudo.CstrGraphics._vac.v.end) {
+      pseudo.CstrGraphics._inn.modeDMA = 0;
+      pseudo.CstrGraphics._vac.enabled = false;
+
+      
+
+
+    }
+    return count>>1;
+  }
 
   const write = {
     data(addr) {
@@ -2250,9 +2342,19 @@ pseudo.CstrGraphics = (function() {
     },
 
     dataMem(addr, size) {
-      while (size--) {
+      let i = 0;
+
+      while (i < size) {
+        if (pseudo.CstrGraphics._inn.modeDMA === 2) {
+          if ((i += fetchFromVRAM(addr, size-i)) >= size) {
+            continue;
+          }
+          addr += i;
+        }
+
         pseudo.CstrGraphics._inn.data = pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
         addr += 4;
+        i++;
         write.data(pseudo.CstrGraphics._inn.data);
       }
     }
@@ -2268,8 +2370,19 @@ pseudo.CstrGraphics = (function() {
   // Exposed class functions/variables
   return {
     _inn: undefined,
+    _vac: undefined,
 
     awake() {
+      pseudo.CstrGraphics._inn = {
+        vram: union(1024*512*2),
+      };
+
+      // VRAM Operations
+      pseudo.CstrGraphics._vac = {
+        h: {},
+        v: {},
+      };
+
       // Command Pipe
       pipe = {
         data: new Uint32Array(100)
@@ -2277,12 +2390,21 @@ pseudo.CstrGraphics = (function() {
     },
 
     reset() {
-      pseudo.CstrGraphics._inn = {
-        blend  : 0,
-        data   : 0x400,
-        status : 0x14802000
-      };
-      modeDMA = 0;
+      pseudo.CstrGraphics._inn.vram.uh.fill(0);
+      pseudo.CstrGraphics._inn.blend   = 0;
+      pseudo.CstrGraphics._inn.data    = 0x400;
+      pseudo.CstrGraphics._inn.modeDMA = 0;
+      pseudo.CstrGraphics._inn.status  = 0x14802000;
+
+      // VRAM Operations
+      pseudo.CstrGraphics._vac.enabled = false;
+      pseudo.CstrGraphics._vac.pvaddr  = 0;
+      pseudo.CstrGraphics._vac.h.p     = 0;
+      pseudo.CstrGraphics._vac.h.start = 0;
+      pseudo.CstrGraphics._vac.h.end   = 0;
+      pseudo.CstrGraphics._vac.v.p     = 0;
+      pseudo.CstrGraphics._vac.v.start = 0;
+      pseudo.CstrGraphics._vac.v.end   = 0;
 
       // Command Pipe
       pipeReset();
@@ -2309,7 +2431,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x04:
-              modeDMA = data&3;
+              pseudo.CstrGraphics._inn.modeDMA = data&3;
               return;
 
             case 0x08:

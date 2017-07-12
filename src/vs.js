@@ -1,5 +1,6 @@
 #define ram mem._ram
 #define inn vs._inn
+#define vac vs._vac
 
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
@@ -7,16 +8,10 @@
 #define GPU_DATA   0
 #define GPU_STATUS 4
 
-#define GPU_DMA_NONE     0
-#define GPU_DMA_UNKNOWN  1
-#define GPU_DMA_MEM2VRAM 2
-#define GPU_DMA_VRAM2MEM 3
-
 #define GPU_ODDLINES 0x80000000
 
 pseudo.CstrGraphics = (function() {
   let pipe;
-  let modeDMA;
 
   const sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
@@ -45,7 +40,7 @@ pseudo.CstrGraphics = (function() {
     let count = 0;
 
     if (!vac.enabled) {
-      modeDMA = GPU_DMA_NONE;
+      inn.modeDMA = GPU_DMA_NONE;
       return 0;
     }
     size <<= 1;
@@ -54,7 +49,7 @@ pseudo.CstrGraphics = (function() {
       while (vac.h.p < vac.h.end) {
         // Keep position of vram.
         const pos = (vac.v.p<<10)+vac.h.p;
-        bi.vram.uh[pos] = directMemH(ram.uh, addr);
+        inn.vram.uh[pos] = directMemH(ram.uh, addr);
 
         addr+=2;
         vac.h.p++;
@@ -76,8 +71,8 @@ pseudo.CstrGraphics = (function() {
 
   function fetchEnd(count) {
     if (vac.v.p >= vac.v.end) {
+      inn.modeDMA = GPU_DMA_NONE;
       vac.enabled = false;
-      modeDMA = GPU_DMA_NONE;
 
       /*if (count%2 === 1) {
           count++;
@@ -118,8 +113,8 @@ pseudo.CstrGraphics = (function() {
     dataMem(addr, size) {
       let i = 0;
 
-      while (size--) {
-        if (modeDMA === GPU_DMA_MEM2VRAM) {
+      while (i < size) {
+        if (inn.modeDMA === GPU_DMA_MEM2VRAM) {
           if ((i += fetchFromVRAM(addr, size-i)) >= size) {
             continue;
           }
@@ -128,6 +123,7 @@ pseudo.CstrGraphics = (function() {
 
         inn.data = directMemW(ram.uw, addr);
         addr += 4;
+        i++;
         write.data(inn.data);
       }
     }
@@ -143,10 +139,17 @@ pseudo.CstrGraphics = (function() {
   // Exposed class functions/variables
   return {
     _inn: undefined,
+    _vac: undefined,
 
     awake() {
       inn = {
         vram: union(FRAME_W*FRAME_H*2),
+      };
+
+      // VRAM Operations
+      vac = {
+        h: {},
+        v: {},
       };
 
       // Command Pipe
@@ -157,12 +160,20 @@ pseudo.CstrGraphics = (function() {
 
     reset() {
       inn.vram.uh.fill(0);
-      inn = {
-        blend  : 0,
-        data   : 0x400,
-        status : 0x14802000
-      };
-      modeDMA = GPU_DMA_NONE;
+      inn.blend   = 0;
+      inn.data    = 0x400;
+      inn.modeDMA = GPU_DMA_NONE;
+      inn.status  = 0x14802000;
+
+      // VRAM Operations
+      vac.enabled = false;
+      vac.pvaddr  = 0;
+      vac.h.p     = 0;
+      vac.h.start = 0;
+      vac.h.end   = 0;
+      vac.v.p     = 0;
+      vac.v.start = 0;
+      vac.v.end   = 0;
 
       // Command Pipe
       pipeReset();
@@ -189,7 +200,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x04:
-              modeDMA = data&3;
+              inn.modeDMA = data&3;
               return;
 
             case 0x08:
@@ -250,3 +261,4 @@ pseudo.CstrGraphics = (function() {
 
 #undef ram
 #undef inn
+#undef vac
