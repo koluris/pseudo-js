@@ -37,6 +37,25 @@ const pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Assume NTSC for now
 
 
@@ -137,21 +156,6 @@ pseudo.CstrAudio = (function() {
     }
   };
 })();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2297,7 +2301,7 @@ pseudo.CstrGraphics = (function() {
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
-  function fetchFromVRAM(addr, size) {
+  function fetchFromVRAM(stream, addr, size) {
     let count = 0;
 
     if (!pseudo.CstrGraphics._vac.enabled) {
@@ -2310,7 +2314,16 @@ pseudo.CstrGraphics = (function() {
       while (pseudo.CstrGraphics._vac.h.p < pseudo.CstrGraphics._vac.h.end) {
         // Keep position of vram.
         const pos = (pseudo.CstrGraphics._vac.v.p<<10)+pseudo.CstrGraphics._vac.h.p;
-        pseudo.CstrGraphics._inn.vram.uh[pos] = pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1];
+
+        // Check if it`s a 16-bit (stream), or a 32-bit (command) address.
+        if (stream) {
+          pseudo.CstrGraphics._inn.vram.uh[pos] = pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1];
+        }
+        else {
+          if (!(count%2)) {
+            pseudo.CstrGraphics._inn.vram.uw[pos>>>1] = addr;
+          }
+        }
 
         addr+=2;
         pseudo.CstrGraphics._vac.h.p++;
@@ -2342,50 +2355,46 @@ pseudo.CstrGraphics = (function() {
     return count>>1;
   }
 
-  const write = {
-    data(addr) {
-      if (!pipe.size) {
-        const prim = (addr>>>24)&0xff;
-        const size = sizePrim[prim];
-
-        if (size) {
-          pipe.data[0] = addr;
-          pipe.prim = prim;
-          pipe.size = size;
-          pipe.row  = 1;
-        }
-        else {
-          return;
-        }
-      }
-      else {
-        pipe.data[pipe.row] = addr;
-        pipe.row++;
-      }
-
-      // Render primitive
-      if (pipe.size === pipe.row) {
-        pipe.size = 0;
-        pipe.row  = 0;
-        pseudo.CstrRender.prim(pipe.prim, pipe.data);
-      }
-    },
-
-    dataMem(addr, size) {
+  const dataMem = {
+    write(stream, addr, size) {
       let i = 0;
-
+      
       while (i < size) {
         if (pseudo.CstrGraphics._inn.modeDMA === 2) {
-          if ((i += fetchFromVRAM(addr, size-i)) >= size) {
+          if ((i += fetchFromVRAM(stream, addr, size-i)) >= size) {
             continue;
           }
           addr += i;
         }
-
-        pseudo.CstrGraphics._inn.data = pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
+        
+        pseudo.CstrGraphics._inn.data = stream ? pseudo.CstrMem._ram.uw[(( addr)&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2] : addr;
         addr += 4;
         i++;
-        write.data(pseudo.CstrGraphics._inn.data);
+
+        if (!pipe.size) {
+          const prim = (pseudo.CstrGraphics._inn.data>>>24)&0xff;
+          const size = sizePrim[prim];
+
+          if (size) {
+            pipe.data[0] = pseudo.CstrGraphics._inn.data;
+            pipe.prim = prim;
+            pipe.size = size;
+            pipe.row  = 1;
+          }
+          else {
+            continue;
+          }
+        }
+        else {
+          pipe.data[pipe.row] = pseudo.CstrGraphics._inn.data;
+          pipe.row++;
+        }
+
+        if (pipe.size === pipe.row) {
+          pipe.size = 0;
+          pipe.row  = 0;
+          pseudo.CstrRender.prim(pipe.prim, pipe.data);
+        }
       }
     }
   }
@@ -2451,7 +2460,7 @@ pseudo.CstrGraphics = (function() {
     scopeW(addr, data) {
       switch(addr&0xf) {
         case 0:
-          write.data(data);
+          dataMem.write(false, data, 1);
           return;
 
         case 4:
@@ -2507,13 +2516,13 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000201:
-          write.dataMem(pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2], size);
+          dataMem.write(true, pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2], size);
           return;
 
         case 0x01000401:
           do {
             const count = pseudo.CstrMem._ram.uw[(( pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem._ram.uw.byteLength-1))>>>2];
-            write.dataMem((pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]+4)&0x1ffffc, count>>>24);
+            dataMem.write(true, (pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2]+4)&0x1ffffc, count>>>24);
             pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] = count&0xffffff;
           }
           while (pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2] !== 0xffffff);

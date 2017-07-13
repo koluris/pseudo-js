@@ -12,3 +12,18 @@
 #define IRQ_SIO1  8
 #define IRQ_SPU   9
 #define IRQ_PIO   10
+
+#define pcr\
+  directMemW(hwr.uw, 0x10f0)
+
+#define icr\
+  directMemW(hwr.uw, 0x10f4)
+
+#define madr\
+  directMemW(hwr.uw, (addr&0xfff0)|0)
+
+#define bcr\
+  directMemW(hwr.uw, (addr&0xfff0)|4)
+
+#define chcr\
+  directMemW(hwr.uw, (addr&0xfff0)|8)

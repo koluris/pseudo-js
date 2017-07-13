@@ -38,7 +38,7 @@ pseudo.CstrGraphics = (function() {
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
-  function fetchFromVRAM(addr, size) {
+  function fetchFromVRAM(stream, addr, size) {
     let count = 0;
 
     if (!vac.enabled) {
@@ -51,7 +51,16 @@ pseudo.CstrGraphics = (function() {
       while (vac.h.p < vac.h.end) {
         // Keep position of vram.
         const pos = (vac.v.p<<10)+vac.h.p;
-        inn.vram.uh[pos] = directMemH(ram.uh, addr);
+
+        // Check if it`s a 16-bit (stream), or a 32-bit (command) address.
+        if (stream) {
+          inn.vram.uh[pos] = directMemH(ram.uh, addr);
+        }
+        else {
+          if (!(count%2)) {
+            inn.vram.uw[pos>>>1] = addr;
+          }
+        }
 
         addr+=2;
         vac.h.p++;
@@ -83,50 +92,46 @@ pseudo.CstrGraphics = (function() {
     return count>>1;
   }
 
-  const write = {
-    data(addr) {
-      if (!pipe.size) {
-        const prim = GPU_COMMAND(addr);
-        const size = sizePrim[prim];
-
-        if (size) {
-          pipe.data[0] = addr;
-          pipe.prim = prim;
-          pipe.size = size;
-          pipe.row  = 1;
-        }
-        else {
-          return;
-        }
-      }
-      else {
-        pipe.data[pipe.row] = addr;
-        pipe.row++;
-      }
-
-      // Render primitive
-      if (pipe.size === pipe.row) {
-        pipe.size = 0;
-        pipe.row  = 0;
-        render.prim(pipe.prim, pipe.data);
-      }
-    },
-
-    dataMem(addr, size) {
+  const dataMem = {
+    write(stream, addr, size) {
       let i = 0;
-
+      
       while (i < size) {
         if (inn.modeDMA === GPU_DMA_MEM2VRAM) {
-          if ((i += fetchFromVRAM(addr, size-i)) >= size) {
+          if ((i += fetchFromVRAM(stream, addr, size-i)) >= size) {
             continue;
           }
           addr += i;
         }
-
-        inn.data = directMemW(ram.uw, addr);
+        
+        inn.data = stream ? directMemW(ram.uw, addr) : addr;
         addr += 4;
         i++;
-        write.data(inn.data);
+
+        if (!pipe.size) {
+          const prim = GPU_COMMAND(inn.data);
+          const size = sizePrim[prim];
+
+          if (size) {
+            pipe.data[0] = inn.data;
+            pipe.prim = prim;
+            pipe.size = size;
+            pipe.row  = 1;
+          }
+          else {
+            continue;
+          }
+        }
+        else {
+          pipe.data[pipe.row] = inn.data;
+          pipe.row++;
+        }
+
+        if (pipe.size === pipe.row) {
+          pipe.size = 0;
+          pipe.row  = 0;
+          render.prim(pipe.prim, pipe.data);
+        }
       }
     }
   }
@@ -192,7 +197,7 @@ pseudo.CstrGraphics = (function() {
     scopeW(addr, data) {
       switch(addr&0xf) {
         case GPU_DATA:
-          write.data(data);
+          dataMem.write(false, data, 1);
           return;
 
         case GPU_STATUS:
@@ -248,13 +253,13 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000201:
-          write.dataMem(madr, size);
+          dataMem.write(true, madr, size);
           return;
 
         case 0x01000401:
           do {
             const count = directMemW(ram.uw, madr);
-            write.dataMem((madr+4)&0x1ffffc, count>>>24);
+            dataMem.write(true, (madr+4)&0x1ffffc, count>>>24);
             madr = count&0xffffff;
           }
           while (madr !== 0xffffff);

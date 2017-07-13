@@ -3,21 +3,6 @@
 #define IRQ_QUEUED_YES 1
 #define IRQ_QUEUED_NO  0
 
-#define pcr\
-  directMemW(hwr.uw, 0x10f0)
-
-#define icr\
-  directMemW(hwr.uw, 0x10f4)
-
-#define madr\
-  directMemW(hwr.uw, (addr&0xfff0)|0)
-
-#define bcr\
-  directMemW(hwr.uw, (addr&0xfff0)|4)
-
-#define chcr\
-  directMemW(hwr.uw, (addr&0xfff0)|8)
-
 pseudo.CstrBus = (function() {
   const interrupts = [{
     code: IRQ_VSYNC,
