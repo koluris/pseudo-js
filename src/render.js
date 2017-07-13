@@ -130,6 +130,16 @@
     POINT(data[ 4]),\
     POINT(data[ 7]),\
     POINT(data[10]),\
+  ],\
+  tx: [\
+    UV(data[ 2]),\
+    UV(data[ 5]),\
+    UV(data[ 8]),\
+    UV(data[11]),\
+  ],\
+  tp: [\
+    TPAGE(data[2]),\
+    TPAGE(data[5]),\
   ]\
 }
 
@@ -150,6 +160,12 @@
   vx: [\
     POINT(data[1]),\
     POINT(data[3]),\
+  ],\
+  tx: [\
+    UV(data[2])\
+  ],\
+  tp: [\
+    TPAGE(data[2])\
   ]\
 }
 
@@ -205,12 +221,15 @@
   const vx = [];\
   const tx = [];\
   \
+  inn.blend = (k.tp[1]>>>5)&3;\
+  iBlend(k.cr[0]._A);\
+  \
   for (let i=0; i<size; i++) {\
     if (k.cr._A&1) {\
-      cr.push(COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX);\
+      cr.push(COLOR_HALF, COLOR_HALF, COLOR_HALF, b[1]);\
     }\
     else {\
-      cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);\
+      cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
     }\
     vx.push(k.vx[i]._X, k.vx[i]._Y);\
     tx.push(k.tx[i]._U, k.tx[i]._V);\
@@ -230,15 +249,21 @@
   const k  = PGTx(data);\
   const cr = [];\
   const vx = [];\
+  const tx = [];\
+  \
+  inn.blend = (k.tp[1]>>>5)&3;\
+  iBlend(k.cr[0]._A);\
   \
   for (let i=0; i<size; i++) {\
-    cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, COLOR_MAX);\
+    cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, b[1]);\
     vx.push(k.vx[i]._X, k.vx[i]._Y);\
+    tx.push(k.tx[i]._U, k.tx[i]._V);\
   }\
+  tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
   \
   iColor(cr);\
   iVertex(vx);\
-  iTextureNone();\
+  iTexture(tx);\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size)
 
 /***
@@ -303,9 +328,18 @@
     k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y+k.vx[1]._Y,\
   ];\
   \
+  var tx = [\
+    k.tx[0]._U,            k.tx[0]._V,\
+    k.tx[0]._U+k.vx[1]._X, k.tx[0]._V,\
+    k.tx[0]._U,            k.tx[0]._V+k.vx[1]._Y,\
+    k.tx[0]._U+k.vx[1]._X, k.tx[0]._V+k.vx[1]._Y,\
+  ];\
+  \
+  tcache.fetchTexture(ctx, inn.spriteTP, k.tp[0]);\
+  \
   iColor(cr);\
   iVertex(vx);\
-  iTextureNone();\
+  iTexture(tx);\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4)
 
 pseudo.CstrRender = (function() {
@@ -676,7 +710,9 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe1: // TEXTURE PAGE
-          inn.blend  = (data[0]>>>5)&3;
+          inn.blend    = (data[0]>>>5)&3;
+          inn.spriteTP = (data[0]&0x7ff);
+          inn.status   = (inn.status&(~0x7ff)) | inn.spriteTP;
           ctx.blendFunc(bit[inn.blend].src, bit[inn.blend].dest);
           return;
 

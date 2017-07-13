@@ -160,10 +160,11 @@ pseudo.CstrGraphics = (function() {
 
     reset() {
       inn.vram.uh.fill(0);
-      inn.blend   = 0;
-      inn.data    = 0x400;
-      inn.modeDMA = GPU_DMA_NONE;
-      inn.status  = 0x14802000;
+      inn.blend    = 0;
+      inn.data     = 0x400;
+      inn.modeDMA  = GPU_DMA_NONE;
+      inn.spriteTP = 0;
+      inn.status   = 0x14802000;
 
       // VRAM Operations
       vac.enabled = false;

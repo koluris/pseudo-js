@@ -84,10 +84,11 @@ pseudo.CstrTexCache = (function() {
       }
 
       // Create texture
-      ctx.bindTexture(ctx.TEXTURE_2D, (stack[id] = ctx.createTexture()));
+      stack[id] = ctx.createTexture();
+      ctx.bindTexture  (ctx.TEXTURE_2D, stack[id]);
       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-      ctx.texPhoto2D(ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, bTex.ub);
+      ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, bTex.ub);
     }
   };
 })();
