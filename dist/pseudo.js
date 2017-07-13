@@ -637,6 +637,7 @@ pseudo.CstrHardware = (function() {
         switch(addr) {
           
           case 0x1014:
+          case 0x1060:
           case 0x1070:
           case 0x1074:
           case 0x10f0:
@@ -1635,7 +1636,7 @@ pseudo.CstrRender = (function() {
       // Shaders
       const func = ctx.createProgram();
       ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '  attribute vec2 a_position;  attribute vec4 a_color;  attribute vec2 a_texCoord;  uniform vec2 u_resolution;  varying vec4 v_color;  varying vec2 v_texCoord;    void main() {    gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);    v_color = a_color;    v_texCoord = a_texCoord;  }'));
-      ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '  precision mediump float;  uniform sampler2D u_texture;  uniform bool u_enabled;  varying vec4 v_color;  varying vec2 v_texCoord;    void main() {    if (u_enabled) {      gl_FragColor = texture2D(u_texture, v_texCoord) * v_color;    }    else {      gl_FragColor = v_color;    }  }'));
+      ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '  precision mediump float;  uniform sampler2D u_texture;  uniform bool u_enabled;  varying vec4 v_color;  varying vec2 v_texCoord;    void main() {    if (u_enabled) {      gl_FragColor = texture2D(u_texture, v_texCoord) * (v_color * vec4(2.0, 2.0, 2.0, 1));    }    else {      gl_FragColor = v_color;    }  }'));
       ctx.linkProgram(func);
       ctx.getProgramParameter(func, ctx.LINK_STATUS);
       ctx.useProgram (func);

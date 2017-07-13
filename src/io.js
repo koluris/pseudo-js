@@ -114,6 +114,7 @@ pseudo.CstrHardware = (function() {
         switch(addr) {
           /* unused */
           case 0x1014:
+          case 0x1060:
           case 0x1070:
           case 0x1074:
           case 0x10f0:
