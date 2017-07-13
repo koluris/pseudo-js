@@ -13,13 +13,13 @@ Here's a list with the overall progress of the emulator, broken down in distinct
 * `95% -> PSX-EXE Loader`
 * `90% -> CPU Mips R3000A`
 * `85% -> Mem IO`
+* `70% -> GPU Textures`
+* `60% -> GPU Primitives & Commands`
 * `45% -> Interrupts`
-* `40% -> Graphics`
 * `35% -> DMA`
 * `20% -> Serial IO`
-* `20% -> GPU Textures`
+* `15% -> Rootcounters`
 * `10% -> Audio`
-* `10% -> Rootcounters`
 
 **PSeudo** does not run commercial games at this point. I want to be able to run all demos/cractros available first, then proceed with the CD-ROM and MDEC implementation. Also, for quite some time I will keep working on it with the provided CPU Interpreter. An attempt for speedup will be made later on with a **JavaScript Tracer**.
 
