@@ -696,13 +696,12 @@ pseudo.CstrRender = (function() {
           {
             const k = READIMG(data);
 
-            inn.modeDMA = GPU_DMA_MEM2VRAM;
-            vac.h.p     = vac.h.start = k._2;
-            vac.v.p     = vac.v.start = k._3;
-            vac.h.end   = vac.h.start + k._4;
-            vac.v.end   = vac.v.start + k._5;
-            vac.pvaddr  = vac.v.p*FRAME_W;
-            vac.enabled = true;
+            inn.modeDMA  = GPU_DMA_MEM2VRAM;
+            vac._X.p     = vac._X.start = k._2;
+            vac._Y.p     = vac._Y.start = k._3;
+            vac._X.end   = vac._X.start + k._4;
+            vac._Y.end   = vac._Y.start + k._5;
+            vac.enabled  = true;
           }
           return;
 

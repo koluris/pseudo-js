@@ -10,7 +10,21 @@
 #define GPU_DATA   0
 #define GPU_STATUS 4
 
-#define GPU_ODDLINES 0x80000000
+#define GPU_ODDLINES         0x80000000
+#define GPU_DMABITS          0x60000000
+#define GPU_READYFORCOMMANDS 0x10000000
+#define GPU_READYFORVRAM     0x08000000
+#define GPU_IDLE             0x04000000
+#define GPU_DISPLAYDISABLED  0x00800000
+#define GPU_INTERLACED       0x00400000
+#define GPU_RGB24            0x00200000
+#define GPU_PAL              0x00100000
+#define GPU_DOUBLEHEIGHT     0x00080000
+#define GPU_WIDTHBITS        0x00070000
+#define GPU_MASKENABLED      0x00001000
+#define GPU_MASKDRAWN        0x00000800
+#define GPU_DRAWINGALLOWED   0x00000400
+#define GPU_DITHER           0x00000200
 
 pseudo.CstrGraphics = (function() {
   let pipe;
@@ -47,10 +61,10 @@ pseudo.CstrGraphics = (function() {
     }
     size <<= 1;
 
-    while (vac.v.p < vac.v.end) {
-      while (vac.h.p < vac.h.end) {
+    while (vac._Y.p < vac._Y.end) {
+      while (vac._X.p < vac._X.end) {
         // Keep position of vram.
-        const pos = (vac.v.p<<10)+vac.h.p;
+        const pos = (vac._Y.p<<10)+vac._X.p;
 
         // Check if it`s a 16-bit (stream), or a 32-bit (command) address.
         if (stream) {
@@ -63,25 +77,25 @@ pseudo.CstrGraphics = (function() {
         }
 
         addr+=2;
-        vac.h.p++;
+        vac._X.p++;
 
         if (++count === size) {
-          if (vac.h.p === vac.h.end) {
-            vac.h.p = vac.h.start;
-            vac.v.p++;
+          if (vac._X.p === vac._X.end) {
+            vac._X.p = vac._X.start;
+            vac._Y.p++;
           }
           return fetchEnd(count);
         }
       }
 
-      vac.h.p = vac.h.start;
-      vac.v.p++;
+      vac._X.p = vac._X.start;
+      vac._Y.p++;
     }
     return fetchEnd(count);
   }
 
   function fetchEnd(count) {
-    if (vac.v.p >= vac.v.end) {
+    if (vac._Y.p >= vac._Y.end) {
       inn.modeDMA = GPU_DMA_NONE;
       vac.enabled = false;
 
@@ -151,13 +165,13 @@ pseudo.CstrGraphics = (function() {
     awake() {
       inn = {
         vram: union(FRAME_W*FRAME_H*2),
-        ofs : {}
+         ofs: {}
       };
 
       // VRAM Operations
       vac = {
-        h: {},
-        v: {},
+        _X: {},
+        _Y: {},
       };
 
       // Command Pipe
@@ -177,14 +191,13 @@ pseudo.CstrGraphics = (function() {
       inn.status   = 0x14802000;
 
       // VRAM Operations
-      vac.enabled = false;
-      vac.pvaddr  = 0;
-      vac.h.p     = 0;
-      vac.h.start = 0;
-      vac.h.end   = 0;
-      vac.v.p     = 0;
-      vac.v.start = 0;
-      vac.v.end   = 0;
+      vac.enabled  = false;
+      vac._X.p     = 0;
+      vac._X.start = 0;
+      vac._X.end   = 0;
+      vac._Y.p     = 0;
+      vac._Y.start = 0;
+      vac._Y.end   = 0;
 
       // Command Pipe
       pipeReset();
@@ -241,6 +254,8 @@ pseudo.CstrGraphics = (function() {
           return inn.data;
 
         case GPU_STATUS:
+          inn.status |=  GPU_READYFORVRAM;
+          inn.status &= ~GPU_DOUBLEHEIGHT;
           return inn.status;
       }
     },

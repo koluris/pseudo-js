@@ -10,7 +10,7 @@
   cacheAddr = a * b;\
   \
   lo = cacheAddr&0xffffffff;\
-  hi = (cacheAddr/power32) | 0
+  hi = Math.floor(cacheAddr/power32)
 
 #define opcodeDiv(a, b)\
   if (b) {\

@@ -1021,11 +1021,11 @@ pseudo.CstrMips = (function() {
             return;
 
           case 24: // MULT
-            cacheAddr = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = cacheAddr&0xffffffff; r[34] = (cacheAddr/power32) | 0;
+            cacheAddr = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = cacheAddr&0xffffffff; r[34] = Math.floor(cacheAddr/power32);
             return;
 
           case 25: // MULTU
-            cacheAddr = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = cacheAddr&0xffffffff; r[34] = (cacheAddr/power32) | 0;
+            cacheAddr = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = cacheAddr&0xffffffff; r[34] = Math.floor(cacheAddr/power32);
             return;
 
           case 26: // DIV
@@ -1965,13 +1965,12 @@ pseudo.CstrRender = (function() {
           {
             const k = READIMG(data);
 
-            pseudo.CstrGraphics._inn.modeDMA = 2;
-            pseudo.CstrGraphics._vac.h.p     = pseudo.CstrGraphics._vac.h.start = k._2;
-            pseudo.CstrGraphics._vac.v.p     = pseudo.CstrGraphics._vac.v.start = k._3;
-            pseudo.CstrGraphics._vac.h.end   = pseudo.CstrGraphics._vac.h.start + k._4;
-            pseudo.CstrGraphics._vac.v.end   = pseudo.CstrGraphics._vac.v.start + k._5;
-            pseudo.CstrGraphics._vac.pvaddr  = pseudo.CstrGraphics._vac.v.p*1024;
-            pseudo.CstrGraphics._vac.enabled = true;
+            pseudo.CstrGraphics._inn.modeDMA  = 2;
+            pseudo.CstrGraphics._vac._X.p     = pseudo.CstrGraphics._vac._X.start = k._2;
+            pseudo.CstrGraphics._vac._Y.p     = pseudo.CstrGraphics._vac._Y.start = k._3;
+            pseudo.CstrGraphics._vac._X.end   = pseudo.CstrGraphics._vac._X.start + k._4;
+            pseudo.CstrGraphics._vac._Y.end   = pseudo.CstrGraphics._vac._Y.start + k._5;
+            pseudo.CstrGraphics._vac.enabled  = true;
           }
           return;
 
@@ -2310,10 +2309,10 @@ pseudo.CstrGraphics = (function() {
     }
     size <<= 1;
 
-    while (pseudo.CstrGraphics._vac.v.p < pseudo.CstrGraphics._vac.v.end) {
-      while (pseudo.CstrGraphics._vac.h.p < pseudo.CstrGraphics._vac.h.end) {
+    while (pseudo.CstrGraphics._vac._Y.p < pseudo.CstrGraphics._vac._Y.end) {
+      while (pseudo.CstrGraphics._vac._X.p < pseudo.CstrGraphics._vac._X.end) {
         // Keep position of vram.
-        const pos = (pseudo.CstrGraphics._vac.v.p<<10)+pseudo.CstrGraphics._vac.h.p;
+        const pos = (pseudo.CstrGraphics._vac._Y.p<<10)+pseudo.CstrGraphics._vac._X.p;
 
         // Check if it`s a 16-bit (stream), or a 32-bit (command) address.
         if (stream) {
@@ -2326,25 +2325,25 @@ pseudo.CstrGraphics = (function() {
         }
 
         addr+=2;
-        pseudo.CstrGraphics._vac.h.p++;
+        pseudo.CstrGraphics._vac._X.p++;
 
         if (++count === size) {
-          if (pseudo.CstrGraphics._vac.h.p === pseudo.CstrGraphics._vac.h.end) {
-            pseudo.CstrGraphics._vac.h.p = pseudo.CstrGraphics._vac.h.start;
-            pseudo.CstrGraphics._vac.v.p++;
+          if (pseudo.CstrGraphics._vac._X.p === pseudo.CstrGraphics._vac._X.end) {
+            pseudo.CstrGraphics._vac._X.p = pseudo.CstrGraphics._vac._X.start;
+            pseudo.CstrGraphics._vac._Y.p++;
           }
           return fetchEnd(count);
         }
       }
 
-      pseudo.CstrGraphics._vac.h.p = pseudo.CstrGraphics._vac.h.start;
-      pseudo.CstrGraphics._vac.v.p++;
+      pseudo.CstrGraphics._vac._X.p = pseudo.CstrGraphics._vac._X.start;
+      pseudo.CstrGraphics._vac._Y.p++;
     }
     return fetchEnd(count);
   }
 
   function fetchEnd(count) {
-    if (pseudo.CstrGraphics._vac.v.p >= pseudo.CstrGraphics._vac.v.end) {
+    if (pseudo.CstrGraphics._vac._Y.p >= pseudo.CstrGraphics._vac._Y.end) {
       pseudo.CstrGraphics._inn.modeDMA = 0;
       pseudo.CstrGraphics._vac.enabled = false;
 
@@ -2414,13 +2413,13 @@ pseudo.CstrGraphics = (function() {
     awake() {
       pseudo.CstrGraphics._inn = {
         vram: union(1024*512*2),
-        ofs : {}
+         ofs: {}
       };
 
       // VRAM Operations
       pseudo.CstrGraphics._vac = {
-        h: {},
-        v: {},
+        _X: {},
+        _Y: {},
       };
 
       // Command Pipe
@@ -2440,14 +2439,13 @@ pseudo.CstrGraphics = (function() {
       pseudo.CstrGraphics._inn.status   = 0x14802000;
 
       // VRAM Operations
-      pseudo.CstrGraphics._vac.enabled = false;
-      pseudo.CstrGraphics._vac.pvaddr  = 0;
-      pseudo.CstrGraphics._vac.h.p     = 0;
-      pseudo.CstrGraphics._vac.h.start = 0;
-      pseudo.CstrGraphics._vac.h.end   = 0;
-      pseudo.CstrGraphics._vac.v.p     = 0;
-      pseudo.CstrGraphics._vac.v.start = 0;
-      pseudo.CstrGraphics._vac.v.end   = 0;
+      pseudo.CstrGraphics._vac.enabled  = false;
+      pseudo.CstrGraphics._vac._X.p     = 0;
+      pseudo.CstrGraphics._vac._X.start = 0;
+      pseudo.CstrGraphics._vac._X.end   = 0;
+      pseudo.CstrGraphics._vac._Y.p     = 0;
+      pseudo.CstrGraphics._vac._Y.start = 0;
+      pseudo.CstrGraphics._vac._Y.end   = 0;
 
       // Command Pipe
       pipeReset();
@@ -2504,6 +2502,8 @@ pseudo.CstrGraphics = (function() {
           return pseudo.CstrGraphics._inn.data;
 
         case 4:
+          pseudo.CstrGraphics._inn.status |=  0x08000000;
+          pseudo.CstrGraphics._inn.status &= ~0x00080000;
           return pseudo.CstrGraphics._inn.status;
       }
     },
