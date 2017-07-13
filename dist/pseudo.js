@@ -710,6 +710,7 @@ pseudo.CstrMem = (function() {
 
           case 0x800: // Mirror
           case 0x801: // Mirror
+          case 0x802: // Mirror
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
@@ -741,6 +742,7 @@ pseudo.CstrMem = (function() {
 
           case 0x800: // Mirror
           case 0x801: // Mirror
+          case 0x802: // Mirror
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
@@ -766,6 +768,7 @@ pseudo.CstrMem = (function() {
 
           case 0x800: // Mirror
           case 0x801: // Mirror
+          case 0x802: // Mirror
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
@@ -793,6 +796,7 @@ pseudo.CstrMem = (function() {
 
           case 0x800: // Mirror
           case 0x801: // Mirror
+          case 0x802: // Mirror
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
@@ -819,6 +823,7 @@ pseudo.CstrMem = (function() {
 
           case 0x800: // Mirror
           case 0x801: // Mirror
+          case 0x802: // Mirror
           case 0x807: // Mirror
             return pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1];
 
@@ -840,6 +845,7 @@ pseudo.CstrMem = (function() {
 
           case 0x800: // Mirror
           case 0x801: // Mirror
+          case 0x802: // Mirror
           case 0x807: // Mirror
             return pseudo.CstrMem._ram.ub[(( addr)&(pseudo.CstrMem._ram.ub.byteLength-1))>>>0];
 
