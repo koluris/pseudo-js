@@ -182,7 +182,7 @@
   \
   for (let i=0; i<size; i++) {\
     cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
-    vx.push(k.vx[i]._X, k.vx[i]._Y);\
+    vx.push(k.vx[i]._X+inn.ofs._X, k.vx[i]._Y+inn.ofs._Y);\
   }\
   \
   iColor(cr);\
@@ -203,7 +203,7 @@
   \
   for (let i=0; i<size; i++) {\
     cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, b[1]);\
-    vx.push(k.vx[i]._X, k.vx[i]._Y);\
+    vx.push(k.vx[i]._X+inn.ofs._X, k.vx[i]._Y+inn.ofs._Y);\
   }\
   \
   iColor(cr);\
@@ -231,7 +231,7 @@
     else {\
       cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
     }\
-    vx.push(k.vx[i]._X, k.vx[i]._Y);\
+    vx.push(k.vx[i]._X+inn.ofs._X, k.vx[i]._Y+inn.ofs._Y);\
     tx.push(k.tx[i]._U, k.tx[i]._V);\
   }\
   tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
@@ -256,7 +256,7 @@
   \
   for (let i=0; i<size; i++) {\
     cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, b[1]);\
-    vx.push(k.vx[i]._X, k.vx[i]._Y);\
+    vx.push(k.vx[i]._X+inn.ofs._X, k.vx[i]._Y+inn.ofs._Y);\
     tx.push(k.tx[i]._U, k.tx[i]._V);\
   }\
   tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
@@ -285,11 +285,11 @@
     cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
   }\
   \
-  const vx = [\
-    k.vx[0]._X,            k.vx[0]._Y,\
-    k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,\
-    k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,\
-    k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y+k.vx[1]._Y,\
+  var vx = [\
+    k.vx[0]._X+inn.ofs._X,            k.vx[0]._Y+inn.ofs._Y,\
+    k.vx[0]._X+inn.ofs._X+k.vx[1]._X, k.vx[0]._Y+inn.ofs._Y,\
+    k.vx[0]._X+inn.ofs._X,            k.vx[0]._Y+inn.ofs._Y+k.vx[1]._Y,\
+    k.vx[0]._X+inn.ofs._X+k.vx[1]._X, k.vx[0]._Y+inn.ofs._Y+k.vx[1]._Y,\
   ];\
   \
   iColor(cr);\
@@ -321,11 +321,11 @@
     }\
   }\
   \
-  const vx = [\
-    k.vx[0]._X,            k.vx[0]._Y,\
-    k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,\
-    k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,\
-    k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y+k.vx[1]._Y,\
+  var vx = [\
+    k.vx[0]._X+inn.ofs._X,            k.vx[0]._Y+inn.ofs._Y,\
+    k.vx[0]._X+inn.ofs._X+k.vx[1]._X, k.vx[0]._Y+inn.ofs._Y,\
+    k.vx[0]._X+inn.ofs._X,            k.vx[0]._Y+inn.ofs._Y+k.vx[1]._Y,\
+    k.vx[0]._X+inn.ofs._X+k.vx[1]._X, k.vx[0]._Y+inn.ofs._Y+k.vx[1]._Y,\
   ];\
   \
   var tx = [\
@@ -726,6 +726,10 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe5: // DRAW OFFSET
+          {
+            inn.ofs._X = (SIGN_EXT_32(data[0])<<21)>>21;
+            inn.ofs._Y = (SIGN_EXT_32(data[0])<<10)>>21;
+          }
           return;
 
         case 0xe6: // STP

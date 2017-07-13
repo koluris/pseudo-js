@@ -1,3 +1,6 @@
+#define ram mem._ram
+#define rom mem._rom
+
 #define pc r[32]
 #define lo r[33]
 #define hi r[34]
@@ -56,7 +59,7 @@ pseudo.CstrMips = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    const code = pc>>>20 === 0xbfc ? directMemW(mem._rom.uw, pc) : directMemW(mem._ram.uw, pc);
+    const code = pc>>>20 === 0xbfc ? directMemW(rom.uw, pc) : directMemW(ram.uw, pc);
     opcodeCount++;
     pc  += 4;
     r[0] = 0; // As weird as this seems, it is needed
@@ -445,3 +448,6 @@ pseudo.CstrMips = (function() {
 #undef pc
 #undef lo
 #undef hi
+
+#undef ram
+#undef rom

@@ -1,4 +1,6 @@
 #define ram mem._ram
+#define hwr mem._hwr
+
 #define inn vs._inn
 #define vac vs._vac
 
@@ -144,6 +146,7 @@ pseudo.CstrGraphics = (function() {
     awake() {
       inn = {
         vram: union(FRAME_W*FRAME_H*2),
+        ofs : {}
       };
 
       // VRAM Operations
@@ -163,6 +166,8 @@ pseudo.CstrGraphics = (function() {
       inn.blend    = 0;
       inn.data     = 0x400;
       inn.modeDMA  = GPU_DMA_NONE;
+      inn.ofs._X   = 0;
+      inn.ofs._Y   = 0;
       inn.spriteTP = 0;
       inn.status   = 0x14802000;
 
@@ -261,5 +266,7 @@ pseudo.CstrGraphics = (function() {
 })();
 
 #undef ram
+#undef hwr
+
 #undef inn
 #undef vac

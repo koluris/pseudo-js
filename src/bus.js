@@ -1,20 +1,22 @@
+#define hwr mem._hwr
+
 #define IRQ_QUEUED_YES 1
 #define IRQ_QUEUED_NO  0
 
 #define pcr\
-  directMemW(mem._hwr.uw, 0x10f0)
+  directMemW(hwr.uw, 0x10f0)
 
 #define icr\
-  directMemW(mem._hwr.uw, 0x10f4)
+  directMemW(hwr.uw, 0x10f4)
 
 #define madr\
-  directMemW(mem._hwr.uw, (addr&0xfff0)|0)
+  directMemW(hwr.uw, (addr&0xfff0)|0)
 
 #define bcr\
-  directMemW(mem._hwr.uw, (addr&0xfff0)|4)
+  directMemW(hwr.uw, (addr&0xfff0)|4)
 
 #define chcr\
-  directMemW(mem._hwr.uw, (addr&0xfff0)|8)
+  directMemW(hwr.uw, (addr&0xfff0)|8)
 
 pseudo.CstrBus = (function() {
   const interrupts = [{
@@ -101,3 +103,5 @@ pseudo.CstrBus = (function() {
     }
   };
 })();
+
+#undef hwr
