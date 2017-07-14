@@ -1,6 +1,6 @@
 // Based on FPSE 0.08
 
-#define inn vs._inn
+#define vram vs.__vram
 
 #define	TCACHE_MAX\
   2048
@@ -13,7 +13,7 @@ pseudo.CstrTexCache = (function() {
 
   function pixel2texel(tx, p, n) {
     do {
-      const c = inn.vram.uh[p++];
+      const c = vram.uh[p++];
       tx.ub[idx++] = (c>>0x0)<<3;
       tx.ub[idx++] = (c>>0x5)<<3;
       tx.ub[idx++] = (c>>0xa)<<3;
@@ -50,7 +50,7 @@ pseudo.CstrTexCache = (function() {
           idx = 0;
           for (let v=0; v<256; v++) {
             for (let h=0; h<256/4; h++) {
-              const c = inn.vram.uh[tex+h];
+              const c = vram.uh[tex+h];
               bTex.uw[idx++] = ctbl2.uw[(c>> 0)&15];
               bTex.uw[idx++] = ctbl2.uw[(c>> 4)&15];
               bTex.uw[idx++] = ctbl2.uw[(c>> 8)&15];
@@ -66,7 +66,7 @@ pseudo.CstrTexCache = (function() {
           idx = 0;
           for (let v=0; v<256; v++) {
             for (let h=0; h<256/2; h++) {
-              const c = inn.vram.uh[tex+h];
+              const c = vram.uh[tex+h];
               bTex.uw[idx++] = ctbl2.uw[(c>>0)&255];
               bTex.uw[idx++] = ctbl2.uw[(c>>8)&255];
             }
@@ -93,4 +93,4 @@ pseudo.CstrTexCache = (function() {
   };
 })();
 
-#undef inn
+#undef vram

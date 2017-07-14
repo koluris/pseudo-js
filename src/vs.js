@@ -1,7 +1,7 @@
 #define ram mem._ram
 #define hwr mem._hwr
 
-#define inn vs._inn
+#define vram vs.__vram
 
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
@@ -26,7 +26,10 @@
 #define GPU_DITHER           0x00000200
 
 pseudo.CstrGraphics = (function() {
+  let data;
+  let modeDMA;
   let pipe;
+  let status;
   let vrop;
 
   const sizePrim = [
@@ -65,7 +68,7 @@ pseudo.CstrGraphics = (function() {
     let count = 0;
 
     if (!vrop.enabled) {
-      inn.modeDMA = GPU_DMA_NONE;
+      modeDMA = GPU_DMA_NONE;
       return 0;
     }
     size <<= 1;
@@ -77,11 +80,11 @@ pseudo.CstrGraphics = (function() {
 
         // Check if it`s a 16-bit (stream), or a 32-bit (command) address.
         if (stream) {
-          inn.vram.uh[pos] = directMemH(ram.uh, addr);
+          vram.uh[pos] = directMemH(ram.uh, addr);
         }
         else {
           if (!(count%2)) {
-            inn.vram.uw[pos>>>1] = addr;
+            vram.uw[pos>>>1] = addr;
           }
         }
 
@@ -105,7 +108,7 @@ pseudo.CstrGraphics = (function() {
 
   function fetchEnd(count) {
     if (vrop.v.p >= vrop.v.end) {
-      inn.modeDMA  = GPU_DMA_NONE;
+      modeDMA  = GPU_DMA_NONE;
       vrop.enabled = false;
 
       // if (count%2 === 1) {
@@ -120,23 +123,23 @@ pseudo.CstrGraphics = (function() {
       let i = 0;
       
       while (i < size) {
-        if (inn.modeDMA === GPU_DMA_MEM2VRAM) {
+        if (modeDMA === GPU_DMA_MEM2VRAM) {
           if ((i += fetchFromVRAM(stream, addr, size-i)) >= size) {
             continue;
           }
           addr += i;
         }
         
-        inn.data = stream ? directMemW(ram.uw, addr) : addr;
+        data = stream ? directMemW(ram.uw, addr) : addr;
         addr += 4;
         i++;
 
         if (!pipe.size) {
-          const prim = GPU_COMMAND(inn.data);
+          const prim = GPU_COMMAND(data);
           const size = sizePrim[prim];
 
           if (size) {
-            pipe.data[0] = inn.data;
+            pipe.data[0] = data;
             pipe.prim = prim;
             pipe.size = size;
             pipe.row  = 1;
@@ -146,7 +149,7 @@ pseudo.CstrGraphics = (function() {
           }
         }
         else {
-          pipe.data[pipe.row] = inn.data;
+          pipe.data[pipe.row] = data;
           pipe.row++;
         }
 
@@ -171,7 +174,7 @@ pseudo.CstrGraphics = (function() {
               {
                 const k = READIMG(data);
 
-                inn.modeDMA  = GPU_DMA_MEM2VRAM;
+                modeDMA = GPU_DMA_MEM2VRAM;
                 vrop.h.p     = vrop.h.start = k._2;
                 vrop.v.p     = vrop.v.start = k._3;
                 vrop.h.end   = vrop.h.start + k._4;
@@ -184,10 +187,13 @@ pseudo.CstrGraphics = (function() {
               break;
 
             case 0xe1: // TEXTURE PAGE
-              inn.blend    = (data[0]>>>5)&3;
-              inn.spriteTP = (data[0]&0x7ff);
-              inn.status   = (inn.status&(~0x7ff)) | inn.spriteTP;
-              //ctx.blendFunc(bit[inn.blend].src, bit[inn.blend].dest);
+              {
+                const blend = (data[0]>>>5)&3;
+                const spriteTP = (data[0]&0x7ff);
+
+                status = (status&(~0x7ff)) | spriteTP;
+                render.texp(blend, spriteTP);
+              }
               break;
 
             case 0xe2: // TEXTURE WINDOW
@@ -200,12 +206,11 @@ pseudo.CstrGraphics = (function() {
               break;
 
             case 0xe5: // DRAW OFFSET
-              inn.ofs.h = (SIGN_EXT_32(data[0])<<21)>>21;
-              inn.ofs.v = (SIGN_EXT_32(data[0])<<10)>>21;
+              render.offset(data[0]);
               break;
 
             case 0xe6: // STP
-              inn.status = (inn.status&(~(3<<11))) | ((data[0]&3)<<11);
+              status = (status&(~(3<<11))) | ((data[0]&3)<<11);
               break;
 
             default:
@@ -226,13 +231,10 @@ pseudo.CstrGraphics = (function() {
 
   // Exposed class functions/variables
   return {
-    _inn: undefined,
+    __vram: undefined,
 
     awake() {
-      inn = {
-        vram: union(FRAME_W*FRAME_H*2),
-         ofs: {}
-      };
+      vram = union(FRAME_W*FRAME_H*2);
 
       // VRAM Operations
       vrop = {
@@ -247,14 +249,10 @@ pseudo.CstrGraphics = (function() {
     },
 
     reset() {
-      inn.vram.uh.fill(0);
-      inn.blend    = 0;
-      inn.data     = 0x400;
-      inn.modeDMA  = GPU_DMA_NONE;
-      inn.ofs.h    = 0;
-      inn.ofs.v    = 0;
-      inn.spriteTP = 0;
-      inn.status   = 0x14802000;
+      vram.uh.fill(0);
+      data    = 0x400;
+      modeDMA = GPU_DMA_NONE;
+      status  = 0x14802000;
 
       // VRAM Operations
       vrop.enabled = false;
@@ -270,7 +268,7 @@ pseudo.CstrGraphics = (function() {
     },
 
     redraw() {
-      inn.status ^= GPU_ODDLINES;
+      status ^= GPU_ODDLINES;
     },
 
     scopeW(addr, data) {
@@ -282,7 +280,7 @@ pseudo.CstrGraphics = (function() {
         case GPU_STATUS:
           switch(GPU_COMMAND(data)) {
             case 0x00:
-              inn.status = 0x14802000;
+              status = 0x14802000;
               return;
 
             case 0x01:
@@ -290,7 +288,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x04:
-              inn.modeDMA = data&3;
+              modeDMA = data&3;
               return;
 
             case 0x08:
@@ -317,12 +315,12 @@ pseudo.CstrGraphics = (function() {
     scopeR(addr) {
       switch(addr&0xf) {
         case GPU_DATA:
-          return inn.data;
+          return data;
 
         case GPU_STATUS:
-          inn.status |=  GPU_READYFORVRAM;
-          inn.status &= ~GPU_DOUBLEHEIGHT;
-          return inn.status;
+          status |=  GPU_READYFORVRAM;
+          status &= ~GPU_DOUBLEHEIGHT;
+          return status;
       }
     },
 
@@ -354,20 +352,20 @@ pseudo.CstrGraphics = (function() {
 #undef ram
 #undef hwr
 
-#undef inn
+#undef vram
 
 // const k  = BLKFx(data);
 // const cr = [];
 
 // for (let i=0; i<4; i++) {
-//   cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);
+//   cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, COLOR_MAX);
 // }
 
 // const vx = [
-//   k.vx[0]._X,            k.vx[0]._Y,
-//   k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,
-//   k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,
-//   k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y+k.vx[1]._Y,
+//   k.vx[0].h,           k.vx[0].v,
+//   k.vx[0].h+k.vx[1].h, k.vx[0].v,
+//   k.vx[0].h,           k.vx[0].v+k.vx[1].v,
+//   k.vx[0].h+k.vx[1].h, k.vx[0].v+k.vx[1].v,
 // ];
 
 // iColor(cr);

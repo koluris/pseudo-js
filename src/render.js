@@ -1,5 +1,3 @@
-#define inn vs._inn
-
 #define COLOR_MAX\
   255
 
@@ -8,10 +6,9 @@
 
 #define iBlend(a)\
   const b = [\
-    a&2 ? inn.blend : 0,\
-    a&2 ? bit[inn.blend].opaque : COLOR_MAX\
+    a&2 ? blend : 0,\
+    a&2 ? bit[blend].opaque : COLOR_MAX\
   ];\
-  \
   ctx.blendFunc(bit[b[0]].src, bit[b[0]].dest)
 
 #define iColor(a)\
@@ -28,7 +25,6 @@
   for (let i in a) {\
     a[i]/=256.0;\
   }\
-  \
   ctx.uniform1i(attrib._e, true);\
   ctx.enableVertexAttrib(attrib._t);\
   ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._t);\
@@ -44,10 +40,10 @@
 ***/
 
 #define RGBC(data) {\
-  _R: (data>>> 0)&0xff,\
-  _G: (data>>> 8)&0xff,\
-  _B: (data>>>16)&0xff,\
-  _A: (data>>>24)&0xff,\
+  a: (data>>> 0)&0xff,\
+  b: (data>>> 8)&0xff,\
+  c: (data>>>16)&0xff,\
+  n: (data>>>24)&0xff,\
 }
 
 // Fix: SIGN_EXT_16
@@ -172,65 +168,65 @@
     Vertices
 ***/
 
-#define drawF(size, mode)\
+#define drawF(size, mode) {\
   const k  = PFx(data);\
   const cr = [];\
   const vx = [];\
   \
-  iBlend(k.cr[0]._A);\
+  iBlend(k.cr[0].n);\
   \
   for (let i=0; i<size; i++) {\
-    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
-    vx.push(k.vx[i].h+inn.ofs.h, k.vx[i].v+inn.ofs.v);\
+    cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]);\
+    vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v);\
   }\
-  \
   iColor(cr);\
   iVertex(vx);\
   iTextureNone();\
-  ctx.drawVertices(mode, 0, size)
+  ctx.drawVertices(mode, 0, size);\
+}
 
 /***
     Gouraud Vertices
 ***/
 
-#define drawG(size, mode)\
+#define drawG(size, mode) {\
   const k  = PGx(data);\
   const cr = [];\
   const vx = [];\
   \
-  iBlend(k.cr[0]._A);\
+  iBlend(k.cr[0].n);\
   \
   for (let i=0; i<size; i++) {\
-    cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, b[1]);\
-    vx.push(k.vx[i].h+inn.ofs.h, k.vx[i].v+inn.ofs.v);\
+    cr.push(k.cr[i].a, k.cr[i].b, k.cr[i].c, b[1]);\
+    vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v);\
   }\
-  \
   iColor(cr);\
   iVertex(vx);\
   iTextureNone();\
-  ctx.drawVertices(mode, 0, size)
+  ctx.drawVertices(mode, 0, size);\
+}
 
 /***
     Textured Vertices
 ***/
 
-#define drawFT(size)\
+#define drawFT(size) {\
   const k  = PFTx(data);\
   const cr = [];\
   const vx = [];\
   const tx = [];\
   \
-  inn.blend = (k.tp[1]>>>5)&3;\
-  iBlend(k.cr[0]._A);\
+  blend = (k.tp[1]>>>5)&3;\
+  iBlend(k.cr[0].n);\
   \
   for (let i=0; i<size; i++) {\
-    if (k.cr._A&1) {\
+    if (k.cr.n&1) {\
       cr.push(COLOR_HALF, COLOR_HALF, COLOR_HALF, b[1]);\
     }\
     else {\
-      cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
+      cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]);\
     }\
-    vx.push(k.vx[i].h+inn.ofs.h, k.vx[i].v+inn.ofs.v);\
+    vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v);\
     tx.push(k.tx[i].u, k.tx[i].v);\
   }\
   tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
@@ -238,24 +234,25 @@
   iColor(cr);\
   iVertex(vx);\
   iTexture(tx);\
-  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size)
+  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size);\
+}
 
 /***
     Gouraud/Textured Vertices
 ***/
 
-#define drawGT(size)\
+#define drawGT(size) {\
   const k  = PGTx(data);\
   const cr = [];\
   const vx = [];\
   const tx = [];\
   \
-  inn.blend = (k.tp[1]>>>5)&3;\
-  iBlend(k.cr[0]._A);\
+  blend = (k.tp[1]>>>5)&3;\
+  iBlend(k.cr[0].n);\
   \
   for (let i=0; i<size; i++) {\
-    cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, b[1]);\
-    vx.push(k.vx[i].h+inn.ofs.h, k.vx[i].v+inn.ofs.v);\
+    cr.push(k.cr[i].a, k.cr[i].b, k.cr[i].c, b[1]);\
+    vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v);\
     tx.push(k.tx[i].u, k.tx[i].v);\
   }\
   tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
@@ -263,44 +260,43 @@
   iColor(cr);\
   iVertex(vx);\
   iTexture(tx);\
-  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size)
+  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size);\
+}
 
 /***
     Tiles
 ***/
 
-#define drawTile(size)\
+#define drawTile(size) {\
   const k  = BLKFx(data);\
   const cr = [];\
   \
-  iBlend(k.cr[0]._A);\
+  iBlend(k.cr[0].n);\
   \
   if (size) {\
       k.vx[1].h = size;\
       k.vx[1].v = size;\
   }\
-  \
   for (let i=0; i<4; i++) {\
-    cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
+    cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]);\
   }\
-  \
-  var vx = [\
-    k.vx[0].h+inn.ofs.h,           k.vx[0].v+inn.ofs.v,\
-    k.vx[0].h+inn.ofs.h+k.vx[1].h, k.vx[0].v+inn.ofs.v,\
-    k.vx[0].h+inn.ofs.h,           k.vx[0].v+inn.ofs.v+k.vx[1].v,\
-    k.vx[0].h+inn.ofs.h+k.vx[1].h, k.vx[0].v+inn.ofs.v+k.vx[1].v,\
+  const vx = [\
+    k.vx[0].h+ofs.h,           k.vx[0].v+ofs.v,\
+    k.vx[0].h+ofs.h+k.vx[1].h, k.vx[0].v+ofs.v,\
+    k.vx[0].h+ofs.h,           k.vx[0].v+ofs.v+k.vx[1].v,\
+    k.vx[0].h+ofs.h+k.vx[1].h, k.vx[0].v+ofs.v+k.vx[1].v,\
   ];\
-  \
   iColor(cr);\
   iVertex(vx);\
   iTextureNone();\
-  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4)
+  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);\
+}
 
 /***
     Sprites
 ***/
 
-#define drawSprite(size)\
+#define drawSprite(size) {\
   const k  = SPRTx(data);\
   const cr = [];\
   \
@@ -310,45 +306,42 @@
     k.vx[1].h = size;\
     k.vx[1].v = size;\
   }\
-  \
   for (let i=0; i<4; i++) {\
-    if (k.cr[0]._A&1) {\
+    if (k.cr[0].n&1) {\
       cr.push(COLOR_HALF, COLOR_HALF, COLOR_HALF, b[1]);\
     }\
     else {\
-      cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
+      cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]);\
     }\
   }\
-  \
-  var vx = [\
-    k.vx[0].h+inn.ofs.h,           k.vx[0].v+inn.ofs.v,\
-    k.vx[0].h+inn.ofs.h+k.vx[1].h, k.vx[0].v+inn.ofs.v,\
-    k.vx[0].h+inn.ofs.h,           k.vx[0].v+inn.ofs.v+k.vx[1].v,\
-    k.vx[0].h+inn.ofs.h+k.vx[1].h, k.vx[0].v+inn.ofs.v+k.vx[1].v,\
+  const vx = [\
+    k.vx[0].h+ofs.h,           k.vx[0].v+ofs.v,\
+    k.vx[0].h+ofs.h+k.vx[1].h, k.vx[0].v+ofs.v,\
+    k.vx[0].h+ofs.h,           k.vx[0].v+ofs.v+k.vx[1].v,\
+    k.vx[0].h+ofs.h+k.vx[1].h, k.vx[0].v+ofs.v+k.vx[1].v,\
   ];\
-  \
-  var tx = [\
+  const tx = [\
     k.tx[0].u,           k.tx[0].v,\
     k.tx[0].u+k.vx[1].h, k.tx[0].v,\
     k.tx[0].u,           k.tx[0].v+k.vx[1].v,\
     k.tx[0].u+k.vx[1].h, k.tx[0].v+k.vx[1].v,\
   ];\
-  \
-  tcache.fetchTexture(ctx, inn.spriteTP, k.tp[0]);\
+  tcache.fetchTexture(ctx, spriteTP, k.tp[0]);\
   \
   iColor(cr);\
   iVertex(vx);\
   iTexture(tx);\
-  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4)
+  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);\
+}
 
 pseudo.CstrRender = (function() {
   // HTML elements
   let screen, resolution;
   
-  let ctx;      // WebGL Context
-  let attrib;   // Enable/Disable Attributes on demand
-  let bfr;      // Draw buffers
-  let res, bit; // Resolution & Blend
+  let ctx, attrib, bfr; // WebGL Context
+  let blend, bit; // Blend
+  let ofs, res;
+  let spriteTP;
 
   // Generic function for shaders
   function createShader(kind, content) {
@@ -419,6 +412,14 @@ pseudo.CstrRender = (function() {
     },
 
     reset() {
+      spriteTP = 0;
+      blend = 0;
+
+      // Offset
+      ofs = {
+        h: 0, v: 0
+      };
+
       render.resize({ w: 320, h: 240 });
       ctx.clear(ctx.COLOR_BUFFER_BIT);
     },
@@ -457,7 +458,7 @@ pseudo.CstrRender = (function() {
       else {
         $('#bar-boxes').hide();
       }
-
+      
       // Redraw
       render.resize({ w: res.native.w, h: res.native.h });
     },
@@ -465,134 +466,101 @@ pseudo.CstrRender = (function() {
     prim(addr, data) {
       switch(addr) {
         case 0x20: // POLY F3
-          {
-            drawF(3, ctx.TRIANGLE_STRIP);
-          }
+          drawF(3, ctx.TRIANGLE_STRIP);
           return;
 
         case 0x24: // POLY FT3
-          {
-            drawFT(3);
-          }
+          drawFT(3);
           return;
 
         case 0x28: // POLY F4
-          {
-            drawF(4, ctx.TRIANGLE_STRIP);
-          }
+          drawF(4, ctx.TRIANGLE_STRIP);
           return;
 
         case 0x2c: // POLY FT4
-          {
-            drawFT(4);
-          }
+          drawFT(4);
           return;
 
         case 0x30: // POLY G3
-          {
-            drawG(3, ctx.TRIANGLE_STRIP);
-          }
+          drawG(3, ctx.TRIANGLE_STRIP);
           return;
 
         case 0x34: // POLY GT3
-          {
-            drawGT(3);
-          }
+          drawGT(3);
           return;
 
         case 0x38: // POLY G4
-          {
-            drawG(4, ctx.TRIANGLE_STRIP);
-          }
+          drawG(4, ctx.TRIANGLE_STRIP);
           return;
 
         case 0x3c: // POLY GT4
-          {
-            drawGT(4);
-          }
+          drawGT(4);
           return;
 
         case 0x40: // LINE F2
-          {
-            drawF(2, ctx.LINE_STRIP);
-          }
+          drawF(2, ctx.LINE_STRIP);
           return;
 
         case 0x48: // LINE F3
-          {
-            drawF(3, ctx.LINE_STRIP);
-          }
+          drawF(3, ctx.LINE_STRIP);
           return;
 
         case 0x4c: // LINE F4
-          {
-            drawF(4, ctx.LINE_STRIP);
-          }
+          drawF(4, ctx.LINE_STRIP);
           return;
 
         case 0x50: // LINE G2
-          {
-            drawG(2, ctx.LINE_STRIP);
-          }
+          drawG(2, ctx.LINE_STRIP);
           return;
 
         case 0x58: // LINE G3
-          {
-            drawG(3, ctx.LINE_STRIP);
-          }
+          drawG(3, ctx.LINE_STRIP);
           return;
 
         case 0x5c: // LINE G4
-          {
-            drawG(4, ctx.LINE_STRIP);
-          }
+          drawG(4, ctx.LINE_STRIP);
           return;
 
         case 0x60: // TILE S
-          {
-            drawTile(0);
-          }
+          drawTile(0);
           return;
 
         case 0x64: // SPRITE S
-          {
-            drawSprite(0);
-          }
+          drawSprite(0);
           return;
 
         case 0x68: // TILE 1
-          {
-            drawTile(1);
-          }
+          drawTile(1);
           return;
 
         case 0x70: // TILE 8
-          {
-            drawTile(8);
-          }
+          drawTile(8);
           return;
 
         case 0x74: // SPRITE 8
-          {
-            drawSprite(8);
-          }
+          drawSprite(8);
           return;
 
         case 0x78: // TILE 16
-          {
-            drawTile(16);
-          }
+          drawTile(16);
           return;
 
         case 0x7c: // SPRITE 16
-          {
-            drawSprite(16);
-          }
+          drawSprite(16);
           return;
       }
       cpu.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
+    },
+
+    texp(vBlend, vSpriteTP) {
+      blend = vBlend;
+      spriteTP = vSpriteTP;
+      ctx.blendFunc(bit[blend].src, bit[blend].dest);
+    },
+
+    offset(data) {
+      ofs.h = (SIGN_EXT_32(data[0])<<21)>>21;
+      ofs.v = (SIGN_EXT_32(data[0])<<10)>>21;
     }
   };
 })();
-
-#undef inn
