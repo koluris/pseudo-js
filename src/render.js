@@ -58,7 +58,7 @@
 }
 
 #define TPAGE(data)\
-  (data>>>16)&0xffff\
+  (data>>>16)&0xffff
 
 /***
     Primitive Structures
@@ -300,7 +300,7 @@
   const k  = SPRTx(data);\
   const cr = [];\
   \
-  iBlend(k.cr[0]._A);\
+  iBlend(k.cr[0].n);\
   \
   if (size) {\
     k.vx[1].h = size;\
@@ -463,8 +463,9 @@ pseudo.CstrRender = (function() {
       render.resize({ w: res.native.w, h: res.native.h });
     },
 
-    prim(addr, data) {
-      switch(addr) {
+    draw(addr, data) {
+      // Primitives
+      switch(addr&0xfc) {
         case 0x20: // POLY F3
           drawF(3, ctx.TRIANGLE_STRIP);
           return;
@@ -549,18 +550,71 @@ pseudo.CstrRender = (function() {
           drawSprite(16);
           return;
       }
+
+      // Operations
+      switch(addr) {
+        case 0x01: // FLUSH
+          return;
+
+        case 0x02: // BLOCK FILL
+          {
+            const k  = BLKFx(data);
+            const cr = [];
+
+            for (let i=0; i<4; i++) {
+              cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, COLOR_MAX);
+            }
+
+            const vx = [
+              k.vx[0].h,           k.vx[0].v,
+              k.vx[0].h+k.vx[1].h, k.vx[0].v,
+              k.vx[0].h,           k.vx[0].v+k.vx[1].v,
+              k.vx[0].h+k.vx[1].h, k.vx[0].v+k.vx[1].v,
+            ];
+
+            iColor(cr);
+            iVertex(vx);
+            iTextureNone();
+            ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
+          }
+          return;
+
+        case 0x80: // MOVE IMAGE
+          return;
+
+        case 0xa0: // LOAD IMAGE
+          vs.inread(data);
+          return;
+
+        case 0xc0: // STORE IMAGE
+          return;
+
+        case 0xe1: // TEXTURE PAGE
+          blend = (data[0]>>>5)&3;
+          spriteTP = data[0]&0x7ff;
+          vs.texp(spriteTP);
+          ctx.blendFunc(bit[blend].src, bit[blend].dest);
+          return;
+
+        case 0xe2: // TEXTURE WINDOW
+          return;
+
+        case 0xe3: // DRAW AREA START
+          return;
+
+        case 0xe4: // DRAW AREA END
+          return;
+
+        case 0xe5: // DRAW OFFSET
+          ofs.h = (SIGN_EXT_32(data[0])<<21)>>21;
+          ofs.v = (SIGN_EXT_32(data[0])<<10)>>21;
+          return;
+
+        case 0xe6: // STP
+          vs.stp(data);
+          return;
+      }
       cpu.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
-    },
-
-    texp(vBlend, vSpriteTP) {
-      blend = vBlend;
-      spriteTP = vSpriteTP;
-      ctx.blendFunc(bit[blend].src, bit[blend].dest);
-    },
-
-    offset(data) {
-      ofs.h = (SIGN_EXT_32(data[0])<<21)>>21;
-      ofs.v = (SIGN_EXT_32(data[0])<<10)>>21;
     }
   };
 })();

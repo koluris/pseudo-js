@@ -6,6 +6,13 @@
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
 
+#define READIMG(data) {\
+  n2: (data[1]>>> 0)&0xffff,\
+  n3: (data[1]>>>16)&0xffff,\
+  n4: (data[2]>>> 0)&0xffff,\
+  n5: (data[2]>>>16)&0xffff,\
+}
+
 #define GPU_DATA   0
 #define GPU_STATUS 4
 
@@ -54,15 +61,6 @@ pseudo.CstrGraphics = (function() {
   const resMode = [
     256, 320, 512, 640, 368, 384, 512, 640
   ];
-
-  function READIMG(data) {
-    return {
-      _2: (data[1]>>> 0)&0xffff,
-      _3: (data[1]>>>16)&0xffff,
-      _4: (data[2]>>> 0)&0xffff,
-      _5: (data[2]>>>16)&0xffff,
-    };
-  }
 
   function fetchFromVRAM(stream, addr, size) {
     let count = 0;
@@ -157,66 +155,7 @@ pseudo.CstrGraphics = (function() {
           pipe.size = 0;
           pipe.row  = 0;
 
-          const addr = pipe.prim;
-          const data = pipe.data;
-
-          switch(addr) {
-            case 0x01: // FLUSH
-              break;
-
-            case 0x02: // BLOCK FILL
-              break;
-
-            case 0x80: // MOVE IMAGE
-              break;
-
-            case 0xa0: // LOAD IMAGE
-              {
-                const k = READIMG(data);
-
-                modeDMA = GPU_DMA_MEM2VRAM;
-                vrop.h.p     = vrop.h.start = k._2;
-                vrop.v.p     = vrop.v.start = k._3;
-                vrop.h.end   = vrop.h.start + k._4;
-                vrop.v.end   = vrop.v.start + k._5;
-                vrop.enabled = true;
-              }
-              break;
-
-            case 0xc0: // STORE IMAGE
-              break;
-
-            case 0xe1: // TEXTURE PAGE
-              {
-                const blend = (data[0]>>>5)&3;
-                const spriteTP = (data[0]&0x7ff);
-
-                status = (status&(~0x7ff)) | spriteTP;
-                render.texp(blend, spriteTP);
-              }
-              break;
-
-            case 0xe2: // TEXTURE WINDOW
-              break;
-
-            case 0xe3: // DRAW AREA START
-              break;
-
-            case 0xe4: // DRAW AREA END
-              break;
-
-            case 0xe5: // DRAW OFFSET
-              render.offset(data[0]);
-              break;
-
-            case 0xe6: // STP
-              status = (status&(~(3<<11))) | ((data[0]&3)<<11);
-              break;
-
-            default:
-              render.prim(addr&0xfc, data);
-              break;
-          }
+          render.draw(pipe.prim, pipe.data);
         }
       }
     }
@@ -345,6 +284,26 @@ pseudo.CstrGraphics = (function() {
           return;
       }
       psx.error('GPU DMA '+hex(chcr));
+    },
+
+    inread(data) {
+      const k = READIMG(data);
+
+      vrop.enabled = true;
+      vrop.h.p     = vrop.h.start = k.n2;
+      vrop.v.p     = vrop.v.start = k.n3;
+      vrop.h.end   = vrop.h.start + k.n4;
+      vrop.v.end   = vrop.v.start + k.n5;
+      
+      modeDMA = GPU_DMA_MEM2VRAM;
+    },
+
+    texp(spriteTP) {
+      status = (status&(~0x7ff)) | spriteTP;
+    },
+
+    stp(data) {
+      status = (status&(~(3<<11))) | ((data[0]&3)<<11);
     }
   };
 })();
@@ -353,22 +312,3 @@ pseudo.CstrGraphics = (function() {
 #undef hwr
 
 #undef vram
-
-// const k  = BLKFx(data);
-// const cr = [];
-
-// for (let i=0; i<4; i++) {
-//   cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, COLOR_MAX);
-// }
-
-// const vx = [
-//   k.vx[0].h,           k.vx[0].v,
-//   k.vx[0].h+k.vx[1].h, k.vx[0].v,
-//   k.vx[0].h,           k.vx[0].v+k.vx[1].v,
-//   k.vx[0].h+k.vx[1].h, k.vx[0].v+k.vx[1].v,
-// ];
-
-// iColor(cr);
-// iVertex(vx);
-// iTextureNone();
-// ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
