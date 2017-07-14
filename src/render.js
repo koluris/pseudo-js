@@ -46,10 +46,9 @@
   n: (data>>>24)&0xff,\
 }
 
-// Fix: SIGN_EXT_16
 #define POINT(data) {\
-  h: (data>> 0)&0xffff,\
-  v: (data>>16)&0xffff,\
+  h: SIGN_EXT_16(data>> 0),\
+  v: SIGN_EXT_16(data>>16),\
 }
 
 #define UV(data) {\
