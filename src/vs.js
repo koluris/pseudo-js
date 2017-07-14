@@ -2,7 +2,6 @@
 #define hwr mem._hwr
 
 #define inn vs._inn
-#define vac vs._vac
 
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
@@ -28,6 +27,7 @@
 
 pseudo.CstrGraphics = (function() {
   let pipe;
+  let vrop;
 
   const sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
@@ -52,19 +52,28 @@ pseudo.CstrGraphics = (function() {
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
+  function READIMG(data) {
+    return {
+      _2: (data[1]>>> 0)&0xffff,
+      _3: (data[1]>>>16)&0xffff,
+      _4: (data[2]>>> 0)&0xffff,
+      _5: (data[2]>>>16)&0xffff,
+    };
+  }
+
   function fetchFromVRAM(stream, addr, size) {
     let count = 0;
 
-    if (!vac.enabled) {
+    if (!vrop.enabled) {
       inn.modeDMA = GPU_DMA_NONE;
       return 0;
     }
     size <<= 1;
 
-    while (vac._Y.p < vac._Y.end) {
-      while (vac._X.p < vac._X.end) {
+    while (vrop.v.p < vrop.v.end) {
+      while (vrop.h.p < vrop.h.end) {
         // Keep position of vram.
-        const pos = (vac._Y.p<<10)+vac._X.p;
+        const pos = (vrop.v.p<<10)+vrop.h.p;
 
         // Check if it`s a 16-bit (stream), or a 32-bit (command) address.
         if (stream) {
@@ -77,27 +86,27 @@ pseudo.CstrGraphics = (function() {
         }
 
         addr+=2;
-        vac._X.p++;
+        vrop.h.p++;
 
         if (++count === size) {
-          if (vac._X.p === vac._X.end) {
-            vac._X.p = vac._X.start;
-            vac._Y.p++;
+          if (vrop.h.p === vrop.h.end) {
+            vrop.h.p = vrop.h.start;
+            vrop.v.p++;
           }
           return fetchEnd(count);
         }
       }
 
-      vac._X.p = vac._X.start;
-      vac._Y.p++;
+      vrop.h.p = vrop.h.start;
+      vrop.v.p++;
     }
     return fetchEnd(count);
   }
 
   function fetchEnd(count) {
-    if (vac._Y.p >= vac._Y.end) {
-      inn.modeDMA = GPU_DMA_NONE;
-      vac.enabled = false;
+    if (vrop.v.p >= vrop.v.end) {
+      inn.modeDMA  = GPU_DMA_NONE;
+      vrop.enabled = false;
 
       // if (count%2 === 1) {
       //     count++;
@@ -144,7 +153,65 @@ pseudo.CstrGraphics = (function() {
         if (pipe.size === pipe.row) {
           pipe.size = 0;
           pipe.row  = 0;
-          render.prim(pipe.prim, pipe.data);
+
+          const addr = pipe.prim;
+          const data = pipe.data;
+
+          switch(addr) {
+            case 0x01: // FLUSH
+              break;
+
+            case 0x02: // BLOCK FILL
+              break;
+
+            case 0x80: // MOVE IMAGE
+              break;
+
+            case 0xa0: // LOAD IMAGE
+              {
+                const k = READIMG(data);
+
+                inn.modeDMA  = GPU_DMA_MEM2VRAM;
+                vrop.h.p     = vrop.h.start = k._2;
+                vrop.v.p     = vrop.v.start = k._3;
+                vrop.h.end   = vrop.h.start + k._4;
+                vrop.v.end   = vrop.v.start + k._5;
+                vrop.enabled = true;
+              }
+              break;
+
+            case 0xc0: // STORE IMAGE
+              break;
+
+            case 0xe1: // TEXTURE PAGE
+              inn.blend    = (data[0]>>>5)&3;
+              inn.spriteTP = (data[0]&0x7ff);
+              inn.status   = (inn.status&(~0x7ff)) | inn.spriteTP;
+              //ctx.blendFunc(bit[inn.blend].src, bit[inn.blend].dest);
+              break;
+
+            case 0xe2: // TEXTURE WINDOW
+              break;
+
+            case 0xe3: // DRAW AREA START
+              break;
+
+            case 0xe4: // DRAW AREA END
+              break;
+
+            case 0xe5: // DRAW OFFSET
+              inn.ofs.h = (SIGN_EXT_32(data[0])<<21)>>21;
+              inn.ofs.v = (SIGN_EXT_32(data[0])<<10)>>21;
+              break;
+
+            case 0xe6: // STP
+              inn.status = (inn.status&(~(3<<11))) | ((data[0]&3)<<11);
+              break;
+
+            default:
+              render.prim(addr&0xfc, data);
+              break;
+          }
         }
       }
     }
@@ -160,7 +227,6 @@ pseudo.CstrGraphics = (function() {
   // Exposed class functions/variables
   return {
     _inn: undefined,
-    _vac: undefined,
 
     awake() {
       inn = {
@@ -169,9 +235,9 @@ pseudo.CstrGraphics = (function() {
       };
 
       // VRAM Operations
-      vac = {
-        _X: {},
-        _Y: {},
+      vrop = {
+        h: {},
+        v: {},
       };
 
       // Command Pipe
@@ -185,19 +251,19 @@ pseudo.CstrGraphics = (function() {
       inn.blend    = 0;
       inn.data     = 0x400;
       inn.modeDMA  = GPU_DMA_NONE;
-      inn.ofs._X   = 0;
-      inn.ofs._Y   = 0;
+      inn.ofs.h    = 0;
+      inn.ofs.v    = 0;
       inn.spriteTP = 0;
       inn.status   = 0x14802000;
 
       // VRAM Operations
-      vac.enabled  = false;
-      vac._X.p     = 0;
-      vac._X.start = 0;
-      vac._X.end   = 0;
-      vac._Y.p     = 0;
-      vac._Y.start = 0;
-      vac._Y.end   = 0;
+      vrop.enabled = false;
+      vrop.h.p     = 0;
+      vrop.h.start = 0;
+      vrop.h.end   = 0;
+      vrop.v.p     = 0;
+      vrop.v.start = 0;
+      vrop.v.end   = 0;
 
       // Command Pipe
       pipeReset();
@@ -289,4 +355,22 @@ pseudo.CstrGraphics = (function() {
 #undef hwr
 
 #undef inn
-#undef vac
+
+// const k  = BLKFx(data);
+// const cr = [];
+
+// for (let i=0; i<4; i++) {
+//   cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);
+// }
+
+// const vx = [
+//   k.vx[0]._X,            k.vx[0]._Y,
+//   k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,
+//   k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,
+//   k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y+k.vx[1]._Y,
+// ];
+
+// iColor(cr);
+// iVertex(vx);
+// iTextureNone();
+// ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);

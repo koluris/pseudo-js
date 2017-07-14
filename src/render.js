@@ -1,5 +1,4 @@
 #define inn vs._inn
-#define vac vs._vac
 
 #define COLOR_MAX\
   255
@@ -53,13 +52,13 @@
 
 // Fix: SIGN_EXT_16
 #define POINT(data) {\
-  _X: (data>> 0)&0xffff,\
-  _Y: (data>>16)&0xffff,\
+  h: (data>> 0)&0xffff,\
+  v: (data>>16)&0xffff,\
 }
 
 #define UV(data) {\
-  _U: (data>>>0)&0xff,\
-  _V: (data>>>8)&0xff,\
+  u: (data>>>0)&0xff,\
+  v: (data>>>8)&0xff,\
 }
 
 #define TPAGE(data)\
@@ -182,7 +181,7 @@
   \
   for (let i=0; i<size; i++) {\
     cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
-    vx.push(k.vx[i]._X+inn.ofs._X, k.vx[i]._Y+inn.ofs._Y);\
+    vx.push(k.vx[i].h+inn.ofs.h, k.vx[i].v+inn.ofs.v);\
   }\
   \
   iColor(cr);\
@@ -203,7 +202,7 @@
   \
   for (let i=0; i<size; i++) {\
     cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, b[1]);\
-    vx.push(k.vx[i]._X+inn.ofs._X, k.vx[i]._Y+inn.ofs._Y);\
+    vx.push(k.vx[i].h+inn.ofs.h, k.vx[i].v+inn.ofs.v);\
   }\
   \
   iColor(cr);\
@@ -231,8 +230,8 @@
     else {\
       cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, b[1]);\
     }\
-    vx.push(k.vx[i]._X+inn.ofs._X, k.vx[i]._Y+inn.ofs._Y);\
-    tx.push(k.tx[i]._U, k.tx[i]._V);\
+    vx.push(k.vx[i].h+inn.ofs.h, k.vx[i].v+inn.ofs.v);\
+    tx.push(k.tx[i].u, k.tx[i].v);\
   }\
   tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
   \
@@ -256,8 +255,8 @@
   \
   for (let i=0; i<size; i++) {\
     cr.push(k.cr[i]._R, k.cr[i]._G, k.cr[i]._B, b[1]);\
-    vx.push(k.vx[i]._X+inn.ofs._X, k.vx[i]._Y+inn.ofs._Y);\
-    tx.push(k.tx[i]._U, k.tx[i]._V);\
+    vx.push(k.vx[i].h+inn.ofs.h, k.vx[i].v+inn.ofs.v);\
+    tx.push(k.tx[i].u, k.tx[i].v);\
   }\
   tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
   \
@@ -277,8 +276,8 @@
   iBlend(k.cr[0]._A);\
   \
   if (size) {\
-      k.vx[1]._X = size;\
-      k.vx[1]._Y = size;\
+      k.vx[1].h = size;\
+      k.vx[1].v = size;\
   }\
   \
   for (let i=0; i<4; i++) {\
@@ -286,10 +285,10 @@
   }\
   \
   var vx = [\
-    k.vx[0]._X+inn.ofs._X,            k.vx[0]._Y+inn.ofs._Y,\
-    k.vx[0]._X+inn.ofs._X+k.vx[1]._X, k.vx[0]._Y+inn.ofs._Y,\
-    k.vx[0]._X+inn.ofs._X,            k.vx[0]._Y+inn.ofs._Y+k.vx[1]._Y,\
-    k.vx[0]._X+inn.ofs._X+k.vx[1]._X, k.vx[0]._Y+inn.ofs._Y+k.vx[1]._Y,\
+    k.vx[0].h+inn.ofs.h,           k.vx[0].v+inn.ofs.v,\
+    k.vx[0].h+inn.ofs.h+k.vx[1].h, k.vx[0].v+inn.ofs.v,\
+    k.vx[0].h+inn.ofs.h,           k.vx[0].v+inn.ofs.v+k.vx[1].v,\
+    k.vx[0].h+inn.ofs.h+k.vx[1].h, k.vx[0].v+inn.ofs.v+k.vx[1].v,\
   ];\
   \
   iColor(cr);\
@@ -308,8 +307,8 @@
   iBlend(k.cr[0]._A);\
   \
   if (size) {\
-    k.vx[1]._X = size;\
-    k.vx[1]._Y = size;\
+    k.vx[1].h = size;\
+    k.vx[1].v = size;\
   }\
   \
   for (let i=0; i<4; i++) {\
@@ -322,17 +321,17 @@
   }\
   \
   var vx = [\
-    k.vx[0]._X+inn.ofs._X,            k.vx[0]._Y+inn.ofs._Y,\
-    k.vx[0]._X+inn.ofs._X+k.vx[1]._X, k.vx[0]._Y+inn.ofs._Y,\
-    k.vx[0]._X+inn.ofs._X,            k.vx[0]._Y+inn.ofs._Y+k.vx[1]._Y,\
-    k.vx[0]._X+inn.ofs._X+k.vx[1]._X, k.vx[0]._Y+inn.ofs._Y+k.vx[1]._Y,\
+    k.vx[0].h+inn.ofs.h,           k.vx[0].v+inn.ofs.v,\
+    k.vx[0].h+inn.ofs.h+k.vx[1].h, k.vx[0].v+inn.ofs.v,\
+    k.vx[0].h+inn.ofs.h,           k.vx[0].v+inn.ofs.v+k.vx[1].v,\
+    k.vx[0].h+inn.ofs.h+k.vx[1].h, k.vx[0].v+inn.ofs.v+k.vx[1].v,\
   ];\
   \
   var tx = [\
-    k.tx[0]._U,            k.tx[0]._V,\
-    k.tx[0]._U+k.vx[1]._X, k.tx[0]._V,\
-    k.tx[0]._U,            k.tx[0]._V+k.vx[1]._Y,\
-    k.tx[0]._U+k.vx[1]._X, k.tx[0]._V+k.vx[1]._Y,\
+    k.tx[0].u,           k.tx[0].v,\
+    k.tx[0].u+k.vx[1].h, k.tx[0].v,\
+    k.tx[0].u,           k.tx[0].v+k.vx[1].v,\
+    k.tx[0].u+k.vx[1].h, k.tx[0].v+k.vx[1].v,\
   ];\
   \
   tcache.fetchTexture(ctx, inn.spriteTP, k.tp[0]);\
@@ -359,15 +358,6 @@ pseudo.CstrRender = (function() {
     ctx.fetchShaderParameter(shader, ctx.COMPILE_STATUS);
 
     return shader;
-  }
-
-  function READIMG(data) {
-    return {
-      _2: (data[1]>>> 0)&0xffff,
-      _3: (data[1]>>>16)&0xffff,
-      _4: (data[2]>>> 0)&0xffff,
-      _5: (data[2]>>>16)&0xffff,
-    };
   }
 
   // Exposed class functions/variables
@@ -474,265 +464,130 @@ pseudo.CstrRender = (function() {
 
     prim(addr, data) {
       switch(addr) {
-        case 0x01: // FLUSH
-          return;
-
-        case 0x02: // BLOCK FILL
-          {
-            const k  = BLKFx(data);
-            const cr = [];
-
-            for (let i=0; i<4; i++) {
-              cr.push(k.cr[0]._R, k.cr[0]._G, k.cr[0]._B, COLOR_MAX);
-            }
-
-            const vx = [
-              k.vx[0]._X,            k.vx[0]._Y,
-              k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y,
-              k.vx[0]._X,            k.vx[0]._Y+k.vx[1]._Y,
-              k.vx[0]._X+k.vx[1]._X, k.vx[0]._Y+k.vx[1]._Y,
-            ];
-
-            iColor(cr);
-            iVertex(vx);
-            iTextureNone();
-            ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
-          }
-          return;
-
-        case 0x20:
-        case 0x21:
-        case 0x22:
-        case 0x23: // POLY F3
+        case 0x20: // POLY F3
           {
             drawF(3, ctx.TRIANGLE_STRIP);
           }
           return;
 
-        case 0x24:
-        case 0x25:
-        case 0x26:
-        case 0x27: // POLY FT3
+        case 0x24: // POLY FT3
           {
             drawFT(3);
           }
           return;
 
-        case 0x28:
-        case 0x29:
-        case 0x2a:
-        case 0x2b: // POLY F4
+        case 0x28: // POLY F4
           {
             drawF(4, ctx.TRIANGLE_STRIP);
           }
           return;
 
-        case 0x2c:
-        case 0x2d:
-        case 0x2e:
-        case 0x2f: // POLY FT4
+        case 0x2c: // POLY FT4
           {
             drawFT(4);
           }
           return;
 
-        case 0x30:
-        case 0x31:
-        case 0x32:
-        case 0x33: // POLY G3
+        case 0x30: // POLY G3
           {
             drawG(3, ctx.TRIANGLE_STRIP);
           }
           return;
 
-        case 0x34:
-        case 0x35:
-        case 0x36:
-        case 0x37: // POLY GT3
+        case 0x34: // POLY GT3
           {
             drawGT(3);
           }
           return;
 
-        case 0x38:
-        case 0x39:
-        case 0x3a:
-        case 0x3b: // POLY G4
+        case 0x38: // POLY G4
           {
             drawG(4, ctx.TRIANGLE_STRIP);
           }
           return;
 
-        case 0x3c:
-        case 0x3d:
-        case 0x3e:
-        case 0x3f: // POLY GT4
+        case 0x3c: // POLY GT4
           {
             drawGT(4);
           }
           return;
 
-        case 0x40:
-        case 0x41:
-        case 0x42:
-        case 0x43: // LINE F2
+        case 0x40: // LINE F2
           {
             drawF(2, ctx.LINE_STRIP);
           }
           return;
 
-        case 0x48:
-        case 0x49:
-        case 0x4a:
-        case 0x4b: // LINE F3
+        case 0x48: // LINE F3
           {
             drawF(3, ctx.LINE_STRIP);
           }
           return;
 
-        case 0x4c:
-        case 0x4d:
-        case 0x4e:
-        case 0x4f: // LINE F4
+        case 0x4c: // LINE F4
           {
             drawF(4, ctx.LINE_STRIP);
           }
           return;
 
-        case 0x50:
-        case 0x51:
-        case 0x52:
-        case 0x53: // LINE G2
+        case 0x50: // LINE G2
           {
             drawG(2, ctx.LINE_STRIP);
           }
           return;
 
-        case 0x58:
-        case 0x59:
-        case 0x5a:
-        case 0x5b: // LINE G3
+        case 0x58: // LINE G3
           {
             drawG(3, ctx.LINE_STRIP);
           }
           return;
 
-        case 0x5c:
-        case 0x5d:
-        case 0x5e:
-        case 0x5f: // LINE G4
+        case 0x5c: // LINE G4
           {
             drawG(4, ctx.LINE_STRIP);
           }
           return;
 
-        case 0x60:
-        case 0x61:
-        case 0x62:
-        case 0x63: // TILE S
+        case 0x60: // TILE S
           {
             drawTile(0);
           }
           return;
 
-        case 0x64:
-        case 0x65:
-        case 0x66:
-        case 0x67: // SPRITE S
+        case 0x64: // SPRITE S
           {
             drawSprite(0);
           }
           return;
 
-        case 0x68:
-        case 0x69:
-        case 0x6a:
-        case 0x6b: // TILE 1
+        case 0x68: // TILE 1
           {
             drawTile(1);
           }
           return;
 
-        case 0x70:
-        case 0x71:
-        case 0x72:
-        case 0x73: // TILE 8
+        case 0x70: // TILE 8
           {
             drawTile(8);
           }
           return;
 
-        case 0x74:
-        case 0x75:
-        case 0x76:
-        case 0x77: // SPRITE 8
+        case 0x74: // SPRITE 8
           {
             drawSprite(8);
           }
           return;
 
-        case 0x78:
-        case 0x79:
-        case 0x7a:
-        case 0x7b: // TILE 16
+        case 0x78: // TILE 16
           {
             drawTile(16);
           }
           return;
 
-        case 0x7c:
-        case 0x7d:
-        case 0x7e:
-        case 0x7f: // SPRITE 16
+        case 0x7c: // SPRITE 16
           {
             drawSprite(16);
           }
-          return;
-
-        case 0x80: // MOVE IMAGE
-          return;
-
-        case 0xa0: // LOAD IMAGE
-          {
-            const k = READIMG(data);
-
-            inn.modeDMA  = GPU_DMA_MEM2VRAM;
-            vac._X.p     = vac._X.start = k._2;
-            vac._Y.p     = vac._Y.start = k._3;
-            vac._X.end   = vac._X.start + k._4;
-            vac._Y.end   = vac._Y.start + k._5;
-            vac.enabled  = true;
-          }
-          return;
-
-        case 0xc0: // STORE IMAGE
-          return;
-
-        case 0xe1: // TEXTURE PAGE
-          inn.blend    = (data[0]>>>5)&3;
-          inn.spriteTP = (data[0]&0x7ff);
-          inn.status   = (inn.status&(~0x7ff)) | inn.spriteTP;
-          ctx.blendFunc(bit[inn.blend].src, bit[inn.blend].dest);
-          return;
-
-        case 0xe2: // TEXTURE WINDOW
-          return;
-
-        case 0xe3: // DRAW AREA START
-          return;
-
-        case 0xe4: // DRAW AREA END
-          return;
-
-        case 0xe5: // DRAW OFFSET
-          {
-            inn.ofs._X = (SIGN_EXT_32(data[0])<<21)>>21;
-            inn.ofs._Y = (SIGN_EXT_32(data[0])<<10)>>21;
-          }
-          return;
-
-        case 0xe6: // STP
-          inn.status = (inn.status&(~(3<<11))) | ((data[0]&3)<<11);
           return;
       }
       cpu.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
@@ -741,4 +596,3 @@ pseudo.CstrRender = (function() {
 })();
 
 #undef inn
-#undef vac
