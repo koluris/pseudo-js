@@ -40,8 +40,8 @@ pseudo.CstrTexCache = (function() {
         return;
       }
 
-      var tex  = (tp&15)*64+(tp&16)*(FRAME_W*256/16);
-      var ctbl = (clut&0x7fff)*16;
+      let tex  = (tp&15)*64+(tp&16)*(FRAME_W*256/16);
+      let ctbl = (clut&0x7fff)*16;
 
       switch((tp>>7)&3) {
         case 0: // 04-bit
