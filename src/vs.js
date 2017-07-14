@@ -99,9 +99,9 @@ pseudo.CstrGraphics = (function() {
       inn.modeDMA = GPU_DMA_NONE;
       vac.enabled = false;
 
-      /*if (count%2 === 1) {
-          count++;
-      }*/
+      // if (count%2 === 1) {
+      //     count++;
+      // }
     }
     return count>>1;
   }

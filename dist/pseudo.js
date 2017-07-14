@@ -2347,9 +2347,9 @@ pseudo.CstrGraphics = (function() {
       pseudo.CstrGraphics._inn.modeDMA = 0;
       pseudo.CstrGraphics._vac.enabled = false;
 
-      
-
-
+      // if (count%2 === 1) {
+      //     count++;
+      // }
     }
     return count>>1;
   }
@@ -2516,7 +2516,7 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000201:
-          dataMem.write(true, pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2], size);
+          // dataMem.write(true, pseudo.CstrMem._hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem._hwr.uw.byteLength-1))>>>2], size);
           return;
 
         case 0x01000401:
