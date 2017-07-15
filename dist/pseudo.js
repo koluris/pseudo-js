@@ -179,7 +179,7 @@ pseudo.CstrBus = (function() {
     target: 1
   }, {
     code: 5,
-    target: 1
+    target: 256
   }, {
     code: 6,
     target: 1
@@ -2426,7 +2426,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x10:
-              if (data&0xff === 7) infoSet(data);
+              //infoSet(data);
               return;
 
             
