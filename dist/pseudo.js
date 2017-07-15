@@ -2426,7 +2426,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x10:
-              infoSet(data);
+              if (data&0xff === 7) infoSet(data);
               return;
 
             
