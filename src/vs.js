@@ -32,10 +32,10 @@
 }
 
 pseudo.CstrGraphics = (function() {
-  let status, data, modeDMA;
-  let vrop, pipe;
+  var status, data, modeDMA;
+  var vrop, pipe;
 
-  const sizePrim = [
+  var sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x10
     4, 4, 4, 4, 7, 7, 7, 7, 5, 5, 5, 5, 9, 9, 9, 9, // 0x20
@@ -54,7 +54,7 @@ pseudo.CstrGraphics = (function() {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xf0
   ];
 
-  const resMode = [
+  var resMode = [
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
@@ -63,7 +63,7 @@ pseudo.CstrGraphics = (function() {
   }
 
   function fetchFromVRAM(stream, addr, size) {
-    let count = 0;
+    var count = 0;
 
     // False alarm!
     if (!vrop.enabled) {
@@ -75,7 +75,7 @@ pseudo.CstrGraphics = (function() {
     while (vrop.v.p < vrop.v.end) {
       while (vrop.h.p < vrop.h.end) {
         // Keep position of vram
-        const pos = (vrop.v.p<<10)+vrop.h.p;
+        var pos = (vrop.v.p<<10)+vrop.h.p;
 
         // Check if it`s a 16-bit (stream), or a 32-bit (command) address
         if (stream) {
@@ -117,9 +117,9 @@ pseudo.CstrGraphics = (function() {
     return count>>1;
   }
 
-  const dataMem = {
+  var dataMem = {
     write(stream, addr, size) {
-      let i = 0;
+      var i = 0;
       
       while (i < size) {
         if (modeDMA === GPU_DMA_MEM2VRAM) {
@@ -134,13 +134,13 @@ pseudo.CstrGraphics = (function() {
         i++;
 
         if (!pipe.size) {
-          const prim = GPU_COMMAND(data);
-          const size = sizePrim[prim];
+          var prim  = GPU_COMMAND(data);
+          var count = sizePrim[prim];
 
-          if (size) {
+          if (count) {
             pipe.data[0] = data;
             pipe.prim = prim;
-            pipe.size = size;
+            pipe.size = count;
             pipe.row  = 1;
           }
           else {
@@ -268,7 +268,7 @@ pseudo.CstrGraphics = (function() {
     },
 
     executeDMA(addr) {
-      const size = (bcr>>16)*(bcr&0xffff);
+      var size = (bcr>>16)*(bcr&0xffff);
 
       switch(chcr) {
         case 0x00000401: // Disable DMA?
@@ -280,7 +280,7 @@ pseudo.CstrGraphics = (function() {
 
         case 0x01000401:
           do {
-            const count = directMemW(ram.uw, madr);
+            var count = directMemW(ram.uw, madr);
             dataMem.write(true, (madr+4)&0x1ffffc, count>>>24);
             madr = count&0xffffff;
           }
@@ -291,7 +291,7 @@ pseudo.CstrGraphics = (function() {
     },
 
     inread(data) {
-      const k = READIMG(data);
+      var k = READIMG(data);
 
       vrop.enabled = true;
       vrop.h.p     = vrop.h.start = k.n2;

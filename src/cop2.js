@@ -131,8 +131,8 @@
 #define SZ(n)  __oo(cop2d.uh, n+17, 0)
 
 pseudo.CstrCop2 = (function() {
-  const cop2c = union(32*4);
-  const cop2d = union(32*4);
+  var cop2c = union(32*4);
+  var cop2d = union(32*4);
 
   return {
     reset() {
@@ -222,7 +222,7 @@ pseudo.CstrCop2 = (function() {
           {
             LZCS = data;
             LZCR = 0;
-            let sbit = (LZCS&0x80000000) ? LZCS : (~(LZCS));
+            var sbit = (LZCS&0x80000000) ? LZCS : (~(LZCS));
 
             for ( ; sbit&0x80000000; sbit<<=1) {
               LZCR++;

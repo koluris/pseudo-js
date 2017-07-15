@@ -5,12 +5,12 @@
   0x800
 
 pseudo.CstrMain = (function() {
-  let unusable;
-  let file;
+  var unusable;
+  var file;
 
   // AJAX function
   function request(path, fn) {
-    const xhr = new XMLHttpRequest();
+    var xhr = new XMLHttpRequest();
     xhr.onload = function() {
       if (xhr.status === 404) {
         cpu.consoleWrite(MSG_ERROR, 'Unable to read file "'+path+'"');
@@ -27,11 +27,11 @@ pseudo.CstrMain = (function() {
 
   // Chunk reader function
   function chunkReader(file, start, size, fn) {
-    const end = start+size;
+    var end = start+size;
 
     // Check boundaries
     if (file.size > end) {
-      const reader  = new FileReader();
+      var reader  = new FileReader();
       reader.onload = function(e) { // Callback
         fn(e.dest.result);
       };
@@ -61,9 +61,9 @@ pseudo.CstrMain = (function() {
   }
 
   function prepareExe(resp) {
-    const header = new UintWcap(resp, 0, EXE_HEADER_SIZE);
-    const offset = header[2+4]&(ram.ub.bLen-1); // Offset needs boundaries... huh?
-    const size   = header[2+5];
+    var header = new UintWcap(resp, 0, EXE_HEADER_SIZE);
+    var offset = header[2+4]&(ram.ub.bLen-1); // Offset needs boundaries... huh?
+    var size   = header[2+5];
 
     // Set mem
     ram.ub.set(new UintBcap(resp, EXE_HEADER_SIZE, size), offset);
@@ -110,7 +110,7 @@ pseudo.CstrMain = (function() {
 
     fileDrop(e) {
       e.preventDefault();
-      const dt = e.dataTransfer;
+      var dt = e.dataTransfer;
 
       if (dt.files) {
         file = dt.files[0];
@@ -118,7 +118,7 @@ pseudo.CstrMain = (function() {
         // PS-X EXE
         chunkReader(file, 0x0000, 8, function(id) {
           if (id === 'PS-X EXE') {
-            const reader  = new FileReader();
+            var reader  = new FileReader();
             reader.onload = function(e) { // Callback
               if (reset()) {
                 prepareExe(e.dest.result);

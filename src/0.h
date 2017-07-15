@@ -58,7 +58,7 @@
 
 // A kind of helper for various data manipulation
 function union(size) {
-  const bfr = new ArrayBuffer(size);
+  var bfr = new ArrayBuffer(size);
 
   return {
     uw: new Uint32Array(bfr),
@@ -73,4 +73,4 @@ function union(size) {
 
 // Declare our namespace
 'use strict';
-const pseudo = window.pseudo || {};
+var pseudo = window.pseudo || {};

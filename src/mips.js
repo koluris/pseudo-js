@@ -28,29 +28,29 @@
 #define print()\
   if (pc === 0xb0) {\
     if (r[9] === 59 || r[9] === 61) {\
-      const char = Chars.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');\
+      var char = Chars.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');\
       output.append(char.toUpperCase());\
     }\
   }
 
 pseudo.CstrMips = (function() {
   // Base + Coprocessor
-  let r, copr;
-  let opcodeCount;
-  let cacheAddr, power32; // Cache for expensive calculation
+  var r, copr;
+  var opcodeCount;
+  var cacheAddr, power32; // Cache for expensive calculation
 
   // Emulation loop handlers
-  let bp, requestAF;
-  let output;
+  var bp, requestAF;
+  var output;
 
-  const mask = [
+  var mask = [
     [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
     [0x00000000, 0xff000000, 0xffff0000, 0xffffff00],
     [0xffffff00, 0xffff0000, 0xff000000, 0x00000000],
     [0x00000000, 0x000000ff, 0x0000ffff, 0x00ffffff],
   ];
 
-  const shift = [
+  var shift = [
     [0x18, 0x10, 0x08, 0x00],
     [0x00, 0x08, 0x10, 0x18],
     [0x18, 0x10, 0x08, 0x00],
@@ -59,7 +59,7 @@ pseudo.CstrMips = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    const code = pc>>>20 === 0xbfc ? directMemW(rom.uw, pc) : directMemW(ram.uw, pc);
+    var code = pc>>>20 === 0xbfc ? directMemW(rom.uw, pc) : directMemW(ram.uw, pc);
     opcodeCount++;
     pc  += 4;
     r[0] = 0; // As weird as this seems, it is needed
@@ -399,12 +399,12 @@ pseudo.CstrMips = (function() {
 
       // BIOS bootstrap
       cpu.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM');
-      const start = performance.now();
+      var start = performance.now();
 
       while (pc !== 0x80030000) {
         step(false);
       }
-      const delta = parseFloat(performance.now()-start).toFixed(2);
+      var delta = parseFloat(performance.now()-start).toFixed(2);
       cpu.consoleWrite(MSG_INFO, 'Bootstrap completed in '+delta+' ms');
     },
 

@@ -9,8 +9,8 @@
   0xffff
 
 pseudo.CstrCounters = (function() {
-  let timer;
-  let vbk;//, dec1;
+  var timer;
+  var vbk;//, dec1;
 
   // Exposed class functions/variables
   return {
@@ -19,7 +19,7 @@ pseudo.CstrCounters = (function() {
     },
 
     reset() {
-      for (let i=0; i<3; i++) {
+      for (var i=0; i<3; i++) {
         timer[i] = {
           mode  : 0,
           count : 0,
@@ -82,7 +82,7 @@ pseudo.CstrCounters = (function() {
     },
 
     scopeW(addr, data) {
-      const p = RTC_PORT(addr); // ((addr&0xf)>>>2)
+      var p = RTC_PORT(addr); // ((addr&0xf)>>>2)
 
       switch(addr&0xf) {
         case RTC_COUNT:
@@ -104,7 +104,7 @@ pseudo.CstrCounters = (function() {
     },
 
     scopeR(addr) {
-      const p = RTC_PORT(addr);
+      var p = RTC_PORT(addr);
 
       switch(addr&0xf) {
         case RTC_COUNT:

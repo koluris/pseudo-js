@@ -20,7 +20,7 @@
 #define SIO_CTRL_RESET         0x040
 
 pseudo.CstrSerial = (function() {
-  let baud, control, mode, status, bfr, bfrCount, padst, parp;
+  var baud, control, mode, status, bfr, bfrCount, padst, parp;
 
   return {
     awake() {

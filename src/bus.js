@@ -4,7 +4,7 @@
 #define IRQ_QUEUED_NO  0
 
 pseudo.CstrBus = (function() {
-  const interrupts = [{
+  var interrupts = [{
     code: IRQ_VSYNC,
     dest: 1
   }, {
@@ -42,13 +42,13 @@ pseudo.CstrBus = (function() {
   // Exposed class functions/variables
   return {
     reset() {
-      for (const item of interrupts) {
+      for (var item of interrupts) {
         item.queued = IRQ_QUEUED_NO;
       }
     },
 
     interruptsUpdate() { // A method to schedule when IRQs should fire
-      for (const item of interrupts) {
+      for (var item of interrupts) {
         if (item.queued) {
           if (item.queued++ === item.dest) {
             data16 |= (1<<item.code);
@@ -64,7 +64,7 @@ pseudo.CstrBus = (function() {
     },
 
     checkDMA(addr, data) {
-      const chan = ((addr>>>4)&0xf) - 8;
+      var chan = ((addr>>>4)&0xf) - 8;
 
       if (pcr&(8<<(chan*4))) { // GPU does not execute sometimes
         chcr = data;

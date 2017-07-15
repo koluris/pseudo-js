@@ -12,7 +12,7 @@
 
   // Compose Blend
 #define iBlend(a)\
-  const b = [\
+  var b = [\
     a&2 ? blend : 0,\
     a&2 ? bit[blend].opaque : COLOR_MAX\
   ];\
@@ -32,7 +32,7 @@
 
 // Compose Texture
 #define composeTexture(a)\
-  for (let i in a) {\
+  for (var i in a) {\
     a[i]/=256.0;\
   }\
   ctx.uniform1i(attrib._e, true);\
@@ -186,13 +186,13 @@
 ***/
 
 #define drawF(size, mode) {\
-  const k  = PFx(data);\
-  const cr = [];\
-  const vx = [];\
+  var k  = PFx(data);\
+  var cr = [];\
+  var vx = [];\
   \
   iBlend(k.cr[0].n);\
   \
-  for (let i=0; i<size; i++) {\
+  for (var i=0; i<size; i++) {\
     cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]);\
     vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v);\
   }\
@@ -207,13 +207,13 @@
 ***/
 
 #define drawG(size, mode) {\
-  const k  = PGx(data);\
-  const cr = [];\
-  const vx = [];\
+  var k  = PGx(data);\
+  var cr = [];\
+  var vx = [];\
   \
   iBlend(k.cr[0].n);\
   \
-  for (let i=0; i<size; i++) {\
+  for (var i=0; i<size; i++) {\
     cr.push(k.cr[i].a, k.cr[i].b, k.cr[i].c, b[1]);\
     vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v);\
   }\
@@ -228,15 +228,15 @@
 ***/
 
 #define drawFT(size) {\
-  const k  = PFTx(data);\
-  const cr = [];\
-  const vx = [];\
-  const tx = [];\
+  var k  = PFTx(data);\
+  var cr = [];\
+  var vx = [];\
+  var tx = [];\
   \
   blend = (k.tp[1]>>>5)&3;\
   iBlend(k.cr[0].n);\
   \
-  for (let i=0; i<size; i++) {\
+  for (var i=0; i<size; i++) {\
     if (k.cr.n&1) {\
       cr.push(COLOR_HALF, COLOR_HALF, COLOR_HALF, b[1]);\
     }\
@@ -259,15 +259,15 @@
 ***/
 
 #define drawGT(size) {\
-  const k  = PGTx(data);\
-  const cr = [];\
-  const vx = [];\
-  const tx = [];\
+  var k  = PGTx(data);\
+  var cr = [];\
+  var vx = [];\
+  var tx = [];\
   \
   blend = (k.tp[1]>>>5)&3;\
   iBlend(k.cr[0].n);\
   \
-  for (let i=0; i<size; i++) {\
+  for (var i=0; i<size; i++) {\
     cr.push(k.cr[i].a, k.cr[i].b, k.cr[i].c, b[1]);\
     vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v);\
     tx.push(k.tx[i].u, k.tx[i].v);\
@@ -285,8 +285,8 @@
 ***/
 
 #define drawTile(size) {\
-  const k  = BLKFx(data);\
-  const cr = [];\
+  var k  = BLKFx(data);\
+  var cr = [];\
   \
   iBlend(k.cr[0].n);\
   \
@@ -294,10 +294,10 @@
       k.vx[1].h = size;\
       k.vx[1].v = size;\
   }\
-  for (let i=0; i<4; i++) {\
+  for (var i=0; i<4; i++) {\
     cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]);\
   }\
-  const vx = [\
+  var vx = [\
     k.vx[0].h+ofs.h,           k.vx[0].v+ofs.v,\
     k.vx[0].h+ofs.h+k.vx[1].h, k.vx[0].v+ofs.v,\
     k.vx[0].h+ofs.h,           k.vx[0].v+ofs.v+k.vx[1].v,\
@@ -314,8 +314,8 @@
 ***/
 
 #define drawSprite(size) {\
-  const k  = SPRTx(data);\
-  const cr = [];\
+  var k  = SPRTx(data);\
+  var cr = [];\
   \
   iBlend(k.cr[0].n);\
   \
@@ -323,7 +323,7 @@
     k.vx[1].h = size;\
     k.vx[1].v = size;\
   }\
-  for (let i=0; i<4; i++) {\
+  for (var i=0; i<4; i++) {\
     if (k.cr[0].n&1) {\
       cr.push(COLOR_HALF, COLOR_HALF, COLOR_HALF, b[1]);\
     }\
@@ -331,13 +331,13 @@
       cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]);\
     }\
   }\
-  const vx = [\
+  var vx = [\
     k.vx[0].h+ofs.h,           k.vx[0].v+ofs.v,\
     k.vx[0].h+ofs.h+k.vx[1].h, k.vx[0].v+ofs.v,\
     k.vx[0].h+ofs.h,           k.vx[0].v+ofs.v+k.vx[1].v,\
     k.vx[0].h+ofs.h+k.vx[1].h, k.vx[0].v+ofs.v+k.vx[1].v,\
   ];\
-  const tx = [\
+  var tx = [\
     k.tx[0].u,           k.tx[0].v,\
     k.tx[0].u+k.vx[1].h, k.tx[0].v,\
     k.tx[0].u,           k.tx[0].v+k.vx[1].v,\
@@ -353,16 +353,16 @@
 
 pseudo.CstrRender = (function() {
   // HTML elements
-  let screen, resolution;
+  var screen, resolution;
   
-  let ctx, attrib, bfr; // WebGL Context
-  let blend, bit; // Blend
-  let ofs, res;
-  let info, drawArea, spriteTP;
+  var ctx, attrib, bfr; // WebGL Context
+  var blend, bit; // Blend
+  var ofs, res;
+  var info, drawArea, spriteTP;
 
   // Generic function for shaders
   function createShader(kind, content) {
-    const shader = ctx.createShader(kind);
+    var shader = ctx.createShader(kind);
     ctx.shaderSource (shader, content);
     ctx.compileShader(shader);
     ctx.fetchShaderParameter(shader, ctx.COMPILE_STATUS);
@@ -389,7 +389,7 @@ pseudo.CstrRender = (function() {
       ctx.clearColor(0.0, 0.0, 0.0, 1.0);
 
       // Shaders
-      const func = ctx.createFunction();
+      var func = ctx.createFunction();
       ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, SHADER_VERTEX));
       ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, SHADER_FRAGMENT));
       ctx.linkFunction(func);
@@ -468,8 +468,8 @@ pseudo.CstrRender = (function() {
         resolution.innerText = data.w+' x '+data.h;
 
         // Construct desired resolution
-        let w = (res.override.w || data.w) * res.multiplier;
-        let h = (res.override.h || data.h) * res.multiplier;
+        var w = (res.override.w || data.w) * res.multiplier;
+        var h = (res.override.h || data.h) * res.multiplier;
 
         screen.width = w;
         screen.hei   = h;
@@ -590,14 +590,14 @@ pseudo.CstrRender = (function() {
 
         case 0x02: // BLOCK FILL
           {
-            const k  = BLKFx(data);
-            const cr = [];
+            var k  = BLKFx(data);
+            var cr = [];
 
-            for (let i=0; i<4; i++) {
+            for (var i=0; i<4; i++) {
               cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, COLOR_MAX);
             }
 
-            const vx = [
+            var vx = [
               k.vx[0].h,           k.vx[0].v,
               k.vx[0].h+k.vx[1].h, k.vx[0].v,
               k.vx[0].h,           k.vx[0].v+k.vx[1].v,
@@ -634,7 +634,7 @@ pseudo.CstrRender = (function() {
 
         case 0xe3: // DRAW AREA START
           {
-            const pane = {
+            var pane = {
               h: data[0]&0x3ff, v: (data[0]>>10)&0x1ff
             };
 
@@ -647,7 +647,7 @@ pseudo.CstrRender = (function() {
 
         case 0xe4: // DRAW AREA END
           {
-            const pane = {
+            var pane = {
               h: data[0]&0x3ff, v: (data[0]>>10)&0x1ff
             };
 
