@@ -33,11 +33,8 @@
 #define GPU_DITHER           0x00000200
 
 pseudo.CstrGraphics = (function() {
-  let data;
-  let modeDMA;
-  let pipe;
-  let status;
-  let vrop;
+  let status, data, modeDMA;
+  let vrop, pipe;
 
   const sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
