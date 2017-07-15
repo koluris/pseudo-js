@@ -1,5 +1,5 @@
-#define ram mem._ram
-#define rom mem._rom
+#define ram  mem.__ram
+#define rom  mem.__rom
 
 #define EXE_HEADER_SIZE\
   0x800

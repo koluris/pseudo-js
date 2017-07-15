@@ -1,4 +1,4 @@
-#define hwr mem._hwr
+#define hwr  mem.__hwr
 
 #define IRQ_QUEUED_YES 1
 #define IRQ_QUEUED_NO  0

@@ -1,5 +1,5 @@
-#define ram mem._ram
-#define rom mem._rom
+#define ram  mem.__ram
+#define rom  mem.__rom
 
 #define pc r[32]
 #define lo r[33]

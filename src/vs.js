@@ -1,7 +1,6 @@
-#define ram mem._ram
-#define hwr mem._hwr
-
-#define vram vs.__vram
+#define ram  mem.__ram
+#define hwr  mem.__hwr
+#define vram  vs.__vram
 
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
@@ -307,5 +306,4 @@ pseudo.CstrGraphics = (function() {
 
 #undef ram
 #undef hwr
-
 #undef vram

@@ -1,4 +1,4 @@
-#define hwr mem._hwr
+#define hwr  mem.__hwr
 
 pseudo.CstrHardware = (function() {
   // Exposed class functions/variables

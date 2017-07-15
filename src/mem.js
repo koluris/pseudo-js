@@ -1,6 +1,6 @@
-#define ram mem._ram
-#define rom mem._rom
-#define hwr mem._hwr
+#define ram mem.__ram
+#define rom mem.__rom
+#define hwr mem.__hwr
 
 #define MSB(x)\
   x>>>20
@@ -8,9 +8,9 @@
 pseudo.CstrMem = (function() {
   // Exposed class functions/variables
   return {
-    _ram: union(0x200000),
-    _rom: union(0x80000),
-    _hwr: union(0x4000),
+    __ram: union(0x200000),
+    __rom: union(0x80000),
+    __hwr: union(0x4000),
 
     reset() {
       // Reset all, except for BIOS?
