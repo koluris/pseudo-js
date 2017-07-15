@@ -181,7 +181,11 @@
   iColor(cr);\
   iVertex(vx);\
   iTextureNone();\
+  \
+  ctx.enable(ctx.SCISSOR_TEST);\
+  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
   ctx.drawVertices(mode, 0, size);\
+  ctx.disable(ctx.SCISSOR_TEST);\
 }
 
 /***
@@ -202,7 +206,11 @@
   iColor(cr);\
   iVertex(vx);\
   iTextureNone();\
+  \
+  ctx.enable(ctx.SCISSOR_TEST);\
+  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
   ctx.drawVertices(mode, 0, size);\
+  ctx.disable(ctx.SCISSOR_TEST);\
 }
 
 /***
@@ -233,7 +241,11 @@
   iColor(cr);\
   iVertex(vx);\
   iTexture(tx);\
+  \
+  ctx.enable(ctx.SCISSOR_TEST);\
+  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size);\
+  ctx.disable(ctx.SCISSOR_TEST);\
 }
 
 /***
@@ -259,7 +271,11 @@
   iColor(cr);\
   iVertex(vx);\
   iTexture(tx);\
+  \
+  ctx.enable(ctx.SCISSOR_TEST);\
+  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size);\
+  ctx.disable(ctx.SCISSOR_TEST);\
 }
 
 /***
@@ -288,7 +304,11 @@
   iColor(cr);\
   iVertex(vx);\
   iTextureNone();\
+  \
+  ctx.enable(ctx.SCISSOR_TEST);\
+  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);\
+  ctx.disable(ctx.SCISSOR_TEST);\
 }
 
 /***
@@ -330,7 +350,11 @@
   iColor(cr);\
   iVertex(vx);\
   iTexture(tx);\
+  \
+  ctx.enable(ctx.SCISSOR_TEST);\
+  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
   ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);\
+  ctx.disable(ctx.SCISSOR_TEST);\
 }
 
 pseudo.CstrRender = (function() {
@@ -341,6 +365,7 @@ pseudo.CstrRender = (function() {
   let blend, bit; // Blend
   let ofs, res;
   let spriteTP;
+  let drawArea;
 
   // Generic function for shaders
   function createShader(kind, content) {
@@ -350,6 +375,10 @@ pseudo.CstrRender = (function() {
     ctx.fetchShaderParameter(shader, ctx.COMPILE_STATUS);
 
     return shader;
+  }
+
+  function drawAreaCalc(n) {
+    return Math.round((n * (res.override.w * res.multiplier)) / 100);
   }
 
   // Exposed class functions/variables
@@ -412,7 +441,13 @@ pseudo.CstrRender = (function() {
 
     reset() {
       spriteTP = 0;
-      blend = 0;
+         blend = 0;
+
+      // Draw Area Start/End
+      drawArea = {
+        start: { h: 0, v: 0 },
+          end: { h: 0, v: 0 },
+      };
 
       // Offset
       ofs = {
@@ -599,9 +634,25 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe3: // DRAW AREA START
+          {
+            const pane = {
+              h: data[0]&0x3ff, v: (data[0]>>10)&0x1ff
+            };
+
+            drawArea.start.h = drawAreaCalc(pane.h);
+            drawArea.start.v = drawAreaCalc(pane.v);
+          }
           return;
 
         case 0xe4: // DRAW AREA END
+          {
+            const pane = {
+              h: data[0]&0x3ff, v: (data[0]>>10)&0x1ff
+            };
+
+            drawArea.end.h = drawAreaCalc(pane.h);
+            drawArea.end.v = drawAreaCalc(pane.v);
+          }
           return;
 
         case 0xe5: // DRAW OFFSET
