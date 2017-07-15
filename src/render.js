@@ -1,3 +1,9 @@
+#define GPU_INFO_TEXTUREWINDOW 2
+#define GPU_INFO_DRAWAREASTART 3
+#define GPU_INFO_DRAWAREAEND   4
+#define GPU_INFO_OFFSET        5
+#define GPU_INFO_VERSION       7
+
 #define COLOR_MAX\
   255
 
@@ -352,8 +358,7 @@ pseudo.CstrRender = (function() {
   let ctx, attrib, bfr; // WebGL Context
   let blend, bit; // Blend
   let ofs, res;
-  let spriteTP;
-  let drawArea;
+  let info, drawArea, spriteTP;
 
   // Generic function for shaders
   function createShader(kind, content) {
@@ -425,9 +430,14 @@ pseudo.CstrRender = (function() {
         override   : { w: 320, h: 240 },
         multiplier : 1
       };
+
+      // Information
+      info = new UintWcap(8);
     },
 
     reset() {
+      info.fill(0);
+      info[7]  = 2;
       spriteTP = 0;
          blend = 0;
 
@@ -619,6 +629,7 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe2: // TEXTURE WINDOW
+          info[GPU_INFO_TEXTUREWINDOW] = data[0]&0xfffff;
           return;
 
         case 0xe3: // DRAW AREA START
@@ -629,6 +640,8 @@ pseudo.CstrRender = (function() {
 
             drawArea.start.h = drawAreaCalc(pane.h);
             drawArea.start.v = drawAreaCalc(pane.v);
+
+            info[GPU_INFO_DRAWAREASTART] = data[0]&0x3fffff;
           }
           return;
 
@@ -640,12 +653,16 @@ pseudo.CstrRender = (function() {
 
             drawArea.end.h = drawAreaCalc(pane.h);
             drawArea.end.v = drawAreaCalc(pane.v);
+
+            info[GPU_INFO_DRAWAREAEND] = data[0]&0x3fffff;
           }
           return;
 
         case 0xe5: // DRAW OFFSET
           ofs.h = (SIGN_EXT_32(data[0])<<21)>>21;
           ofs.v = (SIGN_EXT_32(data[0])<<10)>>21;
+
+          info[GPU_INFO_OFFSET] = data[0]&0x7fffff;
           return;
 
         case 0xe6: // STP
@@ -653,6 +670,10 @@ pseudo.CstrRender = (function() {
           return;
       }
       cpu.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
+    },
+
+    infoRead(n) {
+      return info[n];
     }
   };
 })();

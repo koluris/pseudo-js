@@ -2,16 +2,6 @@
 #define hwr  mem.__hwr
 #define vram  vs.__vram
 
-#define GPU_COMMAND(x)\
-  (x>>>24)&0xff
-
-#define READIMG(data) {\
-  n2: (data[1]>>> 0)&0xffff,\
-  n3: (data[1]>>>16)&0xffff,\
-  n4: (data[2]>>> 0)&0xffff,\
-  n5: (data[2]>>>16)&0xffff,\
-}
-
 #define GPU_DATA   0
 #define GPU_STATUS 4
 
@@ -30,6 +20,16 @@
 #define GPU_MASKDRAWN        0x00000800
 #define GPU_DRAWINGALLOWED   0x00000400
 #define GPU_DITHER           0x00000200
+
+#define GPU_COMMAND(x)\
+  (x>>>24)&0xff
+
+#define READIMG(data) {\
+  n2: (data[1]>>> 0)&0xffff,\
+  n3: (data[1]>>>16)&0xffff,\
+  n4: (data[2]>>> 0)&0xffff,\
+  n5: (data[2]>>>16)&0xffff,\
+}
 
 pseudo.CstrGraphics = (function() {
   let status, data, modeDMA;
@@ -58,9 +58,14 @@ pseudo.CstrGraphics = (function() {
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
+  function infoSet(n) {
+    data = render.infoRead[n&0xff];
+  }
+
   function fetchFromVRAM(stream, addr, size) {
     let count = 0;
 
+    // False alarm!
     if (!vrop.enabled) {
       modeDMA = GPU_DMA_NONE;
       return 0;
@@ -82,7 +87,7 @@ pseudo.CstrGraphics = (function() {
           }
         }
 
-        addr+=2;
+        addr += 2;
         vrop.h.p++;
 
         if (++count === size) {
@@ -185,9 +190,9 @@ pseudo.CstrGraphics = (function() {
 
     reset() {
       vram.uh.fill(0);
+      status  = 0x14802000;
       data    = 0x400;
       modeDMA = GPU_DMA_NONE;
-      status  = 0x14802000;
 
       // VRAM Operations
       vrop.enabled = false;
@@ -233,13 +238,16 @@ pseudo.CstrGraphics = (function() {
               });
               return;
 
+            case 0x10:
+              infoSet(data);
+              return;
+
             /* unused */
             case 0x02:
             case 0x03:
             case 0x05:
             case 0x06:
             case 0x07:
-            case 0x10:
               return;
           }
           psx.error('GPU Write Status '+hex(GPU_COMMAND(data)));

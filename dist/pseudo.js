@@ -1507,6 +1507,12 @@ pseudo.CstrMain = (function() {
 
 
 
+
+
+
+
+
+
   // Compose Blend
 
 
@@ -1625,8 +1631,7 @@ pseudo.CstrRender = (function() {
   let ctx, attrib, bfr; // 'webgl', { preserveDrawingBuffer: true } Context
   let blend, bit; // Blend
   let ofs, res;
-  let spriteTP;
-  let drawArea;
+  let info, drawArea, spriteTP;
 
   // Generic function for shaders
   function createShader(kind, content) {
@@ -1698,9 +1703,14 @@ pseudo.CstrRender = (function() {
         override   : { w: 320, h: 240 },
         multiplier : 1
       };
+
+      // Information
+      info = new Uint32Array(8);
     },
 
     reset() {
+      info.fill(0);
+      info[7]  = 2;
       spriteTP = 0;
          blend = 0;
 
@@ -1892,6 +1902,7 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe2: // TEXTURE WINDOW
+          info[2] = data[0]&0xfffff;
           return;
 
         case 0xe3: // DRAW AREA START
@@ -1902,6 +1913,8 @@ pseudo.CstrRender = (function() {
 
             drawArea.start.h = drawAreaCalc(pane.h);
             drawArea.start.v = drawAreaCalc(pane.v);
+
+            info[3] = data[0]&0x3fffff;
           }
           return;
 
@@ -1913,12 +1926,16 @@ pseudo.CstrRender = (function() {
 
             drawArea.end.h = drawAreaCalc(pane.h);
             drawArea.end.v = drawAreaCalc(pane.v);
+
+            info[4] = data[0]&0x3fffff;
           }
           return;
 
         case 0xe5: // DRAW OFFSET
           ofs.h = (((data[0])<<0>>0)<<21)>>21;
           ofs.v = (((data[0])<<0>>0)<<10)>>21;
+
+          info[5] = data[0]&0x7fffff;
           return;
 
         case 0xe6: // STP
@@ -1926,6 +1943,10 @@ pseudo.CstrRender = (function() {
           return;
       }
       pseudo.CstrMips.consoleWrite('error', 'GPU Render Primitive '+('0x'+(addr>>>0).toString(16)));
+    },
+
+    infoRead(n) {
+      return info[n];
     }
   };
 })();
@@ -2224,9 +2245,14 @@ pseudo.CstrGraphics = (function() {
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
+  function infoSet(n) {
+    data = pseudo.CstrRender.infoRead[n&0xff];
+  }
+
   function fetchFromVRAM(stream, addr, size) {
     let count = 0;
 
+    // False alarm!
     if (!vrop.enabled) {
       modeDMA = 0;
       return 0;
@@ -2248,7 +2274,7 @@ pseudo.CstrGraphics = (function() {
           }
         }
 
-        addr+=2;
+        addr += 2;
         vrop.h.p++;
 
         if (++count === size) {
@@ -2351,9 +2377,9 @@ pseudo.CstrGraphics = (function() {
 
     reset() {
       pseudo.CstrGraphics.__vram.uh.fill(0);
+      status  = 0x14802000;
       data    = 0x400;
       modeDMA = 0;
-      status  = 0x14802000;
 
       // VRAM Operations
       vrop.enabled = false;
@@ -2399,13 +2425,16 @@ pseudo.CstrGraphics = (function() {
               });
               return;
 
+            case 0x10:
+              infoSet(data);
+              return;
+
             
             case 0x02:
             case 0x03:
             case 0x05:
             case 0x06:
             case 0x07:
-            case 0x10:
               return;
           }
           pseudo.CstrMain.error('GPU Write Status '+('0x'+((data>>>24)&0xff>>>0).toString(16)));
