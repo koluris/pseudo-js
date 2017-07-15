@@ -1507,6 +1507,7 @@ pseudo.CstrMain = (function() {
 
 
 
+  // Compose Blend
 
 
 
@@ -1514,16 +1515,27 @@ pseudo.CstrMain = (function() {
 
 
 
+// Compose Color
 
 
 
 
 
+// Compose Vertex
 
 
 
 
 
+// Compose Texture
+
+
+// Disable Texture
+
+
+
+
+// Draw!
 
 
 
@@ -2227,14 +2239,14 @@ pseudo.CstrGraphics = (function() {
 
     while (vrop.v.p < vrop.v.end) {
       while (vrop.h.p < vrop.h.end) {
-        // Keep position of pseudo.CstrGraphics.__vram.
+        // Keep position of pseudo.CstrGraphics.__vram
         const pos = (vrop.v.p<<10)+vrop.h.p;
 
-        // Check if it`s a 16-bit (stream), or a 32-bit (command) address.
+        // Check if it`s a 16-bit (stream), or a 32-bit (command) address
         if (stream) {
           pseudo.CstrGraphics.__vram.uh[pos] = pseudo.CstrMem._ram.uh[(( addr)&(pseudo.CstrMem._ram.uh.byteLength-1))>>>1];
         }
-        else {
+        else { // A dumb hack for now
           if (!(count%2)) {
             pseudo.CstrGraphics.__vram.uw[pos>>>1] = addr;
           }
@@ -2260,7 +2272,7 @@ pseudo.CstrGraphics = (function() {
 
   function fetchEnd(count) {
     if (vrop.v.p >= vrop.v.end) {
-      modeDMA  = 0;
+      modeDMA = 0;
       vrop.enabled = false;
 
       // if (count%2 === 1) {

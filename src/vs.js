@@ -73,14 +73,14 @@ pseudo.CstrGraphics = (function() {
 
     while (vrop.v.p < vrop.v.end) {
       while (vrop.h.p < vrop.h.end) {
-        // Keep position of vram.
+        // Keep position of vram
         const pos = (vrop.v.p<<10)+vrop.h.p;
 
-        // Check if it`s a 16-bit (stream), or a 32-bit (command) address.
+        // Check if it`s a 16-bit (stream), or a 32-bit (command) address
         if (stream) {
           vram.uh[pos] = directMemH(ram.uh, addr);
         }
-        else {
+        else { // A dumb hack for now
           if (!(count%2)) {
             vram.uw[pos>>>1] = addr;
           }
@@ -106,7 +106,7 @@ pseudo.CstrGraphics = (function() {
 
   function fetchEnd(count) {
     if (vrop.v.p >= vrop.v.end) {
-      modeDMA  = GPU_DMA_NONE;
+      modeDMA = GPU_DMA_NONE;
       vrop.enabled = false;
 
       // if (count%2 === 1) {

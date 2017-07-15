@@ -4,6 +4,7 @@
 #define COLOR_HALF\
   COLOR_MAX>>>1
 
+  // Compose Blend
 #define iBlend(a)\
   const b = [\
     a&2 ? blend : 0,\
@@ -11,17 +12,20 @@
   ];\
   ctx.blendFunc(bit[b[0]].src, bit[b[0]].dest)
 
-#define iColor(a)\
+// Compose Color
+#define composeColor(a)\
   ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);\
   ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);\
   ctx.bufferData(ctx.ARRAY_BUFFER, new UintBcap(a), ctx.DYNAMIC_DRAW)
 
-#define iVertex(a)\
+// Compose Vertex
+#define composeVertex(a)\
   ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);\
   ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);\
   ctx.bufferData(ctx.ARRAY_BUFFER, new SintHcap(a), ctx.DYNAMIC_DRAW)
 
-#define iTexture(a)\
+// Compose Texture
+#define composeTexture(a)\
   for (let i in a) {\
     a[i]/=256.0;\
   }\
@@ -31,9 +35,17 @@
   ctx.vertexAttribPointer(attrib._t, 2, ctx.FLOAT, false, 0, 0);\
   ctx.bufferData(ctx.ARRAY_BUFFER, new F32cap(a), ctx.DYNAMIC_DRAW)
 
-#define iTextureNone()\
+// Disable Texture
+#define disableTexture()\
   ctx.uniform1i(attrib._e, false);\
   ctx.disableVertexAttrib(attrib._t)
+
+// Draw!
+#define drawEnd(mode, size)\
+  ctx.enable(ctx.SCISSOR_TEST);\
+  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
+  ctx.drawVertices(mode, 0, size);\
+  ctx.disable(ctx.SCISSOR_TEST)
 
 /***
     Base components
@@ -178,14 +190,10 @@
     cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]);\
     vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v);\
   }\
-  iColor(cr);\
-  iVertex(vx);\
-  iTextureNone();\
-  \
-  ctx.enable(ctx.SCISSOR_TEST);\
-  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
-  ctx.drawVertices(mode, 0, size);\
-  ctx.disable(ctx.SCISSOR_TEST);\
+  composeColor(cr);\
+  composeVertex(vx);\
+  disableTexture();\
+  drawEnd(mode, size);\
 }
 
 /***
@@ -203,14 +211,10 @@
     cr.push(k.cr[i].a, k.cr[i].b, k.cr[i].c, b[1]);\
     vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v);\
   }\
-  iColor(cr);\
-  iVertex(vx);\
-  iTextureNone();\
-  \
-  ctx.enable(ctx.SCISSOR_TEST);\
-  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
-  ctx.drawVertices(mode, 0, size);\
-  ctx.disable(ctx.SCISSOR_TEST);\
+  composeColor(cr);\
+  composeVertex(vx);\
+  disableTexture();\
+  drawEnd(mode, size);\
 }
 
 /***
@@ -238,14 +242,10 @@
   }\
   tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
   \
-  iColor(cr);\
-  iVertex(vx);\
-  iTexture(tx);\
-  \
-  ctx.enable(ctx.SCISSOR_TEST);\
-  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
-  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size);\
-  ctx.disable(ctx.SCISSOR_TEST);\
+  composeColor(cr);\
+  composeVertex(vx);\
+  composeTexture(tx);\
+  drawEnd(ctx.TRIANGLE_STRIP, size);\
 }
 
 /***
@@ -268,14 +268,10 @@
   }\
   tcache.fetchTexture(ctx, k.tp[1], k.tp[0]);\
   \
-  iColor(cr);\
-  iVertex(vx);\
-  iTexture(tx);\
-  \
-  ctx.enable(ctx.SCISSOR_TEST);\
-  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
-  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, size);\
-  ctx.disable(ctx.SCISSOR_TEST);\
+  composeColor(cr);\
+  composeVertex(vx);\
+  composeTexture(tx);\
+  drawEnd(ctx.TRIANGLE_STRIP, size);\
 }
 
 /***
@@ -301,14 +297,10 @@
     k.vx[0].h+ofs.h,           k.vx[0].v+ofs.v+k.vx[1].v,\
     k.vx[0].h+ofs.h+k.vx[1].h, k.vx[0].v+ofs.v+k.vx[1].v,\
   ];\
-  iColor(cr);\
-  iVertex(vx);\
-  iTextureNone();\
-  \
-  ctx.enable(ctx.SCISSOR_TEST);\
-  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
-  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);\
-  ctx.disable(ctx.SCISSOR_TEST);\
+  composeColor(cr);\
+  composeVertex(vx);\
+  disableTexture();\
+  drawEnd(ctx.TRIANGLE_STRIP, 4);\
 }
 
 /***
@@ -347,14 +339,10 @@
   ];\
   tcache.fetchTexture(ctx, spriteTP, k.tp[0]);\
   \
-  iColor(cr);\
-  iVertex(vx);\
-  iTexture(tx);\
-  \
-  ctx.enable(ctx.SCISSOR_TEST);\
-  ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);\
-  ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);\
-  ctx.disable(ctx.SCISSOR_TEST);\
+  composeColor(cr);\
+  composeVertex(vx);\
+  composeTexture(tx);\
+  drawEnd(ctx.TRIANGLE_STRIP, 4);\
 }
 
 pseudo.CstrRender = (function() {
@@ -606,9 +594,9 @@ pseudo.CstrRender = (function() {
               k.vx[0].h+k.vx[1].h, k.vx[0].v+k.vx[1].v,
             ];
 
-            iColor(cr);
-            iVertex(vx);
-            iTextureNone();
+            composeColor(cr);
+            composeVertex(vx);
+            disableTexture();
             ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
           }
           return;
