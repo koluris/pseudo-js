@@ -408,7 +408,7 @@ pseudo.CstrMips = (function() {
     run() {
       bp = false;
 
-      while (!bp) { // No sleep till BROOKLYN
+      while (!bp) { // And u don`t stop!
         step(false);
       }
       requestAF = requestAnimationFrame(cpu.run);

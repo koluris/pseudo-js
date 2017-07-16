@@ -1299,7 +1299,7 @@ pseudo.CstrMips = (function() {
     run() {
       bp = false;
 
-      while (!bp) { // No sleep till BROOKLYN
+      while (!bp) { // And u don`t stop!
         step(false);
       }
       requestAF = requestAnimationFrame(pseudo.CstrMips.run);
@@ -2432,7 +2432,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x10:
-              //infoSet(data);
+              infoSet(data);
               return;
 
             

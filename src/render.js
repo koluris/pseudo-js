@@ -155,7 +155,7 @@
   ]\
 }
 
-#define BLKFx(data) {\
+#define TILEx(data) {\
   cr: [\
     RGBC(data[0])\
   ],\
@@ -285,7 +285,7 @@
 ***/
 
 #define drawTile(size) {\
-  var k  = BLKFx(data);\
+  var k  = TILEx(data);\
   var cr = [];\
   \
   composeBlend(k.cr[0].n);\
@@ -600,7 +600,7 @@ pseudo.CstrRender = (function() {
 
         case 0x02: // BLOCK FILL
           {
-            var k  = BLKFx(data);
+            var k  = TILEx(data);
             var cr = [];
 
             for (var i=0; i<4; i++) {
