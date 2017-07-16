@@ -180,6 +180,10 @@
       ALIGN-items: center;
       flex: 1;
       border: 5px dashed RGBA(255, 255, 255, .1);
+      transition: border .2s ease-in-out;
+    }
+    .dropzone-active {
+      border: 5px dashed #93a0a8 !important;
     }
     #dropzone > IMG {
       width: 52px;
@@ -192,6 +196,9 @@
     #dropzone > div:nth-child(3) {
       color: #93a0a8;
       font: normal 13px 'Oswald-300', sans-serif;
+    }
+    #dropzone > IMG, #dropzone > div {
+      pointer-events: none !important;
     }
 
     /* Homebrew */
@@ -263,7 +270,7 @@
           <!-- DropZone -->
           <div id="box-dropzone">
             <div class="box-header">DROP-ZONE</div>
-            <div id="dropzone" ondrop="pseudo.CstrMain.fileDrop(event)" ONDRAGOVER="pseudo.CstrMain.dropPrevent(event)">
+            <div id="dropzone" ondrop="pseudo.CstrMain.drop.file(this, event)" ONDRAGENTER="pseudo.CstrMain.drop.enter(this)" ONDRAGLEAVE="pseudo.CstrMain.drop.exit(this)" ONDRAGOVER="pseudo.CstrMain.drop.over(event)">
               <IMG src="res/drop.png"/>
               <div>DRAG & DROP PSX FILES HERE</div>
               <div>Extension .iso, .bin, .psx, .exe</div>

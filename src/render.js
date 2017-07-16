@@ -11,7 +11,7 @@
   COLOR_MAX>>>1
 
   // Compose Blend
-#define iBlend(a)\
+#define composeBlend(a)\
   var b = [\
     a&2 ? blend : 0,\
     a&2 ? bit[blend].opaque : COLOR_MAX\
@@ -190,7 +190,7 @@
   var cr = [];\
   var vx = [];\
   \
-  iBlend(k.cr[0].n);\
+  composeBlend(k.cr[0].n);\
   \
   for (var i=0; i<size; i++) {\
     cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]);\
@@ -211,7 +211,7 @@
   var cr = [];\
   var vx = [];\
   \
-  iBlend(k.cr[0].n);\
+  composeBlend(k.cr[0].n);\
   \
   for (var i=0; i<size; i++) {\
     cr.push(k.cr[i].a, k.cr[i].b, k.cr[i].c, b[1]);\
@@ -234,7 +234,7 @@
   var tx = [];\
   \
   blend = (k.tp[1]>>>5)&3;\
-  iBlend(k.cr[0].n);\
+  composeBlend(k.cr[0].n);\
   \
   for (var i=0; i<size; i++) {\
     if (k.cr.n&1) {\
@@ -265,7 +265,7 @@
   var tx = [];\
   \
   blend = (k.tp[1]>>>5)&3;\
-  iBlend(k.cr[0].n);\
+  composeBlend(k.cr[0].n);\
   \
   for (var i=0; i<size; i++) {\
     cr.push(k.cr[i].a, k.cr[i].b, k.cr[i].c, b[1]);\
@@ -288,7 +288,7 @@
   var k  = BLKFx(data);\
   var cr = [];\
   \
-  iBlend(k.cr[0].n);\
+  composeBlend(k.cr[0].n);\
   \
   if (size) {\
       k.vx[1].h = size;\
@@ -317,7 +317,7 @@
   var k  = SPRTx(data);\
   var cr = [];\
   \
-  iBlend(k.cr[0].n);\
+  composeBlend(k.cr[0].n);\
   \
   if (size) {\
     k.vx[1].h = size;\

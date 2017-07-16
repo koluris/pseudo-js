@@ -366,7 +366,7 @@ pseudo.CstrCop2 = (function() {
           {
             cop2d.uw[(30)] = data;
             cop2d.uw[(31)] = 0;
-            var sbit = (cop2d.uw[(30)]&0x80000000) ? cop2d.uw[(30)] : (~(cop2d.uw[(30)]));
+            var sbit = (cop2d.uw[(30)]&0x80000000) ? cop2d.uw[(30)] : ~cop2d.uw[(30)];
 
             for ( ; sbit&0x80000000; sbit<<=1) {
               cop2d.uw[(31)]++;
@@ -1456,41 +1456,54 @@ pseudo.CstrMain = (function() {
       }
     },
 
-    fileDrop(e) {
-      e.preventDefault();
-      var dt = e.dataTransfer;
+    drop: {
+      file(element, e) {
+        e.preventDefault();
+        var dt = e.dataTransfer;
 
-      if (dt.files) {
-        file = dt.files[0];
-        
-        // PS-X EXE
-        chunkReader(file, 0x0000, 8, function(id) {
-          if (id === 'PS-X EXE') {
-            var reader  = new FileReader();
-            reader.onload = function(e) { // Callback
-              if (reset()) {
-                prepareExe(e.target.result);
-                pseudo.CstrMips.run();
-              }
-            };
-            // Read file
-            reader.readAsArrayBuffer(file);
-          }
-        });
+        if (dt.files) {
+          file = dt.files[0];
+          
+          // PS-X EXE
+          chunkReader(file, 0x0000, 8, function(id) {
+            if (id === 'PS-X EXE') {
+              var reader  = new FileReader();
+              reader.onload = function(e) { // Callback
+                if (reset()) {
+                  prepareExe(e.target.result);
+                  pseudo.CstrMips.run();
+                }
+              };
+              // Read file
+              reader.readAsArrayBuffer(file);
+            }
+          });
 
-        // ISO 9660
-        chunkReader(file, 0x9319, 5, function(id) {
-          if (id === 'CD001') {
-            chunkReader(file, 0x9340, 32, function(name) { // Get Name
-              pseudo.CstrMips.consoleWrite('error', 'CD ISO with code "'+name.trim()+'" not supported for now');
-            });
-          }
-        });
+          // ISO 9660
+          chunkReader(file, 0x9319, 5, function(id) {
+            if (id === 'CD001') {
+              chunkReader(file, 0x9340, 32, function(name) { // Get Name
+                pseudo.CstrMips.consoleWrite('error', 'CD ISO with code "'+name.trim()+'" not supported for now');
+              });
+            }
+          });
+        }
+        $(element).removeClass('dropzone-active');
+      },
+
+      over(e) {
+        e.preventDefault();
+      },
+
+      enter(element) {
+        var dropZone = $(element);
+        dropZone.addClass('dropzone-active');
+      },
+
+      exit(element) {
+        var dropZone = $(element);
+        dropZone.removeClass('dropzone-active');
       }
-    },
-
-    dropPrevent(e) {
-      e.preventDefault();
     },
 
     error(out) {

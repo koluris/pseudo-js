@@ -222,7 +222,7 @@ pseudo.CstrCop2 = (function() {
           {
             LZCS = data;
             LZCR = 0;
-            var sbit = (LZCS&0x80000000) ? LZCS : (~(LZCS));
+            var sbit = (LZCS&0x80000000) ? LZCS : ~LZCS;
 
             for ( ; sbit&0x80000000; sbit<<=1) {
               LZCR++;
