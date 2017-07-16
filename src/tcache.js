@@ -9,7 +9,10 @@
   256
 
 pseudo.CstrTexCache = (function() {
-  var stack, bTex, ctbl2, idx;
+  var stack, idx;
+
+  var bTex  = union(TEX_SIZE*TEX_SIZE*4);
+  var ctbl2 = union(TEX_SIZE*4);
 
   function pixel2texel(tx, p, n) {
     do {
@@ -23,11 +26,6 @@ pseudo.CstrTexCache = (function() {
   }
 
   return {
-    awake() {
-      bTex  = union(TEX_SIZE*TEX_SIZE*4);
-      ctbl2 = union(TEX_SIZE*4);
-    },
-
     reset() {
       stack = [];
     },

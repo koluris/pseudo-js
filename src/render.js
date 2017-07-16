@@ -356,9 +356,18 @@ pseudo.CstrRender = (function() {
   var screen, resolution;
   
   var ctx, attrib, bfr; // WebGL Context
-  var blend, bit; // Blend
-  var ofs, res;
-  var info, drawArea, spriteTP;
+  var blend, bit, ofs;
+  var drawArea, spriteTP;
+
+  // Resolution
+  var res = {
+        native: { w:   0, h:   0 },
+      override: { w: 320, h: 240 },
+    multiplier: 1
+  };
+
+  // Information
+  info = new UintWcap(8);
 
   // Generic function for shaders
   function createShader(kind, content) {
@@ -423,16 +432,6 @@ pseudo.CstrRender = (function() {
         { src: ctx.ZERO,      dest: ctx.ONE_MINUS_SRC_COLOR, opaque:   0 },
         { src: ctx.SRC_ALPHA, dest: ctx.ONE,                 opaque:  64 },
       ];
-
-      // Standard value
-      res = {
-        native     : { w:   0, h:   0 },
-        override   : { w: 320, h: 240 },
-        multiplier : 1
-      };
-
-      // Information
-      info = new UintWcap(8);
     },
 
     reset() {

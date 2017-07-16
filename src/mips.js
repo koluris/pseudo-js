@@ -7,10 +7,10 @@
 
 // Inline functions for speedup
 #define opcodeMult(a, b)\
-  cacheAddr = a * b;\
+  temp = a * b;\
   \
-  lo = cacheAddr&0xffffffff;\
-  hi = Math.floor(cacheAddr/power32)
+  lo = temp&0xffffffff;\
+  hi = Math.floor(temp/power32)
 
 #define opcodeDiv(a, b)\
   if (b) {\
@@ -34,14 +34,16 @@
   }
 
 pseudo.CstrMips = (function() {
-  // Base + Coprocessor
-  var r, copr;
-  var opcodeCount;
-  var cacheAddr, power32; // Cache for expensive calculation
-
-  // Emulation loop handlers
-  var bp, requestAF;
+  // HTML elements
   var output;
+  var bp, opcodeCount, requestAF, temp;
+
+  // Base + Coprocessor
+  var    r = new UintWcap(32 + 3); // + pc, lo, hi
+  var copr = new UintWcap(16);
+
+  // Cache for expensive calculation
+  var power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
 
   var mask = [
     [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
@@ -294,8 +296,8 @@ pseudo.CstrMips = (function() {
         return;
 
       case 34: // LWL
-        cacheAddr = ob;
-        r[rt] = (r[rt]&mask[0][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)<<shift[0][cacheAddr&3]);
+        temp  = ob;
+        r[rt] = (r[rt]&mask[0][temp&3]) | (mem.read.w(temp&~3)<<shift[0][temp&3]);
         return;
 
       case 35: // LW
@@ -311,8 +313,8 @@ pseudo.CstrMips = (function() {
         return;
 
       case 38: // LWR
-        cacheAddr = ob;
-        r[rt] = (r[rt]&mask[1][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)>>shift[1][cacheAddr&3]);
+        temp  = ob;
+        r[rt] = (r[rt]&mask[1][temp&3]) | (mem.read.w(temp&~3)>>shift[1][temp&3]);
         return;
 
       case 40: // SB
@@ -324,8 +326,8 @@ pseudo.CstrMips = (function() {
         return;
 
       case 42: // SWL
-        cacheAddr = ob;
-        mem.write.w(cacheAddr&~3, (r[rt]>>shift[2][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)&mask[2][cacheAddr&3]));
+        temp = ob;
+        mem.write.w(temp&~3, (r[rt]>>shift[2][temp&3]) | (mem.read.w(temp&~3)&mask[2][temp&3]));
         return;
 
       case 43: // SW
@@ -333,8 +335,8 @@ pseudo.CstrMips = (function() {
         return;
 
       case 46: // SWR
-        cacheAddr = ob;
-        mem.write.w(cacheAddr&~3, (r[rt]<<shift[3][cacheAddr&3]) | (mem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
+        temp = ob;
+        mem.write.w(temp&~3, (r[rt]<<shift[3][temp&3]) | (mem.read.w(temp&~3)&mask[3][temp&3]));
         return;
 
       case 50: // LWC2
@@ -371,12 +373,7 @@ pseudo.CstrMips = (function() {
   // Exposed class functions/variables
   return {
     awake(element) {
-         r = new UintWcap(32 + 3); // + pc, lo, hi
-      copr = new UintWcap(16);
-
-      // Cache
-      power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
-      output  = element;
+      output = element;
     },
 
     reset() {

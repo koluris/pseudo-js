@@ -9,15 +9,11 @@
   0xffff
 
 pseudo.CstrCounters = (function() {
-  var timer;
-  var vbk;//, dec1;
+  var timer = [];
+  var vbk; //, dec1;
 
   // Exposed class functions/variables
   return {
-    awake() {
-      timer = [];
-    },
-
     reset() {
       for (var i=0; i<3; i++) {
         timer[i] = {

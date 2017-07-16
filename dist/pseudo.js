@@ -416,15 +416,11 @@ pseudo.CstrCop2 = (function() {
 
 
 pseudo.CstrCounters = (function() {
-  var timer;
-  var vbk;//, dec1;
+  var timer = [];
+  var vbk; //, dec1;
 
   // Exposed class functions/variables
   return {
-    awake() {
-      timer = [];
-    },
-
     reset() {
       for (var i=0; i<3; i++) {
         timer[i] = {
@@ -929,14 +925,16 @@ pseudo.CstrMem = (function() {
 
 
 pseudo.CstrMips = (function() {
-  // Base + Coprocessor
-  var r, copr;
-  var opcodeCount;
-  var cacheAddr, power32; // Cache for expensive calculation
-
-  // Emulation loop handlers
-  var bp, requestAF;
+  // HTML elements
   var output;
+  var bp, opcodeCount, requestAF, temp;
+
+  // Base + Coprocessor
+  var    r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
+  var copr = new Uint32Array(16);
+
+  // Cache for expensive calculation
+  var power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
 
   var mask = [
     [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
@@ -1021,11 +1019,11 @@ pseudo.CstrMips = (function() {
             return;
 
           case 24: // MULT
-            cacheAddr = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = cacheAddr&0xffffffff; r[34] = Math.floor(cacheAddr/power32);
+            temp = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
             return;
 
           case 25: // MULTU
-            cacheAddr = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = cacheAddr&0xffffffff; r[34] = Math.floor(cacheAddr/power32);
+            temp = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
             return;
 
           case 26: // DIV
@@ -1189,8 +1187,8 @@ pseudo.CstrMips = (function() {
         return;
 
       case 34: // LWL
-        cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[0][cacheAddr&3]) | (pseudo.CstrMem.read.w(cacheAddr&~3)<<shift[0][cacheAddr&3]);
+        temp  = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[0][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)<<shift[0][temp&3]);
         return;
 
       case 35: // LW
@@ -1206,8 +1204,8 @@ pseudo.CstrMips = (function() {
         return;
 
       case 38: // LWR
-        cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[1][cacheAddr&3]) | (pseudo.CstrMem.read.w(cacheAddr&~3)>>shift[1][cacheAddr&3]);
+        temp  = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[1][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)>>shift[1][temp&3]);
         return;
 
       case 40: // SB
@@ -1219,8 +1217,8 @@ pseudo.CstrMips = (function() {
         return;
 
       case 42: // SWL
-        cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        pseudo.CstrMem.write.w(cacheAddr&~3, (r[((code>>>16)&0x1f)]>>shift[2][cacheAddr&3]) | (pseudo.CstrMem.read.w(cacheAddr&~3)&mask[2][cacheAddr&3]));
+        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        pseudo.CstrMem.write.w(temp&~3, (r[((code>>>16)&0x1f)]>>shift[2][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)&mask[2][temp&3]));
         return;
 
       case 43: // SW
@@ -1228,8 +1226,8 @@ pseudo.CstrMips = (function() {
         return;
 
       case 46: // SWR
-        cacheAddr = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        pseudo.CstrMem.write.w(cacheAddr&~3, (r[((code>>>16)&0x1f)]<<shift[3][cacheAddr&3]) | (pseudo.CstrMem.read.w(cacheAddr&~3)&mask[3][cacheAddr&3]));
+        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        pseudo.CstrMem.write.w(temp&~3, (r[((code>>>16)&0x1f)]<<shift[3][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)&mask[3][temp&3]));
         return;
 
       case 50: // LWC2
@@ -1266,12 +1264,7 @@ pseudo.CstrMips = (function() {
   // Exposed class functions/variables
   return {
     awake(element) {
-         r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
-      copr = new Uint32Array(16);
-
-      // Cache
-      power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
-      output  = element;
+      output = element;
     },
 
     reset() {
@@ -1430,11 +1423,7 @@ pseudo.CstrMain = (function() {
       unusable = false;
 
       $(function() { // DOMContentLoaded
-         pseudo.CstrTexCache.awake();
          pseudo.CstrRender.awake($('#screen'), $('#resolution'));
-             pseudo.CstrGraphics.awake();
-        pseudo.CstrCounters.awake();
-            pseudo.CstrSerial.awake();
             pseudo.CstrMips.awake($('#output'));
 
         request('bios/scph1001.bin', function(resp) {
@@ -1643,9 +1632,18 @@ pseudo.CstrRender = (function() {
   var screen, resolution;
   
   var ctx, attrib, bfr; // 'webgl', { preserveDrawingBuffer: true } Context
-  var blend, bit; // Blend
-  var ofs, res;
-  var info, drawArea, spriteTP;
+  var blend, bit, ofs;
+  var drawArea, spriteTP;
+
+  // Resolution
+  var res = {
+        native: { w:   0, h:   0 },
+      override: { w: 320, h: 240 },
+    multiplier: 1
+  };
+
+  // Information
+  info = new Uint32Array(8);
 
   // Generic function for shaders
   function createShader(kind, content) {
@@ -1710,16 +1708,6 @@ pseudo.CstrRender = (function() {
         { src: ctx.ZERO,      target: ctx.ONE_MINUS_SRC_COLOR, opaque:   0 },
         { src: ctx.SRC_ALPHA, target: ctx.ONE,                 opaque:  64 },
       ];
-
-      // Standard value
-      res = {
-        native     : { w:   0, h:   0 },
-        override   : { w: 320, h: 240 },
-        multiplier : 1
-      };
-
-      // Information
-      info = new Uint32Array(8);
     },
 
     reset() {
@@ -1977,13 +1965,11 @@ pseudo.CstrRender = (function() {
 
 
 pseudo.CstrSerial = (function() {
-  var baud, control, mode, status, bfr, bfrCount, padst, parp;
+  var baud, control, mode, status, bfrCount, padst, parp;
+
+  var bfr = new Uint8Array(256);
 
   return {
-    awake() {
-      bfr = new Uint8Array(256);
-    },
-
     reset() {
       bfr.fill(0);
       baud     = 0;
@@ -2128,7 +2114,10 @@ pseudo.CstrSerial = (function() {
 
 
 pseudo.CstrTexCache = (function() {
-  var stack, bTex, ctbl2, idx;
+  var stack, idx;
+
+  var bTex  = union(256*256*4);
+  var ctbl2 = union(256*4);
 
   function pixel2texel(tx, p, n) {
     do {
@@ -2142,11 +2131,6 @@ pseudo.CstrTexCache = (function() {
   }
 
   return {
-    awake() {
-      bTex  = union(256*256*4);
-      ctbl2 = union(256*4);
-    },
-
     reset() {
       stack = [];
     },
@@ -2234,8 +2218,19 @@ pseudo.CstrTexCache = (function() {
 
 pseudo.CstrGraphics = (function() {
   var status, data, modeDMA;
-  var vrop, pipe;
 
+  // VRAM Operations
+  var vrop = {
+    h: {},
+    v: {},
+  };
+
+  // Command Pipe
+  var pipe = {
+    data: new Uint32Array(100)
+  };
+
+  // Primitive Size
   var sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x10
@@ -2255,6 +2250,7 @@ pseudo.CstrGraphics = (function() {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xf0
   ];
 
+  // Resolution Mode
   var resMode = [
     256, 320, 512, 640, 368, 384, 512, 640
   ];
@@ -2372,22 +2368,7 @@ pseudo.CstrGraphics = (function() {
 
   // Exposed class functions/variables
   return {
-    __vram: undefined,
-
-    awake() {
-      pseudo.CstrGraphics.__vram = union(1024*512*2);
-
-      // VRAM Operations
-      vrop = {
-        h: {},
-        v: {},
-      };
-
-      // Command Pipe
-      pipe = {
-        data: new Uint32Array(100)
-      };
-    },
+    __vram: union(1024*512*2),
 
     reset() {
       pseudo.CstrGraphics.__vram.uh.fill(0);

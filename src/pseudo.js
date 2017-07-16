@@ -82,11 +82,7 @@ pseudo.CstrMain = (function() {
       unusable = false;
 
       $(function() { // DOMContentLoaded
-         tcache.awake();
          render.awake($('#screen'), $('#resolution'));
-             vs.awake();
-        rootcnt.awake();
-            sio.awake();
             cpu.awake($('#output'));
 
         request('bios/scph1001.bin', function(resp) {

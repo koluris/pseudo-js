@@ -33,8 +33,19 @@
 
 pseudo.CstrGraphics = (function() {
   var status, data, modeDMA;
-  var vrop, pipe;
 
+  // VRAM Operations
+  var vrop = {
+    h: {},
+    v: {},
+  };
+
+  // Command Pipe
+  var pipe = {
+    data: new UintWcap(100)
+  };
+
+  // Primitive Size
   var sizePrim = [
     0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x10
@@ -54,6 +65,7 @@ pseudo.CstrGraphics = (function() {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xf0
   ];
 
+  // Resolution Mode
   var resMode = [
     256, 320, 512, 640, 368, 384, 512, 640
   ];
@@ -171,22 +183,7 @@ pseudo.CstrGraphics = (function() {
 
   // Exposed class functions/variables
   return {
-    __vram: undefined,
-
-    awake() {
-      vram = union(FRAME_W*FRAME_H*2);
-
-      // VRAM Operations
-      vrop = {
-        h: {},
-        v: {},
-      };
-
-      // Command Pipe
-      pipe = {
-        data: new UintWcap(100)
-      };
-    },
+    __vram: union(FRAME_W*FRAME_H*2),
 
     reset() {
       vram.uh.fill(0);
