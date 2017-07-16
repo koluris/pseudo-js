@@ -1459,6 +1459,8 @@ pseudo.CstrMain = (function() {
     drop: {
       file(element, e) {
         e.preventDefault();
+        pseudo.CstrMain.drop.exit(element);
+        
         var dt = e.dataTransfer;
 
         if (dt.files) {
@@ -1488,7 +1490,6 @@ pseudo.CstrMain = (function() {
             }
           });
         }
-        $(element).removeClass('dropzone-active');
       },
 
       over(e) {
