@@ -456,6 +456,11 @@ pseudo.CstrRender = (function() {
     },
 
     resize(data) {
+      // Same resolution? Ciao!
+      if (data.w === res.native.w && data.h === res.native.h) {
+        return;
+      }
+
       // Check if we have a valid resolution
       if (data.w > 0 && data.h > 0) {
         // Store valid resolution
@@ -491,7 +496,13 @@ pseudo.CstrRender = (function() {
       }
       
       // Redraw
-      render.resize({ w: res.native.w, h: res.native.h });
+      var w = res.native.w;
+      var h = res.native.h;
+
+      res.native.w = -1;
+      res.native.h = -1;
+
+      render.resize({ w: w, h: h });
     },
 
     draw(addr, data) {
