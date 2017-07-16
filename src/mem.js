@@ -183,7 +183,7 @@ pseudo.CstrMem = (function() {
       }
     },
 
-    executeDMA: function(addr) {
+    executeDMA(addr) {
       if (!bcr || chcr !== 0x11000002) {
         return;
       }

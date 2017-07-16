@@ -23,7 +23,7 @@ pseudo.CstrTexCache = (function() {
   }
 
   return {
-    awake: function() {
+    awake() {
       bTex  = union(TEX_SIZE*TEX_SIZE*4);
       ctbl2 = union(TEX_SIZE*4);
     },

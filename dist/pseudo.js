@@ -310,7 +310,7 @@ pseudo.CstrCop2 = (function() {
       //pseudo.CstrMain.error('COP2 Execute '+('0x'+(code&0x3f>>>0).toString(16)));
     },
 
-    opcodeMFC2: function(addr) {
+    opcodeMFC2(addr) {
       switch(addr) {
         case  1:
         case  3:
@@ -346,7 +346,7 @@ pseudo.CstrCop2 = (function() {
       return cop2d.uw[( addr)];
     },
 
-    opcodeMTC2: function(addr, data) {
+    opcodeMTC2(addr, data) {
       switch(addr) {
         case 15:
           cop2d.uw[(12)] = cop2d.uw[(13)];
@@ -383,7 +383,7 @@ pseudo.CstrCop2 = (function() {
       cop2d.uw[( addr)] = data;
     },
 
-    opcodeCTC2: function(addr, data) {
+    opcodeCTC2(addr, data) {
       switch(addr) {
         case  4:
         case 12:
@@ -875,7 +875,7 @@ pseudo.CstrMem = (function() {
       }
     },
 
-    executeDMA: function(addr) {
+    executeDMA(addr) {
       if (!pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] || pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0x11000002) {
         return;
       }
@@ -1170,7 +1170,7 @@ pseudo.CstrMips = (function() {
             return;
 
           case 16: // RFE
-            copr[12] = (copr[12]&0xfffffff0)|((copr[12]>>>2)&0xf);
+            copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
             return;
         }
         pseudo.CstrMain.error('Coprocessor 0 instruction '+((code>>>21)&0x1f));
@@ -1330,11 +1330,11 @@ pseudo.CstrMips = (function() {
       bp = true;
     },
 
-    setbase: function(addr, data) {
+    setbase(addr, data) {
       r[addr] = data;
     },
 
-    readbase: function(addr) {
+    readbase(addr) {
       return r[addr];
     },
   };
@@ -1353,8 +1353,10 @@ pseudo.CstrMips = (function() {
 
 
 pseudo.CstrMain = (function() {
-  var unusable;
-  var file;
+  // HTML elements
+  var dropzone;
+
+  var file, unusable;
 
   // AJAX function
   function request(path, fn) {
@@ -1424,8 +1426,8 @@ pseudo.CstrMain = (function() {
   // Exposed class functions/variables
   return {
     awake() {
+      dropzone = $('#dropzone');
       unusable = false;
-      file = undefined;
 
       $(function() { // DOMContentLoaded
          pseudo.CstrTexCache.awake();
@@ -1467,7 +1469,7 @@ pseudo.CstrMain = (function() {
           file = dt.files[0];
           
           // PS-X EXE
-          chunkReader(file, 0x0000, 8, function(id) {
+          chunkReader(file, 0, 8, function(id) {
             if (id === 'PS-X EXE') {
               var reader  = new FileReader();
               reader.onload = function(e) { // Callback
@@ -1497,13 +1499,11 @@ pseudo.CstrMain = (function() {
       },
 
       enter(element) {
-        var dropZone = $(element);
-        dropZone.addClass('dropzone-active');
+        dropzone.addClass('dropzone-active');
       },
 
       exit(element) {
-        var dropZone = $(element);
-        dropZone.removeClass('dropzone-active');
+        dropzone.removeClass('dropzone-active');
       }
     },
 
@@ -2142,7 +2142,7 @@ pseudo.CstrTexCache = (function() {
   }
 
   return {
-    awake: function() {
+    awake() {
       bTex  = union(256*256*4);
       ctbl2 = union(256*4);
     },

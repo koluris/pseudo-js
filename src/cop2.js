@@ -166,7 +166,7 @@ pseudo.CstrCop2 = (function() {
       //psx.error('COP2 Execute '+hex(code&0x3f));
     },
 
-    opcodeMFC2: function(addr) {
+    opcodeMFC2(addr) {
       switch(addr) {
         case  1:
         case  3:
@@ -202,7 +202,7 @@ pseudo.CstrCop2 = (function() {
       return oooo(cop2d.uw, addr);
     },
 
-    opcodeMTC2: function(addr, data) {
+    opcodeMTC2(addr, data) {
       switch(addr) {
         case 15:
           SXY0 = SXY1;
@@ -239,7 +239,7 @@ pseudo.CstrCop2 = (function() {
       oooo(cop2d.uw, addr) = data;
     },
 
-    opcodeCTC2: function(addr, data) {
+    opcodeCTC2(addr, data) {
       switch(addr) {
         case  4:
         case 12:

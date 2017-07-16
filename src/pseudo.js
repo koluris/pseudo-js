@@ -5,8 +5,10 @@
   0x800
 
 pseudo.CstrMain = (function() {
-  var unusable;
-  var file;
+  // HTML elements
+  var dropzone;
+
+  var file, unusable;
 
   // AJAX function
   function request(path, fn) {
@@ -76,8 +78,8 @@ pseudo.CstrMain = (function() {
   // Exposed class functions/variables
   return {
     awake() {
+      dropzone = $('#dropzone');
       unusable = false;
-      file = undefined;
 
       $(function() { // DOMContentLoaded
          tcache.awake();
@@ -119,7 +121,7 @@ pseudo.CstrMain = (function() {
           file = dt.files[0];
           
           // PS-X EXE
-          chunkReader(file, 0x0000, 8, function(id) {
+          chunkReader(file, 0, 8, function(id) {
             if (id === 'PS-X EXE') {
               var reader  = new FileReader();
               reader.onload = function(e) { // Callback
@@ -149,13 +151,11 @@ pseudo.CstrMain = (function() {
       },
 
       enter(element) {
-        var dropZone = $(element);
-        dropZone.addClass('dropzone-active');
+        dropzone.addClass('dropzone-active');
       },
 
       exit(element) {
-        var dropZone = $(element);
-        dropZone.removeClass('dropzone-active');
+        dropzone.removeClass('dropzone-active');
       }
     },
 

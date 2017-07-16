@@ -6,7 +6,7 @@
 #define hi r[34]
 
 // Inline functions for speedup
-#define opcodeMul(a, b)\
+#define opcodeMult(a, b)\
   cacheAddr = a * b;\
   \
   lo = cacheAddr&0xffffffff;\
@@ -126,11 +126,11 @@ pseudo.CstrMips = (function() {
             return;
 
           case 24: // MULT
-            opcodeMul(SIGN_EXT_32(r[rs]), SIGN_EXT_32(r[rt]));
+            opcodeMult(SIGN_EXT_32(r[rs]), SIGN_EXT_32(r[rt]));
             return;
 
           case 25: // MULTU
-            opcodeMul(r[rs], r[rt]);
+            opcodeMult(r[rs], r[rt]);
             return;
 
           case 26: // DIV
@@ -275,7 +275,7 @@ pseudo.CstrMips = (function() {
             return;
 
           case 16: // RFE
-            copr[12] = (copr[12]&0xfffffff0)|((copr[12]>>>2)&0xf);
+            copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
             return;
         }
         psx.error('Coprocessor 0 instruction '+rs);
@@ -435,11 +435,11 @@ pseudo.CstrMips = (function() {
       bp = true;
     },
 
-    setbase: function(addr, data) {
+    setbase(addr, data) {
       r[addr] = data;
     },
 
-    readbase: function(addr) {
+    readbase(addr) {
       return r[addr];
     },
   };
