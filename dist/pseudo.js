@@ -2439,7 +2439,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x10:
-              //infoSet(data);
+              infoSet(data);
               return;
 
             
