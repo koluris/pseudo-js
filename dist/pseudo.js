@@ -924,10 +924,14 @@ pseudo.CstrMem = (function() {
 
 
 
+
+
+
+
 pseudo.CstrMips = (function() {
   // HTML elements
   var output;
-  var bp, opcodeCount, requestAF, temp;
+  var bp, opcodeCount, requestAF, ptr, temp;
 
   // Base + Coprocessor
   var    r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
@@ -952,7 +956,7 @@ pseudo.CstrMips = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    var code = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw[(( r[32])&(pseudo.CstrMem.__rom.uw.byteLength-1))>>>2] : pseudo.CstrMem.__ram.uw[(( r[32])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
+    var code = ptr[(( r[32])&(ptr.byteLength-1))>>>2];
     opcodeCount++;
     r[32]  += 4;
     r[0] = 0; // As weird as this seems, it is needed
@@ -986,17 +990,19 @@ pseudo.CstrMips = (function() {
 
           case 8: // JR
             branch(r[((code>>>21)&0x1f)]);
+            ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
             if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { var char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>'); output.append(char.toUpperCase()); } };
             return;
 
           case 9: // JALR
             r[((code>>>11)&0x1f)] = r[32]+4;
             branch(r[((code>>>21)&0x1f)]);
+            ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
             return;
 
           case 12: // SYSCALL
             r[32]-=4;
-            copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x20; copr[14] = r[32]; r[32] = 0x80;
+            copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x20; copr[14] = r[32]; r[32] = 0x80; ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
             return;
 
           case 13: // BREAK
@@ -1254,7 +1260,7 @@ pseudo.CstrMips = (function() {
       // Exceptions
       if (pseudo.CstrMem.__hwr.uw[((0x1070)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&pseudo.CstrMem.__hwr.uw[((0x1074)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
         if ((copr[12]&0x401) === 0x401) {
-          copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80;
+          copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80; ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
         }
       }
       opcodeCount %= 64;
@@ -1279,8 +1285,9 @@ pseudo.CstrMips = (function() {
       copr[12] = 0x10900000;
       copr[15] = 0x2;
 
-      r[32] = 0xbfc00000;
       opcodeCount = 0;
+      r[32] = 0xbfc00000;
+      ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
 
       // Clear console out
       output.text(' ');
@@ -2432,7 +2439,7 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x10:
-              infoSet(data);
+              //infoSet(data);
               return;
 
             

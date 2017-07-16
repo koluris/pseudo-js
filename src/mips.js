@@ -6,6 +6,9 @@
 #define hi r[34]
 
 // Inline functions for speedup
+#define setptr(addr)\
+  ptr = addr>>>20 === 0xbfc ? rom.uw : ram.uw
+
 #define opcodeMult(a, b)\
   temp = a * b;\
   \
@@ -23,7 +26,8 @@
   copr[13] = code;\
   copr[14] = pc;\
   \
-  pc = 0x80
+  pc = 0x80;\
+  setptr(pc)
 
 #define print()\
   if (pc === 0xb0) {\
@@ -36,7 +40,7 @@
 pseudo.CstrMips = (function() {
   // HTML elements
   var output;
-  var bp, opcodeCount, requestAF, temp;
+  var bp, opcodeCount, requestAF, ptr, temp;
 
   // Base + Coprocessor
   var    r = new UintWcap(32 + 3); // + pc, lo, hi
@@ -61,7 +65,7 @@ pseudo.CstrMips = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    var code = pc>>>20 === 0xbfc ? directMemW(rom.uw, pc) : directMemW(ram.uw, pc);
+    var code = directMemW(ptr, pc);
     opcodeCount++;
     pc  += 4;
     r[0] = 0; // As weird as this seems, it is needed
@@ -95,12 +99,14 @@ pseudo.CstrMips = (function() {
 
           case 8: // JR
             branch(r[rs]);
+            setptr(pc);
             print();
             return;
 
           case 9: // JALR
             r[rd] = pc+4;
             branch(r[rs]);
+            setptr(pc);
             return;
 
           case 12: // SYSCALL
@@ -388,8 +394,9 @@ pseudo.CstrMips = (function() {
       copr[12] = 0x10900000;
       copr[15] = 0x2;
 
-      pc = 0xbfc00000;
       opcodeCount = 0;
+      pc = 0xbfc00000;
+      setptr(pc);
 
       // Clear console out
       output.text(' ');
