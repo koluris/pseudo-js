@@ -62,7 +62,7 @@ var pseudo = window.pseudo || {};
 
 
 
-
+// #define PSX_HSYNC//   (33868800/15734)
 
 
 // This is uttermost experimental, it's the Achilles' heel
@@ -271,10 +271,19 @@ pseudo.CstrBus = (function() {
 
 
 
+
+
+
+
+
+
+
 pseudo.CstrCdrom = (function() {
-  var ctrl, stat, irq, re2;
+  var ctrl, stat, statP, irq, re2;
   var reads, readed, occupied;
   var cdint;
+  var end_time;
+  var muted;
 
   var param = {
     data: new Uint8Array(8),
@@ -295,8 +304,7 @@ pseudo.CstrCdrom = (function() {
     irq = code;
     
     if (stat) {
-      pseudo.CstrMain.error('addIrqQueue stat');
-      //end_time = end;
+      end_time = end;
     }
     else {
       cdint = 1;
@@ -304,15 +312,63 @@ pseudo.CstrCdrom = (function() {
   }
 
   function interrupt() {
-    pseudo.CstrMain.error('CD interrupt');
+    var prevIrq = irq;
+    
+    if (stat) {
+      pseudo.CstrMain.error('CD interrupt stat');
+      return;
+    }
+
+    irq = 0xff;
+    ctrl &= ~0x80;
+
+    switch(prevIrq) {
+      case 1: // CdlNop
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x2;
+        res.data[0] = statP;
+        stat = 3; // More stuff here
+        res.data[0] |= 0x2;
+        break;
+
+      case 10: // CdlInit
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        addIrqQueue(10 + 0x20, 0x1000);
+        break;
+
+      case 12: // CdlDemute
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        break;
+
+      case 10 + 0x20: // CdlInit
+        res.p = 0; res.c = 1; res.ok = true;
+        res.data[0] = statP;
+        stat = 2;
+        break;
+
+      default:
+        pseudo.CstrMain.error('CD interrupt prevIrq -> '+prevIrq);
+        break;
+    }
+
+    if (stat !== 0 && re2 !== 0x18) {
+      pseudo.CstrBus.interruptSet(2);
+    }
   }
 
   return {
     reset() {
-      ctrl = 0;
-      stat = 0;
-       irq = 0;
-       re2 = 0;
+      ctrl  = 0;
+      stat  = 0;
+      statP = 0;
+       irq  = 0;
+       re2  = 0;
 
       param.data.fill(0);
       param.p = 0;
@@ -330,6 +386,8 @@ pseudo.CstrCdrom = (function() {
       occupied = false;
 
       cdint = 0;
+      end_time = 0;
+      muted = 0;
     },
 
     scopeW(addr, data) {
@@ -352,8 +410,23 @@ pseudo.CstrCdrom = (function() {
           }
 
           switch(data) {
+            case  1: // CdlNop
             case 25: // CdlTest
               ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              break;
+
+            case 10: // CdlInit
+              if (reads) { reads = 0; } statP &= ~0x20;
+              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              break;
+
+            case 12: // CdlDemute
+              muted = 0;
+              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              break;
+
+            default:
+              pseudo.CstrMain.error('0x1801 CMD -> '+data);
               break;
           }
 
@@ -388,11 +461,12 @@ pseudo.CstrCdrom = (function() {
             stat = 0;
             
             if (irq === 0xff) {
-              pseudo.CstrMain.error('irq == 0xff');
+              irq = 0;
+              return;
             }
             
             if (irq) {
-              pseudo.CstrMain.error('if (irq)');
+              cdint = 1;
             }
             
             if (reads && !res.ok) {
@@ -471,6 +545,82 @@ pseudo.CstrCdrom = (function() {
 })();
 
 
+
+// #define hwr  pseudo.CstrMem.__hwr
+
+// #define hwr.ub[((0x1800|r)&(hwr.ub.byteLength-1))>>>0]//   hwr.ub[(( 0x1800|r)&(hwr.ub.byteLength-1))>>>0]
+
+
+// pseudo.CstrCdrom = (function() {
+//   var ctrl, stat, paramP, paramC, resultOK, readed, occupied, cmd;
+
+//   return {
+//     reset() {
+//       ctrl = 0;
+//       stat = 0;
+//       paramP = 0;
+//       paramC = 0;
+//       resultOK = 0;
+//       readed = 0;
+//       occupied = 0;
+//       cmd = 0;
+//     },
+
+//     scopeW(addr, data) {
+//       switch(addr&0xf) {
+//         case 0:
+//           ctrl = data | (ctrl & ~0x3);
+          
+//           if (data === 0) {
+//             paramP   = 0;
+//             paramC   = 0;
+//             resultOK = 0;
+//           }
+//           return;
+
+//         case 1:
+//           cmd = data;
+//           occupied = 0;
+
+//           if (ctrl&0x1) {
+//             return;
+//           }
+//           pseudo.CstrMain.error('0x1801 cmd -> '+cmd);
+//           return;
+
+//         case 3:
+//           if (data === 0x07 && ctrl&0x1) {
+//             pseudo.CstrMain.error('0x1803 data === 0x07 && ctrl&0x1');
+//           }
+
+//           if (data === 0x80 && !(ctrl&0x1) && readed === 0) {
+//             pseudo.CstrMain.error('data === 0x80 && !(ctrl&0x1) && readed === 0');
+//           }
+//           return;
+//       }
+//       pseudo.CstrMain.error('CD-ROM Write '+('0x'+(addr&0xf>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+//     },
+
+//     scopeR(addr) {
+//       switch(addr&0xf) {
+//         case 3:
+//           if (stat) {
+//             pseudo.CstrMain.error('0x1803 stat');
+//           }
+//           else {
+//             hwr.ub[((0x1800|3)&(hwr.ub.byteLength-1))>>>0] = 0;
+//           }
+//           return hwr.ub[((0x1800|3)&(hwr.ub.byteLength-1))>>>0];
+//       }
+//       pseudo.CstrMain.error('CD-ROM Read '+('0x'+(addr&0xf>>>0).toString(16)));
+//     },
+
+//     update() {
+//     }
+//   };
+// })();
+
+// #undef hwr
 // 32-bit accessor
 
 
@@ -640,7 +790,7 @@ pseudo.CstrCop2 = (function() {
 
 pseudo.CstrCounters = (function() {
   var timer = [];
-  var vbk, dec1;
+  var vbk; //, dec1;
 
   // Exposed class functions/variables
   return {
@@ -664,47 +814,47 @@ pseudo.CstrCounters = (function() {
         pseudo.CstrMips.setbp();
       }
 
-      timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
+      // timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
 
-      if (timer[0].count >= timer[0].bound) {
-        timer[0].count = 0;
-        if (timer[0].mode&0x50) {
-          //pseudo.CstrBus.interruptSet(4);
-          pseudo.CstrMain.error('dude 1');
-        }
-      }
+      // if (timer[0].count >= timer[0].bound) {
+      //   timer[0].count = 0;
+      //   if (timer[0].mode&0x50) {
+      //     //pseudo.CstrBus.interruptSet(4);
+      //     pseudo.CstrMain.error('dude 1');
+      //   }
+      // }
 
-      if (!(timer[1].mode&0x100)) {
-        timer[1].count += 64;
+      // if (!(timer[1].mode&0x100)) {
+      //   timer[1].count += 64;
 
-        if (timer[1].count >= timer[1].bound) {
-          timer[1].count = 0;
-          if (timer[1].mode&0x50) {
-            //pseudo.CstrBus.interruptSet(5);
-            pseudo.CstrMain.error('dude 2');
-          }
-        }
-      }
-      else if ((dec1+=64) >= (33868800/15734)) {
-        dec1 = 0;
-        if (++timer[1].count >= timer[1].bound) {
-          timer[1].count = 0;
-          if (timer[1].mode&0x50) {
-            pseudo.CstrBus.interruptSet(5);
-          }
-        }
-      }
+      //   if (timer[1].count >= timer[1].bound) {
+      //     timer[1].count = 0;
+      //     if (timer[1].mode&0x50) {
+      //       //pseudo.CstrBus.interruptSet(5);
+      //       pseudo.CstrMain.error('dude 2');
+      //     }
+      //   }
+      // }
+      // else if ((dec1+=64) >= PSX_HSYNC) {
+      //   dec1 = 0;
+      //   if (++timer[1].count >= timer[1].bound) {
+      //     timer[1].count = 0;
+      //     if (timer[1].mode&0x50) {
+      //       pseudo.CstrBus.interruptSet(5);
+      //     }
+      //   }
+      // }
 
-      if (!(timer[2].mode&1)) {
-        timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
+      // if (!(timer[2].mode&1)) {
+      //   timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
 
-        if (timer[2].count >= timer[2].bound) {
-          timer[2].count = 0;
-          if (timer[2].mode&0x50) {
-            pseudo.CstrBus.interruptSet(6);
-          }
-        }
-      }
+      //   if (timer[2].count >= timer[2].bound) {
+      //     timer[2].count = 0;
+      //     if (timer[2].mode&0x50) {
+      //       pseudo.CstrBus.interruptSet(6);
+      //     }
+      //   }
+      // }
     },
 
     scopeW(addr, data) {
@@ -884,7 +1034,7 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrSerial.read.h(addr);
         }
 
-        if (addr >= 0x1110 && addr <= 0x1124) { // Rootcounters
+        if (addr >= 0x1100 && addr <= 0x1124) { // Rootcounters
           return pseudo.CstrCounters.scopeR(addr);
         }
 

@@ -1,6 +1,7 @@
 #define hwr  mem.__hwr
 
 #define CD_STAT_NO_INTR     0
+#define CD_STAT_COMPLETE    2
 #define CD_STAT_ACKNOWLEDGE 3
 
 #define CD_REG(r)\
@@ -19,10 +20,18 @@
 #define CD_INT(end)\
   cdint = 1
 
+#define stopRead\
+  if (reads) {\
+    reads = 0;\
+  }\
+  statP &= ~0x20
+
 pseudo.CstrCdrom = (function() {
-  var ctrl, stat, irq, re2;
+  var ctrl, stat, statP, irq, re2;
   var reads, readed, occupied;
   var cdint;
+  var end_time;
+  var muted;
 
   var param = {
     data: new UintBcap(8),
@@ -43,8 +52,7 @@ pseudo.CstrCdrom = (function() {
     irq = code;
     
     if (stat) {
-      psx.error('addIrqQueue stat');
-      //end_time = end;
+      end_time = end;
     }
     else {
       CD_INT(end);
@@ -52,15 +60,63 @@ pseudo.CstrCdrom = (function() {
   }
 
   function interrupt() {
-    psx.error('CD interrupt');
+    var prevIrq = irq;
+    
+    if (stat) {
+      psx.error('CD interrupt stat');
+      return;
+    }
+
+    irq = 0xff;
+    ctrl &= ~0x80;
+
+    switch(prevIrq) {
+      case 1: // CdlNop
+        setResultSize(1);
+        statP |= 0x2;
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE; // More stuff here
+        res.data[0] |= 0x2;
+        break;
+
+      case 10: // CdlInit
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE;
+        addIrqQueue(10 + 0x20, 0x1000);
+        break;
+
+      case 12: // CdlDemute
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE;
+        break;
+
+      case 10 + 0x20: // CdlInit
+        setResultSize(1);
+        res.data[0] = statP;
+        stat = CD_STAT_COMPLETE;
+        break;
+
+      default:
+        psx.error('CD interrupt prevIrq -> '+prevIrq);
+        break;
+    }
+
+    if (stat !== CD_STAT_NO_INTR && re2 !== 0x18) {
+      bus.interruptSet(IRQ_CD);
+    }
   }
 
   return {
     reset() {
-      ctrl = 0;
-      stat = 0;
-       irq = 0;
-       re2 = 0;
+      ctrl  = 0;
+      stat  = 0;
+      statP = 0;
+       irq  = 0;
+       re2  = 0;
 
       param.data.fill(0);
       param.p = 0;
@@ -78,6 +134,8 @@ pseudo.CstrCdrom = (function() {
       occupied = false;
 
       cdint = 0;
+      end_time = 0;
+      muted = 0;
     },
 
     scopeW(addr, data) {
@@ -100,8 +158,23 @@ pseudo.CstrCdrom = (function() {
           }
 
           switch(data) {
+            case  1: // CdlNop
             case 25: // CdlTest
               defaultCtrlAndStat(0x1000);
+              break;
+
+            case 10: // CdlInit
+              stopRead;
+              defaultCtrlAndStat(0x1000);
+              break;
+
+            case 12: // CdlDemute
+              muted = 0;
+              defaultCtrlAndStat(0x1000);
+              break;
+
+            default:
+              psx.error('0x1801 CMD -> '+data);
               break;
           }
 
@@ -136,11 +209,12 @@ pseudo.CstrCdrom = (function() {
             stat = 0;
             
             if (irq === 0xff) {
-              psx.error('irq == 0xff');
+              irq = 0;
+              return;
             }
             
             if (irq) {
-              psx.error('if (irq)');
+              CD_INT(end_time);
             }
             
             if (reads && !res.ok) {
@@ -219,3 +293,79 @@ pseudo.CstrCdrom = (function() {
 })();
 
 #undef hwr
+
+// #define hwr  mem.__hwr
+
+// #define CD_REG(r)\
+//   directMemB(hwr.ub, 0x1800|r)
+
+// pseudo.CstrCdrom = (function() {
+//   var ctrl, stat, paramP, paramC, resultOK, readed, occupied, cmd;
+
+//   return {
+//     reset() {
+//       ctrl = 0;
+//       stat = 0;
+//       paramP = 0;
+//       paramC = 0;
+//       resultOK = 0;
+//       readed = 0;
+//       occupied = 0;
+//       cmd = 0;
+//     },
+
+//     scopeW(addr, data) {
+//       switch(addr&0xf) {
+//         case 0:
+//           ctrl = data | (ctrl & ~0x3);
+          
+//           if (data === 0) {
+//             paramP   = 0;
+//             paramC   = 0;
+//             resultOK = 0;
+//           }
+//           return;
+
+//         case 1:
+//           cmd = data;
+//           occupied = 0;
+
+//           if (ctrl&0x1) {
+//             return;
+//           }
+//           psx.error('0x1801 cmd -> '+cmd);
+//           return;
+
+//         case 3:
+//           if (data === 0x07 && ctrl&0x1) {
+//             psx.error('0x1803 data === 0x07 && ctrl&0x1');
+//           }
+
+//           if (data === 0x80 && !(ctrl&0x1) && readed === 0) {
+//             psx.error('data === 0x80 && !(ctrl&0x1) && readed === 0');
+//           }
+//           return;
+//       }
+//       psx.error('CD-ROM Write '+hex(addr&0xf)+' <- '+hex(data));
+//     },
+
+//     scopeR(addr) {
+//       switch(addr&0xf) {
+//         case 3:
+//           if (stat) {
+//             psx.error('0x1803 stat');
+//           }
+//           else {
+//             CD_REG(3) = 0;
+//           }
+//           return CD_REG(3);
+//       }
+//       psx.error('CD-ROM Read '+hex(addr&0xf));
+//     },
+
+//     update() {
+//     }
+//   };
+// })();
+
+// #undef hwr
