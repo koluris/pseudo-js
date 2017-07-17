@@ -171,6 +171,10 @@ pseudo.CstrGraphics = (function() {
           render.draw(pipe.prim, pipe.data);
         }
       }
+    },
+
+    read(addr, size) {
+      // Oops
     }
   }
 
@@ -269,6 +273,10 @@ pseudo.CstrGraphics = (function() {
 
       switch(chcr) {
         case 0x00000401: // Disable DMA?
+          return;
+
+        case 0x01000200:
+          dataMem.read(madr, size);
           return;
 
         case 0x01000201:

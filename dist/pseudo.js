@@ -62,7 +62,7 @@ var pseudo = window.pseudo || {};
 
 
 
-// #define PSX_HSYNC//   (33868800/15734)
+
 
 
 // This is uttermost experimental, it's the Achilles' heel
@@ -263,9 +263,18 @@ pseudo.CstrBus = (function() {
 
 
 
+
+
+
+
+
+
+
+
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, irq, re2;
   var reads, readed, occupied;
+  var cdint;
 
   var param = {
     data: new Uint8Array(8),
@@ -281,6 +290,22 @@ pseudo.CstrCdrom = (function() {
        c: 0,
       ok: 0,
   };
+
+  function addIrqQueue(code, end) {
+    irq = code;
+    
+    if (stat) {
+      pseudo.CstrMain.error('addIrqQueue stat');
+      //end_time = end;
+    }
+    else {
+      cdint = 1;
+    }
+  }
+
+  function interrupt() {
+    pseudo.CstrMain.error('CD interrupt');
+  }
 
   return {
     reset() {
@@ -303,6 +328,8 @@ pseudo.CstrCdrom = (function() {
       reads    = false;
       readed   = false;
       occupied = false;
+
+      cdint = 0;
     },
 
     scopeW(addr, data) {
@@ -321,27 +348,16 @@ pseudo.CstrCdrom = (function() {
           occupied = false;
           
           if (ctrl&0x01) {
-            pseudo.CstrMain.error('ctrl&0x01');
+            return;
           }
 
           switch(data) {
             case 25: // CdlTest
-              stat = 3;
-            
-              switch(param.data[0]) {
-                case 0x20:
-                  res.p = 0; res.c = 4; res.ok = true;
-                  res.data.set([0x98, 0x06, 0x10, 0xc3]); // Test 20
-                  break;
-
-                default:
-                  pseudo.CstrMain.error('param.data[0] -> '+('0x'+(param.data[0]>>>0).toString(16)));
-                  break;
-              }
+              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
               break;
           }
 
-          if (stat !== 0 && re2 !== 0x18) {
+          if (stat !== 0) {
             pseudo.CstrBus.interruptSet(2);
           }
           return;
@@ -370,7 +386,7 @@ pseudo.CstrCdrom = (function() {
         case 0x1803:
           if (data === 0x07 && ctrl&0x01) {
             stat = 0;
-
+            
             if (irq === 0xff) {
               pseudo.CstrMain.error('irq == 0xff');
             }
@@ -436,11 +452,20 @@ pseudo.CstrCdrom = (function() {
             }
           }
           else {
-            pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0xff;
+            pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
           }
           return pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
       }
       pseudo.CstrMain.error('CD-ROM Read '+('0x'+(addr>>>0).toString(16)));
+    },
+
+    update() {
+      if (cdint) {
+        if (cdint++ === 16) {
+          interrupt();
+          cdint = 0;
+        }
+      }
     }
   };
 })();
@@ -615,7 +640,7 @@ pseudo.CstrCop2 = (function() {
 
 pseudo.CstrCounters = (function() {
   var timer = [];
-  var vbk; //, dec1;
+  var vbk, dec1;
 
   // Exposed class functions/variables
   return {
@@ -639,47 +664,47 @@ pseudo.CstrCounters = (function() {
         pseudo.CstrMips.setbp();
       }
 
-      // timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
+      timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
 
-      // if (timer[0].count >= timer[0].bound) {
-      //   timer[0].count = 0;
-      //   if (timer[0].mode&0x50) {
-      //     //pseudo.CstrBus.interruptSet(4);
-      //     pseudo.CstrMain.error('dude 1');
-      //   }
-      // }
+      if (timer[0].count >= timer[0].bound) {
+        timer[0].count = 0;
+        if (timer[0].mode&0x50) {
+          //pseudo.CstrBus.interruptSet(4);
+          pseudo.CstrMain.error('dude 1');
+        }
+      }
 
-      // if (!(timer[1].mode&0x100)) {
-      //   timer[1].count += 64;
+      if (!(timer[1].mode&0x100)) {
+        timer[1].count += 64;
 
-      //   if (timer[1].count >= timer[1].bound) {
-      //     timer[1].count = 0;
-      //     if (timer[1].mode&0x50) {
-      //       //pseudo.CstrBus.interruptSet(5);
-      //       pseudo.CstrMain.error('dude 2');
-      //     }
-      //   }
-      // }
-      // else if ((dec1+=64) >= PSX_HSYNC) {
-      //   dec1 = 0;
-      //   if (++timer[1].count >= timer[1].bound) {
-      //     timer[1].count = 0;
-      //     if (timer[1].mode&0x50) {
-      //       pseudo.CstrBus.interruptSet(5);
-      //     }
-      //   }
-      // }
+        if (timer[1].count >= timer[1].bound) {
+          timer[1].count = 0;
+          if (timer[1].mode&0x50) {
+            //pseudo.CstrBus.interruptSet(5);
+            pseudo.CstrMain.error('dude 2');
+          }
+        }
+      }
+      else if ((dec1+=64) >= (33868800/15734)) {
+        dec1 = 0;
+        if (++timer[1].count >= timer[1].bound) {
+          timer[1].count = 0;
+          if (timer[1].mode&0x50) {
+            pseudo.CstrBus.interruptSet(5);
+          }
+        }
+      }
 
-      // if (!(timer[2].mode&1)) {
-      //   timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
+      if (!(timer[2].mode&1)) {
+        timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
 
-      //   if (timer[2].count >= timer[2].bound) {
-      //     timer[2].count = 0;
-      //     if (timer[2].mode&0x50) {
-      //       pseudo.CstrBus.interruptSet(6);
-      //     }
-      //   }
-      // }
+        if (timer[2].count >= timer[2].bound) {
+          timer[2].count = 0;
+          if (timer[2].mode&0x50) {
+            pseudo.CstrBus.interruptSet(6);
+          }
+        }
+      }
     },
 
     scopeW(addr, data) {
@@ -1462,6 +1487,7 @@ pseudo.CstrMips = (function() {
     if (opcodeCount >= 64) {
       // Rootcounters, interrupts
       pseudo.CstrCounters.update();
+        pseudo.CstrCdrom.update();
       pseudo.CstrBus.interruptsUpdate();
 
       // Exceptions
@@ -2582,6 +2608,10 @@ pseudo.CstrGraphics = (function() {
           pseudo.CstrRender.draw(pipe.prim, pipe.data);
         }
       }
+    },
+
+    read(addr, size) {
+      // Oops
     }
   }
 
@@ -2680,6 +2710,10 @@ pseudo.CstrGraphics = (function() {
 
       switch(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
         case 0x00000401: // Disable DMA?
+          return;
+
+        case 0x01000200:
+          dataMem.read(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
           return;
 
         case 0x01000201:

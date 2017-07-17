@@ -11,9 +11,18 @@
   res.c  = size;\
   res.ok = true
 
+#define defaultCtrlAndStat(code)\
+  ctrl |= 0x80;\
+  stat = CD_STAT_NO_INTR;\
+  addIrqQueue(data, code)
+
+#define CD_INT(end)\
+  cdint = 1
+
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, irq, re2;
   var reads, readed, occupied;
+  var cdint;
 
   var param = {
     data: new UintBcap(8),
@@ -29,6 +38,22 @@ pseudo.CstrCdrom = (function() {
        c: 0,
       ok: 0,
   };
+
+  function addIrqQueue(code, end) {
+    irq = code;
+    
+    if (stat) {
+      psx.error('addIrqQueue stat');
+      //end_time = end;
+    }
+    else {
+      CD_INT(end);
+    }
+  }
+
+  function interrupt() {
+    psx.error('CD interrupt');
+  }
 
   return {
     reset() {
@@ -51,6 +76,8 @@ pseudo.CstrCdrom = (function() {
       reads    = false;
       readed   = false;
       occupied = false;
+
+      cdint = 0;
     },
 
     scopeW(addr, data) {
@@ -69,27 +96,16 @@ pseudo.CstrCdrom = (function() {
           occupied = false;
           
           if (ctrl&0x01) {
-            psx.error('ctrl&0x01');
+            return;
           }
 
           switch(data) {
             case 25: // CdlTest
-              stat = CD_STAT_ACKNOWLEDGE;
-            
-              switch(param.data[0]) {
-                case 0x20:
-                  setResultSize(4);
-                  res.data.set([0x98, 0x06, 0x10, 0xc3]); // Test 20
-                  break;
-
-                default:
-                  psx.error('param.data[0] -> '+hex(param.data[0]));
-                  break;
-              }
+              defaultCtrlAndStat(0x1000);
               break;
           }
 
-          if (stat !== CD_STAT_NO_INTR && re2 !== 0x18) {
+          if (stat !== CD_STAT_NO_INTR) {
             bus.interruptSet(IRQ_CD);
           }
           return;
@@ -118,7 +134,7 @@ pseudo.CstrCdrom = (function() {
         case 0x1803:
           if (data === 0x07 && ctrl&0x01) {
             stat = 0;
-
+            
             if (irq === 0xff) {
               psx.error('irq == 0xff');
             }
@@ -184,11 +200,20 @@ pseudo.CstrCdrom = (function() {
             }
           }
           else {
-            CD_REG(3) = 0xff;
+            CD_REG(3) = 0;
           }
           return CD_REG(3);
       }
       psx.error('CD-ROM Read '+hex(addr));
+    },
+
+    update() {
+      if (cdint) {
+        if (cdint++ === 16) {
+          interrupt();
+          cdint = 0;
+        }
+      }
     }
   };
 })();

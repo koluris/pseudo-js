@@ -364,6 +364,7 @@ pseudo.CstrMips = (function() {
     if (opcodeCount >= PSX_CYCLE) {
       // Rootcounters, interrupts
       rootcnt.update();
+        cdrom.update();
       bus.interruptsUpdate();
 
       // Exceptions
