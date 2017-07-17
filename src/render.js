@@ -33,7 +33,7 @@
 // Compose Texture
 #define composeTexture(a)\
   for (var i in a) {\
-    a[i]/=256.0;\
+    a[i] /= 256.0;\
   }\
   ctx.uniform1i(attrib._e, true);\
   ctx.enableVertexAttrib(attrib._t);\

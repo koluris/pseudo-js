@@ -83,6 +83,11 @@ pseudo.CstrHardware = (function() {
       },
 
       b(addr, data) {
+        if (addr >= 0x1800 && addr <= 0x1803) { // CD-ROM
+          cdrom.scopeW(addr, data);
+          return;
+        }
+
         switch(addr) {
           case 0x1040:
             sio.write.b(addr, data);
@@ -148,6 +153,10 @@ pseudo.CstrHardware = (function() {
       },
 
       b(addr) {
+        if (addr >= 0x1800 && addr <= 0x1803) { // CD-ROM
+          return cdrom.scopeR(addr);
+        }
+
         switch(addr) {
           case 0x1040: // Controls
             return sio.read.b(addr);

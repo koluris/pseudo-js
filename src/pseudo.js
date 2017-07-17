@@ -54,6 +54,7 @@ pseudo.CstrMain = (function() {
          vs.reset();
         mem.reset();
     rootcnt.reset();
+      cdrom.reset();
         bus.reset();
         sio.reset();
        cop2.reset();
@@ -119,7 +120,7 @@ pseudo.CstrMain = (function() {
           // PS-X EXE
           chunkReader(file, 0, 8, function(id) {
             if (id === 'PS-X EXE') {
-              var reader  = new FileReader();
+              var reader = new FileReader();
               reader.onload = function(e) { // Callback
                 if (reset()) {
                   prepareExe(e.dest.result);

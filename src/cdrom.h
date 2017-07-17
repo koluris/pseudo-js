@@ -1,0 +1,2 @@
+#define cdrom\
+  pseudo.CstrCdrom
