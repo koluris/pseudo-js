@@ -255,6 +255,14 @@ pseudo.CstrBus = (function() {
 
 
 
+
+
+
+
+
+
+
+
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, irq, re2;
   var reads, readed, occupied;
@@ -300,7 +308,7 @@ pseudo.CstrCdrom = (function() {
     scopeW(addr, data) {
       switch(addr) {
         case 0x1800:
-          ctrl = data | (ctrl&(~3));
+          ctrl = data | (ctrl&(~0x03));
     
           if (!data) {
             param.p = 0;
@@ -309,11 +317,40 @@ pseudo.CstrCdrom = (function() {
           }
           return;
 
+        case 0x1801:
+          occupied = false;
+          
+          if (ctrl&0x01) {
+            pseudo.CstrMain.error('ctrl&0x01');
+          }
+
+          switch(data) {
+            case 25: // CdlTest
+              stat = 3;
+            
+              switch(param.data[0]) {
+                case 0x20:
+                  res.p = 0; res.c = 4; res.ok = true;
+                  res.data.set([0x98, 0x06, 0x10, 0xc3]); // Test 20
+                  break;
+
+                default:
+                  pseudo.CstrMain.error('param.data[0] -> '+('0x'+(param.data[0]>>>0).toString(16)));
+                  break;
+              }
+              break;
+          }
+
+          if (stat !== 0 && re2 !== 0x18) {
+            pseudo.CstrBus.interruptSet(2);
+          }
+          return;
+
         case 0x1802:
           if (ctrl&0x01) {
             switch(data) {
               case 7:
-                ctrl &= ~3;
+                ctrl &= ~0x03;
                 param.p = 0;
                 param.c = 0;
                 res.ok  = true;
@@ -361,7 +398,7 @@ pseudo.CstrCdrom = (function() {
       switch(addr) {
         case 0x1800:
           if (res.ok) {
-            pseudo.CstrMain.error('R 0x1800 res.ok');
+            ctrl |= 0x20;
           }
           else {
             ctrl &= ~0x20;
@@ -374,9 +411,29 @@ pseudo.CstrCdrom = (function() {
           ctrl |= 0x18;
           return pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = ctrl;
 
+        case 0x1801:
+          if (res.ok) {
+            pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = res.data[res.p++];
+        
+            if (res.p === res.c) {
+              res.ok = false;
+            }
+          }
+          else {
+            pseudo.CstrMain.error('R 0x1801 else');
+            //pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
+          }
+          return pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
+
         case 0x1803:
           if (stat) {
-            pseudo.CstrMain.error('R 0x1803 stat');
+            if (ctrl&0x01) {
+              pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = stat | 0xe0;
+            }
+            else {
+              pseudo.CstrMain.error('R 0x1803 stat 2');
+              //pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0xff;
+            }
           }
           else {
             pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0xff;

@@ -1,7 +1,15 @@
 #define hwr  mem.__hwr
 
+#define CD_STAT_NO_INTR     0
+#define CD_STAT_ACKNOWLEDGE 3
+
 #define CD_REG(r)\
   directMemB(hwr.ub, 0x1800|r)
+
+#define setResultSize(size)\
+  res.p  = 0;\
+  res.c  = size;\
+  res.ok = true
 
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, irq, re2;
@@ -48,7 +56,7 @@ pseudo.CstrCdrom = (function() {
     scopeW(addr, data) {
       switch(addr) {
         case 0x1800:
-          ctrl = data | (ctrl&(~3));
+          ctrl = data | (ctrl&(~0x03));
     
           if (!data) {
             param.p = 0;
@@ -57,11 +65,40 @@ pseudo.CstrCdrom = (function() {
           }
           return;
 
+        case 0x1801:
+          occupied = false;
+          
+          if (ctrl&0x01) {
+            psx.error('ctrl&0x01');
+          }
+
+          switch(data) {
+            case 25: // CdlTest
+              stat = CD_STAT_ACKNOWLEDGE;
+            
+              switch(param.data[0]) {
+                case 0x20:
+                  setResultSize(4);
+                  res.data.set([0x98, 0x06, 0x10, 0xc3]); // Test 20
+                  break;
+
+                default:
+                  psx.error('param.data[0] -> '+hex(param.data[0]));
+                  break;
+              }
+              break;
+          }
+
+          if (stat !== CD_STAT_NO_INTR && re2 !== 0x18) {
+            bus.interruptSet(IRQ_CD);
+          }
+          return;
+
         case 0x1802:
           if (ctrl&0x01) {
             switch(data) {
               case 7:
-                ctrl &= ~3;
+                ctrl &= ~0x03;
                 param.p = 0;
                 param.c = 0;
                 res.ok  = true;
@@ -109,7 +146,7 @@ pseudo.CstrCdrom = (function() {
       switch(addr) {
         case 0x1800:
           if (res.ok) {
-            psx.error('R 0x1800 res.ok');
+            ctrl |= 0x20;
           }
           else {
             ctrl &= ~0x20;
@@ -122,9 +159,29 @@ pseudo.CstrCdrom = (function() {
           ctrl |= 0x18;
           return CD_REG(0) = ctrl;
 
+        case 0x1801:
+          if (res.ok) {
+            CD_REG(1) = res.data[res.p++];
+        
+            if (res.p === res.c) {
+              res.ok = false;
+            }
+          }
+          else {
+            psx.error('R 0x1801 else');
+            //CD_REG(1) = 0;
+          }
+          return CD_REG(1);
+
         case 0x1803:
           if (stat) {
-            psx.error('R 0x1803 stat');
+            if (ctrl&0x01) {
+              CD_REG(3) = stat | 0xe0;
+            }
+            else {
+              psx.error('R 0x1803 stat 2');
+              //CD_REG(3) = 0xff;
+            }
           }
           else {
             CD_REG(3) = 0xff;
