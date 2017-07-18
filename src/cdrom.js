@@ -1,4 +1,4 @@
-// Based on Mizvekov's work, circa 2001. Thanks a lot!
+// Based on Mizvekov`s work, circa 2001. Thanks a lot!
 
 // Sector Buffer Status
 #define CD_NOINTR      0x00

@@ -250,7 +250,7 @@ pseudo.CstrBus = (function() {
 })();
 
 
-// Based on Mizvekov's work, circa 2001. Thanks a lot!
+// Based on Mizvekov`s work, circa 2001. Thanks a lot!
 
 // Sector Buffer Status
 
@@ -1000,7 +1000,7 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrSerial.read.h(addr);
         }
 
-        if (addr >= 0x1110 && addr <= 0x1124) { // Rootcounters
+        if (addr >= 0x1100 && addr <= 0x1124) { // Rootcounters
           return pseudo.CstrCounters.scopeR(addr);
         }
 
