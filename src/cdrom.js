@@ -1,24 +1,24 @@
 // Based on Mizvekov`s work, circa 2001. Thanks a lot!
 
 // Sector Buffer Status
-#define CD_NOINTR      0x00
-#define CD_COMPLETE    0x02
-#define CD_ACKNOWLEDGE 0x03
+#define CD_NOINTR          0x00
+#define CD_COMPLETE        0x02
+#define CD_ACKNOWLEDGE     0x03
 
 // Control
-#define CD_CTRL_MODE0 0x01
-#define CD_CTRL_MODE1 0x02
-#define CD_CTRL_NP    0x08
-#define CD_CTRL_PH    0x10
-#define CD_CTRL_RES   0x20
-#define CD_CTRL_BUSY  0x80
+#define CD_CTRL_MODE0      0x01
+#define CD_CTRL_MODE1      0x02
+#define CD_CTRL_NP         0x08
+#define CD_CTRL_PH         0x10
+#define CD_CTRL_RES        0x20
+#define CD_CTRL_BUSY       0x80
 
 // Status
-#define CD_STATUS_ERROR   0x01
-#define CD_STATUS_STANDBY 0x02
-#define CD_STATUS_READ    0x20
-#define CD_STATUS_SEEK    0x40
-#define CD_STATUS_PLAY    0x80
+#define CD_STATUS_ERROR    0x01
+#define CD_STATUS_STANDBY  0x02
+#define CD_STATUS_READ     0x20
+#define CD_STATUS_SEEK     0x40
+#define CD_STATUS_PLAY     0x80
 
 // Command Mode
 #define	CD_CMD_BLOCKING    0
