@@ -10,7 +10,7 @@
 
 pseudo.CstrCounters = (function() {
   var timer = [];
-  var vbk; //, dec1;
+  var vbk, dec1;
 
   // Exposed class functions/variables
   return {
@@ -24,57 +24,57 @@ pseudo.CstrCounters = (function() {
         };
       }
 
-      vbk = 0;
+      vbk  = 0;
+      dec1 = 0;
     },
 
     update() {
-      if ((vbk += PSX_CYCLE) === PSX_VSYNC) { vbk = 0;
+      if ((vbk += PSX_CYCLE) >= PSX_VSYNC) { vbk = 0;
         bus.interruptSet(IRQ_VSYNC);
          vs.redraw();
         cpu.setbp();
       }
 
-      // timer[0].count += timer[0].mode&0x100 ? PSX_CYCLE : PSX_CYCLE/8;
+      timer[0].count += timer[0].mode&0x100 ? PSX_CYCLE : PSX_CYCLE/8;
 
-      // if (timer[0].count >= timer[0].bound) {
-      //   timer[0].count = 0;
-      //   if (timer[0].mode&0x50) {
-      //     //bus.interruptSet(IRQ_RTC0);
-      //     psx.error('dude 1');
-      //   }
-      // }
+      if (timer[0].count >= timer[0].bound) {
+        timer[0].count = 0;
+        if (timer[0].mode&0x50) {
+          //bus.interruptSet(IRQ_RTC0);
+          psx.error('dude 1');
+        }
+      }
 
-      // if (!(timer[1].mode&0x100)) {
-      //   timer[1].count += PSX_CYCLE;
+      if (!(timer[1].mode&0x100)) {
+        timer[1].count += PSX_CYCLE;
 
-      //   if (timer[1].count >= timer[1].bound) {
-      //     timer[1].count = 0;
-      //     if (timer[1].mode&0x50) {
-      //       //bus.interruptSet(IRQ_RTC1);
-      //       psx.error('dude 2');
-      //     }
-      //   }
-      // }
-      // else if ((dec1+=PSX_CYCLE) >= PSX_HSYNC) {
-      //   dec1 = 0;
-      //   if (++timer[1].count >= timer[1].bound) {
-      //     timer[1].count = 0;
-      //     if (timer[1].mode&0x50) {
-      //       bus.interruptSet(IRQ_RTC1);
-      //     }
-      //   }
-      // }
+        if (timer[1].count >= timer[1].bound) {
+          timer[1].count = 0;
+          if (timer[1].mode&0x50) {
+            //bus.interruptSet(IRQ_RTC1);
+            psx.error('dude 2');
+          }
+        }
+      }
+      else if ((dec1 += PSX_CYCLE) >= PSX_HSYNC) { dec1 = 0;
+        if (++timer[1].count >= timer[1].bound) {
+          timer[1].count = 0;
+          if (timer[1].mode&0x50) {
+            bus.interruptSet(IRQ_RTC1);
+          }
+        }
+      }
 
-      // if (!(timer[2].mode&1)) {
-      //   timer[2].count += timer[2].mode&0x200 ? PSX_CYCLE/8 : PSX_CYCLE;
+      if (!(timer[2].mode&1)) {
+        timer[2].count += timer[2].mode&0x200 ? PSX_CYCLE/8 : PSX_CYCLE;
 
-      //   if (timer[2].count >= timer[2].bound) {
-      //     timer[2].count = 0;
-      //     if (timer[2].mode&0x50) {
-      //       bus.interruptSet(IRQ_RTC2);
-      //     }
-      //   }
-      // }
+        if (timer[2].count >= timer[2].bound) {
+          timer[2].count = 0;
+          if (timer[2].mode&0x50) {
+            bus.interruptSet(IRQ_RTC2);
+          }
+        }
+      }
     },
 
     scopeW(addr, data) {

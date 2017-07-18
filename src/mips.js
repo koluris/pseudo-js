@@ -187,7 +187,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 1: // REGIMM
-        switch (rt) {
+        switch(rt) {
           case 0: // BLTZ
             if (SIGN_EXT_32(r[rs]) < 0) {
               branch(b_addr);
@@ -273,7 +273,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 16: // COP0
-        switch (rs) {
+        switch(rs) {
           case 0: // MFC0
             r[rt] = copr[rd];
             return;

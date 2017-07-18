@@ -130,6 +130,27 @@
 #define SY(n)  __oo(cop2d.sh, n+12, 1)
 #define SZ(n)  __oo(cop2d.uh, n+17, 0)
 
+// General
+#define FIX(a) \
+  ((a)>>12)
+
+#define LIM(a, min, max, bit) \
+  (((a) < min) ? (FLAG |= (1<<bit), min) : \
+  (((a) > max) ? (FLAG |= (1<<bit), max) : ((a))))
+
+#define limB1(a) LIM(a, -32768.0, 32767.0, 24)
+#define limB2(a) LIM(a, -32768.0, 32767.0, 23)
+#define limB3(a) LIM(a, -32768.0, 32767.0, 22)
+#define limD(a)  LIM(a,      0.0, 65535.0, 18)
+#define limG1(a) LIM(a,  -1024.0,  1023.0, 14)
+#define limG2(a) LIM(a,  -1024.0,  1023.0, 13)
+#define limH(a)  LIM(a,      0.0,  4096.0, 12)
+
+#define MAC2IR()\
+  IR1 = limB1(MAC1);\
+  IR2 = limB2(MAC2);\
+  IR3 = limB3(MAC3)
+
 pseudo.CstrCop2 = (function() {
   var cop2c = union(32*4);
   var cop2d = union(32*4);
@@ -162,8 +183,65 @@ pseudo.CstrCop2 = (function() {
           }
           psx.error('COP2 Basic '+(rs&7));
           return;
+
+        case 1: // RTPS
+          {
+            FLAG = 0;
+
+            MAC1 = FIX(R11*VX0+R12*VY0+R13*VZ0)+TRX;
+            MAC2 = FIX(R21*VX0+R22*VY0+R23*VZ0)+TRY;
+            MAC3 = FIX(R31*VX0+R32*VY0+R33*VZ0)+TRZ;
+
+            MAC2IR();
+
+            SZ0  = SZ1;
+            SZ1  = SZ2;
+            SZ2  = SZ3;
+            SZ3  = limD(MAC3);
+
+            var quotient = H*4096.0/SZ3;
+
+            SXY0 = SXY1;
+            SXY1 = SXY2;
+
+            SX2  = limG1(FIX(IR1*quotient)+OFX);
+            SY2  = limG2(FIX(IR2*quotient)+OFY);
+
+            MAC0 = FIX(DQA*quotient)+DQB;
+            IR0  = limH(MAC0);
+          }
+          return;
+
+        case 48: // RTPT
+          {
+            var quotient;
+
+            FLAG = 0;
+            SZ0  = SZ3;
+
+            for (var v=0; v<3; v++) {
+              var v1 = VX(v);
+              var v2 = VY(v);
+              var v3 = VZ(v);
+
+              MAC1 = FIX(R11*v1+R12*v2+R13*v3)+TRX;
+              MAC2 = FIX(R21*v1+R22*v2+R23*v3)+TRY;
+              MAC3 = FIX(R31*v1+R32*v2+R33*v3)+TRZ;
+
+              MAC2IR();
+
+              SZ(v) = limD(MAC3);
+              quotient = H*4096.0/SZ(v);
+              
+              SX(v) = limG1(FIX(IR1*quotient)+OFX);
+              SY(v) = limG2(FIX(IR2*quotient)+OFY);
+            }
+            MAC0 = FIX(DQA*quotient)+DQB;
+            IR0  = limH(MAC0);
+          }
+          return;
       }
-      //psx.error('COP2 Execute '+hex(code&0x3f));
+      //psx.error('COP2 Execute '+(code&0x3f));
     },
 
     opcodeMFC2(addr) {
