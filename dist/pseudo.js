@@ -834,7 +834,7 @@ pseudo.CstrCop2 = (function() {
 
 pseudo.CstrCounters = (function() {
   var timer = [];
-  var vbk, dec1;
+  var vbk, hsc;
 
   // Exposed class functions/variables
   return {
@@ -848,8 +848,8 @@ pseudo.CstrCounters = (function() {
         };
       }
 
-      vbk  = 0;
-      dec1 = 0;
+      vbk = 0;
+      hsc = 0;
     },
 
     update() {
@@ -874,7 +874,7 @@ pseudo.CstrCounters = (function() {
           }
         }
       }
-      else if ((dec1 += 64) >= (33868800/15734)) { dec1 = 0;
+      else if ((hsc += 64) >= (33868800/15734)) { hsc = 0;
         if (++timer[1].count >= timer[1].bound) {
           timer[1].count = 0;
           if (timer[1].mode&0x50) {
