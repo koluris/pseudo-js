@@ -346,7 +346,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 50: // LWC2
-        cop2.opcodeMTC2(mem.read.w(ob), rt);
+        cop2.opcodeMTC2(rt, mem.read.w(ob));
         return;
 
       case 58: // SWC2

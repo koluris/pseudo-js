@@ -1663,7 +1663,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 50: // LWC2
-        pseudo.CstrCop2.opcodeMTC2(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))), ((code>>>16)&0x1f));
+        pseudo.CstrCop2.opcodeMTC2(((code>>>16)&0x1f), pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))));
         return;
 
       case 58: // SWC2
