@@ -53,6 +53,7 @@ pseudo.CstrMain = (function() {
      render.reset();
          vs.reset();
         mem.reset();
+      audio.reset();
     rootcnt.reset();
       cdrom.reset();
         bus.reset();
@@ -84,6 +85,7 @@ pseudo.CstrMain = (function() {
 
       $(function() { // DOMContentLoaded
          render.awake($('#screen'), $('#resolution'));
+          audio.awake();
             cpu.awake($('#output'));
 
         request('bios/scph1001.bin', function(resp) {

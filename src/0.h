@@ -9,6 +9,7 @@
 #define enableVertexAttrib      enableVertexAttribArray
 #define F32cap                  Float32Array
 #define fetchAttribute          getAttribLocation
+#define fetchChannelData        getChannelData
 #define fetchContext            getContext
 #define fetchFunctionParameter  getProgramParameter
 #define fetchShaderParameter    getShaderParameter
@@ -18,6 +19,7 @@
 #define readAsBuffer            readAsArrayBuffer
 #define responseSort            responseType
 #define SintHcap                Int16Array
+#define SintWcap                Int32Array
 #define texPhoto2D              texImage2D
 #define toChars                 toString
 #define UintBcap                Uint8Array

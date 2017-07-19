@@ -152,12 +152,457 @@ var pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrAudio = (function() {
+  // Web Audio
+  var ctxAudio, ctxScript;
+  var sbuf, stereo = true;
+
+  // SPU specific
+  var spuMem;
+  var spuAddr;
+  var spuVoices = [];
+  var spuVolumeL, spuVolumeR;
+
+  function int16ToFloat32(input) {
+    var output = new Float32Array(input.byteLength/2);
+    
+    for (var i=0; i<input.byteLength/2; i++) {
+      var int = input[i];
+      output[i] = int >= 0x8000 ? -(0x10000-int)/0x8000 : int/0x7fff;
+    }
+    return output;
+  }
+
+  var f = [
+    [0, 0], [60, 0], [115, -52], [98, -55], [122, -60]
+  ];
+
+  function depackVAG(chn) {
+    var p = chn.saddr;
+    var s_1  = 0;
+    var s_2  = 0;
+    var temp = [];
+
+    while (1) {
+      var shift  = spuMem.ub[p]&15;
+      var filter = spuMem.ub[p]>>4;
+
+      for (var i=2; i<16; i++) {
+        var a = ((spuMem.ub[p+i]&0x0f)<<12);
+        var b = ((spuMem.ub[p+i]&0xf0)<< 8);
+        if (a&0x8000) a |= 0xffff0000;
+        if (b&0x8000) b |= 0xffff0000;
+        temp[i*2-4] = a>>shift;
+        temp[i*2-3] = b>>shift;
+      }
+
+      for (var i=0; i<28; i++) {
+        var res = temp[i] + ((s_1*f[filter][0] + s_2*f[filter][1] + 32)>>6);
+        s_2 = s_1;
+        s_1 = res;
+        res = Math.min(Math.max(res, -32768), 32767);
+        chn.buffer.sh[chn.size++] = res;
+
+        // Overflow
+        if (chn.size === 65536) {
+          pseudo.CstrMips.consoleWrite('error', 'SPU Channel size overflow > '+65536);
+          return;
+        }
+      }
+
+      // Operators
+      if (spuMem.ub[p+1] === 3 || spuMem.ub[p+1] === 7) { // Termination
+        return;
+      }
+      if (spuMem.ub[p+1] === 6) { // Repeat
+        chn.raddr = chn.size;
+      }
+
+      // Advance Buffer
+      p+=16;
+    }
+  }
+
+  function decodeStream() {
+    for (var n=0; n<24; n++) {
+      // Channel on?
+      var chn = spuVoices[n];
+      if (chn.on === false) continue;
+
+      for (var i=0; i<1024; i++) {
+        chn.count += chn.freq;
+        if (chn.count >= 44100) {
+          chn.pos += (chn.count/44100) | 0;
+          chn.count %= 44100;
+        }
+
+        // Mix Channel Samples
+        if (stereo) {
+          sbuf.temp[i] += chn.buffer.sh[chn.pos] * (chn.volume.l/0x3fff);
+          sbuf.temp[i+1024] += -chn.buffer.sh[chn.pos] * (chn.volume.r/0x3fff);
+        }
+        else {
+          sbuf.temp[i] += chn.buffer.sh[chn.pos] * ((chn.volume.l+chn.volume.r)/2)/0x3fff;
+        }
+
+        // End of Sample
+        if (chn.pos >= chn.size) {
+          if (chn.raddr > 0) { // Repeat?
+            chn.pos = chn.raddr;
+            chn.count = 0;
+            continue;
+          }
+          chn.on = false;
+          break;
+        }
+      }
+    }
+    // Volume Mix
+    for (var i=0; i<1024; i++) {
+      if (stereo) {
+        sbuf.final[i] = (sbuf.temp[i]/4) * (spuVolumeL/0x3fff);
+        sbuf.final[i+1024] = -(sbuf.temp[i+1024]/4) * (spuVolumeR/0x3fff);
+      }
+      else {
+        sbuf.final[i] = (sbuf.temp[i]/4) * ((spuVolumeL+spuVolumeR)/2)/0x3fff;
+      }
+    }
+
+    // Clear
+    sbuf.temp.fill(0);
+    return sbuf.final;
+  }
+
+  function voiceOn(data) {
+    for (var n=0; n<24; n++) {
+      if (data&(1<<n)) {
+        spuVoices[n].on    = true;
+        spuVoices[n].count = 0;
+        spuVoices[n].pos   = 0;
+        spuVoices[n].raddr = 0;
+        spuVoices[n].size  = 0;
+
+        //ioZero(spuVoices[n].buffer.sh);
+        depackVAG(spuVoices[n]);
+      }
+    }
+  }
+
+  function voiceOff(data) {
+    for (var n=0; n<24; n++) {
+      if (data&(1<<n)) {
+        spuVoices[n].on = false;
+      }
+    }
+  }
+
+  function setVolume(data) {
+    var ret = data;
+
+    if (data&0x8000) {
+      if (data&0x1000) {
+        ret ^= 0xffff;
+      }
+      ret = ((ret&0x7f)+1)/2;
+      ret += ret/(2*((data&0x2000) ? -1 : 1));
+      ret *= 128;
+    }
+    else {
+      if (data&0x4000) {
+        ret = 0x3fff-(data&0x3fff);
+      }
+    }
+    return ret&0x3fff;
+  }
+
+  var dataMem = {
+    write(addr, size) {
+      while (size-- > 0) {
+        spuMem.uh[spuAddr>>>1] = pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1]; addr+=2;
+        spuAddr+=2;
+        spuAddr&=0x3ffff;
+      }
+    },
+
+    read(addr, size) {
+      while (size-- > 0) {
+        pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1] = spuMem.uh[spuAddr>>>1]; addr+=2;
+        spuAddr+=2;
+        spuAddr&=0x3ffff;
+      }
+    }
+  };
+
   return {
-    awake() {
+    awake: function() {
+      spuMem = union(1024*256*2);
+
+      sbuf = {
+        temp : new Int32Array(1024*2),
+        final: new Int16Array(1024*2),
+      };
+
+      // Initialize Web Audio
+      ctxAudio  = new (window.AudioContext || window.webkitAudioContext)();
+      ctxScript = ctxAudio.createScriptProcessor(1024, 0, stereo ? 2 : 1);
+
+      // Callback
+      ctxScript.onaudioprocess = function(e) {
+        var output = e.outputBuffer;
+        var float  = int16ToFloat32(decodeStream());
+
+        if (stereo) {
+          output.getChannelData(0).set(float.slice(0, 1024 -1));
+          output.getChannelData(1).set(float.slice(1024));
+        }
+        else {
+          output.getChannelData(0).set(float.slice(0, 1024 -1));
+        }
+      };
+
+      // Touch Devices
+      window.addEventListener('touchstart', function() {
+        var buffer = ctxAudio.createBuffer(1, 1, 22050);
+        var source = ctxAudio.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctxAudio.destination);
+        source.noteOn(0);
+      }, false);
+    },
+
+    reset: function() {
+      spuMem.uh.fill(0);
+      sbuf.temp.fill(0);
+      sbuf.final.fill(0);
+
+      // Variables
+      spuAddr = ~0;
+      spuVolumeL = 0x3fff;
+      spuVolumeR = 0x3fff;
+
+      // Channels
+      for (var n=0; n<24; n++) {
+        spuVoices[n] = {
+          buffer : union(65536*2),
+          count  : 0,
+          freq   : 0,
+          on     : false,
+          pos    : 0,
+          raddr  : 0,
+          saddr  : 0,
+          size   : 0,
+          volume : {
+            l: 0, r: 0
+          }
+        };
+
+        spuVoices[n].buffer.sh.fill(0);
+      }
+
+      // Connect
+      ctxScript.disconnect();
+      ctxScript.connect(ctxAudio.destination);
+    },
+
+    scopeW: function(addr, data) {
+      pseudo.CstrMem.__hwr.uh[((addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = data;
+
+      // Channels
+      if (addr >= 0x1c00 && addr <= 0x1d7e) {
+        var n = (addr>>>4)&0x1f;
+
+        switch (addr&0xf) {
+          case 0x0: // Volume L
+            spuVoices[n].volume.l = setVolume(data);
+            return;
+
+          case 0x2: // Volume R
+            spuVoices[n].volume.r = setVolume(data);
+            return;
+
+          case 0x4: // Pitch
+            spuVoices[n].freq = Math.max((data*44100)/4096, 1);
+            return;
+
+          case 0x6: // Sound Address
+            spuVoices[n].saddr = (data<<3)>>>0;
+            return;
+
+          case 0xe: // Return Address
+            spuVoices[n].raddr = (data<<3)>>>0;
+            return;
+
+          
+          case 0x8:
+          case 0xa:
+          case 0xc:
+            return;
+        }
+        pseudo.CstrMain.error('SPU scopeW < 0x1d80 '+(('0x'+(addr>>>0).toString(16)))+' <- '+('0x'+(data>>>0).toString(16)));
+      }
+
+      // Reverb
+      if (addr >= 0x1dc0 && addr <= 0x1dfe) {
+        return;
+      }
+
+      // HW
+      switch (addr) {
+        case 0x1d80: // Volume L
+          spuVolumeL = setVolume(data);
+          return;
+
+        case 0x1d82: // Volume R
+          spuVolumeR = setVolume(data);
+          return;
+
+        case 0x1d88: // Sound On 1
+          voiceOn(data);
+          return;
+
+        case 0x1d8a: // Sound On 2
+          voiceOn(data<<16);
+          return;
+
+        case 0x1d8c: // Sound Off 1
+          voiceOff(data);
+          return;
+
+        case 0x1d8e: // Sound Off 2
+          voiceOff(data<<16);
+          return;
+
+        case 0x1da6: // Transfer Address
+          spuAddr = (data<<3)>>>0;
+          return;
+
+        case 0x1da8: // Data
+          spuMem.uh[spuAddr>>>1] = data;
+          spuAddr+=2;
+          spuAddr&=0x3ffff;
+          return;
+
+        case 0x1daa: // Control
+          return;
+
+        case 0x1d84: // Reverb Volume L
+        case 0x1d86: // Reverb Volume R
+        case 0x1d90: // FM Mode On 1
+        case 0x1d92: // FM Mode On 2
+        case 0x1d94: // Noise Mode On 1
+        case 0x1d96: // Noise Mode On 2
+        case 0x1d98: // Reverb Mode On 1
+        case 0x1d9a: // Reverb Mode On 2
+        case 0x1d9c: // Mute 1
+        case 0x1d9e: // Mute 2
+        case 0x1da2: // Reverb Address
+        case 0x1dac:
+        case 0x1db0: // CD Volume L
+        case 0x1db2: // CD Volume R
+        case 0x1db4:
+        case 0x1db6:
+          return;
+      }
+      pseudo.CstrMain.error('SPU scopeR '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+    },
+
+    scopeR: function(addr) {
+      // Channels
+      if (addr >= 0x1c00 && addr <= 0x1d7e) {
+        switch (addr&0xf) {
+          case 0x0:
+          case 0x2:
+          case 0x4:
+          case 0x6:
+          case 0x8:
+          case 0xa:
+          case 0xc:
+          case 0xe:
+            return pseudo.CstrMem.__hwr.uh[((addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
+        }
+        pseudo.CstrMain.error('SPU scopeR phase '+('0x'+(addr&0xf>>>0).toString(16)));
+      }
+
+      // HW
+      switch (addr) {
+        case 0x1da6: // Transfer Address
+          return spuAddr>>>3;
+
+        case 0x1d88: // Sound On 1
+        case 0x1d8a: // Sound On 2
+        case 0x1d8c: // Sound Off 1
+        case 0x1d8e: // Sound Off 2
+        case 0x1d94: // Noise Mode On 1
+        case 0x1d96: // Noise Mode On 2
+        case 0x1d98: // Reverb Mode On 1
+        case 0x1d9a: // Reverb Mode On 2
+        case 0x1d9c: // Voice Status 0 - 15
+        case 0x1daa: // Control
+        case 0x1dac: // ?
+        case 0x1dae: // Status
+        case 0x1e00:
+        case 0x1e02:
+        case 0x1e04:
+        case 0x1e06:
+        case 0x1e08:
+        case 0x1e0a:
+        case 0x1e0c:
+        case 0x1e0e:
+          return pseudo.CstrMem.__hwr.uh[((addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
+      }
+      pseudo.CstrMain.error('SPU scopeR -> '+(('0x'+(addr>>>0).toString(16))));
+      return 0;
+    },
+
+    executeDMA: function(addr) {
+      var size = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff)*2;
+
+      switch (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+        case 0x01000201: // Write DMA Mem
+          dataMem.write(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
+          return;
+
+        case 0x01000200:
+          dataMem.read(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
+          return;
+      }
+      pseudo.CstrMain.error('SPU DMA case '+('0x'+(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>>0).toString(16)));
     }
   };
 })();
+
+
+
 
 
 
@@ -230,9 +675,9 @@ pseudo.CstrBus = (function() {
         pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
 
         switch(chan) {
-          case 2: pseudo.CstrGraphics .executeDMA(addr); break; // GPU
-          case 4: break; // SPU
-          case 6: pseudo.CstrMem.executeDMA(addr); break; // OTC
+          case 2: pseudo.CstrGraphics   .executeDMA(addr); break; // GPU
+          case 4: pseudo.CstrAudio.executeDMA(addr); break; // SPU
+          case 6: pseudo.CstrMem  .executeDMA(addr); break; // OTC
 
           default:
             pseudo.CstrMain.error('DMA Channel '+chan);
@@ -1008,7 +1453,7 @@ pseudo.CstrHardware = (function() {
         }
         
         if (addr >= 0x1c00 && addr <= 0x1dfe) { // Audio
-          pseudo.CstrMem.__hwr.uh[(( addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = data;
+          pseudo.CstrAudio.scopeW(addr, data);
           return;
         }
 
@@ -1083,7 +1528,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1c00 && addr <= 0x1e0e) { // Audio
-          return pseudo.CstrMem.__hwr.uh[(( addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
+          return pseudo.CstrAudio.scopeR(addr);
         }
 
         switch(addr) {
@@ -1828,6 +2273,7 @@ pseudo.CstrMain = (function() {
      pseudo.CstrRender.reset();
          pseudo.CstrGraphics.reset();
         pseudo.CstrMem.reset();
+      pseudo.CstrAudio.reset();
     pseudo.CstrCounters.reset();
       pseudo.CstrCdrom.reset();
         pseudo.CstrBus.reset();
@@ -1859,6 +2305,7 @@ pseudo.CstrMain = (function() {
 
       $(function() { // DOMContentLoaded
          pseudo.CstrRender.awake($('#screen'), $('#resolution'));
+          pseudo.CstrAudio.awake();
             pseudo.CstrMips.awake($('#output'));
 
         request('bios/scph1001.bin', function(resp) {

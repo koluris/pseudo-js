@@ -64,7 +64,7 @@ pseudo.CstrHardware = (function() {
         }
         
         if (addr >= 0x1c00 && addr <= 0x1dfe) { // Audio
-          directMemH(hwr.uh, addr) = data;
+          audio.scopeW(addr, data);
           return;
         }
 
@@ -139,7 +139,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1c00 && addr <= 0x1e0e) { // Audio
-          return directMemH(hwr.uh, addr);
+          return audio.scopeR(addr);
         }
 
         switch(addr) {
