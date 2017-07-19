@@ -416,6 +416,8 @@ pseudo.CstrAudio = (function() {
         case 0x1daa: // Control
         case 0x1dac: // ?
         case 0x1dae: // Status
+        case 0x1db8:
+        case 0x1dba:
         case 0x1e00:
         case 0x1e02:
         case 0x1e04:
