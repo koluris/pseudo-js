@@ -853,19 +853,13 @@ pseudo.CstrCounters = (function() {
     },
 
     update() {
-      if ((vbk += 64) >= (33868800/60)) { vbk = 0;
-        pseudo.CstrBus.interruptSet(0);
-         pseudo.CstrGraphics.redraw();
-        pseudo.CstrMips.setbp();
-      }
-
       timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
 
       if (timer[0].count >= timer[0].bound) {
         timer[0].count = 0;
         if (timer[0].mode&0x50) {
           //pseudo.CstrBus.interruptSet(4);
-          pseudo.CstrMain.error('dude 1');
+          pseudo.CstrMain.error('IRQ_RTC0');
         }
       }
 
@@ -876,7 +870,7 @@ pseudo.CstrCounters = (function() {
           timer[1].count = 0;
           if (timer[1].mode&0x50) {
             //pseudo.CstrBus.interruptSet(5);
-            pseudo.CstrMain.error('dude 2');
+            pseudo.CstrMain.error('IRQ_RTC1');
           }
         }
       }
@@ -898,6 +892,12 @@ pseudo.CstrCounters = (function() {
             pseudo.CstrBus.interruptSet(6);
           }
         }
+      }
+
+      if ((vbk += 64) >= (33868800/60)) { vbk = 0;
+        pseudo.CstrBus.interruptSet(0);
+         pseudo.CstrGraphics.redraw();
+        pseudo.CstrMips.setbp();
       }
     },
 

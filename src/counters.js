@@ -29,19 +29,13 @@ pseudo.CstrCounters = (function() {
     },
 
     update() {
-      if ((vbk += PSX_CYCLE) >= PSX_VSYNC) { vbk = 0;
-        bus.interruptSet(IRQ_VSYNC);
-         vs.redraw();
-        cpu.setbp();
-      }
-
       timer[0].count += timer[0].mode&0x100 ? PSX_CYCLE : PSX_CYCLE/8;
 
       if (timer[0].count >= timer[0].bound) {
         timer[0].count = 0;
         if (timer[0].mode&0x50) {
           //bus.interruptSet(IRQ_RTC0);
-          psx.error('dude 1');
+          psx.error('IRQ_RTC0');
         }
       }
 
@@ -52,7 +46,7 @@ pseudo.CstrCounters = (function() {
           timer[1].count = 0;
           if (timer[1].mode&0x50) {
             //bus.interruptSet(IRQ_RTC1);
-            psx.error('dude 2');
+            psx.error('IRQ_RTC1');
           }
         }
       }
@@ -74,6 +68,12 @@ pseudo.CstrCounters = (function() {
             bus.interruptSet(IRQ_RTC2);
           }
         }
+      }
+
+      if ((vbk += PSX_CYCLE) >= PSX_VSYNC) { vbk = 0;
+        bus.interruptSet(IRQ_VSYNC);
+         vs.redraw();
+        cpu.setbp();
       }
     },
 
