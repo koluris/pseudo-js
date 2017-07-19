@@ -18,6 +18,7 @@ Here's a list with the overall progress of the emulator, broken down in distinct
 * `90% -> CPU Mips R3000A`
 * `85% -> Mem IO`
 * `70% -> GPU Textures`
+* `70% -> Audio`
 * `60% -> GPU Primitives & Commands`
 * `50% -> Interrupts`
 * `45% -> Rootcounters`
@@ -25,7 +26,6 @@ Here's a list with the overall progress of the emulator, broken down in distinct
 * `35% -> DMA`
 * `20% -> Serial IO`
 * `10% -> GTE`
-* `10% -> Audio`
 
 **PSeudo** does not run commercial games at this point. I want to be able to run all demos/cractros available first, then proceed with the CD-ROM and MDEC implementation. Also, for quite some time I will keep working on it with the provided CPU Interpreter. An attempt for speedup will be made later on with a **JavaScript Tracer**.
 
