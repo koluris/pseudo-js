@@ -74,7 +74,7 @@ pseudo.CstrGraphics = (function() {
     data = render.infoRead[n&0xff];
   }
 
-  function fetchFromVRAM(stream, addr, size) {
+  function fetchFromRAM(stream, addr, size) {
     var count = 0;
 
     // False alarm!
@@ -135,7 +135,7 @@ pseudo.CstrGraphics = (function() {
       
       while (i < size) {
         if (modeDMA === GPU_DMA_MEM2VRAM) {
-          if ((i += fetchFromVRAM(stream, addr, size-i)) >= size) {
+          if ((i += fetchFromRAM(stream, addr, size-i)) >= size) {
             continue;
           }
           addr += i;

@@ -2706,7 +2706,7 @@ pseudo.CstrGraphics = (function() {
     data = pseudo.CstrRender.infoRead[n&0xff];
   }
 
-  function fetchFromVRAM(stream, addr, size) {
+  function fetchFromRAM(stream, addr, size) {
     var count = 0;
 
     // False alarm!
@@ -2767,7 +2767,7 @@ pseudo.CstrGraphics = (function() {
       
       while (i < size) {
         if (modeDMA === 2) {
-          if ((i += fetchFromVRAM(stream, addr, size-i)) >= size) {
+          if ((i += fetchFromRAM(stream, addr, size-i)) >= size) {
             continue;
           }
           addr += i;
