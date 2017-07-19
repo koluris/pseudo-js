@@ -59,6 +59,7 @@ pseudo.CstrCdrom = (function() {
   var interrupt = {};
   var kind, blockEnd, seeks, reads, pause, mute;
   var motorSeek = {}, motorBase = {}, motorRead = {};
+  var destLoc = {};
   
   var parameter = {
     value: new UintBcap(8)
@@ -78,6 +79,12 @@ pseudo.CstrCdrom = (function() {
     val.value.fill(0);
     val.size    = 0;
     val.pointer = 0;
+  }
+
+  function resetLoc(loc) {
+    loc.minute = 0;
+    loc.sec    = 0;
+    loc.frame  = 0;
   }
 
   function main() {
@@ -123,6 +130,75 @@ pseudo.CstrCdrom = (function() {
     status &= ~CD_STATUS_ERROR;
   }
 
+  function command(data) {
+    if (data < 0x20) {
+      switch(data) {
+        case 0x01: // CdlNop
+          busres[0] = status;
+          kind = CD_CMD_BLOCKING;
+          break;
+
+        case 0x02: // CdlSetLoc
+          stopRead();
+          buspar[0] = destLoc.minute;
+          buspar[1] = destLoc.sec;
+          buspar[2] = destLoc.frame;
+          busres[0] = status;
+          kind = CD_CMD_BLOCKING;
+          break;
+
+        case 0x0a: // CdlInit
+          stopRead();
+          status |= CD_STATUS_STANDBY;
+          busres[0] = status;
+          mode = 0;
+          kind = CD_CMD_NONBLOCKING;
+          break;
+
+        case 0x0c: // CdlDemute
+          mute = 0;
+          busres[0] = status;
+          kind = CD_CMD_BLOCKING;
+          break;
+
+        case 0x19: // CdlSustem
+          switch(parameter.value[0]) {
+            case 0x20:
+              busres.set([0x98, 0x06, 0x10, 0xc3]);
+              break;
+
+            default:
+              psx.error('CdlSustem value '+hex(parameter.value[0]));
+              break;
+          }
+          kind = CD_CMD_BLOCKING;
+          break;
+
+        case 0x1a: // CdlCheckId
+          stopRead();
+          busres.set([0x00, 0x00, 0x00, 0x00, 'S', 'C', 'E', 'A']);
+          kind = CD_CMD_NONBLOCKING;
+          break;
+
+        case 0x1e: // CdlReadToc
+          busres[0] = status;
+          kind = CD_CMD_NONBLOCKING;
+          break;
+
+        default:
+          psx.error('Execute command '+hex(data));
+          break;
+      }
+    }
+    else {
+      psx.error('data >= 0x20');
+      //busres[0] = status;
+      //kind = CD_CMD_BLOCKING;
+    }
+    invokeBase();
+    blockEnd = 0;
+  }
+
   return {
     reset() {
       busres.fill(0);
@@ -132,7 +208,11 @@ pseudo.CstrCdrom = (function() {
       status  |= CD_STATUS_STANDBY;
 
       interrupt.status = 0xe0;
-      interrupt.onhold = 0;
+      interrupt.onhold = false;
+      interrupt.onholdCause = 0;
+      interrupt.onholdParam = {
+        value: new UintBcap(8)
+      };
 
       resetMotor(motorSeek);
       resetMotor(motorBase);
@@ -141,6 +221,10 @@ pseudo.CstrCdrom = (function() {
       // CDVal
       resetVals(parameter);
       resetVals(result);
+      resetVals(interrupt.onholdParam);
+
+      // CDLoc
+      resetLoc(destLoc);
       
       // ?
       kind  = blockEnd = seeks = reads = 0;
@@ -205,44 +289,16 @@ pseudo.CstrCdrom = (function() {
             case 0x00:
               if (!interrupt.onhold) {
                 if ((interrupt.status & 0x07) || (control & CD_CTRL_BUSY)) {
-                  psx.error('(interrupt.status & 0x7) || (control & CD_CTRL_BUSY)');
-                  //return;
+                  interrupt.onhold = true;
+                  interrupt.onholdCause = data;
+                  
+                  interrupt.onholdParam.value.set(parameter.value);
+                  interrupt.onholdParam.size    = parameter.size;
+                  interrupt.onholdParam.pointer = parameter.pointer;
+                  return;
                 }
 
-                // Command
-                if (data < 0x20) {
-                  switch(data) {
-                    case 0x01: // CdlNop
-                      busres[0] = status;
-                      kind = CD_CMD_BLOCKING;
-                      break;
-
-                    case 0x0a: // CdlInit
-                      stopRead();
-                      status |= CD_STATUS_STANDBY;
-                      busres[0] = status;
-                      mode = 0;
-                      kind = CD_CMD_NONBLOCKING;
-                      break;
-
-                    case 0x0c: // CdlDemute
-                      mute = 0;
-                      busres[0] = status;
-                      kind = CD_CMD_BLOCKING;
-                      break;
-
-                    default:
-                      psx.error('Execute command '+hex(data));
-                      break;
-                  }
-                }
-                else {
-                  psx.error('data >= 0x20');
-                  //busres[0] = status;
-                  //kind = CD_CMD_BLOCKING;
-                }
-                invokeBase();
-                blockEnd = 0;
+                command(data);
               }
               return;
 
@@ -254,10 +310,25 @@ pseudo.CstrCdrom = (function() {
 
         case 2:
           switch(control&0x03) {
+            case 0x00: // Insert Parameter
+              if (parameter.pointer < 8) {
+                parameter.value[parameter.pointer++] = data;
+                parameter.size = parameter.pointer;
+                control &= ~CD_CTRL_NP;
+              }
+              else {
+                control &= ~CD_CTRL_PH;
+              }
+              return;
+
             case 0x01: // Parameter Operations
               switch(data) {
                 case 0x07:
+                case 0x1f:
                   parameterClear();
+                  return;
+
+                case 0x18:
                   return;
               }
               psx.error('scopeW 0x1802 01 data '+hex(data));
@@ -283,10 +354,23 @@ pseudo.CstrCdrom = (function() {
             case 0x01: // Write Interrupt
               switch(data) {
                 case 0x07:
+                case 0x1f:
                   interrupt.status &= ~0x07;
-                  return;
+                  break;
+
+                case 0x40:
+                  break;
+
+                default:
+                  psx.error('scopeW 0x1803 01 data '+hex(data));
+                  break;
               }
-              psx.error('scopeW 0x1803 01 data '+hex(data));
+
+              if (!(interrupt.status & 0x7) && interrupt.onhold) {
+                interrupt.onhold = 0;
+                parameter = interrupt.onholdParam;
+                command(interrupt.onholdCause);
+              }
               return;
 
             case 0x02:
