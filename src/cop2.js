@@ -241,7 +241,7 @@ pseudo.CstrCop2 = (function() {
           }
           return;
       }
-      //psx.error('COP2 Execute '+(code&0x3f));
+      cpu.consoleWrite(MSG_ERROR, 'COP2 Execute '+(code&0x3f));
     },
 
     opcodeMFC2(addr) {

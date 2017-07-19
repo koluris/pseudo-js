@@ -724,7 +724,7 @@ pseudo.CstrCop2 = (function() {
           }
           return;
       }
-      //pseudo.CstrMain.error('COP2 Execute '+(code&0x3f));
+      pseudo.CstrMips.consoleWrite('error', 'COP2 Execute '+(code&0x3f));
     },
 
     opcodeMFC2(addr) {
