@@ -42,7 +42,7 @@
   motorSeek.enabled = true;\
   motorSeek.limit = motorSeek.sinc + (CD_READTIME/2)
 
-#define invokeRead(Cd)\
+#define invokeRead()\
   motorRead.enabled = true;\
   motorRead.limit = motorRead.sinc + (CD_READTIME/2);\
   status |= CD_STATUS_READ
