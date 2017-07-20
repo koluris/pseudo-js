@@ -24,10 +24,17 @@
 #define	CD_CMD_BLOCKING    0
 #define CD_CMD_NONBLOCKING 1
 
+#define CD_READTIME\
+  ((PSX_CLK / 121) / 64)
+
 #define invokeBase()\
   motorBase.enabled = true;\
   motorBase.limit = motorBase.sinc + 0x10;\
   control |= CD_CTRL_BUSY
+
+#define invokeSeek()\
+  motorSeek.enabled = true;\
+  motorSeek.limit = motorSeek.sinc + (CD_READTIME/2)
 
 #define invokeInterrupt()\
   if (interrupt.status & 0x7) {\
@@ -57,9 +64,16 @@ pseudo.CstrCdrom = (function() {
   var buspar = new UintBcap(8);
   var control, status;
   var interrupt = {};
-  var kind, blockEnd, seeks, reads, pause, mute;
+  var kind, blockEnd, reads, mode;
   var motorSeek = {}, motorBase = {}, motorRead = {};
-  var destLoc = {};
+  var seekLoc = {}, destLoc = {};
+
+  // Booleans
+  var seeks, pause, mute, retr;
+
+  var sector = {
+    bfr: new UintBcap(2352)
+  };
   
   var parameter = {
     value: new UintBcap(8)
@@ -147,6 +161,18 @@ pseudo.CstrCdrom = (function() {
           kind = CD_CMD_BLOCKING;
           break;
 
+        case 0x06: // CdlReadN
+          stopRead();
+          reads = 1;
+          sector.firstRead = true;
+          retr = true;
+          status |= CD_STATUS_STANDBY;
+          status |= CD_STATUS_READ;
+          invokeSeek();
+          busres[0] = status;
+          kind = CD_CMD_BLOCKING;
+          break;
+
         case 0x0a: // CdlInit
           stopRead();
           status |= CD_STATUS_STANDBY;
@@ -159,6 +185,23 @@ pseudo.CstrCdrom = (function() {
           mute = 0;
           busres[0] = status;
           kind = CD_CMD_BLOCKING;
+          break;
+
+        case 0x0e: // CdlSetMode
+          buspar[0] = mode;
+          busres[0] = status;
+          kind = CD_CMD_BLOCKING;
+          break;
+
+        case 0x15: // CdlSeekL
+          stopRead();
+          seekLoc.minute = destLoc.minute;
+          seekLoc.sec    = destLoc.sec;
+          seekLoc.frame  = destLoc.frame;
+          seeks = true;
+          status |= CD_STATUS_STANDBY;
+          busres[0] = status;
+          kind = CD_CMD_NONBLOCKING;
           break;
 
         case 0x19: // CdlSustem
@@ -224,12 +267,18 @@ pseudo.CstrCdrom = (function() {
       resetVals(interrupt.onholdParam);
 
       // CDLoc
+      resetLoc(seekLoc);
       resetLoc(destLoc);
+
+      sector.bfr.fill(0);
+      sector.firstRead = false;
       
       // ?
-      kind  = blockEnd = seeks = reads = 0;
+      kind  = blockEnd = reads = mode = 0;
+      seeks = false;
       pause = false;
       mute  = false;
+      retr  = false;
     },
 
     update() {

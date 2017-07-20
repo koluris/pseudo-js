@@ -741,6 +741,13 @@ pseudo.CstrBus = (function() {
 
 
 
+
+
+
+
+
+
+
 // Must stop CDDA as well
 
 
@@ -756,9 +763,16 @@ pseudo.CstrCdrom = (function() {
   var buspar = new Uint8Array(8);
   var control, status;
   var interrupt = {};
-  var kind, blockEnd, seeks, reads, pause, mute;
+  var kind, blockEnd, reads, mode;
   var motorSeek = {}, motorBase = {}, motorRead = {};
-  var destLoc = {};
+  var seekLoc = {}, destLoc = {};
+
+  // Booleans
+  var seeks, pause, mute, retr;
+
+  var sector = {
+    bfr: new Uint8Array(2352)
+  };
   
   var parameter = {
     value: new Uint8Array(8)
@@ -846,6 +860,18 @@ pseudo.CstrCdrom = (function() {
           kind = 0;
           break;
 
+        case 0x06: // CdlReadN
+          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          reads = 1;
+          sector.firstRead = true;
+          retr = true;
+          status |= 0x02;
+          status |= 0x20;
+          motorSeek.enabled = true; motorSeek.limit = motorSeek.sinc + (((33868800 / 121) / 64)/2);
+          busres[0] = status;
+          kind = 0;
+          break;
+
         case 0x0a: // CdlInit
           if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
           status |= 0x02;
@@ -858,6 +884,23 @@ pseudo.CstrCdrom = (function() {
           mute = 0;
           busres[0] = status;
           kind = 0;
+          break;
+
+        case 0x0e: // CdlSetMode
+          buspar[0] = mode;
+          busres[0] = status;
+          kind = 0;
+          break;
+
+        case 0x15: // CdlSeekL
+          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          seekLoc.minute = destLoc.minute;
+          seekLoc.sec    = destLoc.sec;
+          seekLoc.frame  = destLoc.frame;
+          seeks = true;
+          status |= 0x02;
+          busres[0] = status;
+          kind = 1;
           break;
 
         case 0x19: // CdlSustem
@@ -923,12 +966,18 @@ pseudo.CstrCdrom = (function() {
       resetVals(interrupt.onholdParam);
 
       // CDLoc
+      resetLoc(seekLoc);
       resetLoc(destLoc);
+
+      sector.bfr.fill(0);
+      sector.firstRead = false;
       
       // ?
-      kind  = blockEnd = seeks = reads = 0;
+      kind  = blockEnd = reads = mode = 0;
+      seeks = false;
       pause = false;
       mute  = false;
+      retr  = false;
     },
 
     update() {
