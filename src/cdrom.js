@@ -5,6 +5,7 @@
 #define CD_DATAREADY       0x01
 #define CD_COMPLETE        0x02
 #define CD_ACKNOWLEDGE     0x03
+#define CD_DISKERROR       0x05
 
 // Control
 #define CD_CTRL_MODE0      0x01
@@ -17,6 +18,7 @@
 // Status
 #define CD_STATUS_ERROR    0x01
 #define CD_STATUS_STANDBY  0x02
+#define CD_STATUS_SHELL    0x10
 #define CD_STATUS_READ     0x20
 #define CD_STATUS_SEEK     0x40
 #define CD_STATUS_PLAY     0x80
@@ -83,6 +85,10 @@ pseudo.CstrCdrom = (function() {
   var sector = {
     bfr: new UintBcap(2352)
   };
+
+  var dma = {
+    bfr: new UintBcap(2352)
+  };
   
   var parameter = {
     value: new UintBcap(8)
@@ -90,7 +96,7 @@ pseudo.CstrCdrom = (function() {
 
   var result = {
     value: new UintBcap(8)
-  }
+  };
 
   function resetMotor(motor) {
     motor.enabled = false;
@@ -270,6 +276,8 @@ pseudo.CstrCdrom = (function() {
   }
 
   function cdromRead() {
+    var temp = 0;
+
     interrupt.status = (interrupt.status & 0xf8) | CD_DATAREADY;
 
     if (pause) {
@@ -280,12 +288,51 @@ pseudo.CstrCdrom = (function() {
       if (psx.trackRead(seekLoc) === -1) {
         psx.error('*** reads 1');
       }
-      // else if ((PNT = (UINT08 *)GetBuffer()) === 0) {
-      //   psx.error('*** reads 2');
-      // }
-      // else {
-      //   psx.error('*** reads 3');
-      // }
+      else if (psx.fetchBuffer() === 0) {
+        temp |= 0x02;
+      }
+      else {
+        sector.bfr.set(psx.fetchBuffer());
+      }
+
+      if (status & CD_STATUS_SHELL) {
+        psx.error('*** status & CD_STATUS_SHELL');
+      }
+
+      if (sector.bfr[0] === seekLoc.minute && sector.bfr[1] === seekLoc.sec && sector.bfr[2] === seekLoc.frame) {
+        temp |= 0x08;
+      }
+      
+      if (temp) {
+        result.value[0] = status | CD_STATUS_ERROR;
+        result.value[1] = 0;
+        result.size = 2;
+        control |= CD_CTRL_RES;
+
+        if (!retr) {
+          psx.error('retr');
+        }
+        
+        interrupt.status = (interrupt.status & 0xf8) | CD_DISKERROR;
+        return;
+      }
+
+      switch((mode & (CD_MODE_SIZE0 | CD_MODE_SIZE1)) >> 4) {
+        default:
+          psx.error('((mode & (CD_MODE_SIZE0 | CD_MODE_SIZE1)) >> 4)');
+          break;
+      }
+
+      var offset = (dma.size === 2352) ? 0 : 12;
+      for (var i=0; i<dma.size; i++) {
+        dma.bfr[i] = sector.bfr[i+offset];
+      }
+      dma.pointer = 0;
+      control &= ~CD_CTRL_DMA;
+      
+      if ((mute === 0) && (mode & CD_MODE_RT) && (sector.firstRead !== -1)) {
+        psx.error('(sector.firstRead !== -1)');
+      }
     }
 
     control |= CD_CTRL_RES;
@@ -330,6 +377,10 @@ pseudo.CstrCdrom = (function() {
 
       sector.bfr.fill(0);
       sector.firstRead = false;
+
+      dma.bfr.fill(0);
+      dma.size = 0;
+      dma.pointer = 0;
       
       // ?
       kind  = blockEnd = reads = mode = 0;
@@ -537,6 +588,9 @@ pseudo.CstrCdrom = (function() {
 
         case 3:
           switch(control&0x03) {
+            case 0x00: // Read DMA
+              return 0xff;
+
             case 0x01: // Read interrupt
               return interrupt.status;
 

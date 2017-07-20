@@ -62,7 +62,7 @@ pseudo.CstrMain = (function() {
         fn(e.dest.result);
       };
       // Read sliced area
-      reader.readAsArrayBuffer(file.slice(start, end));
+      reader.readAsBuffer(file.slice(start, end));
     }
   }
 
@@ -167,7 +167,6 @@ pseudo.CstrMain = (function() {
                 if (reset()) {
                   cpu.run();
                 }
-                //cpu.consoleWrite(MSG_ERROR, 'CD ISO with code "'+name.trim()+'" not supported for now');
               });
             }
           });
@@ -207,24 +206,18 @@ pseudo.CstrMain = (function() {
       // console.log('---');
       // console.log(MSF2SECT(BCD2INT(time.minute), BCD2INT(time.sec), BCD2INT(time.frame)));
 
-      // console.log(iso);
-
-      // psx.error(hex(MSF2SECT(BCD2INT(time.minute), BCD2INT(time.sec), BCD2INT(time.frame)) * CDFRAMESIZERAW + 12));
-
       var offset = MSF2SECT(BCD2INT(time.minute), BCD2INT(time.sec), BCD2INT(time.frame)) * CDFRAMESIZERAW + 12;
       var size   = DATASIZE;
 
       chunkReader2(iso, offset, size, function(data) {
-        console.log(data);
-        //cdBfr.set(data);
+        cdBfr.set(data);
       });
 
-      // iso offset
-      // 
-      // 
+      return 0;
+    },
 
-      // 
-      // return 0;
+    fetchBuffer() {
+      return cdBfr;
     }
   };
 })();

@@ -711,6 +711,7 @@ pseudo.CstrBus = (function() {
 
 
 
+
 // Control
 
 
@@ -720,6 +721,7 @@ pseudo.CstrBus = (function() {
 
 
 // Status
+
 
 
 
@@ -788,6 +790,10 @@ pseudo.CstrCdrom = (function() {
   var sector = {
     bfr: new Uint8Array(2352)
   };
+
+  var dma = {
+    bfr: new Uint8Array(2352)
+  };
   
   var parameter = {
     value: new Uint8Array(8)
@@ -795,7 +801,7 @@ pseudo.CstrCdrom = (function() {
 
   var result = {
     value: new Uint8Array(8)
-  }
+  };
 
   function resetMotor(motor) {
     motor.enabled = false;
@@ -975,6 +981,8 @@ pseudo.CstrCdrom = (function() {
   }
 
   function cdromRead() {
+    var temp = 0;
+
     interrupt.status = (interrupt.status & 0xf8) | 0x01;
 
     if (pause) {
@@ -985,12 +993,51 @@ pseudo.CstrCdrom = (function() {
       if (pseudo.CstrMain.trackRead(seekLoc) === -1) {
         pseudo.CstrMain.error('*** reads 1');
       }
-      // else if ((PNT = (UINT08 *)GetBuffer()) === 0) {
-      //   pseudo.CstrMain.error('*** reads 2');
-      // }
-      // else {
-      //   pseudo.CstrMain.error('*** reads 3');
-      // }
+      else if (pseudo.CstrMain.fetchBuffer() === 0) {
+        temp |= 0x02;
+      }
+      else {
+        sector.bfr.set(pseudo.CstrMain.fetchBuffer());
+      }
+
+      if (status & 0x10) {
+        pseudo.CstrMain.error('*** status & CD_STATUS_SHELL');
+      }
+
+      if (sector.bfr[0] === seekLoc.minute && sector.bfr[1] === seekLoc.sec && sector.bfr[2] === seekLoc.frame) {
+        temp |= 0x08;
+      }
+      
+      if (temp) {
+        result.value[0] = status | 0x01;
+        result.value[1] = 0;
+        result.size = 2;
+        control |= 0x20;
+
+        if (!retr) {
+          pseudo.CstrMain.error('retr');
+        }
+        
+        interrupt.status = (interrupt.status & 0xf8) | 0x05;
+        return;
+      }
+
+      switch((mode & (CD_MODE_SIZE0 | CD_MODE_SIZE1)) >> 4) {
+        default:
+          pseudo.CstrMain.error('((mode & (CD_MODE_SIZE0 | CD_MODE_SIZE1)) >> 4)');
+          break;
+      }
+
+      var offset = (dma.size === 2352) ? 0 : 12;
+      for (var i=0; i<dma.size; i++) {
+        dma.bfr[i] = sector.bfr[i+offset];
+      }
+      dma.pointer = 0;
+      control &= ~CD_CTRL_DMA;
+      
+      if ((mute === 0) && (mode & CD_MODE_RT) && (sector.firstRead !== -1)) {
+        pseudo.CstrMain.error('(sector.firstRead !== -1)');
+      }
     }
 
     control |= 0x20;
@@ -1035,6 +1082,10 @@ pseudo.CstrCdrom = (function() {
 
       sector.bfr.fill(0);
       sector.firstRead = false;
+
+      dma.bfr.fill(0);
+      dma.size = 0;
+      dma.pointer = 0;
       
       // ?
       kind  = blockEnd = reads = mode = 0;
@@ -1242,6 +1293,9 @@ pseudo.CstrCdrom = (function() {
 
         case 3:
           switch(control&0x03) {
+            case 0x00: // Read DMA
+              return 0xff;
+
             case 0x01: // Read interrupt
               return interrupt.status;
 
@@ -2610,7 +2664,6 @@ pseudo.CstrMain = (function() {
                 if (reset()) {
                   pseudo.CstrMips.run();
                 }
-                //pseudo.CstrMips.consoleWrite('error', 'CD ISO with code "'+name.trim()+'" not supported for now');
               });
             }
           });
@@ -2650,24 +2703,18 @@ pseudo.CstrMain = (function() {
       // console.log('---');
       // console.log((((((time.minute)/16 * 10 + (time.minute)%16)) * 60 + ( ((time.sec)/16 * 10 + (time.sec)%16)) - 2) * 75 + ( ((time.frame)/16 * 10 + (time.frame)%16))));
 
-      // console.log(iso);
-
-      // pseudo.CstrMain.error(('0x'+((((((time.minute)/16 * 10 + (time.minute)%16)) * 60 + ( ((time.sec)/16 * 10 + (time.sec)%16)) - 2) * 75 + ( ((time.frame)/16 * 10 + (time.frame)%16))) * 2352 + 12>>>0).toString(16)));
-
       var offset = (((((time.minute)/16 * 10 + (time.minute)%16)) * 60 + ( ((time.sec)/16 * 10 + (time.sec)%16)) - 2) * 75 + ( ((time.frame)/16 * 10 + (time.frame)%16))) * 2352 + 12;
       var size   = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
-        console.log(data);
-        //cdBfr.set(data);
+        cdBfr.set(data);
       });
 
-      // iso offset
-      // 
-      // 
+      return 0;
+    },
 
-      // 
-      // return 0;
+    fetchBuffer() {
+      return cdBfr;
     }
   };
 })();
