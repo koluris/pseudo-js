@@ -2,6 +2,7 @@
 
 // Sector Buffer Status
 #define CD_NOINTR          0x00
+#define CD_DATAREADY       0x01
 #define CD_COMPLETE        0x02
 #define CD_ACKNOWLEDGE     0x03
 
@@ -24,6 +25,9 @@
 #define	CD_CMD_BLOCKING    0
 #define CD_CMD_NONBLOCKING 1
 
+#define CD_MODE_REPT       0x04
+#define CD_MODE_SPEED      0x80
+
 #define CD_READTIME\
   ((PSX_CLK / 121) / 64)
 
@@ -35,6 +39,11 @@
 #define invokeSeek()\
   motorSeek.enabled = true;\
   motorSeek.limit = motorSeek.sinc + (CD_READTIME/2)
+
+#define invokeRead(Cd)\
+  motorRead.enabled = true;\
+  motorRead.limit = motorRead.sinc + (CD_READTIME/2);\
+  status |= CD_STATUS_READ
 
 #define invokeInterrupt()\
   if (interrupt.status & 0x7) {\
@@ -99,6 +108,24 @@ pseudo.CstrCdrom = (function() {
     loc.minute = 0;
     loc.sec    = 0;
     loc.frame  = 0;
+  }
+
+  function refreshCDLoc(loc) {
+    var minute = BCD2INT(loc.minute);
+    var sec    = BCD2INT(loc.sec);
+    var frame  = BCD2INT(loc.frame);
+    
+    if (++frame >= 75) {
+      frame = 0;
+      if (++sec >= 60) {
+        sec = 0;
+        minute++;
+      }
+    }
+    
+    loc.minute = INT2BCD(minute);
+    loc.sec    = INT2BCD(sec);
+    loc.frame  = INT2BCD(frame);
   }
 
   function main() {
@@ -242,6 +269,37 @@ pseudo.CstrCdrom = (function() {
     blockEnd = 0;
   }
 
+  function cdromRead() {
+    interrupt.status = (interrupt.status & 0xf8) | CD_DATAREADY;
+
+    if (pause) {
+      psx.error('*** pause');
+    }
+
+    if (reads === 1) {
+      if (psx.trackRead(seekLoc) === -1) {
+        psx.error('*** reads 1');
+      }
+      // else if ((PNT = (UINT08 *)GetBuffer()) === 0) {
+      //   psx.error('*** reads 2');
+      // }
+      // else {
+      //   psx.error('*** reads 3');
+      // }
+    }
+
+    control |= CD_CTRL_RES;
+    result.value[0] = status;
+    result.size     = 1;
+    result.pointer  = 0;
+
+    if (mode & CD_MODE_REPT) {
+      psx.error('*** mode & CD_MODE_REPT');
+    }
+
+    refreshCDLoc(destLoc);
+  }
+
   return {
     reset() {
       busres.fill(0);
@@ -284,7 +342,17 @@ pseudo.CstrCdrom = (function() {
     update() {
       // Seek
       if (motorSeek.enabled) {
-        psx.error('motorSeek.enabled');
+        if ((motorSeek.sinc += (mode & CD_MODE_SPEED ? 2 : 1)) >= motorSeek.limit) {
+          motorSeek.enabled = false;
+          motorSeek.sinc    = 0;
+
+          seekLoc.minute = destLoc.minute;
+          seekLoc.sec    = destLoc.sec;
+          seekLoc.frame  = destLoc.frame;
+
+          status &= ~CD_STATUS_SEEK;
+          invokeRead();
+        }
       }
 
       // Base
@@ -306,7 +374,21 @@ pseudo.CstrCdrom = (function() {
 
       // Read
       if (motorRead.enabled) {
-        psx.error('motorRead.enabled');
+        if ((motorRead.sinc += (mode & CD_MODE_SPEED ? 2 : 1)) >= motorRead.limit) {
+          motorRead.enabled = false;
+          motorRead.sinc    = 0;
+          
+          if (((interrupt.status & 0x7) === CD_NOINTR) && (!(control & CD_CTRL_BUSY))) {
+            cdromRead();
+            if (reads) {
+              invokeSeek();
+            }
+            invokeInterrupt();
+          }
+          else {
+            psx.error('2');
+          }
+        }
       }
     },
 

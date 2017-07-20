@@ -4,11 +4,21 @@
 #define EXE_HEADER_SIZE\
   0x800
 
+#define MSF2SECT(m, s, f)\
+  (((m) * 60 + (s) - 2) * 75 + (f))
+
+#define CDFRAMESIZERAW\
+  2352
+
+#define DATASIZE\
+  (CDFRAMESIZERAW - 12)
+
 pseudo.CstrMain = (function() {
   // HTML elements
   var dropzone;
 
-  var file, unusable;
+  var iso, unusable;
+  var cdBfr = new UintBcap(CDFRAMESIZERAW);
 
   // AJAX function
   function request(path, fn) {
@@ -42,11 +52,26 @@ pseudo.CstrMain = (function() {
     }
   }
 
+  function chunkReader2(file, start, size, fn) {
+    var end = start+size;
+
+    // Check boundaries
+    if (file.size > end) {
+      var reader  = new FileReader();
+      reader.onload = function(e) { // Callback
+        fn(e.dest.result);
+      };
+      // Read sliced area
+      reader.readAsArrayBuffer(file.slice(start, end));
+    }
+  }
+
   function reset() {
     // Prohibit all user actions
     if (unusable) {
       return false;
     }
+    cdBfr.fill(0);
 
     // Reset all emulator components
      tcache.reset();
@@ -117,7 +142,7 @@ pseudo.CstrMain = (function() {
         var dt = e.dataTransfer;
 
         if (dt.files) {
-          file = dt.files[0];
+          var file = dt.files[0];
           
           // PS-X EXE
           chunkReader(file, 0, 8, function(id) {
@@ -138,7 +163,11 @@ pseudo.CstrMain = (function() {
           chunkReader(file, 0x9319, 5, function(id) {
             if (id === 'CD001') {
               chunkReader(file, 0x9340, 32, function(name) { // Get Name
-                cpu.consoleWrite(MSG_ERROR, 'CD ISO with code "'+name.trim()+'" not supported for now');
+                iso = file;
+                if (reset()) {
+                  cpu.run();
+                }
+                //cpu.consoleWrite(MSG_ERROR, 'CD ISO with code "'+name.trim()+'" not supported for now');
               });
             }
           });
@@ -160,6 +189,42 @@ pseudo.CstrMain = (function() {
 
     error(out) {
       throw new Error('PSeudo / '+out);
+    },
+
+    trackRead(time) {
+      if (!iso) {
+        cdBfr.fill(0);
+        return 0;
+      }
+
+      // console.log(time.minute);
+      // console.log(time.sec);
+      // console.log(time.frame);
+      // console.log('---');
+      // console.log(BCD2INT(time.minute));
+      // console.log(BCD2INT(time.sec));
+      // console.log(BCD2INT(time.frame));
+      // console.log('---');
+      // console.log(MSF2SECT(BCD2INT(time.minute), BCD2INT(time.sec), BCD2INT(time.frame)));
+
+      // console.log(iso);
+
+      // psx.error(hex(MSF2SECT(BCD2INT(time.minute), BCD2INT(time.sec), BCD2INT(time.frame)) * CDFRAMESIZERAW + 12));
+
+      var offset = MSF2SECT(BCD2INT(time.minute), BCD2INT(time.sec), BCD2INT(time.frame)) * CDFRAMESIZERAW + 12;
+      var size   = DATASIZE;
+
+      chunkReader2(iso, offset, size, function(data) {
+        console.log(data);
+        //cdBfr.set(data);
+      });
+
+      // iso offset
+      // 
+      // 
+
+      // 
+      // return 0;
     }
   };
 })();

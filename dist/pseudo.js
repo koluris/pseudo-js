@@ -58,6 +58,12 @@ var pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
 // Assume NTSC for now
 
 
@@ -704,6 +710,7 @@ pseudo.CstrBus = (function() {
 
 
 
+
 // Control
 
 
@@ -720,6 +727,14 @@ pseudo.CstrBus = (function() {
 
 
 // Command Mode
+
+
+
+
+
+
+
+
 
 
 
@@ -798,6 +813,24 @@ pseudo.CstrCdrom = (function() {
     loc.minute = 0;
     loc.sec    = 0;
     loc.frame  = 0;
+  }
+
+  function refreshCDLoc(loc) {
+    var minute = ((loc.minute)/16 * 10 + (loc.minute)%16);
+    var sec    = ((loc.sec)/16 * 10 + (loc.sec)%16);
+    var frame  = ((loc.frame)/16 * 10 + (loc.frame)%16);
+    
+    if (++frame >= 75) {
+      frame = 0;
+      if (++sec >= 60) {
+        sec = 0;
+        minute++;
+      }
+    }
+    
+    loc.minute = ((minute)/10 * 16 + (minute)%10);
+    loc.sec    = ((sec)/10 * 16 + (sec)%10);
+    loc.frame  = ((frame)/10 * 16 + (frame)%10);
   }
 
   function main() {
@@ -941,6 +974,37 @@ pseudo.CstrCdrom = (function() {
     blockEnd = 0;
   }
 
+  function cdromRead() {
+    interrupt.status = (interrupt.status & 0xf8) | 0x01;
+
+    if (pause) {
+      pseudo.CstrMain.error('*** pause');
+    }
+
+    if (reads === 1) {
+      if (pseudo.CstrMain.trackRead(seekLoc) === -1) {
+        pseudo.CstrMain.error('*** reads 1');
+      }
+      // else if ((PNT = (UINT08 *)GetBuffer()) === 0) {
+      //   pseudo.CstrMain.error('*** reads 2');
+      // }
+      // else {
+      //   pseudo.CstrMain.error('*** reads 3');
+      // }
+    }
+
+    control |= 0x20;
+    result.value[0] = status;
+    result.size     = 1;
+    result.pointer  = 0;
+
+    if (mode & 0x04) {
+      pseudo.CstrMain.error('*** mode & CD_MODE_REPT');
+    }
+
+    refreshCDLoc(destLoc);
+  }
+
   return {
     reset() {
       busres.fill(0);
@@ -983,7 +1047,17 @@ pseudo.CstrCdrom = (function() {
     update() {
       // Seek
       if (motorSeek.enabled) {
-        pseudo.CstrMain.error('motorSeek.enabled');
+        if ((motorSeek.sinc += (mode & 0x80 ? 2 : 1)) >= motorSeek.limit) {
+          motorSeek.enabled = false;
+          motorSeek.sinc    = 0;
+
+          seekLoc.minute = destLoc.minute;
+          seekLoc.sec    = destLoc.sec;
+          seekLoc.frame  = destLoc.frame;
+
+          status &= ~0x40;
+          motorRead.enabled = true; motorRead.limit = motorRead.sinc + (((33868800 / 121) / 64)/2); status |= 0x20;
+        }
       }
 
       // Base
@@ -1005,7 +1079,21 @@ pseudo.CstrCdrom = (function() {
 
       // Read
       if (motorRead.enabled) {
-        pseudo.CstrMain.error('motorRead.enabled');
+        if ((motorRead.sinc += (mode & 0x80 ? 2 : 1)) >= motorRead.limit) {
+          motorRead.enabled = false;
+          motorRead.sinc    = 0;
+          
+          if (((interrupt.status & 0x7) === 0x00) && (!(control & 0x80))) {
+            cdromRead();
+            if (reads) {
+              motorSeek.enabled = true; motorSeek.limit = motorSeek.sinc + (((33868800 / 121) / 64)/2);
+            }
+            if (interrupt.status & 0x7) { pseudo.CstrBus.interruptSet(2); };
+          }
+          else {
+            pseudo.CstrMain.error('2');
+          }
+        }
       }
     },
 
@@ -2359,11 +2447,21 @@ pseudo.CstrMips = (function() {
 
 
 
+
+
+
+
+
+
+
+
+
 pseudo.CstrMain = (function() {
   // HTML elements
   var dropzone;
 
-  var file, unusable;
+  var iso, unusable;
+  var cdBfr = new Uint8Array(2352);
 
   // AJAX function
   function request(path, fn) {
@@ -2397,11 +2495,26 @@ pseudo.CstrMain = (function() {
     }
   }
 
+  function chunkReader2(file, start, size, fn) {
+    var end = start+size;
+
+    // Check boundaries
+    if (file.size > end) {
+      var reader  = new FileReader();
+      reader.onload = function(e) { // Callback
+        fn(e.target.result);
+      };
+      // Read sliced area
+      reader.readAsArrayBuffer(file.slice(start, end));
+    }
+  }
+
   function reset() {
     // Prohibit all user actions
     if (unusable) {
       return false;
     }
+    cdBfr.fill(0);
 
     // Reset all emulator components
      pseudo.CstrTexCache.reset();
@@ -2472,7 +2585,7 @@ pseudo.CstrMain = (function() {
         var dt = e.dataTransfer;
 
         if (dt.files) {
-          file = dt.files[0];
+          var file = dt.files[0];
           
           // PS-X EXE
           chunkReader(file, 0, 8, function(id) {
@@ -2493,7 +2606,11 @@ pseudo.CstrMain = (function() {
           chunkReader(file, 0x9319, 5, function(id) {
             if (id === 'CD001') {
               chunkReader(file, 0x9340, 32, function(name) { // Get Name
-                pseudo.CstrMips.consoleWrite('error', 'CD ISO with code "'+name.trim()+'" not supported for now');
+                iso = file;
+                if (reset()) {
+                  pseudo.CstrMips.run();
+                }
+                //pseudo.CstrMips.consoleWrite('error', 'CD ISO with code "'+name.trim()+'" not supported for now');
               });
             }
           });
@@ -2515,6 +2632,42 @@ pseudo.CstrMain = (function() {
 
     error(out) {
       throw new Error('PSeudo / '+out);
+    },
+
+    trackRead(time) {
+      if (!iso) {
+        cdBfr.fill(0);
+        return 0;
+      }
+
+      // console.log(time.minute);
+      // console.log(time.sec);
+      // console.log(time.frame);
+      // console.log('---');
+      // console.log(((time.minute)/16 * 10 + (time.minute)%16));
+      // console.log(((time.sec)/16 * 10 + (time.sec)%16));
+      // console.log(((time.frame)/16 * 10 + (time.frame)%16));
+      // console.log('---');
+      // console.log((((((time.minute)/16 * 10 + (time.minute)%16)) * 60 + ( ((time.sec)/16 * 10 + (time.sec)%16)) - 2) * 75 + ( ((time.frame)/16 * 10 + (time.frame)%16))));
+
+      // console.log(iso);
+
+      // pseudo.CstrMain.error(('0x'+((((((time.minute)/16 * 10 + (time.minute)%16)) * 60 + ( ((time.sec)/16 * 10 + (time.sec)%16)) - 2) * 75 + ( ((time.frame)/16 * 10 + (time.frame)%16))) * 2352 + 12>>>0).toString(16)));
+
+      var offset = (((((time.minute)/16 * 10 + (time.minute)%16)) * 60 + ( ((time.sec)/16 * 10 + (time.sec)%16)) - 2) * 75 + ( ((time.frame)/16 * 10 + (time.frame)%16))) * 2352 + 12;
+      var size   = (2352 - 12);
+
+      chunkReader2(iso, offset, size, function(data) {
+        console.log(data);
+        //cdBfr.set(data);
+      });
+
+      // iso offset
+      // 
+      // 
+
+      // 
+      // return 0;
     }
   };
 })();
