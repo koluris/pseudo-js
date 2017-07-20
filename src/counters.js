@@ -118,3 +118,33 @@ pseudo.CstrCounters = (function() {
     }
   };
 })();
+
+
+// pseudo.CstrCounter = (function() {
+//   return {
+//     tick() {
+//       timer[1].count += time*15;
+
+//       if (!(timer[1].mode&0x0008)) {
+//         if (timer[1].count >= 0xffff) {
+//           timer[1].count = 0;
+//           if ((timer[1].mode&0x0040)&&(hardINTmask&0x0020)) {
+//             bus.interruptSet(IRQ_RTC1);
+//           }
+//         }
+//       }
+//       else {
+//         if (timer[1].count >= timer[1].dest) {
+//           timer[1].count = 0;
+//           if ((timer[1].mode&0x0040)&&(hardINTmask&0x0020)) {
+//             bus.interruptSet(IRQ_RTC1);
+//           }
+//         }
+//       }
+
+//       if (!(timer[2].mode&0x0001)) {
+//         timer[2].count += time*4125;
+//       }
+//     }
+//   }
+// });
