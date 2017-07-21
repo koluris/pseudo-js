@@ -64,6 +64,12 @@ var pseudo = window.pseudo || {};
 
 
 
+
+
+
+
+
+
 // Assume NTSC for now
 
 
@@ -760,10 +766,28 @@ pseudo.CstrBus = (function() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrCdrom = (function() {
-  var ctrl, stat, irq, re2;
-  var reads, readed, occupied;
-  var cdint;
+  var ctrl, stat, statP, irq, re2;
+  var reads, readed, occupied, seeked;
+  var cdint, cdreadint, end_time;
 
   var param = {
     data: new Uint8Array(8),
@@ -780,12 +804,21 @@ pseudo.CstrCdrom = (function() {
       ok: 0,
   };
 
+  var sector = {
+    data: new Uint8Array(4),
+    prev: new Uint8Array(4)
+  };
+
+  var transfer = {
+    data: new Uint8Array(2352),
+    p: 0
+  };
+
   function addIrqQueue(code, end) {
     irq = code;
     
     if (stat) {
-      pseudo.CstrMain.error('addIrqQueue stat');
-      //end_time = end;
+     end_time = end;
     }
     else {
       cdint = 1;
@@ -793,15 +826,224 @@ pseudo.CstrCdrom = (function() {
   }
 
   function interrupt() {
-    pseudo.CstrMain.error('CD interrupt');
+    var prevIrq = irq;
+
+    if (stat) {
+      pseudo.CstrMain.error('CD interrupt / stat');
+    }
+
+    irq = 0xff;
+    ctrl &= ~0x80;
+
+    switch(prevIrq) {
+      case 1: // CdlNop
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x2;
+        res.data[0] = statP;
+        stat = 3; //More stuff here...
+        res.data[0] |= 0x2;
+        break;
+
+      case  2: // CdlSetLoc
+      case 14: // CdlSetMode
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        break;
+
+      case 9: // CdlPause
+        res.p = 0; res.c = 1; res.ok = true;
+        res.data[0] = statP;
+        stat = 3;
+        addIrqQueue(9 + 0x20, 0x1000);
+        ctrl |= 0x80;
+        break;
+      
+      case 9 + 0x20: // CdlPause
+        res.p = 0; res.c = 1; res.ok = true;
+        statP &= ~0x20;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 2;
+        break;
+
+      case 10: // CdlInit
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        addIrqQueue(10 + 0x20, 0x1000);
+        break;
+
+      case 10 + 0x20: // CdlInit
+        res.p = 0; res.c = 1; res.ok = true;
+        res.data[0] = statP;
+        stat = 2;
+        break;
+
+      case 21: // CdlSeekL
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x02;
+        res.data[0] = statP;
+        statP |= 0x40;
+        stat = 3;
+        seeked = true;
+        addIrqQueue(21 + 0x20, 0x1000);
+        break;
+
+      case 21 + 0x20: // CdlSeekL
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x02;
+        statP &= ~0x40;
+        res.data[0] = statP;
+        stat = 2;
+        break;
+
+      case 25: // CdlTest
+        stat = 3;
+        
+        switch(param.data[0]) {
+          case 0x20:
+            res.p = 0; res.c = 4; res.ok = true;
+            res.data.set([0x98, 0x06, 0x10, 0xc3]);
+            break;
+
+          default:
+            pseudo.CstrMain.error('CD interrupt / CdlTest -> '+param.data[0]);
+            break;
+        }
+        break;
+
+      case 26: // CdlId
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        addIrqQueue(26 + 0x20, 0x1000);
+        break;
+
+      case 26 + 0x20: // CdlId
+        res.p = 0; res.c = 8; res.ok = true;
+        res.data[0] = 0x00; //More stuff here...
+        res.data[1] = 0x00; // |= 0x80 for BIOS shell
+        res.data[2] = 0x00;
+        res.data[3] = 0x00;
+        stat = 2;
+        break;
+
+      case 30: // CdlReadToc
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        addIrqQueue(30 + 0x20, 0x1000);
+        break;
+
+      case 250:
+        if (!reads) {
+          pseudo.CstrMain.error('READ_ACK return');
+            //return;
+        }
+        
+        res.p = 0; res.c = 1; res.ok = true;
+        statP |= 0x02;
+        res.data[0] = statP;
+        
+        if (!seeked) {
+          pseudo.CstrMain.error('READ_ACK !seeked');
+          // seeked = true;
+          // statP |= 0x40;
+        }
+        
+        statP |= 0x20;
+        stat = 3;
+        
+        cdreadint = 1;
+        break;
+
+      default:
+        pseudo.CstrMain.error('CD interrupt / prevIrq -> '+prevIrq);
+        break;
+    }
+
+    if (stat != 0 && re2 !== 0x18) {
+        pseudo.CstrBus.interruptSet(2);
+    }
+  }
+
+  function trackRead() {
+    sector.prev[0] = ((sector.data[0])/10 * 16 + (sector.data[0])%10);
+    sector.prev[1] = ((sector.data[1])/10 * 16 + (sector.data[1])%10);
+    sector.prev[2] = ((sector.data[2])/10 * 16 + (sector.data[2])%10);
+    
+    pseudo.CstrMain.trackRead(sector.prev);
+  }
+
+  function interruptRead() {
+    if (!reads) {
+      pseudo.CstrMain.error('interruptRead !reads');
+      //return;
+    }
+    
+    if (stat) {
+      pseudo.CstrMain.error('interruptRead stat');
+      // cdreadint = 1;
+      // return;
+    }
+
+    occupied = true;
+    res.p = 0; res.c = 1; res.ok = true;
+    statP |= 0x22;
+    statP &= ~0x40;
+    res.data[0] = statP;
+
+    trackRead();
+    
+    var buf = pseudo.CstrMain.fetchBuffer();
+    //if (buf == NULL) error = -1;
+    
+    // if (error == -1) {
+    //   memset(transfer.data, 0, DATA_SIZE);
+    //   stat = CD_STAT_DISK_ERROR;
+    //   res.data[0] |= 0x01;
+    //   cdreadint = 1;
+    //   return;
+    // }
+
+    for (var i=0; i<(2352 - 12); i++) {
+      transfer.data[i] = buf[i];
+    }
+    stat = 1;
+    
+    sector.data[2]++;
+    if (sector.data[2] === 75) {
+      sector.data[2] = 0;
+        
+      sector.data[1]++;
+      if (sector.data[1] === 60) {
+        sector.data[1] = 0;
+        sector.data[0]++;
+      }
+    }
+    readed = false;
+    
+    if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
+      addIrqQueue(9, 0x1000); // CdlPause
+    }
+    else {
+      cdreadint = 1;
+    }
+    pseudo.CstrBus.interruptSet(2);
   }
 
   return {
     reset() {
-      ctrl = 0;
-      stat = 0;
-       irq = 0;
-       re2 = 0;
+      ctrl  = 0;
+      stat  = 0;
+      statP = 0;
+       irq  = 0;
+       re2  = 0;
 
       param.data.fill(0);
       param.p = 0;
@@ -814,17 +1056,25 @@ pseudo.CstrCdrom = (function() {
       res.c  = 0;
       res.ok = 0;
 
-      reads    = false;
-      readed   = false;
-      occupied = false;
+      sector.data.fill(0);
+      sector.prev.fill(0);
 
-      cdint = 0;
+      transfer.data.fill(0);
+      transfer.p = 0;
+
+      reads    = false;
+      readed   = 0;
+      occupied = false;
+      seeked   = false;
+
+      cdint = cdreadint = 0;
+      end_time = 0;
     },
 
     scopeW(addr, data) {
       switch(addr) {
         case 0x1800:
-          ctrl = data | (ctrl&(~0x03));
+          ctrl = data | (ctrl & ~0x03);
     
           if (!data) {
             param.p = 0;
@@ -841,8 +1091,52 @@ pseudo.CstrCdrom = (function() {
           }
 
           switch(data) {
+            case  1: // CdlNop
+            case 21: // CdlSeekL
             case 25: // CdlTest
+            case 26: // CdlId
+            case 30: // CdlReadToc
               ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              break;
+
+            case 2: // CdlSetloc
+              {
+                if (reads) { reads = false; } statP &= ~0x20;
+                seeked = false;
+              
+                for (var i=0; i<3; i++) {
+                  sector.data[i] = ((param.data[i])/16 * 10 + (param.data[i])%16);
+                }
+                sector.data[3] = 0;
+                ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              }
+              break;
+
+            case 6: // CdlReadN:
+              irq = 0;
+              if (reads) { reads = false; } statP &= ~0x20;
+              ctrl |= 0x80;
+              stat = 0;
+              reads = true; readed = 0xff; addIrqQueue(250, 0x1000);
+              break;
+
+            case 9: // CdlPause
+              if (reads) { reads = false; } statP &= ~0x20;
+              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x80000);
+              break;
+
+            case 10: // CdlInit
+              if (reads) { reads = false; } statP &= ~0x20;
+              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              break;
+
+            case 14: // CdlSetMode
+              mode = param.data[0];
+              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              break;
+
+            default:
+              pseudo.CstrMain.error('S1 Command -> '+data);
               break;
           }
 
@@ -877,21 +1171,22 @@ pseudo.CstrCdrom = (function() {
             stat = 0;
             
             if (irq === 0xff) {
-              pseudo.CstrMain.error('irq == 0xff');
+              irq = 0;
+              return;
             }
             
             if (irq) {
-              pseudo.CstrMain.error('if (irq)');
+              cdint = 1;
             }
             
             if (reads && !res.ok) {
-              pseudo.CstrMain.error('reads && !res.ok');
+              cdreadint = 1;
             }
             
             return;
           }
 
-          if (data === 0x80 && !(ctrl&0x01) && readed === false) {
+          if (data === 0x80 && !(ctrl&0x01) && readed === 0) {
             pseudo.CstrMain.error('W 0x1803 2nd');
           }
           return;
@@ -910,10 +1205,10 @@ pseudo.CstrCdrom = (function() {
           }
           
           if (occupied) {
-            pseudo.CstrMain.error('R 0x1803 occupied');
+            ctrl |= 0x40;
           }
-          
           ctrl |= 0x18;
+
           return pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = ctrl;
 
         case 0x1801:
@@ -925,8 +1220,7 @@ pseudo.CstrCdrom = (function() {
             }
           }
           else {
-            pseudo.CstrMain.error('R 0x1801 else');
-            //pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
+            pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
           }
           return pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
 
@@ -936,8 +1230,7 @@ pseudo.CstrCdrom = (function() {
               pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = stat | 0xe0;
             }
             else {
-              pseudo.CstrMain.error('R 0x1803 stat 2');
-              //pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0xff;
+              pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0xff;
             }
           }
           else {
@@ -954,6 +1247,34 @@ pseudo.CstrCdrom = (function() {
           interrupt();
           cdint = 0;
         }
+      }
+
+      if (cdreadint) {
+        if (cdreadint++ === 1024) {
+          interruptRead();
+          cdreadint = 0;
+        }
+      }
+    },
+
+    executeDMA(addr) {
+      var size = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff) * 4;
+
+      switch(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+        case 0x11000000:
+          if (!readed) {
+            break;
+          }
+          
+          for (var i=0; i<size; i++) {
+            ram.ub[(( i + pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(ram.ub.byteLength-1))>>>0] = transfer.data[i + transfer.p];
+          }
+          transfer.p += size;
+          break;
+
+        default:
+          pseudo.CstrMain.error('CD DMA -> '+('0x'+(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>>0).toString(16)));
+          break;
       }
     }
   };
@@ -2175,12 +2496,6 @@ pseudo.CstrMips = (function() {
     },
   };
 })();
-
-
-
-
-
-
 
 
 

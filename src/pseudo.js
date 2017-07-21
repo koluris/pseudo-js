@@ -7,12 +7,6 @@
 #define MSF2SECT(m, s, f)\
   (((m) * 60 + (s) - 2) * 75 + (f))
 
-#define CDFRAMESIZERAW\
-  2352
-
-#define DATASIZE\
-  (CDFRAMESIZERAW - 12)
-
 pseudo.CstrMain = (function() {
   // HTML elements
   var dropzone;
