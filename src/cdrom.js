@@ -734,12 +734,14 @@ pseudo.CstrCdrom = (function() {
 
 
 
+#define ram  mem.__ram
 #define hwr  mem.__hwr
 
 #define CD_STAT_NO_INTR     0
 #define CD_STAT_DATA_READY  1
 #define CD_STAT_COMPLETE    2
 #define CD_STAT_ACKNOWLEDGE 3
+#define CD_STAT_DISK_ERROR  5
 
 #define READ_ACK 250
 
@@ -934,7 +936,6 @@ pseudo.CstrCdrom = (function() {
           psx.error('READ_ACK return');
             //return;
         }
-        
         setResultSize(1);
         statP |= 0x02;
         res.data[0] = statP;
@@ -944,7 +945,6 @@ pseudo.CstrCdrom = (function() {
           // seeked = true;
           // statP |= 0x40;
         }
-        
         statP |= 0x20;
         stat = CD_STAT_ACKNOWLEDGE;
         
@@ -991,15 +991,14 @@ pseudo.CstrCdrom = (function() {
     trackRead();
     
     var buf = psx.fetchBuffer();
-    //if (buf == NULL) error = -1;
-    
-    // if (error == -1) {
-    //   memset(transfer.data, 0, DATA_SIZE);
-    //   stat = CD_STAT_DISK_ERROR;
-    //   res.data[0] |= 0x01;
-    //   CDREAD_INT((mode&0x80) ? (READ_TIME/2) : READ_TIME);
-    //   return;
-    // }
+
+    if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0) {
+      transfer.data.fill(0);
+      stat = CD_STAT_DISK_ERROR;
+      res.data[0] |= 0x01;
+      CDREAD_INT((mode&0x80) ? (READ_TIME/2) : READ_TIME);
+      return;
+    }
 
     for (var i=0; i<DATASIZE; i++) {
       transfer.data[i] = buf[i];
@@ -1016,7 +1015,7 @@ pseudo.CstrCdrom = (function() {
         sector.data[0]++;
       }
     }
-    readed = false;
+    readed = 0;
     
     if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
       addIrqQueue(9, 0x1000); // CdlPause
@@ -1103,7 +1102,7 @@ pseudo.CstrCdrom = (function() {
               }
               break;
 
-            case 6: // CdlReadN:
+            case 6: // CdlReadN
               irq = 0;
               stopRead();
               ctrl |= 0x80;
@@ -1179,7 +1178,18 @@ pseudo.CstrCdrom = (function() {
           }
 
           if (data === 0x80 && !(ctrl&0x01) && readed === 0) {
-            psx.error('W 0x1803 2nd');
+            readed = 1;
+            transfer.p = 0; //transfer.data;
+
+            switch(mode&0x30) {
+              case 0x00:
+                transfer.p += 12;
+                break;
+
+              default:
+                psx.error('W 0x1803 2nd mode&0x30 '+(mode&0x30));
+                break;
+            }
           }
           return;
       }
@@ -1201,7 +1211,7 @@ pseudo.CstrCdrom = (function() {
           }
           ctrl |= 0x18;
 
-          return CD_REG(0) = ctrl;
+          return (CD_REG(0) = ctrl);
 
         case 0x1801:
           if (res.ok) {
@@ -1235,14 +1245,14 @@ pseudo.CstrCdrom = (function() {
 
     update() {
       if (cdint) {
-        if (cdint++ === 16) {
+        if (cdint++ >= 16) {
           interrupt();
           cdint = 0;
         }
       }
 
       if (cdreadint) {
-        if (cdreadint++ === 1024) {
+        if (cdreadint++ >= 1024) {
           interruptRead();
           cdreadint = 0;
         }
@@ -1272,6 +1282,7 @@ pseudo.CstrCdrom = (function() {
   };
 })();
 
+#undef ram
 #undef hwr
 
 #endif

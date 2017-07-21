@@ -283,7 +283,8 @@ pseudo.CstrMips = (function() {
             return;
 
           case 16: // RFE
-            copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
+            //copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
+            copr[12] = (copr[12]&0xfffffff0)|((copr[12]&0x3c)>>2);
             return;
         }
         psx.error('Coprocessor 0 instruction '+rs);

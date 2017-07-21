@@ -784,6 +784,8 @@ pseudo.CstrBus = (function() {
 
 
 
+
+
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, statP, irq, re2;
   var reads, readed, occupied, seeked;
@@ -945,7 +947,6 @@ pseudo.CstrCdrom = (function() {
           pseudo.CstrMain.error('READ_ACK return');
             //return;
         }
-        
         res.p = 0; res.c = 1; res.ok = true;
         statP |= 0x02;
         res.data[0] = statP;
@@ -955,7 +956,6 @@ pseudo.CstrCdrom = (function() {
           // seeked = true;
           // statP |= 0x40;
         }
-        
         statP |= 0x20;
         stat = 3;
         
@@ -1002,15 +1002,14 @@ pseudo.CstrCdrom = (function() {
     trackRead();
     
     var buf = pseudo.CstrMain.fetchBuffer();
-    //if (buf == NULL) error = -1;
-    
-    // if (error == -1) {
-    //   memset(transfer.data, 0, DATA_SIZE);
-    //   stat = CD_STAT_DISK_ERROR;
-    //   res.data[0] |= 0x01;
-    //   cdreadint = 1;
-    //   return;
-    // }
+
+    if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0) {
+      transfer.data.fill(0);
+      stat = 5;
+      res.data[0] |= 0x01;
+      cdreadint = 1;
+      return;
+    }
 
     for (var i=0; i<(2352 - 12); i++) {
       transfer.data[i] = buf[i];
@@ -1027,7 +1026,7 @@ pseudo.CstrCdrom = (function() {
         sector.data[0]++;
       }
     }
-    readed = false;
+    readed = 0;
     
     if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
       addIrqQueue(9, 0x1000); // CdlPause
@@ -1114,7 +1113,7 @@ pseudo.CstrCdrom = (function() {
               }
               break;
 
-            case 6: // CdlReadN:
+            case 6: // CdlReadN
               irq = 0;
               if (reads) { reads = false; } statP &= ~0x20;
               ctrl |= 0x80;
@@ -1190,7 +1189,18 @@ pseudo.CstrCdrom = (function() {
           }
 
           if (data === 0x80 && !(ctrl&0x01) && readed === 0) {
-            pseudo.CstrMain.error('W 0x1803 2nd');
+            readed = 1;
+            transfer.p = 0; //transfer.data;
+
+            switch(mode&0x30) {
+              case 0x00:
+                transfer.p += 12;
+                break;
+
+              default:
+                pseudo.CstrMain.error('W 0x1803 2nd mode&0x30 '+(mode&0x30));
+                break;
+            }
           }
           return;
       }
@@ -1212,7 +1222,7 @@ pseudo.CstrCdrom = (function() {
           }
           ctrl |= 0x18;
 
-          return pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = ctrl;
+          return (pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = ctrl);
 
         case 0x1801:
           if (res.ok) {
@@ -1246,14 +1256,14 @@ pseudo.CstrCdrom = (function() {
 
     update() {
       if (cdint) {
-        if (cdint++ === 16) {
+        if (cdint++ >= 16) {
           interrupt();
           cdint = 0;
         }
       }
 
       if (cdreadint) {
-        if (cdreadint++ === 1024) {
+        if (cdreadint++ >= 1024) {
           interruptRead();
           cdreadint = 0;
         }
@@ -1270,7 +1280,7 @@ pseudo.CstrCdrom = (function() {
           }
           
           for (var i=0; i<size; i++) {
-            ram.ub[(( i + pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(ram.ub.byteLength-1))>>>0] = transfer.data[i + transfer.p];
+            pseudo.CstrMem.__ram.ub[(( i + pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = transfer.data[i + transfer.p];
           }
           transfer.p += size;
           break;
@@ -1282,6 +1292,7 @@ pseudo.CstrCdrom = (function() {
     }
   };
 })();
+
 
 
 
@@ -1552,46 +1563,46 @@ pseudo.CstrCounters = (function() {
     },
 
     update() {
-      timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
+      // timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
 
-      if (timer[0].count >= timer[0].bound) {
-        timer[0].count = 0;
-        if (timer[0].mode&0x50) {
-          //pseudo.CstrBus.interruptSet(4);
-          pseudo.CstrMain.error('IRQ_RTC0');
-        }
-      }
+      // if (timer[0].count >= timer[0].bound) {
+      //   timer[0].count = 0;
+      //   if (timer[0].mode&0x50) {
+      //     //pseudo.CstrBus.interruptSet(4);
+      //     pseudo.CstrMain.error('IRQ_RTC0');
+      //   }
+      // }
 
-      if (!(timer[1].mode&0x100)) {
-        timer[1].count += 64;
+      // if (!(timer[1].mode&0x100)) {
+      //   timer[1].count += 64;
 
-        if (timer[1].count >= timer[1].bound) {
-          timer[1].count = 0;
-          if (timer[1].mode&0x50) {
-            //pseudo.CstrBus.interruptSet(5);
-            pseudo.CstrMain.error('IRQ_RTC1');
-          }
-        }
-      }
-      else if ((hsc += 64) >= (33868800/15734)) { hsc = 0;
-        if (++timer[1].count >= timer[1].bound) {
-          timer[1].count = 0;
-          if (timer[1].mode&0x50) {
-            pseudo.CstrBus.interruptSet(5);
-          }
-        }
-      }
+      //   if (timer[1].count >= timer[1].bound) {
+      //     timer[1].count = 0;
+      //     if (timer[1].mode&0x50) {
+      //       //pseudo.CstrBus.interruptSet(5);
+      //       pseudo.CstrMain.error('IRQ_RTC1');
+      //     }
+      //   }
+      // }
+      // else if ((hsc += 64) >= (33868800/15734)) { hsc = 0;
+      //   if (++timer[1].count >= timer[1].bound) {
+      //     timer[1].count = 0;
+      //     if (timer[1].mode&0x50) {
+      //       pseudo.CstrBus.interruptSet(5);
+      //     }
+      //   }
+      // }
 
-      if (!(timer[2].mode&1)) {
-        timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
+      // if (!(timer[2].mode&1)) {
+      //   timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
 
-        if (timer[2].count >= timer[2].bound) {
-          timer[2].count = 0;
-          if (timer[2].mode&0x50) {
-            pseudo.CstrBus.interruptSet(6);
-          }
-        }
-      }
+      //   if (timer[2].count >= timer[2].bound) {
+      //     timer[2].count = 0;
+      //     if (timer[2].mode&0x50) {
+      //       pseudo.CstrBus.interruptSet(6);
+      //     }
+      //   }
+      // }
 
       if ((vbk += 64) >= (33868800/60)) { vbk = 0;
         pseudo.CstrBus.interruptSet(0);
@@ -1757,9 +1768,6 @@ pseudo.CstrHardware = (function() {
 
       b(addr, data) {
         if (addr >= 0x1800 && addr <= 0x1803) { // CD-ROM
-          if (addr === 0x1802) {
-            console.log(data);
-          }
           pseudo.CstrCdrom.scopeW(addr, data);
           return;
         }
@@ -2094,7 +2102,6 @@ pseudo.CstrMem = (function() {
 
 
 
-
 pseudo.CstrMips = (function() {
   // HTML elements
   var output;
@@ -2192,11 +2199,11 @@ pseudo.CstrMips = (function() {
             return;
 
           case 24: // MULT
-            temp = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32); if (r[34]) console.log(('0x'+(r[34]>>>0).toString(16)));;
+            temp = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
             return;
 
           case 25: // MULTU
-            temp = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32); if (r[34]) console.log(('0x'+(r[34]>>>0).toString(16)));;
+            temp = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
             return;
 
           case 26: // DIV
@@ -2341,7 +2348,8 @@ pseudo.CstrMips = (function() {
             return;
 
           case 16: // RFE
-            copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
+            //copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
+            copr[12] = (copr[12]&0xfffffff0)|((copr[12]&0x3c)>>2);
             return;
         }
         pseudo.CstrMain.error('Coprocessor 0 instruction '+((code>>>21)&0x1f));
@@ -2718,10 +2726,12 @@ pseudo.CstrMain = (function() {
       //console.log(time[0]+' '+time[1]+' '+time[2]);
 
       var offset = (((((time[0])/16 * 10 + (time[0])%16)) * 60 + ( ((time[1])/16 * 10 + (time[1])%16)) - 2) * 75 + ( ((time[2])/16 * 10 + (time[2])%16))) * 2352 + 12;
+      console.log(time[2]);
       var size   = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
-        cdBfr.set(data);
+        var hi = new Uint8Array(data);
+        cdBfr.set(hi);
       });
     },
 

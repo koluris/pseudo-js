@@ -202,10 +202,12 @@ pseudo.CstrMain = (function() {
       //console.log(time[0]+' '+time[1]+' '+time[2]);
 
       var offset = MSF2SECT(BCD2INT(time[0]), BCD2INT(time[1]), BCD2INT(time[2])) * CDFRAMESIZERAW + 12;
+      console.log(time[2]);
       var size   = DATASIZE;
 
       chunkReader2(iso, offset, size, function(data) {
-        cdBfr.set(data);
+        var hi = new UintBcap(data);
+        cdBfr.set(hi);
       });
     },
 
