@@ -1,5 +1,8 @@
 // Based on Mizvekov`s work, circa 2001. Thanks a lot!
 
+#define ram  mem.__ram
+#define hwr  mem.__hwr
+
 // Sector Buffer Status
 #define CD_NOINTR          0x00
 #define CD_DATAREADY       0x01
@@ -13,6 +16,7 @@
 #define CD_CTRL_NP         0x08
 #define CD_CTRL_PH         0x10
 #define CD_CTRL_RES        0x20
+#define CD_CTRL_DMA        0x40
 #define CD_CTRL_BUSY       0x80
 
 // Status
@@ -28,6 +32,8 @@
 #define CD_CMD_NONBLOCKING 1
 
 #define CD_MODE_REPT       0x04
+#define CD_MODE_SIZE0      0x10
+#define CD_MODE_SIZE1      0x20
 #define CD_MODE_SPEED      0x80
 
 #define CD_READTIME\
@@ -48,15 +54,16 @@
   status |= CD_STATUS_READ
 
 #define invokeInterrupt()\
-  if (interrupt.status & 0x7) {\
+  if ((interrupt.status & 0x7) !== 0) {\
     bus.interruptSet(IRQ_CD);\
   }
 
 #define parameterClear()\
   resetVals(parameter);\
-  control |= CD_CTRL_NP | CD_CTRL_PH
+  control |= CD_CTRL_NP;\
+  control |= CD_CTRL_PH
 
-#define resultClear(Cd)\
+#define resultClear()\
   resetVals(result);\
   control &= ~CD_CTRL_RES
 
@@ -135,8 +142,9 @@ pseudo.CstrCdrom = (function() {
   }
 
   function main() {
+    control &= ~CD_CTRL_BUSY;
     resetVals(result);
-    control &= ~(CD_CTRL_RES | CD_CTRL_BUSY);
+    control &= ~CD_CTRL_RES;
     interrupt.status = (interrupt.status & 0xf8) | CD_ACKNOWLEDGE;
     
     if (status & CD_STATUS_ERROR) {
@@ -149,15 +157,16 @@ pseudo.CstrCdrom = (function() {
           blockEnd = 0;
         }
         else {
+          blockEnd = 1;
           invokeBase();
-          control |=  CD_CTRL_RES;
           control &= ~CD_CTRL_BUSY;
           motorBase.limit = motorBase.sinc + 39;
           result.value[0] = status;
           result.size = 1;
           result.pointer = 0;
+          control |= CD_CTRL_RES;
           seeks = false;
-          blockEnd = 1;
+          
           return;
         }
       }
@@ -169,10 +178,10 @@ pseudo.CstrCdrom = (function() {
     parameterClear();
 
     for (var i=0; (i < 8) && (busres[i] !== 0); busres[i++] = 0) {
-      control |= CD_CTRL_RES;
       result.value[i] = busres[i];
-      result.size     = i + 1;
-      result.pointer  = 0;
+      result.size = i + 1;
+      result.pointer = 0;
+      control |= CD_CTRL_RES;
     }
     status &= ~CD_STATUS_ERROR;
   }
@@ -206,6 +215,13 @@ pseudo.CstrCdrom = (function() {
           kind = CD_CMD_BLOCKING;
           break;
 
+        case 0x08: //CdlStop
+          stopRead();
+          status &= ~CD_STATUS_STANDBY;
+          busres[0] = status;
+          kind = CD_CMD_NONBLOCKING;
+          break;
+
         case 0x0a: // CdlInit
           stopRead();
           status |= CD_STATUS_STANDBY;
@@ -215,7 +231,7 @@ pseudo.CstrCdrom = (function() {
           break;
 
         case 0x0c: // CdlDemute
-          mute = 0;
+          mute = false;
           busres[0] = status;
           kind = CD_CMD_BLOCKING;
           break;
@@ -223,6 +239,30 @@ pseudo.CstrCdrom = (function() {
         case 0x0e: // CdlSetMode
           buspar[0] = mode;
           busres[0] = status;
+          kind = CD_CMD_BLOCKING;
+          break;
+
+        case 0x13: // CdlGetTN
+          {
+            var tn = [1, 1];
+            var result = [0, INT2BCD(tn[0]), INT2BCD(tn[1]), 0, 0, 0, 0, 0];
+            busres[0] = status;
+            for (var i=1; i<3; i++) {
+              busres[i] = result[i];
+            }
+          }
+          kind = CD_CMD_BLOCKING;
+          break;
+
+        case 0x14: // CdlGetTD
+          {
+            var td = [0, 0];
+            var result = [0, INT2BCD(td[2]), INT2BCD(td[1]), 0, 0, 0, 0, 0];
+            busres[0] = status;
+            for (var i=1; i<3; i++) {
+              busres[i] = result[i];
+            }
+          }
           kind = CD_CMD_BLOCKING;
           break;
 
@@ -252,7 +292,7 @@ pseudo.CstrCdrom = (function() {
 
         case 0x1a: // CdlCheckId
           stopRead();
-          busres.set([0x00, 0x00, 0x00, 0x00, 'S', 'C', 'E', 'A']);
+          busres.set([0x00, 0x00, 0x00, 0x00, 'S', 'C', 'E', 'A']); // 0x08, 0x90 for Audio CD
           kind = CD_CMD_NONBLOCKING;
           break;
 
@@ -285,23 +325,22 @@ pseudo.CstrCdrom = (function() {
     }
 
     if (reads === 1) {
-      if (psx.trackRead(seekLoc) === -1) {
-        psx.error('*** reads 1');
-      }
-      else if (psx.fetchBuffer() === 0) {
-        temp |= 0x02;
-      }
-      else {
+      psx.trackRead(seekLoc);
+      
+      // if (psx.fetchBuffer()[0] === 0) {
+      //   temp |= 0x02;
+      // }
+      // else {
         sector.bfr.set(psx.fetchBuffer());
-      }
+      //}
 
       if (status & CD_STATUS_SHELL) {
         psx.error('*** status & CD_STATUS_SHELL');
       }
 
-      if (sector.bfr[0] === seekLoc.minute && sector.bfr[1] === seekLoc.sec && sector.bfr[2] === seekLoc.frame) {
-        temp |= 0x08;
-      }
+      // if (sector.bfr[0] === seekLoc.minute && sector.bfr[1] === seekLoc.sec && sector.bfr[2] === seekLoc.frame) {
+      //   temp |= 0x08;
+      // }
       
       if (temp) {
         result.value[0] = status | CD_STATUS_ERROR;
@@ -318,8 +357,12 @@ pseudo.CstrCdrom = (function() {
       }
 
       switch((mode & (CD_MODE_SIZE0 | CD_MODE_SIZE1)) >> 4) {
+        case 0:
+          dma.size = 2048;
+          break;
+
         default:
-          psx.error('((mode & (CD_MODE_SIZE0 | CD_MODE_SIZE1)) >> 4)');
+          psx.error('mode size 0 -> '+((mode & (CD_MODE_SIZE0 | CD_MODE_SIZE1)) >> 4));
           break;
       }
 
@@ -393,7 +436,7 @@ pseudo.CstrCdrom = (function() {
     update() {
       // Seek
       if (motorSeek.enabled) {
-        if ((motorSeek.sinc += (mode & CD_MODE_SPEED ? 2 : 1)) >= motorSeek.limit) {
+        if ((motorSeek.sinc += ((mode & CD_MODE_SPEED) ? 2 : 1)) >= motorSeek.limit) {
           motorSeek.enabled = false;
           motorSeek.sinc    = 0;
 
@@ -425,7 +468,7 @@ pseudo.CstrCdrom = (function() {
 
       // Read
       if (motorRead.enabled) {
-        if ((motorRead.sinc += (mode & CD_MODE_SPEED ? 2 : 1)) >= motorRead.limit) {
+        if ((motorRead.sinc += ((mode & CD_MODE_SPEED) ? 2 : 1)) >= motorRead.limit) {
           motorRead.enabled = false;
           motorRead.sinc    = 0;
           
@@ -529,8 +572,15 @@ pseudo.CstrCdrom = (function() {
               switch(data) {
                 case 0x00:
                   return;
+
+                case 0x80:
+                  control |= CD_CTRL_DMA;
+                  return;
+
+                default:
+                  psx.error('scopeW 0x1803 00 data '+hex(data));
+                  return;
               }
-              psx.error('scopeW 0x1803 00 data '+hex(data));
               return;
 
             case 0x01: // Write Interrupt
@@ -550,7 +600,9 @@ pseudo.CstrCdrom = (function() {
 
               if (!(interrupt.status & 0x7) && interrupt.onhold) {
                 interrupt.onhold = 0;
-                parameter = interrupt.onholdParam;
+                parameter.value.set(interrupt.onholdParam.value);
+                parameter.size    = interrupt.onholdParam.size;
+                parameter.pointer = interrupt.onholdParam.pointer;
                 command(interrupt.onholdCause);
               }
               return;
@@ -601,6 +653,38 @@ pseudo.CstrCdrom = (function() {
           return 0;
       }
       psx.error('CD-ROM scopeR '+hex(addr));
+    },
+
+    executeDMA(addr) {
+      var size = ((bcr>>16)*(bcr&0xffff)) * 4;
+
+      if (!(control & CD_CTRL_DMA)) {
+        psx.error('CD DMA !(CD->Control & CtrlDMA)');
+      }
+
+      if (!size) {
+        psx.error('CD DMA !size');
+      }
+
+      if ((chcr & 0x01000000) === 0x01000000) {
+        if ((dma.pointer + size) >= dma.size) {
+          control &= ~CD_CTRL_DMA;
+          size -= (dma.pointer + size) - dma.size;
+          
+          if (dma.pointer > dma.size) {
+            psx.error('CD DMA error 1');
+          }
+        }
+
+        var offset = madr&0x1fffff;
+        for (var i=0; i<size; i++) {
+          directMemB(ram.ub, i + offset) = dma.bfr[i + dma.pointer];
+          dma.pointer += size;
+        }
+      }
     }
   };
 })();
+
+#undef ram
+#undef hwr

@@ -1,6 +1,6 @@
-#define ram mem.__ram
-#define rom mem.__rom
-#define hwr mem.__hwr
+#define ram  mem.__ram
+#define rom  mem.__rom
+#define hwr  mem.__hwr
 
 #define MSB(x)\
   x>>>20

@@ -70,9 +70,10 @@ pseudo.CstrBus = (function() {
         chcr = data;
 
         switch(chan) {
-          case 2: vs   .executeDMA(addr); break; // GPU
-          case 4: audio.executeDMA(addr); break; // SPU
-          case 6: mem  .executeDMA(addr); break; // OTC
+          case 2: vs   .executeDMA(addr); break; // Graphics
+          case 3: cdrom.executeDMA(addr); break; // CD-ROM
+          case 4: audio.executeDMA(addr); break; // Audio
+          case 6: mem  .executeDMA(addr); break; // Clear OT
 
           default:
             psx.error('DMA Channel '+chan);
