@@ -1988,6 +1988,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             if (pseudo.CstrMips.writeOK()) {
               pseudo.CstrMem.__ram.uw[(( addr)&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] = data;
             }
@@ -2123,6 +2124,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             return pseudo.CstrMem.__ram.ub[(( addr)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0];
 
           case 0xbfc: // BIOS

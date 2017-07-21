@@ -30,6 +30,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             if (cpu.writeOK()) {
               directMemW(ram.uw, addr) = data;
             }
@@ -165,6 +166,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             return directMemB(ram.ub, addr);
 
           case 0xbfc: // BIOS
