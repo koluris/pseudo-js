@@ -816,15 +816,9 @@ pseudo.CstrCdrom = (function() {
     p: 0
   };
 
-  function addIrqQueue(code, end) {
+  function addIrqQueue(code) {
     irq = code;
-    
-    if (stat) {
-     end_time = end;
-    }
-    else {
-      cdint = 1;
-    }
+    cdint = 1;
   }
 
   function interrupt() {
@@ -839,7 +833,7 @@ pseudo.CstrCdrom = (function() {
 
     switch(prevIrq) {
       case 1: // CdlNop
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x2;
         res.data[0] = statP;
         stat = 3; //More stuff here...
@@ -848,22 +842,22 @@ pseudo.CstrCdrom = (function() {
 
       case  2: // CdlSetLoc
       case 14: // CdlSetMode
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
         res.data[0] = statP;
         stat = 3;
         break;
 
       case 9: // CdlPause
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         res.data[0] = statP;
         stat = 3;
-        addIrqQueue(9 + 0x20, 0x1000);
+        addIrqQueue(9 + 0x20);
         ctrl |= 0x80;
         break;
       
       case 9 + 0x20: // CdlPause
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         statP &= ~0x20;
         statP |= 0x02;
         res.data[0] = statP;
@@ -871,31 +865,31 @@ pseudo.CstrCdrom = (function() {
         break;
 
       case 10: // CdlInit
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
         res.data[0] = statP;
         stat = 3;
-        addIrqQueue(10 + 0x20, 0x1000);
+        addIrqQueue(10 + 0x20);
         break;
 
       case 10 + 0x20: // CdlInit
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         res.data[0] = statP;
         stat = 2;
         break;
 
       case 21: // CdlSeekL
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
         res.data[0] = statP;
         statP |= 0x40;
         stat = 3;
-        seeked = true;
-        addIrqQueue(21 + 0x20, 0x1000);
+        seeked = 1;
+        addIrqQueue(21 + 0x20);
         break;
 
       case 21 + 0x20: // CdlSeekL
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
         statP &= ~0x40;
         res.data[0] = statP;
@@ -907,7 +901,7 @@ pseudo.CstrCdrom = (function() {
         
         switch(param.data[0]) {
           case 0x20:
-            res.p = 0; res.c = 4; res.ok = true;
+            res.p = 0; res.c = 4; res.ok = 1;
             res.data.set([0x98, 0x06, 0x10, 0xc3]);
             break;
 
@@ -918,15 +912,15 @@ pseudo.CstrCdrom = (function() {
         break;
 
       case 26: // CdlId
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
         res.data[0] = statP;
         stat = 3;
-        addIrqQueue(26 + 0x20, 0x1000);
+        addIrqQueue(26 + 0x20);
         break;
 
       case 26 + 0x20: // CdlId
-        res.p = 0; res.c = 8; res.ok = true;
+        res.p = 0; res.c = 8; res.ok = 1;
         res.data[0] = 0x00; //More stuff here...
         res.data[1] = 0x00; // |= 0x80 for BIOS shell
         res.data[2] = 0x00;
@@ -935,11 +929,11 @@ pseudo.CstrCdrom = (function() {
         break;
 
       case 30: // CdlReadToc
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
         res.data[0] = statP;
         stat = 3;
-        addIrqQueue(30 + 0x20, 0x1000);
+        addIrqQueue(30 + 0x20);
         break;
 
       case 250:
@@ -947,7 +941,7 @@ pseudo.CstrCdrom = (function() {
           pseudo.CstrMain.error('READ_ACK return');
             //return;
         }
-        res.p = 0; res.c = 1; res.ok = true;
+        res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
         res.data[0] = statP;
         
@@ -993,8 +987,8 @@ pseudo.CstrCdrom = (function() {
       // return;
     }
 
-    occupied = true;
-    res.p = 0; res.c = 1; res.ok = true;
+    occupied = 1;
+    res.p = 0; res.c = 1; res.ok = 1;
     statP |= 0x22;
     statP &= ~0x40;
     res.data[0] = statP;
@@ -1003,13 +997,13 @@ pseudo.CstrCdrom = (function() {
     
     var buf = pseudo.CstrMain.fetchBuffer();
 
-    if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0) {
-      transfer.data.fill(0);
-      stat = 5;
-      res.data[0] |= 0x01;
-      cdreadint = 1;
-      return;
-    }
+    // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0) {
+    //   transfer.data.fill(0);
+    //   stat = 5;
+    //   res.data[0] |= 0x01;
+    //   cdreadint = 1;
+    //   return;
+    // }
 
     for (var i=0; i<(2352 - 12); i++) {
       transfer.data[i] = buf[i];
@@ -1029,7 +1023,7 @@ pseudo.CstrCdrom = (function() {
     readed = 0;
     
     if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
-      addIrqQueue(9, 0x1000); // CdlPause
+      addIrqQueue(9); // CdlPause
     }
     else {
       cdreadint = 1;
@@ -1062,10 +1056,10 @@ pseudo.CstrCdrom = (function() {
       transfer.data.fill(0);
       transfer.p = 0;
 
-      reads    = false;
+      reads    = 0;
       readed   = 0;
-      occupied = false;
-      seeked   = false;
+      occupied = 0;
+      seeked   = 0;
 
       cdint = cdreadint = 0;
       end_time = 0;
@@ -1084,7 +1078,7 @@ pseudo.CstrCdrom = (function() {
           return;
 
         case 0x1801:
-          occupied = false;
+          occupied = 0;
           
           if (ctrl&0x01) {
             return;
@@ -1101,8 +1095,8 @@ pseudo.CstrCdrom = (function() {
 
             case 2: // CdlSetloc
               {
-                if (reads) { reads = false; } statP &= ~0x20;
-                seeked = false;
+                if (reads) { reads = 0; } statP &= ~0x20;
+                seeked = 0;
               
                 for (var i=0; i<3; i++) {
                   //console.log(param.data[i]);
@@ -1115,19 +1109,19 @@ pseudo.CstrCdrom = (function() {
 
             case 6: // CdlReadN
               irq = 0;
-              if (reads) { reads = false; } statP &= ~0x20;
+              if (reads) { reads = 0; } statP &= ~0x20;
               ctrl |= 0x80;
               stat = 0;
-              reads = true; readed = 0xff; addIrqQueue(250, 0x1000);
+              reads = 1; readed = 0xff; addIrqQueue(250);
               break;
 
             case 9: // CdlPause
-              if (reads) { reads = false; } statP &= ~0x20;
+              if (reads) { reads = 0; } statP &= ~0x20;
               ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x80000);
               break;
 
             case 10: // CdlInit
-              if (reads) { reads = false; } statP &= ~0x20;
+              if (reads) { reads = 0; } statP &= ~0x20;
               ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
               break;
 
@@ -1153,7 +1147,7 @@ pseudo.CstrCdrom = (function() {
                 ctrl &= ~0x03;
                 param.p = 0;
                 param.c = 0;
-                res.ok  = true;
+                res.ok  = 1;
                 return;
 
               default:
@@ -1229,7 +1223,7 @@ pseudo.CstrCdrom = (function() {
             pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = res.data[res.p++];
         
             if (res.p === res.c) {
-              res.ok = false;
+              res.ok = 0;
             }
           }
           else {
@@ -1768,6 +1762,7 @@ pseudo.CstrHardware = (function() {
 
       b(addr, data) {
         if (addr >= 0x1800 && addr <= 0x1803) { // CD-ROM
+          if (addr === 0x1802) console.log(('0x'+(data>>>0).toString(16)));
           pseudo.CstrCdrom.scopeW(addr, data);
           return;
         }
@@ -2726,7 +2721,6 @@ pseudo.CstrMain = (function() {
       //console.log(time[0]+' '+time[1]+' '+time[2]);
 
       var offset = (((((time[0])/16 * 10 + (time[0])%16)) * 60 + ( ((time[1])/16 * 10 + (time[1])%16)) - 2) * 75 + ( ((time[2])/16 * 10 + (time[2])%16))) * 2352 + 12;
-      console.log(time[2]);
       var size   = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
