@@ -222,6 +222,13 @@ pseudo.CstrCdrom = (function() {
           kind = CD_CMD_NONBLOCKING;
           break;
 
+        case 0x09: // CdlPause
+          stopRead();
+          status |= CD_STATUS_STANDBY;
+          busres[0] = status;
+          kind = CD_CMD_NONBLOCKING;
+          break;
+
         case 0x0a: // CdlInit
           stopRead();
           status |= CD_STATUS_STANDBY;

@@ -928,6 +928,13 @@ pseudo.CstrCdrom = (function() {
           kind = 1;
           break;
 
+        case 0x09: // CdlPause
+          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          status |= 0x02;
+          busres[0] = status;
+          kind = 1;
+          break;
+
         case 0x0a: // CdlInit
           if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
           status |= 0x02;
@@ -1365,7 +1372,7 @@ pseudo.CstrCdrom = (function() {
       var size = ((pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff)) * 4;
 
       if (!(control & 0x40)) {
-        pseudo.CstrMain.error('CD DMA (CD->Control & CtrlDMA)');
+        pseudo.CstrMain.error('CD DMA !(CD->Control & CtrlDMA)');
       }
 
       if (!size) {
@@ -1378,7 +1385,7 @@ pseudo.CstrCdrom = (function() {
           size -= (dma.pointer + size) - dma.size;
           
           if (dma.pointer > dma.size) {
-            pseudo.CstrMain.error('haha');
+            pseudo.CstrMain.error('CD DMA error 1');
           }
         }
 
@@ -1387,8 +1394,6 @@ pseudo.CstrCdrom = (function() {
           pseudo.CstrMem.__ram.ub[(( i + offset)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = dma.bfr[i + dma.pointer];
           dma.pointer += size;
         }
-    //     memcpy(&lRAMl[MADR & 0x1FFFFF], &iCDROM.iDMA.Buffer[iCDROM.iDMA.Pointer], SIZE);
-		// iCDROM.iDMA.Pointer = iCDROM.iDMA.Pointer + SIZE;
       }
     }
   };
@@ -2116,6 +2121,8 @@ pseudo.CstrMem = (function() {
           case 0x801: // Mirror
           case 0x802: // Mirror
           case 0x807: // Mirror
+
+          case 0xa00: // Mirror
             return pseudo.CstrMem.__ram.ub[(( addr)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0];
 
           case 0xbfc: // BIOS
