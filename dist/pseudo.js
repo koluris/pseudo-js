@@ -973,6 +973,7 @@ pseudo.CstrCdrom = (function() {
   }
 
   function trackRead() {
+    //console.log(sector.data[0]+' '+sector.data[1]+' '+sector.data[2]);
     sector.prev[0] = ((sector.data[0])/10 * 16 + (sector.data[0])%10);
     sector.prev[1] = ((sector.data[1])/10 * 16 + (sector.data[1])%10);
     sector.prev[2] = ((sector.data[2])/10 * 16 + (sector.data[2])%10);
@@ -1105,6 +1106,7 @@ pseudo.CstrCdrom = (function() {
                 seeked = false;
               
                 for (var i=0; i<3; i++) {
+                  //console.log(param.data[i]);
                   sector.data[i] = ((param.data[i])/16 * 10 + (param.data[i])%16);
                 }
                 sector.data[3] = 0;
@@ -1161,6 +1163,7 @@ pseudo.CstrCdrom = (function() {
             }
           }
           else if (!(ctrl&0x01) && param.p < 8) {
+            //console.log(data);
             param.data[param.p++] = data;
             param.c++;
           }
@@ -1754,6 +1757,9 @@ pseudo.CstrHardware = (function() {
 
       b(addr, data) {
         if (addr >= 0x1800 && addr <= 0x1803) { // CD-ROM
+          if (addr === 0x1802) {
+            console.log(data);
+          }
           pseudo.CstrCdrom.scopeW(addr, data);
           return;
         }
@@ -1903,7 +1909,9 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
-            pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1] = data;
+            if (pseudo.CstrMips.writeOK()) {
+              pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1] = data;
+            }
             return;
 
           case 0x1f8: // Scratchpad + Hardware
@@ -1929,7 +1937,9 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
-            pseudo.CstrMem.__ram.ub[(( addr)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = data;
+            if (pseudo.CstrMips.writeOK()) {
+              pseudo.CstrMem.__ram.ub[(( addr)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = data;
+            }
             return;
 
           case 0x1f8: // Scratchpad + Hardware
@@ -2084,6 +2094,7 @@ pseudo.CstrMem = (function() {
 
 
 
+
 pseudo.CstrMips = (function() {
   // HTML elements
   var output;
@@ -2181,11 +2192,11 @@ pseudo.CstrMips = (function() {
             return;
 
           case 24: // MULT
-            temp = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
+            temp = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32); if (r[34]) console.log(('0x'+(r[34]>>>0).toString(16)));;
             return;
 
           case 25: // MULTU
-            temp = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
+            temp = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32); if (r[34]) console.log(('0x'+(r[34]>>>0).toString(16)));;
             return;
 
           case 26: // DIV
@@ -2695,17 +2706,18 @@ pseudo.CstrMain = (function() {
         return;
       }
 
-      // console.log(time.minute);
-      // console.log(time.sec);
-      // console.log(time.frame);
+      // console.log(time[0]);
+      // console.log(time[1]);
+      // console.log(time[2]);
       // console.log('---');
-      // console.log(((time.minute)/16 * 10 + (time.minute)%16));
-      // console.log(((time.sec)/16 * 10 + (time.sec)%16));
-      // console.log(((time.frame)/16 * 10 + (time.frame)%16));
+      // console.log(((time[0])/16 * 10 + (time[0])%16));
+      // console.log(((time[1])/16 * 10 + (time[1])%16));
+      // console.log(((time[2])/16 * 10 + (time[2])%16));
       // console.log('---');
-      // console.log((((((time.minute)/16 * 10 + (time.minute)%16)) * 60 + ( ((time.sec)/16 * 10 + (time.sec)%16)) - 2) * 75 + ( ((time.frame)/16 * 10 + (time.frame)%16))));
+      // console.log((((((time[0])/16 * 10 + (time[0])%16)) * 60 + ( ((time[1])/16 * 10 + (time[1])%16)) - 2) * 75 + ( ((time[2])/16 * 10 + (time[2])%16))));
+      //console.log(time[0]+' '+time[1]+' '+time[2]);
 
-      var offset = (((((time.minute)/16 * 10 + (time.minute)%16)) * 60 + ( ((time.sec)/16 * 10 + (time.sec)%16)) - 2) * 75 + ( ((time.frame)/16 * 10 + (time.frame)%16))) * 2352 + 12;
+      var offset = (((((time[0])/16 * 10 + (time[0])%16)) * 60 + ( ((time[1])/16 * 10 + (time[1])%16)) - 2) * 75 + ( ((time[2])/16 * 10 + (time[2])%16))) * 2352 + 12;
       var size   = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {

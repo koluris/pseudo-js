@@ -190,17 +190,18 @@ pseudo.CstrMain = (function() {
         return;
       }
 
-      // console.log(time.minute);
-      // console.log(time.sec);
-      // console.log(time.frame);
+      // console.log(time[0]);
+      // console.log(time[1]);
+      // console.log(time[2]);
       // console.log('---');
-      // console.log(BCD2INT(time.minute));
-      // console.log(BCD2INT(time.sec));
-      // console.log(BCD2INT(time.frame));
+      // console.log(BCD2INT(time[0]));
+      // console.log(BCD2INT(time[1]));
+      // console.log(BCD2INT(time[2]));
       // console.log('---');
-      // console.log(MSF2SECT(BCD2INT(time.minute), BCD2INT(time.sec), BCD2INT(time.frame)));
+      // console.log(MSF2SECT(BCD2INT(time[0]), BCD2INT(time[1]), BCD2INT(time[2])));
+      //console.log(time[0]+' '+time[1]+' '+time[2]);
 
-      var offset = MSF2SECT(BCD2INT(time.minute), BCD2INT(time.sec), BCD2INT(time.frame)) * CDFRAMESIZERAW + 12;
+      var offset = MSF2SECT(BCD2INT(time[0]), BCD2INT(time[1]), BCD2INT(time[2])) * CDFRAMESIZERAW + 12;
       var size   = DATASIZE;
 
       chunkReader2(iso, offset, size, function(data) {

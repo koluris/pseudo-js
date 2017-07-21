@@ -962,6 +962,7 @@ pseudo.CstrCdrom = (function() {
   }
 
   function trackRead() {
+    //console.log(sector.data[0]+' '+sector.data[1]+' '+sector.data[2]);
     sector.prev[0] = INT2BCD(sector.data[0]);
     sector.prev[1] = INT2BCD(sector.data[1]);
     sector.prev[2] = INT2BCD(sector.data[2]);
@@ -1094,6 +1095,7 @@ pseudo.CstrCdrom = (function() {
                 seeked = false;
               
                 for (var i=0; i<3; i++) {
+                  //console.log(param.data[i]);
                   sector.data[i] = BCD2INT(param.data[i]);
                 }
                 sector.data[3] = 0;
@@ -1150,6 +1152,7 @@ pseudo.CstrCdrom = (function() {
             }
           }
           else if (!(ctrl&0x01) && param.p < 8) {
+            //console.log(data);
             param.data[param.p++] = data;
             param.c++;
           }
