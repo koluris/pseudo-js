@@ -1,3 +1,5 @@
+#if 0
+
 // Based on Mizvekov`s work, circa 2001. Thanks a lot!
 
 #define ram  mem.__ram
@@ -686,8 +688,8 @@ pseudo.CstrCdrom = (function() {
         var offset = madr&0x1fffff;
         for (var i=0; i<size; i++) {
           directMemB(ram.ub, i + offset) = dma.bfr[i + dma.pointer];
-          dma.pointer += size;
         }
+        dma.pointer += size;
       }
     }
   };
@@ -695,3 +697,43 @@ pseudo.CstrCdrom = (function() {
 
 #undef ram
 #undef hwr
+
+#else
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#endif

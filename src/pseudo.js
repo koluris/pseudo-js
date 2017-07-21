@@ -193,7 +193,7 @@ pseudo.CstrMain = (function() {
     trackRead(time) {
       if (!iso) {
         cdBfr.fill(0);
-        return 0;
+        return;
       }
 
       // console.log(time.minute);
@@ -212,8 +212,6 @@ pseudo.CstrMain = (function() {
       chunkReader2(iso, offset, size, function(data) {
         cdBfr.set(data);
       });
-
-      return 0;
     },
 
     fetchBuffer() {

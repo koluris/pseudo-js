@@ -1392,8 +1392,8 @@ pseudo.CstrCdrom = (function() {
         var offset = pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x1fffff;
         for (var i=0; i<size; i++) {
           pseudo.CstrMem.__ram.ub[(( i + offset)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = dma.bfr[i + dma.pointer];
-          dma.pointer += size;
         }
+        dma.pointer += size;
       }
     }
   };
@@ -2833,10 +2833,9 @@ pseudo.CstrMain = (function() {
       var size   = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
+        console.log(data);
         cdBfr.set(data);
       });
-
-      return 0;
     },
 
     fetchBuffer() {
