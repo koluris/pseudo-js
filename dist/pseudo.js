@@ -704,19 +704,16 @@ pseudo.CstrBus = (function() {
 })();
 
 
-// Based on Mizvekov`s work, circa 2001. Thanks a lot!
 
 
 
 
-// Sector Buffer Status
 
 
 
 
 
 
-// Control
 
 
 
@@ -725,7 +722,6 @@ pseudo.CstrBus = (function() {
 
 
 
-// Status
 
 
 
@@ -733,7 +729,6 @@ pseudo.CstrBus = (function() {
 
 
 
-// Command Mode
 
 
 
@@ -756,24 +751,6 @@ pseudo.CstrBus = (function() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Must stop CDDA as well
 
 
 
@@ -784,620 +761,204 @@ pseudo.CstrBus = (function() {
 
 
 pseudo.CstrCdrom = (function() {
-  var busres = new Uint8Array(8);
-  var buspar = new Uint8Array(8);
-  var control, status;
-  var interrupt = {};
-  var kind, blockEnd, reads, mode;
-  var motorSeek = {}, motorBase = {}, motorRead = {};
-  var seekLoc = {}, destLoc = {};
+  var ctrl, stat, irq, re2;
+  var reads, readed, occupied;
+  var cdint;
 
-  // Booleans
-  var seeks, pause, mute, retr;
-
-  var sector = {
-    bfr: new Uint8Array(2352)
+  var param = {
+    data: new Uint8Array(8),
+       p: 0,
+       c: 0,
   };
 
-  var dma = {
-    bfr: new Uint8Array(2352)
-  };
-  
-  var parameter = {
-    value: new Uint8Array(8)
-  };
-
-  var result = {
-    value: new Uint8Array(8)
+  var res = {
+    data: new Uint8Array(8),
+      tn: new Uint8Array(6),
+      td: new Uint8Array(4),
+       p: 0,
+       c: 0,
+      ok: 0,
   };
 
-  function resetMotor(motor) {
-    motor.enabled = false;
-    motor.sinc  = 0;
-    motor.limit = 0;
-  }
-
-  function resetVals(val) {
-    val.value.fill(0);
-    val.size    = 0;
-    val.pointer = 0;
-  }
-
-  function resetLoc(loc) {
-    loc.minute = 0;
-    loc.sec    = 0;
-    loc.frame  = 0;
-  }
-
-  function refreshCDLoc(loc) {
-    var minute = ((loc.minute)/16 * 10 + (loc.minute)%16);
-    var sec    = ((loc.sec)/16 * 10 + (loc.sec)%16);
-    var frame  = ((loc.frame)/16 * 10 + (loc.frame)%16);
+  function addIrqQueue(code, end) {
+    irq = code;
     
-    if (++frame >= 75) {
-      frame = 0;
-      if (++sec >= 60) {
-        sec = 0;
-        minute++;
-      }
-    }
-    
-    loc.minute = ((minute)/10 * 16 + (minute)%10);
-    loc.sec    = ((sec)/10 * 16 + (sec)%10);
-    loc.frame  = ((frame)/10 * 16 + (frame)%10);
-  }
-
-  function main() {
-    control &= ~0x80;
-    resetVals(result);
-    control &= ~0x20;
-    interrupt.status = (interrupt.status & 0xf8) | 0x03;
-    
-    if (status & 0x01) {
-      pseudo.CstrMain.error('status & CD_STATUS_ERROR');
+    if (stat) {
+      pseudo.CstrMain.error('addIrqQueue stat');
+      //end_time = end;
     }
     else {
-      if (kind == 1) {
-        if (blockEnd) {
-          interrupt.status = (interrupt.status & 0xf8) | 0x02;
-          blockEnd = 0;
-        }
-        else {
-          blockEnd = 1;
-          motorBase.enabled = true; motorBase.limit = motorBase.sinc + 0x10; control |= 0x80;
-          control &= ~0x80;
-          motorBase.limit = motorBase.sinc + 39;
-          result.value[0] = status;
-          result.size = 1;
-          result.pointer = 0;
-          control |= 0x20;
-          seeks = false;
-          
-          return;
-        }
-      }
+      cdint = 1;
     }
-
-    for (var i=0; (i < 8) && (buspar[i] !== 0); buspar[i++] = 0) {
-      buspar[i] = param.value[i];
-    }
-    resetVals(parameter); control |= 0x08; control |= 0x10;
-
-    for (var i=0; (i < 8) && (busres[i] !== 0); busres[i++] = 0) {
-      result.value[i] = busres[i];
-      result.size = i + 1;
-      result.pointer = 0;
-      control |= 0x20;
-    }
-    status &= ~0x01;
   }
 
-  function command(data) {
-    if (data < 0x20) {
-      switch(data) {
-        case 0x01: // CdlNop
-          busres[0] = status;
-          kind = 0;
-          break;
-
-        case 0x02: // CdlSetLoc
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
-          buspar[0] = destLoc.minute;
-          buspar[1] = destLoc.sec;
-          buspar[2] = destLoc.frame;
-          busres[0] = status;
-          kind = 0;
-          break;
-
-        case 0x06: // CdlReadN
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
-          reads = 1;
-          sector.firstRead = true;
-          retr = true;
-          status |= 0x02;
-          status |= 0x20;
-          motorSeek.enabled = true; motorSeek.limit = motorSeek.sinc + (((33868800 / 121) / 64)/2);
-          busres[0] = status;
-          kind = 0;
-          break;
-
-        case 0x08: //CdlStop
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
-          status &= ~0x02;
-          busres[0] = status;
-          kind = 1;
-          break;
-
-        case 0x09: // CdlPause
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
-          status |= 0x02;
-          busres[0] = status;
-          kind = 1;
-          break;
-
-        case 0x0a: // CdlInit
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
-          status |= 0x02;
-          busres[0] = status;
-          mode = 0;
-          kind = 1;
-          break;
-
-        case 0x0c: // CdlDemute
-          mute = false;
-          busres[0] = status;
-          kind = 0;
-          break;
-
-        case 0x0e: // CdlSetMode
-          buspar[0] = mode;
-          busres[0] = status;
-          kind = 0;
-          break;
-
-        case 0x13: // CdlGetTN
-          {
-            var tn = [1, 1];
-            var result = [0, ((tn[0])/10 * 16 + (tn[0])%10), ((tn[1])/10 * 16 + (tn[1])%10), 0, 0, 0, 0, 0];
-            busres[0] = status;
-            for (var i=1; i<3; i++) {
-              busres[i] = result[i];
-            }
-          }
-          kind = 0;
-          break;
-
-        case 0x14: // CdlGetTD
-          {
-            var td = [0, 0];
-            var result = [0, ((td[2])/10 * 16 + (td[2])%10), ((td[1])/10 * 16 + (td[1])%10), 0, 0, 0, 0, 0];
-            busres[0] = status;
-            for (var i=1; i<3; i++) {
-              busres[i] = result[i];
-            }
-          }
-          kind = 0;
-          break;
-
-        case 0x15: // CdlSeekL
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
-          seekLoc.minute = destLoc.minute;
-          seekLoc.sec    = destLoc.sec;
-          seekLoc.frame  = destLoc.frame;
-          seeks = true;
-          status |= 0x02;
-          busres[0] = status;
-          kind = 1;
-          break;
-
-        case 0x19: // CdlSustem
-          switch(parameter.value[0]) {
-            case 0x20:
-              busres.set([0x98, 0x06, 0x10, 0xc3]);
-              break;
-
-            default:
-              pseudo.CstrMain.error('CdlSustem value '+('0x'+(parameter.value[0]>>>0).toString(16)));
-              break;
-          }
-          kind = 0;
-          break;
-
-        case 0x1a: // CdlCheckId
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
-          busres.set([0x00, 0x00, 0x00, 0x00, 'S', 'C', 'E', 'A']); // 0x08, 0x90 for Audio CD
-          kind = 1;
-          break;
-
-        case 0x1e: // CdlReadToc
-          busres[0] = status;
-          kind = 1;
-          break;
-
-        default:
-          pseudo.CstrMain.error('Execute command '+('0x'+(data>>>0).toString(16)));
-          break;
-      }
-    }
-    else {
-      pseudo.CstrMain.error('data >= 0x20');
-      //busres[0] = status;
-      //kind = 0;
-    }
-    motorBase.enabled = true; motorBase.limit = motorBase.sinc + 0x10; control |= 0x80;
-    blockEnd = 0;
-  }
-
-  function cdromRead() {
-    var temp = 0;
-
-    interrupt.status = (interrupt.status & 0xf8) | 0x01;
-
-    if (pause) {
-      pseudo.CstrMain.error('*** pause');
-    }
-
-    if (reads === 1) {
-      pseudo.CstrMain.trackRead(seekLoc);
-      
-      // if (pseudo.CstrMain.fetchBuffer()[0] === 0) {
-      //   temp |= 0x02;
-      // }
-      // else {
-        sector.bfr.set(pseudo.CstrMain.fetchBuffer());
-      //}
-
-      if (status & 0x10) {
-        pseudo.CstrMain.error('*** status & CD_STATUS_SHELL');
-      }
-
-      // if (sector.bfr[0] === seekLoc.minute && sector.bfr[1] === seekLoc.sec && sector.bfr[2] === seekLoc.frame) {
-      //   temp |= 0x08;
-      // }
-      
-      if (temp) {
-        result.value[0] = status | 0x01;
-        result.value[1] = 0;
-        result.size = 2;
-        control |= 0x20;
-
-        if (!retr) {
-          pseudo.CstrMain.error('retr');
-        }
-        
-        interrupt.status = (interrupt.status & 0xf8) | 0x05;
-        return;
-      }
-
-      switch((mode & (0x10 | 0x20)) >> 4) {
-        case 0:
-          dma.size = 2048;
-          break;
-
-        default:
-          pseudo.CstrMain.error('mode size 0 -> '+((mode & (0x10 | 0x20)) >> 4));
-          break;
-      }
-
-      var offset = (dma.size === 2352) ? 0 : 12;
-      for (var i=0; i<dma.size; i++) {
-        dma.bfr[i] = sector.bfr[i+offset];
-      }
-      dma.pointer = 0;
-      control &= ~0x40;
-      
-      if ((mute === 0) && (mode & CD_MODE_RT) && (sector.firstRead !== -1)) {
-        pseudo.CstrMain.error('(sector.firstRead !== -1)');
-      }
-    }
-
-    control |= 0x20;
-    result.value[0] = status;
-    result.size     = 1;
-    result.pointer  = 0;
-
-    if (mode & 0x04) {
-      pseudo.CstrMain.error('*** mode & CD_MODE_REPT');
-    }
-
-    refreshCDLoc(destLoc);
+  function interrupt() {
+    pseudo.CstrMain.error('CD interrupt');
   }
 
   return {
     reset() {
-      busres.fill(0);
-      buspar.fill(0);
+      ctrl = 0;
+      stat = 0;
+       irq = 0;
+       re2 = 0;
 
-      control |= 0x10 | 0x08;
-      status  |= 0x02;
+      param.data.fill(0);
+      param.p = 0;
+      param.c = 0;
 
-      interrupt.status = 0xe0;
-      interrupt.onhold = false;
-      interrupt.onholdCause = 0;
-      interrupt.onholdParam = {
-        value: new Uint8Array(8)
-      };
+      res.data.fill(0);
+      res.  tn.fill(0);
+      res.  td.fill(0);
+      res.p  = 0;
+      res.c  = 0;
+      res.ok = 0;
 
-      resetMotor(motorSeek);
-      resetMotor(motorBase);
-      resetMotor(motorRead);
+      reads    = false;
+      readed   = false;
+      occupied = false;
 
-      // CDVal
-      resetVals(parameter);
-      resetVals(result);
-      resetVals(interrupt.onholdParam);
-
-      // CDLoc
-      resetLoc(seekLoc);
-      resetLoc(destLoc);
-
-      sector.bfr.fill(0);
-      sector.firstRead = false;
-
-      dma.bfr.fill(0);
-      dma.size = 0;
-      dma.pointer = 0;
-      
-      // ?
-      kind  = blockEnd = reads = mode = 0;
-      seeks = false;
-      pause = false;
-      mute  = false;
-      retr  = false;
-    },
-
-    update() {
-      // Seek
-      if (motorSeek.enabled) {
-        if ((motorSeek.sinc += ((mode & 0x80) ? 2 : 1)) >= motorSeek.limit) {
-          motorSeek.enabled = false;
-          motorSeek.sinc    = 0;
-
-          seekLoc.minute = destLoc.minute;
-          seekLoc.sec    = destLoc.sec;
-          seekLoc.frame  = destLoc.frame;
-
-          status &= ~0x40;
-          motorRead.enabled = true; motorRead.limit = motorRead.sinc + (((33868800 / 121) / 64)/2); status |= 0x20;
-        }
-      }
-
-      // Base
-      if (motorBase.enabled) {
-        if (++motorBase.sinc >= motorBase.limit) {
-          motorBase.enabled = false;
-          motorBase.sinc    = 0;
-          
-          if ((interrupt.status & 0x07) === 0x00) {
-            main();
-            if ((interrupt.status & 0x7) !== 0) { pseudo.CstrBus.interruptSet(2); };
-          }
-          else {
-            motorBase.enabled = true;
-            motorBase.limit   = 13;
-          }
-        }
-      }
-
-      // Read
-      if (motorRead.enabled) {
-        if ((motorRead.sinc += ((mode & 0x80) ? 2 : 1)) >= motorRead.limit) {
-          motorRead.enabled = false;
-          motorRead.sinc    = 0;
-          
-          if (((interrupt.status & 0x7) === 0x00) && (!(control & 0x80))) {
-            cdromRead();
-            if (reads) {
-              motorSeek.enabled = true; motorSeek.limit = motorSeek.sinc + (((33868800 / 121) / 64)/2);
-            }
-            if ((interrupt.status & 0x7) !== 0) { pseudo.CstrBus.interruptSet(2); };
-          }
-          else {
-            pseudo.CstrMain.error('2');
-          }
-        }
-      }
+      cdint = 0;
     },
 
     scopeW(addr, data) {
-      switch(addr&0xf) {
-        case 0: // Set Mode
+      switch(addr) {
+        case 0x1800:
+          ctrl = data | (ctrl&(~0x03));
+    
+          if (!data) {
+            param.p = 0;
+            param.c = 0;
+            res.ok  = false;
+          }
+          return;
+
+        case 0x1801:
+          occupied = false;
+          
+          if (ctrl&0x01) {
+            return;
+          }
+
           switch(data) {
-            case 0x00:
-              control &= ~(0x01 | 0x02);
-              return;
-
-            case 0x01:
-              control = (control | 0x01) & ~0x02;
-              return;
-
-            case 0x02:
-              control = (control | 0x02) & ~0x01;
-              return;
-
-            case 0x03:
-              control |= (0x01 | 0x02);
-              return;
+            case 25: // CdlTest
+              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              break;
           }
-          pseudo.CstrMain.error('scopeW 0x1800 data '+('0x'+(data>>>0).toString(16)));
+
+          if (stat !== 0) {
+            pseudo.CstrBus.interruptSet(2);
+          }
           return;
 
-        case 1:
-          switch(control&0x03) {
-            case 0x00:
-              if (!interrupt.onhold) {
-                if ((interrupt.status & 0x07) || (control & 0x80)) {
-                  interrupt.onhold = true;
-                  interrupt.onholdCause = data;
-                  
-                  interrupt.onholdParam.value.set(parameter.value);
-                  interrupt.onholdParam.size    = parameter.size;
-                  interrupt.onholdParam.pointer = parameter.pointer;
-                  return;
-                }
+        case 0x1802:
+          if (ctrl&0x01) {
+            switch(data) {
+              case 7:
+                ctrl &= ~0x03;
+                param.p = 0;
+                param.c = 0;
+                res.ok  = true;
+                return;
 
-                command(data);
-              }
-              return;
-
-            case 0x03:
-              return;
+              default:
+                re2 = data;
+                return;
+            }
           }
-          pseudo.CstrMain.error('scopeW 0x1801 control&0x03 '+('0x'+(control&0x03>>>0).toString(16)));
+          else if (!(ctrl&0x01) && param.p < 8) {
+            param.data[param.p++] = data;
+            param.c++;
+          }
           return;
 
-        case 2:
-          switch(control&0x03) {
-            case 0x00: // Insert Parameter
-              if (parameter.pointer < 8) {
-                parameter.value[parameter.pointer++] = data;
-                parameter.size = parameter.pointer;
-                control &= ~0x08;
-              }
-              else {
-                control &= ~0x10;
-              }
-              return;
-
-            case 0x01: // Parameter Operations
-              switch(data) {
-                case 0x07:
-                case 0x1f:
-                  resetVals(parameter); control |= 0x08; control |= 0x10;
-                  return;
-
-                case 0x18:
-                  return;
-              }
-              pseudo.CstrMain.error('scopeW 0x1802 01 data '+('0x'+(data>>>0).toString(16)));
-              return;
-
-            case 0x02:
-            case 0x03:
-              return;
+        case 0x1803:
+          if (data === 0x07 && ctrl&0x01) {
+            stat = 0;
+            
+            if (irq === 0xff) {
+              pseudo.CstrMain.error('irq == 0xff');
+            }
+            
+            if (irq) {
+              pseudo.CstrMain.error('if (irq)');
+            }
+            
+            if (reads && !res.ok) {
+              pseudo.CstrMain.error('reads && !res.ok');
+            }
+            
+            return;
           }
-          pseudo.CstrMain.error('scopeW 0x1802 control&0x03 '+('0x'+(control&0x03>>>0).toString(16)));
-          return;
 
-        case 3:
-          switch(control&0x03) {
-            case 0x00: // Write DMA
-              switch(data) {
-                case 0x00:
-                  return;
-
-                case 0x80:
-                  control |= 0x40;
-                  return;
-
-                default:
-                  pseudo.CstrMain.error('scopeW 0x1803 00 data '+('0x'+(data>>>0).toString(16)));
-                  return;
-              }
-              return;
-
-            case 0x01: // Write Interrupt
-              switch(data) {
-                case 0x07:
-                case 0x1f:
-                  interrupt.status &= ~0x07;
-                  break;
-
-                case 0x40:
-                  break;
-
-                default:
-                  pseudo.CstrMain.error('scopeW 0x1803 01 data '+('0x'+(data>>>0).toString(16)));
-                  break;
-              }
-
-              if (!(interrupt.status & 0x7) && interrupt.onhold) {
-                interrupt.onhold = 0;
-                parameter.value.set(interrupt.onholdParam.value);
-                parameter.size    = interrupt.onholdParam.size;
-                parameter.pointer = interrupt.onholdParam.pointer;
-                command(interrupt.onholdCause);
-              }
-              return;
-
-            case 0x02:
-            case 0x03:
-              return;
+          if (data === 0x80 && !(ctrl&0x01) && readed === false) {
+            pseudo.CstrMain.error('W 0x1803 2nd');
           }
-          pseudo.CstrMain.error('scopeW 0x1803 control&0x03 '+('0x'+(control&0x03>>>0).toString(16)));
           return;
       }
-      pseudo.CstrMain.error('CD-ROM scopeW '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+      pseudo.CstrMain.error('CD-ROM Write '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
     },
 
     scopeR(addr) {
-      switch(addr&0xf) {
-        case 0:
-          return control;
-
-        case 1:
-          switch(control&0x03) {
-            case 0x01:
-              if (control & 0x20) {
-                var temp = result.value[result.pointer];
-
-                if (result.pointer++ + 1 >= result.size) {
-                  resetVals(result); control &= ~0x20;
-                }
-                return temp;
-              }
-              return 0;
+      switch(addr) {
+        case 0x1800:
+          if (res.ok) {
+            ctrl |= 0x20;
           }
-          pseudo.CstrMain.error('scopeR 0x1801 control&0x03 '+('0x'+(control&0x03>>>0).toString(16)));
-          return 0;
-
-        case 3:
-          switch(control&0x03) {
-            case 0x00: // Read DMA
-              return 0xff;
-
-            case 0x01: // Read interrupt
-              return interrupt.status;
-
-            default:
-              pseudo.CstrMain.error('scopeR 0x1803 control&0x03 '+('0x'+(control&0x03>>>0).toString(16)));
-              return 0;
+          else {
+            ctrl &= ~0x20;
           }
-          return 0;
+          
+          if (occupied) {
+            pseudo.CstrMain.error('R 0x1803 occupied');
+          }
+          
+          ctrl |= 0x18;
+          return pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = ctrl;
+
+        case 0x1801:
+          if (res.ok) {
+            pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = res.data[res.p++];
+        
+            if (res.p === res.c) {
+              res.ok = false;
+            }
+          }
+          else {
+            pseudo.CstrMain.error('R 0x1801 else');
+            //pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
+          }
+          return pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
+
+        case 0x1803:
+          if (stat) {
+            if (ctrl&0x01) {
+              pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = stat | 0xe0;
+            }
+            else {
+              pseudo.CstrMain.error('R 0x1803 stat 2');
+              //pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0xff;
+            }
+          }
+          else {
+            pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
+          }
+          return pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
       }
-      pseudo.CstrMain.error('CD-ROM scopeR '+('0x'+(addr>>>0).toString(16)));
+      pseudo.CstrMain.error('CD-ROM Read '+('0x'+(addr>>>0).toString(16)));
     },
 
-    executeDMA(addr) {
-      var size = ((pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff)) * 4;
-
-      if (!(control & 0x40)) {
-        pseudo.CstrMain.error('CD DMA !(CD->Control & CtrlDMA)');
-      }
-
-      if (!size) {
-        pseudo.CstrMain.error('CD DMA !size');
-      }
-
-      if ((pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0x01000000) === 0x01000000) {
-        if ((dma.pointer + size) >= dma.size) {
-          control &= ~0x40;
-          size -= (dma.pointer + size) - dma.size;
-          
-          if (dma.pointer > dma.size) {
-            pseudo.CstrMain.error('CD DMA error 1');
-          }
+    update() {
+      if (cdint) {
+        if (cdint++ === 16) {
+          interrupt();
+          cdint = 0;
         }
-
-        var offset = pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x1fffff;
-        for (var i=0; i<size; i++) {
-          pseudo.CstrMem.__ram.ub[(( i + offset)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = dma.bfr[i + dma.pointer];
-        }
-        dma.pointer += size;
       }
     }
   };
 })();
+
 
 
 
@@ -2816,7 +2377,7 @@ pseudo.CstrMain = (function() {
     trackRead(time) {
       if (!iso) {
         cdBfr.fill(0);
-        return 0;
+        return;
       }
 
       // console.log(time.minute);
@@ -2833,7 +2394,6 @@ pseudo.CstrMain = (function() {
       var size   = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
-        console.log(data);
         cdBfr.set(data);
       });
     },
