@@ -63,9 +63,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
-            if (cpu.writeOK()) {
-              directMemH(ram.uh, addr) = data;
-            }
+            directMemH(ram.uh, addr) = data;
             return;
 
           case 0x1f8: // Scratchpad + Hardware
@@ -91,9 +89,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
-            if (cpu.writeOK()) {
-              directMemB(ram.ub, addr) = data;
-            }
+            directMemB(ram.ub, addr) = data;
             return;
 
           case 0x1f8: // Scratchpad + Hardware

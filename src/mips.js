@@ -21,6 +21,14 @@
     hi = a % b;\
   }
 
+#define opcodeLWx(o, d)\
+  temp = ob;\
+  r[rt] = (r[rt]&mask[d][ob&3])|(mem.read.w(ob&~3) o shift[d][ob&3])
+
+#define opcodeSWx(o, d)\
+  temp = ob;\
+  mem.write.w(ob&~3, (r[rt] o shift[d][ob&3])|(mem.read.w(ob&~3)&mask[d][ob&3]))
+
 #define exception(code, inslot)\
   copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f);\
   copr[13] = code;\
@@ -283,8 +291,7 @@ pseudo.CstrMips = (function() {
             return;
 
           case 16: // RFE
-            //copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
-            copr[12] = (copr[12]&0xfffffff0)|((copr[12]&0x3c)>>2);
+            copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
             return;
         }
         psx.error('Coprocessor 0 instruction '+rs);
@@ -303,8 +310,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 34: // LWL
-        temp  = ob;
-        r[rt] = (r[rt]&mask[0][temp&3]) | (mem.read.w(temp&~3)<<shift[0][temp&3]);
+        opcodeLWx(<<, 0);
         return;
 
       case 35: // LW
@@ -320,8 +326,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 38: // LWR
-        temp  = ob;
-        r[rt] = (r[rt]&mask[1][temp&3]) | (mem.read.w(temp&~3)>>shift[1][temp&3]);
+        opcodeLWx(>>, 1);
         return;
 
       case 40: // SB
@@ -333,8 +338,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 42: // SWL
-        temp = ob;
-        mem.write.w(temp&~3, (r[rt]>>shift[2][temp&3]) | (mem.read.w(temp&~3)&mask[2][temp&3]));
+        opcodeSWx(>>, 2);
         return;
 
       case 43: // SW
@@ -342,8 +346,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 46: // SWR
-        temp = ob;
-        mem.write.w(temp&~3, (r[rt]<<shift[3][temp&3]) | (mem.read.w(temp&~3)&mask[3][temp&3]));
+        opcodeSWx(<<, 3);
         return;
 
       case 50: // LWC2

@@ -37,7 +37,7 @@ pseudo.CstrMain = (function() {
 
     // Check boundaries
     if (file.size > end) {
-      var reader  = new FileReader();
+      var reader = new FileReader();
       reader.onload = function(e) { // Callback
         fn(e.dest.result);
       };
@@ -51,7 +51,7 @@ pseudo.CstrMain = (function() {
 
     // Check boundaries
     if (file.size > end) {
-      var reader  = new FileReader();
+      var reader = new FileReader();
       reader.onload = function(e) { // Callback
         fn(e.dest.result);
       };
@@ -190,23 +190,19 @@ pseudo.CstrMain = (function() {
         return;
       }
 
-      // console.log(time[0]);
-      // console.log(time[1]);
-      // console.log(time[2]);
-      // console.log('---');
-      // console.log(BCD2INT(time[0]));
-      // console.log(BCD2INT(time[1]));
-      // console.log(BCD2INT(time[2]));
-      // console.log('---');
-      // console.log(MSF2SECT(BCD2INT(time[0]), BCD2INT(time[1]), BCD2INT(time[2])));
       //console.log(time[0]+' '+time[1]+' '+time[2]);
+      //console.log(BCD2INT(time[0])+' '+BCD2INT(time[1])+' '+BCD2INT(time[2]));
+      
+      //console.log(time.minute+' '+time.sec+' '+time.frame);
 
       var offset = MSF2SECT(BCD2INT(time[0]), BCD2INT(time[1]), BCD2INT(time[2])) * CDFRAMESIZERAW + 12;
-      var size   = DATASIZE;
+      var size = DATASIZE;
+
+      //console.log(offset);
 
       chunkReader2(iso, offset, size, function(data) {
         var hi = new UintBcap(data);
-        cdBfr.set(hi);
+        cdBfr.set(hi.slice(0, DATASIZE));
       });
     },
 

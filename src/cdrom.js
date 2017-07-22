@@ -753,10 +753,10 @@ pseudo.CstrCdrom = (function() {
   res.c  = size;\
   res.ok = 1
 
-#define defaultCtrlAndStat(code)\
+#define defaultCtrlAndStat()\
   ctrl |= 0x80;\
   stat = CD_STAT_NO_INTR;\
-  addIrqQueue(data, code)
+  addIrqQueue(data)
 
 #define CD_INT()\
   cdint = 1
@@ -765,9 +765,9 @@ pseudo.CstrCdrom = (function() {
   cdreadint = 1
 
 #define startRead()\
-    reads = 1;\
-    readed = 0xff;\
-    addIrqQueue(READ_ACK)
+  reads = 1;\
+  readed = 0xff;\
+  addIrqQueue(READ_ACK)
 
 #define stopRead()\
   if (reads) {\
@@ -778,7 +778,7 @@ pseudo.CstrCdrom = (function() {
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, statP, irq, re2;
   var reads, readed, occupied, seeked;
-  var cdint, cdreadint, end_time;
+  var cdint, cdreadint;
 
   var param = {
     data: new UintBcap(8),
@@ -807,7 +807,12 @@ pseudo.CstrCdrom = (function() {
 
   function addIrqQueue(code) {
     irq = code;
-    CD_INT();
+
+    if (stat) {
+    }
+    else {
+      CD_INT();
+    }
   }
 
   function interrupt() {
@@ -928,7 +933,7 @@ pseudo.CstrCdrom = (function() {
       case READ_ACK:
         if (!reads) {
           psx.error('READ_ACK return');
-            //return;
+          //return;
         }
         setResultSize(1);
         statP |= 0x02;
@@ -950,7 +955,7 @@ pseudo.CstrCdrom = (function() {
         break;
     }
 
-    if (stat != CD_STAT_NO_INTR && re2 !== 0x18) {
+    if (stat !== CD_STAT_NO_INTR && re2 !== 0x18) {
         bus.interruptSet(IRQ_CD);
     }
   }
@@ -986,7 +991,7 @@ pseudo.CstrCdrom = (function() {
     
     var buf = psx.fetchBuffer();
 
-    // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0) {
+    // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
     //   transfer.data.fill(0);
     //   stat = CD_STAT_DISK_ERROR;
     //   res.data[0] |= 0x01;
@@ -1051,7 +1056,6 @@ pseudo.CstrCdrom = (function() {
       seeked   = 0;
 
       cdint = cdreadint = 0;
-      end_time = 0;
     },
 
     scopeW(addr, data) {
@@ -1079,21 +1083,18 @@ pseudo.CstrCdrom = (function() {
             case 25: // CdlTest
             case 26: // CdlId
             case 30: // CdlReadToc
-              defaultCtrlAndStat(0x1000);
+              defaultCtrlAndStat();
               break;
 
-            case 2: // CdlSetloc
-              {
-                stopRead();
-                seeked = 0;
-              
-                for (var i=0; i<3; i++) {
-                  //console.log(param.data[i]);
-                  sector.data[i] = BCD2INT(param.data[i]);
-                }
-                sector.data[3] = 0;
-                defaultCtrlAndStat(0x1000);
+            case 2: // CdlSetLoc
+              stopRead();
+              seeked = 0;
+
+              for (var i=0; i<3; i++) {
+                sector.data[i] = BCD2INT(param.data[i]);
               }
+              sector.data[3] = 0;
+              defaultCtrlAndStat();
               break;
 
             case 6: // CdlReadN
@@ -1106,17 +1107,17 @@ pseudo.CstrCdrom = (function() {
 
             case 9: // CdlPause
               stopRead();
-              defaultCtrlAndStat(0x80000);
+              defaultCtrlAndStat();
               break;
 
             case 10: // CdlInit
               stopRead();
-              defaultCtrlAndStat(0x1000);
+              defaultCtrlAndStat();
               break;
 
             case 14: // CdlSetMode
               mode = param.data[0];
-              defaultCtrlAndStat(0x1000);
+              defaultCtrlAndStat();
               break;
 
             default:
@@ -1133,10 +1134,10 @@ pseudo.CstrCdrom = (function() {
           if (ctrl&0x01) {
             switch(data) {
               case 7:
-                ctrl &= ~0x03;
                 param.p = 0;
                 param.c = 0;
                 res.ok  = 1;
+                ctrl &= ~0x03;
                 return;
 
               default:
@@ -1145,7 +1146,6 @@ pseudo.CstrCdrom = (function() {
             }
           }
           else if (!(ctrl&0x01) && param.p < 8) {
-            //console.log(data);
             param.data[param.p++] = data;
             param.c++;
           }
@@ -1173,7 +1173,7 @@ pseudo.CstrCdrom = (function() {
 
           if (data === 0x80 && !(ctrl&0x01) && readed === 0) {
             readed = 1;
-            transfer.p = 0; //transfer.data;
+            transfer.p = 0;
 
             switch(mode&0x30) {
               case 0x00:

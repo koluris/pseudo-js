@@ -789,7 +789,7 @@ pseudo.CstrBus = (function() {
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, statP, irq, re2;
   var reads, readed, occupied, seeked;
-  var cdint, cdreadint, end_time;
+  var cdint, cdreadint;
 
   var param = {
     data: new Uint8Array(8),
@@ -818,7 +818,12 @@ pseudo.CstrCdrom = (function() {
 
   function addIrqQueue(code) {
     irq = code;
-    cdint = 1;
+
+    if (stat) {
+    }
+    else {
+      cdint = 1;
+    }
   }
 
   function interrupt() {
@@ -939,7 +944,7 @@ pseudo.CstrCdrom = (function() {
       case 250:
         if (!reads) {
           pseudo.CstrMain.error('READ_ACK return');
-            //return;
+          //return;
         }
         res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
@@ -961,7 +966,7 @@ pseudo.CstrCdrom = (function() {
         break;
     }
 
-    if (stat != 0 && re2 !== 0x18) {
+    if (stat !== 0 && re2 !== 0x18) {
         pseudo.CstrBus.interruptSet(2);
     }
   }
@@ -997,7 +1002,7 @@ pseudo.CstrCdrom = (function() {
     
     var buf = pseudo.CstrMain.fetchBuffer();
 
-    // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0) {
+    // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
     //   transfer.data.fill(0);
     //   stat = 5;
     //   res.data[0] |= 0x01;
@@ -1062,7 +1067,6 @@ pseudo.CstrCdrom = (function() {
       seeked   = 0;
 
       cdint = cdreadint = 0;
-      end_time = 0;
     },
 
     scopeW(addr, data) {
@@ -1090,21 +1094,18 @@ pseudo.CstrCdrom = (function() {
             case 25: // CdlTest
             case 26: // CdlId
             case 30: // CdlReadToc
-              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
 
-            case 2: // CdlSetloc
-              {
-                if (reads) { reads = 0; } statP &= ~0x20;
-                seeked = 0;
-              
-                for (var i=0; i<3; i++) {
-                  //console.log(param.data[i]);
-                  sector.data[i] = ((param.data[i])/16 * 10 + (param.data[i])%16);
-                }
-                sector.data[3] = 0;
-                ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+            case 2: // CdlSetLoc
+              if (reads) { reads = 0; } statP &= ~0x20;
+              seeked = 0;
+
+              for (var i=0; i<3; i++) {
+                sector.data[i] = ((param.data[i])/16 * 10 + (param.data[i])%16);
               }
+              sector.data[3] = 0;
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
 
             case 6: // CdlReadN
@@ -1117,17 +1118,17 @@ pseudo.CstrCdrom = (function() {
 
             case 9: // CdlPause
               if (reads) { reads = 0; } statP &= ~0x20;
-              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x80000);
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
 
             case 10: // CdlInit
               if (reads) { reads = 0; } statP &= ~0x20;
-              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
 
             case 14: // CdlSetMode
               mode = param.data[0];
-              ctrl |= 0x80; stat = 0; addIrqQueue(data, 0x1000);
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
 
             default:
@@ -1144,10 +1145,10 @@ pseudo.CstrCdrom = (function() {
           if (ctrl&0x01) {
             switch(data) {
               case 7:
-                ctrl &= ~0x03;
                 param.p = 0;
                 param.c = 0;
                 res.ok  = 1;
+                ctrl &= ~0x03;
                 return;
 
               default:
@@ -1156,7 +1157,6 @@ pseudo.CstrCdrom = (function() {
             }
           }
           else if (!(ctrl&0x01) && param.p < 8) {
-            //console.log(data);
             param.data[param.p++] = data;
             param.c++;
           }
@@ -1184,7 +1184,7 @@ pseudo.CstrCdrom = (function() {
 
           if (data === 0x80 && !(ctrl&0x01) && readed === 0) {
             readed = 1;
-            transfer.p = 0; //transfer.data;
+            transfer.p = 0;
 
             switch(mode&0x30) {
               case 0x00:
@@ -1762,7 +1762,6 @@ pseudo.CstrHardware = (function() {
 
       b(addr, data) {
         if (addr >= 0x1800 && addr <= 0x1803) { // CD-ROM
-          if (addr === 0x1802) console.log(('0x'+(data>>>0).toString(16)));
           pseudo.CstrCdrom.scopeW(addr, data);
           return;
         }
@@ -1912,9 +1911,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
-            if (pseudo.CstrMips.writeOK()) {
-              pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1] = data;
-            }
+            pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1] = data;
             return;
 
           case 0x1f8: // Scratchpad + Hardware
@@ -1940,9 +1937,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
-            if (pseudo.CstrMips.writeOK()) {
-              pseudo.CstrMem.__ram.ub[(( addr)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = data;
-            }
+            pseudo.CstrMem.__ram.ub[(( addr)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = data;
             return;
 
           case 0x1f8: // Scratchpad + Hardware
@@ -2066,6 +2061,14 @@ pseudo.CstrMem = (function() {
 
 
 // Inline functions for speedup
+
+
+
+
+
+
+
+
 
 
 
@@ -2343,8 +2346,7 @@ pseudo.CstrMips = (function() {
             return;
 
           case 16: // RFE
-            //copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
-            copr[12] = (copr[12]&0xfffffff0)|((copr[12]&0x3c)>>2);
+            copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
             return;
         }
         pseudo.CstrMain.error('Coprocessor 0 instruction '+((code>>>21)&0x1f));
@@ -2363,8 +2365,9 @@ pseudo.CstrMips = (function() {
         return;
 
       case 34: // LWL
-        temp  = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[0][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)<<shift[0][temp&3]);
+        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 0][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3) << shift[ 0][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]);
+        //temp  = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        //r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[0][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)<<shift[0][temp&3]);
         return;
 
       case 35: // LW
@@ -2380,8 +2383,9 @@ pseudo.CstrMips = (function() {
         return;
 
       case 38: // LWR
-        temp  = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[1][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)>>shift[1][temp&3]);
+        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 1][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3) >> shift[ 1][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]);
+        //temp  = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        //r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[1][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)>>shift[1][temp&3]);
         return;
 
       case 40: // SB
@@ -2393,8 +2397,9 @@ pseudo.CstrMips = (function() {
         return;
 
       case 42: // SWL
-        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        pseudo.CstrMem.write.w(temp&~3, (r[((code>>>16)&0x1f)]>>shift[2][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)&mask[2][temp&3]));
+        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3, (r[((code>>>16)&0x1f)] >> shift[ 2][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3)&mask[ 2][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]));
+        //temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        //pseudo.CstrMem.write.w(temp&~3, (r[((code>>>16)&0x1f)]>>shift[2][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)&mask[2][temp&3]));
         return;
 
       case 43: // SW
@@ -2402,8 +2407,9 @@ pseudo.CstrMips = (function() {
         return;
 
       case 46: // SWR
-        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        pseudo.CstrMem.write.w(temp&~3, (r[((code>>>16)&0x1f)]<<shift[3][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)&mask[3][temp&3]));
+        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3, (r[((code>>>16)&0x1f)] << shift[ 3][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3)&mask[ 3][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]));
+        //temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
+        //pseudo.CstrMem.write.w(temp&~3, (r[((code>>>16)&0x1f)]<<shift[3][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)&mask[3][temp&3]));
         return;
 
       case 50: // LWC2
@@ -2556,7 +2562,7 @@ pseudo.CstrMain = (function() {
 
     // Check boundaries
     if (file.size > end) {
-      var reader  = new FileReader();
+      var reader = new FileReader();
       reader.onload = function(e) { // Callback
         fn(e.target.result);
       };
@@ -2570,7 +2576,7 @@ pseudo.CstrMain = (function() {
 
     // Check boundaries
     if (file.size > end) {
-      var reader  = new FileReader();
+      var reader = new FileReader();
       reader.onload = function(e) { // Callback
         fn(e.target.result);
       };
@@ -2709,23 +2715,19 @@ pseudo.CstrMain = (function() {
         return;
       }
 
-      // console.log(time[0]);
-      // console.log(time[1]);
-      // console.log(time[2]);
-      // console.log('---');
-      // console.log(((time[0])/16 * 10 + (time[0])%16));
-      // console.log(((time[1])/16 * 10 + (time[1])%16));
-      // console.log(((time[2])/16 * 10 + (time[2])%16));
-      // console.log('---');
-      // console.log((((((time[0])/16 * 10 + (time[0])%16)) * 60 + ( ((time[1])/16 * 10 + (time[1])%16)) - 2) * 75 + ( ((time[2])/16 * 10 + (time[2])%16))));
       //console.log(time[0]+' '+time[1]+' '+time[2]);
+      //console.log(((time[0])/16 * 10 + (time[0])%16)+' '+((time[1])/16 * 10 + (time[1])%16)+' '+((time[2])/16 * 10 + (time[2])%16));
+      
+      //console.log(time.minute+' '+time.sec+' '+time.frame);
 
       var offset = (((((time[0])/16 * 10 + (time[0])%16)) * 60 + ( ((time[1])/16 * 10 + (time[1])%16)) - 2) * 75 + ( ((time[2])/16 * 10 + (time[2])%16))) * 2352 + 12;
-      var size   = (2352 - 12);
+      var size = (2352 - 12);
+
+      //console.log(offset);
 
       chunkReader2(iso, offset, size, function(data) {
         var hi = new Uint8Array(data);
-        cdBfr.set(hi);
+        cdBfr.set(hi.slice(0, (2352 - 12)));
       });
     },
 

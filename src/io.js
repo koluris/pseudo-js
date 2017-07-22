@@ -84,7 +84,6 @@ pseudo.CstrHardware = (function() {
 
       b(addr, data) {
         if (addr >= 0x1800 && addr <= 0x1803) { // CD-ROM
-          if (addr === 0x1802) console.log(hex(data));
           cdrom.scopeW(addr, data);
           return;
         }
