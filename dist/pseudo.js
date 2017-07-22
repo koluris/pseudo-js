@@ -1276,6 +1276,7 @@ pseudo.CstrCdrom = (function() {
           for (var i=0; i<size; i++) {
             pseudo.CstrMem.__ram.ub[(( i + pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = transfer.data[i + transfer.p];
           }
+          console.log(transfer.data);
           transfer.p += size;
           break;
 
@@ -2366,8 +2367,6 @@ pseudo.CstrMips = (function() {
 
       case 34: // LWL
         temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 0][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3) << shift[ 0][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]);
-        //temp  = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        //r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[0][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)<<shift[0][temp&3]);
         return;
 
       case 35: // LW
@@ -2384,8 +2383,6 @@ pseudo.CstrMips = (function() {
 
       case 38: // LWR
         temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 1][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3) >> shift[ 1][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]);
-        //temp  = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        //r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[1][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)>>shift[1][temp&3]);
         return;
 
       case 40: // SB
@@ -2398,8 +2395,6 @@ pseudo.CstrMips = (function() {
 
       case 42: // SWL
         temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3, (r[((code>>>16)&0x1f)] >> shift[ 2][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3)&mask[ 2][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]));
-        //temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        //pseudo.CstrMem.write.w(temp&~3, (r[((code>>>16)&0x1f)]>>shift[2][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)&mask[2][temp&3]));
         return;
 
       case 43: // SW
@@ -2408,8 +2403,6 @@ pseudo.CstrMips = (function() {
 
       case 46: // SWR
         temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3, (r[((code>>>16)&0x1f)] << shift[ 3][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3)&mask[ 3][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]));
-        //temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16)));
-        //pseudo.CstrMem.write.w(temp&~3, (r[((code>>>16)&0x1f)]<<shift[3][temp&3]) | (pseudo.CstrMem.read.w(temp&~3)&mask[3][temp&3]));
         return;
 
       case 50: // LWC2
