@@ -1297,40 +1297,175 @@ pseudo.CstrBus = (function() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrCdrom = (function() {
-  var ctrl;
-  var readed;
-  var re2;
-  var occupied;
+  var ctrl, stat, statP, re2;
+  var occupied, readed, reads, seeked;
+  var irq, cdint;
 
   var param = {
-    p: undefined
+    data: new Uint8Array(8),
+    p: undefined,
+    c: undefined
   };
 
   var res = {
+    data: new Uint8Array(8),
+    p: undefined,
+    c: undefined,
     ok: undefined
   };
 
+  var sector = {
+    data: new Uint8Array(4)
+  };
+
   function resetParam(prm) {
+    prm.data.fill(0);
     prm.p = 0;
+    prm.c = 0;
   }
 
   function resetRes(rrs) {
+    rrs.data.fill(0);
+    rrs.p = 0;
+    rrs.c = 0;
     rrs.ok = 0;
   }
-  
+
+  function resetSect(sect) {
+    sect.data.fill(0);
+  }
+
+  function addIrqQueue(code) {
+    irq = code;
+
+    if (stat) {
+    }
+    else {
+      console.dir('CD addIrqQueue -> '+('0x'+(irq>>>0).toString(16)));
+      cdint = 1;
+    }
+  }
+
+  function interrupt() {
+    var prevIrq = irq;
+
+    if (stat) {
+      pseudo.CstrMain.error('CD prevIrq stat');
+    }
+
+    irq = 0xff;
+    ctrl &= ~0x80;
+    console.dir('CD prevIrq ctrl -> '+('0x'+(ctrl>>>0).toString(16)));
+
+    switch(prevIrq) {
+      case 1: // CdlNop
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x2;
+        res.data[0] = statP;
+        stat = 3; //More stuff here...
+        res.data[0] |= 0x2;
+        break;
+
+      case 25: // CdlTest
+        stat = 3;
+
+        switch(param.data[0]) {
+          case 0x20:
+            {
+              res.p = 0; res.c = 4; res.ok = 1;
+
+              var test20 = [0x98, 0x06, 0x10, 0xc3];
+              res.data.set(test20);
+
+              console.dir('res.data:');
+              for (var i=0; i<8; i++) {
+                console.dir(('0x'+(res.data[i]>>>0).toString(16)));
+              }
+            }
+            break;
+
+          default:
+            pseudo.CstrMain.error("CdlTest param.data[0] -> "+('0x'+(param.data[0]>>>0).toString(16)));
+            break;
+        }
+        break;
+
+      case 26: // CdlId
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        addIrqQueue(26 + 0x20);
+        break;
+
+      case 26 + 0x20: // CdlId
+        res.p = 0; res.c = 8; res.ok = 1;
+        res.data[0] = 0x00; //More stuff here...
+        res.data[1] = 0x00; // |= 0x80 for BIOS shell
+        res.data[2] = 0x00;
+        res.data[3] = 0x00;
+        stat = 2;
+        break;
+
+      case 30: // CdlReadToc
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        addIrqQueue(30 + 0x20);
+        break;
+
+      default:
+        pseudo.CstrMain.error('CD prevIrq -> '+prevIrq);
+        break;
+    }
+    if (stat !== 0 && re2 !== 0x18) {
+      pseudo.CstrBus.interruptSet(2);
+    }
+  }
+
   return {
     reset() {
       resetParam(param);
       resetRes(res);
+      resetSect(sector);
 
-      ctrl = 0;
-      readed = 0;
-      re2 = 0;
-      occupied = 0;
+      ctrl = stat = statP = re2 = 0;
+      occupied = readed = reads = seeked = 0;
+      irq = cdint = 0;
     },
 
     update() {
+      if (cdint) {
+        if (cdint++ === 16) {
+          interrupt();
+          cdint = 0;
+        }
+      }
     },
 
     scopeW(addr, data) {
@@ -1340,18 +1475,51 @@ pseudo.CstrCdrom = (function() {
           console.dir('0x1800 Ctrl -> '+('0x'+(ctrl>>>0).toString(16)));
 
           if (!data) {
-            pseudo.CstrMain.error('CD W 0x1800 !data');
+            param.p = 0;
+            param.c = 0;
+            res.ok  = 0;
           }
           break;
 
         case 1:
-          pseudo.CstrMain.error('CD W '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+          occupied = 0;
+  
+          if (ctrl&0x01) {
+            pseudo.CstrMain.error('CD W 0x1801 case 1');
+          }
+      
+          switch(data) {
+            case 1: // CdlNop
+            case 25: // CdlTest
+            case 26: // CdlId
+            case 30: // CdlReadToc
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
+              break;
+
+            case 2: // CdlSetLoc
+              {
+                if (reads) { reads = 0; } statP &= ~0x20;
+                seeked = 0;
+
+                for (var i=0; i<3; i++) {
+                    sector.data[i] = ((param.data[i])/16 * 10 + (param.data[i])%16);
+                }
+                sector.data[3] = 0;
+                ctrl |= 0x80; stat = 0; addIrqQueue(data);
+              }
+              break;
+
+            default:
+              pseudo.CstrMain.error('CD W 0x1801 data -> '+data);
+              break;
+          }
           break;
 
         case 2:
           if (ctrl&0x01) {
             console.dir('CD W 0x1802 case 1 -> '+data);
             switch(data) {
+              case 24:
               case 31:
                 re2 = data;
                 break;
@@ -1362,13 +1530,29 @@ pseudo.CstrCdrom = (function() {
             }
           }
           else if (!(ctrl&0x01) && param.p < 8) {
-            pseudo.CstrMain.error('CD W 0x1802 case 2');
+            console.dir('CD W 0x1802 data -> '+('0x'+(data>>>0).toString(16)));
+            param.data[param.p++] = data;
+            param.c++;
           }
           break;
 
         case 3:
-          if (data == 0x07 && ctrl&0x01) {
-            pseudo.CstrMain.error('CD W 0x1803 case 1');
+          if (data === 0x07 && ctrl&0x01) {
+            stat = 0;
+
+            if (irq === 0xff) {
+              irq = 0;
+              return;
+            }
+
+            if (irq) {
+              cdint = 1;
+            }
+
+            if (reads && !res.ok) {
+              pseudo.CstrMain.error('CD W 0x1803 reads && !res.ok');
+            }
+            return;
           }
           
           if (data == 0x80 && !(ctrl&0x01) && readed == 0) {
@@ -1382,10 +1566,11 @@ pseudo.CstrCdrom = (function() {
       switch(addr&0xf) {
         case 0:
           if (res.ok) {
-            pseudo.CstrMain.error('CD R 0x1800 case 1');
+            ctrl |= 0x20;
           }
           else {
-            pseudo.CstrMain.error('CD R 0x1800 case 2');
+            ctrl &= ~0x20;
+            console.dir('CD R 0x1800 ctrl -> '+('0x'+(ctrl>>>0).toString(16)));
           }
           
           if (occupied) {
@@ -1398,16 +1583,37 @@ pseudo.CstrCdrom = (function() {
           return pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
 
         case 1:
-          pseudo.CstrMain.error('CD R '+('0x'+(addr>>>0).toString(16)));
-          return 0;
+          if (res.ok) {
+            pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = res.data[res.p++];
+
+            if (res.p === res.c) {
+              res.ok = 0;
+            }
+          }
+          else {
+            pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
+          }
+          console.dir('CD R 0x1801 CD_REG(1) -> '+('0x'+(pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0]>>>0).toString(16)));
+          return pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
 
         case 2:
           pseudo.CstrMain.error('CD R '+('0x'+(addr>>>0).toString(16)));
           return 0;
 
         case 3:
-          pseudo.CstrMain.error('CD R '+('0x'+(addr>>>0).toString(16)));
-          return 0;
+          if (stat) {
+            if (ctrl&0x01) {
+              pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = stat | 0xe0;
+            }
+            else {
+              pseudo.CstrMain.error('CD R 0x1803 case 1');
+            }
+          }
+          else {
+            pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
+          }
+          console.dir('CD R 0x1803 CD_REG(3) -> '+('0x'+(pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0]>>>0).toString(16)));
+          return pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
       }
     },
 

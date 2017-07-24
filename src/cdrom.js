@@ -1283,43 +1283,178 @@ pseudo.CstrCdrom = (function() {
 
 #define hwr  mem.__hwr
 
+#define CD_STAT_NO_INTR     0
+#define CD_STAT_COMPLETE    2
+#define CD_STAT_ACKNOWLEDGE 3
+
 #define CD_REG(r)\
   directMemB(hwr.ub, 0x1800|r)
 
+#define defaultCtrlAndStat()\
+  ctrl |= 0x80;\
+  stat = CD_STAT_NO_INTR;\
+  addIrqQueue(data)
+
+#define CD_INT()\
+  cdint = 1
+
+#define setResultSize(size)\
+  res.p  = 0;\
+  res.c  = size;\
+  res.ok = 1
+
+#define stopRead()\
+  if (reads) {\
+      reads = 0;\
+  }\
+  statP &= ~0x20
+
 pseudo.CstrCdrom = (function() {
-  var ctrl;
-  var readed;
-  var re2;
-  var occupied;
+  var ctrl, stat, statP, re2;
+  var occupied, readed, reads, seeked;
+  var irq, cdint;
 
   var param = {
-    p: undefined
+    data: new UintBcap(8),
+    p: undefined,
+    c: undefined
   };
 
   var res = {
+    data: new UintBcap(8),
+    p: undefined,
+    c: undefined,
     ok: undefined
   };
 
+  var sector = {
+    data: new UintBcap(4)
+  };
+
   function resetParam(prm) {
+    prm.data.fill(0);
     prm.p = 0;
+    prm.c = 0;
   }
 
   function resetRes(rrs) {
+    rrs.data.fill(0);
+    rrs.p = 0;
+    rrs.c = 0;
     rrs.ok = 0;
   }
-  
+
+  function resetSect(sect) {
+    sect.data.fill(0);
+  }
+
+  function addIrqQueue(code) {
+    irq = code;
+
+    if (stat) {
+    }
+    else {
+      console.dir('CD addIrqQueue -> '+hex(irq));
+      CD_INT();
+    }
+  }
+
+  function interrupt() {
+    var prevIrq = irq;
+
+    if (stat) {
+      psx.error('CD prevIrq stat');
+    }
+
+    irq = 0xff;
+    ctrl &= ~0x80;
+    console.dir('CD prevIrq ctrl -> '+hex(ctrl));
+
+    switch(prevIrq) {
+      case 1: // CdlNop
+        setResultSize(1);
+        statP |= 0x2;
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE; //More stuff here...
+        res.data[0] |= 0x2;
+        break;
+
+      case 25: // CdlTest
+        stat = CD_STAT_ACKNOWLEDGE;
+
+        switch(param.data[0]) {
+          case 0x20:
+            {
+              setResultSize(4);
+
+              var test20 = [0x98, 0x06, 0x10, 0xc3];
+              res.data.set(test20);
+
+              console.dir('res.data:');
+              for (var i=0; i<8; i++) {
+                console.dir(hex(res.data[i]));
+              }
+            }
+            break;
+
+          default:
+            psx.error("CdlTest param.data[0] -> "+hex(param.data[0]));
+            break;
+        }
+        break;
+
+      case 26: // CdlId
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE;
+        addIrqQueue(26 + 0x20);
+        break;
+
+      case 26 + 0x20: // CdlId
+        setResultSize(8);
+        res.data[0] = 0x00; //More stuff here...
+        res.data[1] = 0x00; // |= 0x80 for BIOS shell
+        res.data[2] = 0x00;
+        res.data[3] = 0x00;
+        stat = CD_STAT_COMPLETE;
+        break;
+
+      case 30: // CdlReadToc
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE;
+        addIrqQueue(30 + 0x20);
+        break;
+
+      default:
+        psx.error('CD prevIrq -> '+prevIrq);
+        break;
+    }
+    if (stat !== CD_STAT_NO_INTR && re2 !== 0x18) {
+      bus.interruptSet(IRQ_CD);
+    }
+  }
+
   return {
     reset() {
       resetParam(param);
       resetRes(res);
+      resetSect(sector);
 
-      ctrl = 0;
-      readed = 0;
-      re2 = 0;
-      occupied = 0;
+      ctrl = stat = statP = re2 = 0;
+      occupied = readed = reads = seeked = 0;
+      irq = cdint = 0;
     },
 
     update() {
+      if (cdint) {
+        if (cdint++ === 16) {
+          interrupt();
+          cdint = 0;
+        }
+      }
     },
 
     scopeW(addr, data) {
@@ -1329,18 +1464,51 @@ pseudo.CstrCdrom = (function() {
           console.dir('0x1800 Ctrl -> '+hex(ctrl));
 
           if (!data) {
-            psx.error('CD W 0x1800 !data');
+            param.p = 0;
+            param.c = 0;
+            res.ok  = 0;
           }
           break;
 
         case 1:
-          psx.error('CD W '+hex(addr)+' <- '+hex(data));
+          occupied = 0;
+  
+          if (ctrl&0x01) {
+            psx.error('CD W 0x1801 case 1');
+          }
+      
+          switch(data) {
+            case 1: // CdlNop
+            case 25: // CdlTest
+            case 26: // CdlId
+            case 30: // CdlReadToc
+              defaultCtrlAndStat();
+              break;
+
+            case 2: // CdlSetLoc
+              {
+                stopRead();
+                seeked = 0;
+
+                for (var i=0; i<3; i++) {
+                    sector.data[i] = BCD2INT(param.data[i]);
+                }
+                sector.data[3] = 0;
+                defaultCtrlAndStat();
+              }
+              break;
+
+            default:
+              psx.error('CD W 0x1801 data -> '+data);
+              break;
+          }
           break;
 
         case 2:
           if (ctrl&0x01) {
             console.dir('CD W 0x1802 case 1 -> '+data);
             switch(data) {
+              case 24:
               case 31:
                 re2 = data;
                 break;
@@ -1351,13 +1519,29 @@ pseudo.CstrCdrom = (function() {
             }
           }
           else if (!(ctrl&0x01) && param.p < 8) {
-            psx.error('CD W 0x1802 case 2');
+            console.dir('CD W 0x1802 data -> '+hex(data));
+            param.data[param.p++] = data;
+            param.c++;
           }
           break;
 
         case 3:
-          if (data == 0x07 && ctrl&0x01) {
-            psx.error('CD W 0x1803 case 1');
+          if (data === 0x07 && ctrl&0x01) {
+            stat = 0;
+
+            if (irq === 0xff) {
+              irq = 0;
+              return;
+            }
+
+            if (irq) {
+              CD_INT();
+            }
+
+            if (reads && !res.ok) {
+              psx.error('CD W 0x1803 reads && !res.ok');
+            }
+            return;
           }
           
           if (data == 0x80 && !(ctrl&0x01) && readed == 0) {
@@ -1371,10 +1555,11 @@ pseudo.CstrCdrom = (function() {
       switch(addr&0xf) {
         case 0:
           if (res.ok) {
-            psx.error('CD R 0x1800 case 1');
+            ctrl |= 0x20;
           }
           else {
-            psx.error('CD R 0x1800 case 2');
+            ctrl &= ~0x20;
+            console.dir('CD R 0x1800 ctrl -> '+hex(ctrl));
           }
           
           if (occupied) {
@@ -1387,16 +1572,37 @@ pseudo.CstrCdrom = (function() {
           return CD_REG(0);
 
         case 1:
-          psx.error('CD R '+hex(addr));
-          return 0;
+          if (res.ok) {
+            CD_REG(1) = res.data[res.p++];
+
+            if (res.p === res.c) {
+              res.ok = 0;
+            }
+          }
+          else {
+            CD_REG(1) = 0;
+          }
+          console.dir('CD R 0x1801 CD_REG(1) -> '+hex(CD_REG(1)));
+          return CD_REG(1);
 
         case 2:
           psx.error('CD R '+hex(addr));
           return 0;
 
         case 3:
-          psx.error('CD R '+hex(addr));
-          return 0;
+          if (stat) {
+            if (ctrl&0x01) {
+              CD_REG(3) = stat | 0xe0;
+            }
+            else {
+              psx.error('CD R 0x1803 case 1');
+            }
+          }
+          else {
+            CD_REG(3) = 0;
+          }
+          console.dir('CD R 0x1803 CD_REG(3) -> '+hex(CD_REG(3)));
+          return CD_REG(3);
       }
     },
 
