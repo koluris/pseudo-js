@@ -1332,6 +1332,7 @@ pseudo.CstrBus = (function() {
 
 
 
+
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, statP, re2;
   var occupied, readed, reads, seeked;
@@ -1442,6 +1443,20 @@ pseudo.CstrCdrom = (function() {
         stat = 2;
         break;
 
+      case 10: // CdlInit
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        addIrqQueue(10 + 0x20);
+        break;
+
+      case 10 + 0x20: // CdlInit
+        res.p = 0; res.c = 1; res.ok = 1;
+        res.data[0] = statP;
+        stat = 2;
+        break;
+
       case 21: // CdlSeekL
         res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
@@ -1536,7 +1551,7 @@ pseudo.CstrCdrom = (function() {
 
   function interruptRead() {
     if (!reads) {
-      pseudo.CstrMain.error('interruptRead !reads');
+      return;
     }
 
     if (stat) {
@@ -1549,44 +1564,50 @@ pseudo.CstrCdrom = (function() {
     res.data[0] = statP;
 
     trackRead();
-
-    var buf = pseudo.CstrMain.fetchBuffer();
-
-    // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
-    //   transfer.data.fill(0);
-    //   stat = CD_STAT_DISK_ERROR;
-    //   res.data[0] |= 0x01;
-    //   cdreadint = 1;
-    //   return;
-    // }
-
-    for (var i=0; i<(2352 - 12); i++) {
-      transfer.data[i] = buf[i];
-    }
-    stat = 1;
-
-    sector.data[2]++;
-    if (sector.data[2] == 75) {
-      sector.data[2] = 0;
-      
-      sector.data[1]++;
-      if (sector.data[1] == 60) {
-        sector.data[1] = 0;
-        sector.data[0]++;
-      }
-    }
-    readed = 0;
-
-    if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
-      addIrqQueue(9); // CdlPause
-    }
-    else {
-      cdreadint = 1;
-    }
-    pseudo.CstrBus.interruptSet(2);
+    pseudo.CstrMips.setbp();
   }
 
   return {
+    interruptRead2(buf) {
+      //var buf = pseudo.CstrMain.fetchBuffer();
+      // console.log(buf);
+      // pseudo.CstrMain.error(0);
+
+      // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
+      //   transfer.data.fill(0);
+      //   stat = 5;
+      //   res.data[0] |= 0x01;
+      //   cdreadint = 1;
+      //   return;
+      // }
+
+      for (var i=0; i<(2352 - 12); i++) {
+        transfer.data[i] = buf[i];
+      }
+      stat = 1;
+
+      sector.data[2]++;
+      if (sector.data[2] == 75) {
+        sector.data[2] = 0;
+        
+        sector.data[1]++;
+        if (sector.data[1] == 60) {
+          sector.data[1] = 0;
+          sector.data[0]++;
+        }
+      }
+      readed = 0;
+
+      if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
+        addIrqQueue(9); // CdlPause
+      }
+      else {
+        cdreadint = 1;
+      }
+      pseudo.CstrBus.interruptSet(2);
+      pseudo.CstrMips.run();
+    },
+
     reset() {
       resetParam(param);
       resetRes(res);
@@ -1667,6 +1688,7 @@ pseudo.CstrCdrom = (function() {
               break;
 
             case 9: // CdlPause
+            case 10: // CdlInit
               if (reads) { reads = 0; } statP &= ~0x20;
               ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
@@ -1806,6 +1828,7 @@ pseudo.CstrCdrom = (function() {
           
           for (var i=0; i<size; i++) {
             pseudo.CstrMem.__ram.ub[(( i + pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = transfer.data[i + transfer.p];
+            //console.dir('DMA: '+('0x'+(pseudo.CstrMem.__ram.ub[(( i + pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0]>>>0).toString(16)));
           }
           transfer.p += size;
           break;
@@ -1959,7 +1982,7 @@ pseudo.CstrCop2 = (function() {
           }
           return;
       }
-      pseudo.CstrMips.consoleWrite('error', 'COP2 Execute '+(code&0x3f));
+      //pseudo.CstrMips.consoleWrite('error', 'COP2 Execute '+(code&0x3f));
     },
 
     opcodeMFC2(addr) {
@@ -3237,19 +3260,21 @@ pseudo.CstrMain = (function() {
         cdBfr.fill(0);
         return 0;
       }
-      
+
       var offset = ((((Math.floor((time[0])/16) * 10 + (time[0])%16)) * 60 + ( (Math.floor((time[1])/16) * 10 + (time[1])%16)) - 2) * 75 + ( (Math.floor((time[2])/16) * 10 + (time[2])%16))) * 2352 + 12;
       var size = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
-        var hi = new Uint8Array(data);
-        cdBfr.set(hi.slice(0, (2352 - 12)));
+        pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
+        //var hi = new Uint8Array(data);
+        //cdBfr.set(hi.slice(0, (2352 - 12)));
       });
+      
       return 1;
     },
 
     fetchBuffer() {
-      return cdBfr;
+     return cdBfr;
     }
   };
 })();

@@ -1288,6 +1288,7 @@ pseudo.CstrCdrom = (function() {
 #define CD_STAT_DATA_READY  1
 #define CD_STAT_COMPLETE    2
 #define CD_STAT_ACKNOWLEDGE 3
+#define CD_STAT_DISK_ERROR  5
 
 #define CD_REG(r)\
   directMemB(hwr.ub, 0x1800|r)
@@ -1431,6 +1432,20 @@ pseudo.CstrCdrom = (function() {
         stat = CD_STAT_COMPLETE;
         break;
 
+      case 10: // CdlInit
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE;
+        addIrqQueue(10 + 0x20);
+        break;
+
+      case 10 + 0x20: // CdlInit
+        setResultSize(1);
+        res.data[0] = statP;
+        stat = CD_STAT_COMPLETE;
+        break;
+
       case 21: // CdlSeekL
         setResultSize(1);
         statP |= 0x02;
@@ -1525,7 +1540,7 @@ pseudo.CstrCdrom = (function() {
 
   function interruptRead() {
     if (!reads) {
-      psx.error('interruptRead !reads');
+      return;
     }
 
     if (stat) {
@@ -1538,44 +1553,50 @@ pseudo.CstrCdrom = (function() {
     res.data[0] = statP;
 
     trackRead();
-
-    var buf = psx.fetchBuffer();
-
-    // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
-    //   transfer.data.fill(0);
-    //   stat = CD_STAT_DISK_ERROR;
-    //   res.data[0] |= 0x01;
-    //   CDREAD_INT();
-    //   return;
-    // }
-
-    for (var i=0; i<DATASIZE; i++) {
-      transfer.data[i] = buf[i];
-    }
-    stat = CD_STAT_DATA_READY;
-
-    sector.data[2]++;
-    if (sector.data[2] == 75) {
-      sector.data[2] = 0;
-      
-      sector.data[1]++;
-      if (sector.data[1] == 60) {
-        sector.data[1] = 0;
-        sector.data[0]++;
-      }
-    }
-    readed = 0;
-
-    if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
-      addIrqQueue(9); // CdlPause
-    }
-    else {
-      CDREAD_INT();
-    }
-    bus.interruptSet(IRQ_CD);
+    cpu.setbp();
   }
 
   return {
+    interruptRead2(buf) {
+      //var buf = psx.fetchBuffer();
+      // console.log(buf);
+      // psx.error(0);
+
+      // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
+      //   transfer.data.fill(0);
+      //   stat = CD_STAT_DISK_ERROR;
+      //   res.data[0] |= 0x01;
+      //   CDREAD_INT();
+      //   return;
+      // }
+
+      for (var i=0; i<DATASIZE; i++) {
+        transfer.data[i] = buf[i];
+      }
+      stat = CD_STAT_DATA_READY;
+
+      sector.data[2]++;
+      if (sector.data[2] == 75) {
+        sector.data[2] = 0;
+        
+        sector.data[1]++;
+        if (sector.data[1] == 60) {
+          sector.data[1] = 0;
+          sector.data[0]++;
+        }
+      }
+      readed = 0;
+
+      if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
+        addIrqQueue(9); // CdlPause
+      }
+      else {
+        CDREAD_INT();
+      }
+      bus.interruptSet(IRQ_CD);
+      cpu.run();
+    },
+
     reset() {
       resetParam(param);
       resetRes(res);
@@ -1656,6 +1677,7 @@ pseudo.CstrCdrom = (function() {
               break;
 
             case 9: // CdlPause
+            case 10: // CdlInit
               stopRead();
               defaultCtrlAndStat();
               break;
@@ -1795,6 +1817,7 @@ pseudo.CstrCdrom = (function() {
           
           for (var i=0; i<size; i++) {
             directMemB(ram.ub, i + madr) = transfer.data[i + transfer.p];
+            //console.dir('DMA: '+hex(directMemB(ram.ub, i + madr)));
           }
           transfer.p += size;
           break;
