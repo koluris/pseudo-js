@@ -1282,6 +1282,7 @@ pseudo.CstrCdrom = (function() {
 // #endif
 
 #define hwr  mem.__hwr
+#define ram  mem.__ram
 
 #define CD_STAT_NO_INTR     0
 #define CD_STAT_DATA_READY  1
@@ -1412,6 +1413,22 @@ pseudo.CstrCdrom = (function() {
         statP |= 0x02;
         res.data[0] = statP;
         stat = CD_STAT_ACKNOWLEDGE;
+        break;
+
+      case 9: // CdlPause
+        setResultSize(1);
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE;
+        addIrqQueue(9 + 0x20);
+        ctrl |= 0x80;
+        break;
+
+      case 9 + 0x20: // CdlPause
+        setResultSize(1);
+        statP &= ~0x20;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = CD_STAT_COMPLETE;
         break;
 
       case 21: // CdlSeekL
@@ -1638,6 +1655,11 @@ pseudo.CstrCdrom = (function() {
               startRead();
               break;
 
+            case 9: // CdlPause
+              stopRead();
+              defaultCtrlAndStat();
+              break;
+
             case 14: // CdlSetMode
               mode = param.data[0];
               defaultCtrlAndStat();
@@ -1689,8 +1711,19 @@ pseudo.CstrCdrom = (function() {
             return;
           }
           
-          if (data == 0x80 && !(ctrl&0x01) && readed == 0) {
-            psx.error('CD W 0x1803 case 2');
+          if (data === 0x80 && !(ctrl&0x01) && readed === 0) {
+            readed = 1;
+            transfer.p = 0;
+
+            switch(mode&0x30) {
+              case 0x00:
+                transfer.p += 12;
+                break;
+
+              default:
+                psx.error('mode&0x30 -> '+hex(mode&0x30));
+                break;
+            }
           }
           break;
       }
@@ -1708,7 +1741,7 @@ pseudo.CstrCdrom = (function() {
           }
           
           if (occupied) {
-            psx.error('CD R 0x1800 case 3');
+            ctrl |= 0x40;
           }
           
           ctrl |= 0x18;
@@ -1740,7 +1773,7 @@ pseudo.CstrCdrom = (function() {
               CD_REG(3) = stat | 0xe0;
             }
             else {
-              psx.error('CD R 0x1803 case 1');
+              CD_REG(3) = 0xff;
             }
           }
           else {
@@ -1752,11 +1785,29 @@ pseudo.CstrCdrom = (function() {
     },
 
     executeDMA(addr) {
-      psx.error('CD DMA '+hex(addr));
+      var size = (bcr&0xffff) * 4;
+
+      switch(chcr) {
+        case 0x11000000:
+          if (!readed) {
+            break;
+          }
+          
+          for (var i=0; i<size; i++) {
+            directMemB(ram.ub, i + madr) = transfer.data[i + transfer.p];
+          }
+          transfer.p += size;
+          break;
+
+        default:
+          psx.error('CD DMA -> '+hex(chcr));
+          break;
+      }
     }
   };
 })();
 
+#undef ram
 #undef hwr
 
 #endif

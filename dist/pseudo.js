@@ -973,9 +973,9 @@ pseudo.CstrBus = (function() {
 
 //   function trackRead() {
 //     //console.log(sector.data[0]+' '+sector.data[1]+' '+sector.data[2]);
-//     sector.prev[0] = (Math.round((sector.data[0])/10) * 16 + (sector.data[0])%10);
-//     sector.prev[1] = (Math.round((sector.data[1])/10) * 16 + (sector.data[1])%10);
-//     sector.prev[2] = (Math.round((sector.data[2])/10) * 16 + (sector.data[2])%10);
+//     sector.prev[0] = (Math.floor((sector.data[0])/10) * 16 + (sector.data[0])%10);
+//     sector.prev[1] = (Math.floor((sector.data[1])/10) * 16 + (sector.data[1])%10);
+//     sector.prev[2] = (Math.floor((sector.data[2])/10) * 16 + (sector.data[2])%10);
     
 //     pseudo.CstrMain.trackRead(sector.prev);
 //   }
@@ -1102,7 +1102,7 @@ pseudo.CstrBus = (function() {
 //               seeked = 0;
 
 //               for (var i=0; i<3; i++) {
-//                 sector.data[i] = (Math.round((param.data[i])/16) * 10 + (param.data[i])%16);
+//                 sector.data[i] = (Math.floor((param.data[i])/16) * 10 + (param.data[i])%16);
 //               }
 //               sector.data[3] = 0;
 //               defaultCtrlAndStat();
@@ -1331,6 +1331,7 @@ pseudo.CstrBus = (function() {
 
 
 
+
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, statP, re2;
   var occupied, readed, reads, seeked;
@@ -1379,9 +1380,9 @@ pseudo.CstrCdrom = (function() {
   }
 
   function trackRead() {
-    sector.prev[0] = (Math.round((sector.data[0])/10) * 16 + (sector.data[0])%10);
-    sector.prev[1] = (Math.round((sector.data[1])/10) * 16 + (sector.data[1])%10);
-    sector.prev[2] = (Math.round((sector.data[2])/10) * 16 + (sector.data[2])%10);
+    sector.prev[0] = (Math.floor((sector.data[0])/10) * 16 + (sector.data[0])%10);
+    sector.prev[1] = (Math.floor((sector.data[1])/10) * 16 + (sector.data[1])%10);
+    sector.prev[2] = (Math.floor((sector.data[2])/10) * 16 + (sector.data[2])%10);
 
     pseudo.CstrMain.trackRead(sector.prev);
   }
@@ -1423,6 +1424,22 @@ pseudo.CstrCdrom = (function() {
         statP |= 0x02;
         res.data[0] = statP;
         stat = 3;
+        break;
+
+      case 9: // CdlPause
+        res.p = 0; res.c = 1; res.ok = 1;
+        res.data[0] = statP;
+        stat = 3;
+        addIrqQueue(9 + 0x20);
+        ctrl |= 0x80;
+        break;
+
+      case 9 + 0x20: // CdlPause
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP &= ~0x20;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 2;
         break;
 
       case 21: // CdlSeekL
@@ -1634,7 +1651,7 @@ pseudo.CstrCdrom = (function() {
                 seeked = 0;
 
                 for (var i=0; i<3; i++) {
-                  sector.data[i] = (Math.round((param.data[i])/16) * 10 + (param.data[i])%16);
+                  sector.data[i] = (Math.floor((param.data[i])/16) * 10 + (param.data[i])%16);
                 }
                 sector.data[3] = 0;
                 ctrl |= 0x80; stat = 0; addIrqQueue(data);
@@ -1647,6 +1664,11 @@ pseudo.CstrCdrom = (function() {
               ctrl |= 0x80;
               stat = 0;
               reads = 1; readed = 0xff; addIrqQueue(250);
+              break;
+
+            case 9: // CdlPause
+              if (reads) { reads = 0; } statP &= ~0x20;
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
 
             case 14: // CdlSetMode
@@ -1700,8 +1722,19 @@ pseudo.CstrCdrom = (function() {
             return;
           }
           
-          if (data == 0x80 && !(ctrl&0x01) && readed == 0) {
-            pseudo.CstrMain.error('CD W 0x1803 case 2');
+          if (data === 0x80 && !(ctrl&0x01) && readed === 0) {
+            readed = 1;
+            transfer.p = 0;
+
+            switch(mode&0x30) {
+              case 0x00:
+                transfer.p += 12;
+                break;
+
+              default:
+                pseudo.CstrMain.error('mode&0x30 -> '+('0x'+(mode&0x30>>>0).toString(16)));
+                break;
+            }
           }
           break;
       }
@@ -1719,7 +1752,7 @@ pseudo.CstrCdrom = (function() {
           }
           
           if (occupied) {
-            pseudo.CstrMain.error('CD R 0x1800 case 3');
+            ctrl |= 0x40;
           }
           
           ctrl |= 0x18;
@@ -1751,7 +1784,7 @@ pseudo.CstrCdrom = (function() {
               pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = stat | 0xe0;
             }
             else {
-              pseudo.CstrMain.error('CD R 0x1803 case 1');
+              pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0xff;
             }
           }
           else {
@@ -1763,10 +1796,28 @@ pseudo.CstrCdrom = (function() {
     },
 
     executeDMA(addr) {
-      pseudo.CstrMain.error('CD DMA '+('0x'+(addr>>>0).toString(16)));
+      var size = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff) * 4;
+
+      switch(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+        case 0x11000000:
+          if (!readed) {
+            break;
+          }
+          
+          for (var i=0; i<size; i++) {
+            pseudo.CstrMem.__ram.ub[(( i + pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = transfer.data[i + transfer.p];
+          }
+          transfer.p += size;
+          break;
+
+        default:
+          pseudo.CstrMain.error('CD DMA -> '+('0x'+(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>>0).toString(16)));
+          break;
+      }
     }
   };
 })();
+
 
 
 
@@ -3187,7 +3238,7 @@ pseudo.CstrMain = (function() {
         return 0;
       }
       
-      var offset = ((((Math.round((time[0])/16) * 10 + (time[0])%16)) * 60 + ( (Math.round((time[1])/16) * 10 + (time[1])%16)) - 2) * 75 + ( (Math.round((time[2])/16) * 10 + (time[2])%16))) * 2352 + 12;
+      var offset = ((((Math.floor((time[0])/16) * 10 + (time[0])%16)) * 60 + ( (Math.floor((time[1])/16) * 10 + (time[1])%16)) - 2) * 75 + ( (Math.floor((time[2])/16) * 10 + (time[2])%16))) * 2352 + 12;
       var size = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
