@@ -1284,6 +1284,7 @@ pseudo.CstrCdrom = (function() {
 #define hwr  mem.__hwr
 
 #define CD_STAT_NO_INTR     0
+#define CD_STAT_DATA_READY  1
 #define CD_STAT_COMPLETE    2
 #define CD_STAT_ACKNOWLEDGE 3
 
@@ -1309,10 +1310,21 @@ pseudo.CstrCdrom = (function() {
   }\
   statP &= ~0x20
 
+#define startRead()\
+  reads = 1;\
+  readed = 0xff;\
+  addIrqQueue(READ_ACK)
+
+#define READ_ACK 250
+
+#define CDREAD_INT()\
+  cdreadint = 1
+
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, statP, re2;
   var occupied, readed, reads, seeked;
-  var irq, cdint;
+  var irq, cdint, cdreadint;
+  var mode;
 
   var param = {
     data: new UintBcap(8),
@@ -1328,7 +1340,13 @@ pseudo.CstrCdrom = (function() {
   };
 
   var sector = {
-    data: new UintBcap(4)
+    data: new UintBcap(4),
+    prev: new UintBcap(4)
+  };
+
+  var transfer = {
+    data: new UintBcap(CDFRAMESIZERAW),
+    p: 0
   };
 
   function resetParam(prm) {
@@ -1346,6 +1364,15 @@ pseudo.CstrCdrom = (function() {
 
   function resetSect(sect) {
     sect.data.fill(0);
+    sect.prev.fill(0);
+  }
+
+  function trackRead() {
+    sector.prev[0] = INT2BCD(sector.data[0]);
+    sector.prev[1] = INT2BCD(sector.data[1]);
+    sector.prev[2] = INT2BCD(sector.data[2]);
+
+    psx.trackRead(sector.prev);
   }
 
   function addIrqQueue(code) {
@@ -1377,6 +1404,32 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         stat = CD_STAT_ACKNOWLEDGE; //More stuff here...
         res.data[0] |= 0x2;
+        break;
+
+      case 2: // CdlSetLoc
+      case 14: // CdlSetMode
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE;
+        break;
+
+      case 21: // CdlSeekL
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+        statP |= 0x40;
+        stat = CD_STAT_ACKNOWLEDGE;
+        seeked = 1;
+        addIrqQueue(21 + 0x20);
+        break;
+
+      case 21 + 0x20: // CdlSeekL
+        setResultSize(1);
+        statP |= 0x02;
+        statP &= ~0x40;
+        res.data[0] = statP;
+        stat = CD_STAT_COMPLETE;
         break;
 
       case 25: // CdlTest
@@ -1428,6 +1481,22 @@ pseudo.CstrCdrom = (function() {
         addIrqQueue(30 + 0x20);
         break;
 
+      case READ_ACK:
+        if (!reads) {
+          psx.error('READ_ACK !reads');
+        }
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+
+        if (!seeked) {
+          psx.error('READ_ACK !seeked');
+        }
+        statP |= 0x20;
+        stat = CD_STAT_ACKNOWLEDGE;
+        CDREAD_INT();
+        break;
+
       default:
         psx.error('CD prevIrq -> '+prevIrq);
         break;
@@ -1437,15 +1506,70 @@ pseudo.CstrCdrom = (function() {
     }
   }
 
+  function interruptRead() {
+    if (!reads) {
+      psx.error('interruptRead !reads');
+    }
+
+    if (stat) {
+      psx.error('interruptRead stat');
+    }
+    occupied = 1;
+    setResultSize(1);
+    statP |= 0x22;
+    statP &= ~0x40;
+    res.data[0] = statP;
+
+    trackRead();
+
+    var buf = psx.fetchBuffer();
+
+    // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
+    //   transfer.data.fill(0);
+    //   stat = CD_STAT_DISK_ERROR;
+    //   res.data[0] |= 0x01;
+    //   CDREAD_INT();
+    //   return;
+    // }
+
+    for (var i=0; i<DATASIZE; i++) {
+      transfer.data[i] = buf[i];
+    }
+    stat = CD_STAT_DATA_READY;
+
+    sector.data[2]++;
+    if (sector.data[2] == 75) {
+      sector.data[2] = 0;
+      
+      sector.data[1]++;
+      if (sector.data[1] == 60) {
+        sector.data[1] = 0;
+        sector.data[0]++;
+      }
+    }
+    readed = 0;
+
+    if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
+      addIrqQueue(9); // CdlPause
+    }
+    else {
+      CDREAD_INT();
+    }
+    bus.interruptSet(IRQ_CD);
+  }
+
   return {
     reset() {
       resetParam(param);
       resetRes(res);
       resetSect(sector);
+      transfer.data.fill(0);
+      transfer.p = 0;
 
       ctrl = stat = statP = re2 = 0;
       occupied = readed = reads = seeked = 0;
-      irq = cdint = 0;
+      irq = cdint = cdreadint = 0;
+      mode = 0;
     },
 
     update() {
@@ -1453,6 +1577,13 @@ pseudo.CstrCdrom = (function() {
         if (cdint++ === 16) {
           interrupt();
           cdint = 0;
+        }
+      }
+
+      if (cdreadint) {
+        if (cdreadint++ === 1024) {
+          interruptRead();
+          cdreadint = 0;
         }
       }
     },
@@ -1479,6 +1610,7 @@ pseudo.CstrCdrom = (function() {
       
           switch(data) {
             case 1: // CdlNop
+            case 21: // CdlSeekL
             case 25: // CdlTest
             case 26: // CdlId
             case 30: // CdlReadToc
@@ -1491,11 +1623,24 @@ pseudo.CstrCdrom = (function() {
                 seeked = 0;
 
                 for (var i=0; i<3; i++) {
-                    sector.data[i] = BCD2INT(param.data[i]);
+                  sector.data[i] = BCD2INT(param.data[i]);
                 }
                 sector.data[3] = 0;
                 defaultCtrlAndStat();
               }
+              break;
+
+            case 6: // CdlReadN
+              irq = 0;
+              stopRead();
+              ctrl |= 0x80;
+              stat = CD_STAT_NO_INTR;
+              startRead();
+              break;
+
+            case 14: // CdlSetMode
+              mode = param.data[0];
+              defaultCtrlAndStat();
               break;
 
             default:
@@ -1539,7 +1684,7 @@ pseudo.CstrCdrom = (function() {
             }
 
             if (reads && !res.ok) {
-              psx.error('CD W 0x1803 reads && !res.ok');
+              CDREAD_INT();
             }
             return;
           }

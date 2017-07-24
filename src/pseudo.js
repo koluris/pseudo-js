@@ -187,23 +187,17 @@ pseudo.CstrMain = (function() {
     trackRead(time) {
       if (!iso) {
         cdBfr.fill(0);
-        return;
+        return 0;
       }
-
-      //console.log(time[0]+' '+time[1]+' '+time[2]);
-      //console.log(BCD2INT(time[0])+' '+BCD2INT(time[1])+' '+BCD2INT(time[2]));
       
-      //console.log(time.minute+' '+time.sec+' '+time.frame);
-
       var offset = MSF2SECT(BCD2INT(time[0]), BCD2INT(time[1]), BCD2INT(time[2])) * CDFRAMESIZERAW + 12;
       var size = DATASIZE;
-
-      //console.log(offset);
 
       chunkReader2(iso, offset, size, function(data) {
         var hi = new UintBcap(data);
         cdBfr.set(hi.slice(0, DATASIZE));
       });
+      return 1;
     },
 
     fetchBuffer() {

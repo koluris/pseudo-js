@@ -973,9 +973,9 @@ pseudo.CstrBus = (function() {
 
 //   function trackRead() {
 //     //console.log(sector.data[0]+' '+sector.data[1]+' '+sector.data[2]);
-//     sector.prev[0] = ((sector.data[0])/10 * 16 + (sector.data[0])%10);
-//     sector.prev[1] = ((sector.data[1])/10 * 16 + (sector.data[1])%10);
-//     sector.prev[2] = ((sector.data[2])/10 * 16 + (sector.data[2])%10);
+//     sector.prev[0] = (Math.round((sector.data[0])/10) * 16 + (sector.data[0])%10);
+//     sector.prev[1] = (Math.round((sector.data[1])/10) * 16 + (sector.data[1])%10);
+//     sector.prev[2] = (Math.round((sector.data[2])/10) * 16 + (sector.data[2])%10);
     
 //     pseudo.CstrMain.trackRead(sector.prev);
 //   }
@@ -1102,7 +1102,7 @@ pseudo.CstrBus = (function() {
 //               seeked = 0;
 
 //               for (var i=0; i<3; i++) {
-//                 sector.data[i] = ((param.data[i])/16 * 10 + (param.data[i])%16);
+//                 sector.data[i] = (Math.round((param.data[i])/16) * 10 + (param.data[i])%16);
 //               }
 //               sector.data[3] = 0;
 //               defaultCtrlAndStat();
@@ -1320,10 +1320,22 @@ pseudo.CstrBus = (function() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, statP, re2;
   var occupied, readed, reads, seeked;
-  var irq, cdint;
+  var irq, cdint, cdreadint;
+  var mode;
 
   var param = {
     data: new Uint8Array(8),
@@ -1339,7 +1351,13 @@ pseudo.CstrCdrom = (function() {
   };
 
   var sector = {
-    data: new Uint8Array(4)
+    data: new Uint8Array(4),
+    prev: new Uint8Array(4)
+  };
+
+  var transfer = {
+    data: new Uint8Array(2352),
+    p: 0
   };
 
   function resetParam(prm) {
@@ -1357,6 +1375,15 @@ pseudo.CstrCdrom = (function() {
 
   function resetSect(sect) {
     sect.data.fill(0);
+    sect.prev.fill(0);
+  }
+
+  function trackRead() {
+    sector.prev[0] = (Math.round((sector.data[0])/10) * 16 + (sector.data[0])%10);
+    sector.prev[1] = (Math.round((sector.data[1])/10) * 16 + (sector.data[1])%10);
+    sector.prev[2] = (Math.round((sector.data[2])/10) * 16 + (sector.data[2])%10);
+
+    pseudo.CstrMain.trackRead(sector.prev);
   }
 
   function addIrqQueue(code) {
@@ -1388,6 +1415,32 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         stat = 3; //More stuff here...
         res.data[0] |= 0x2;
+        break;
+
+      case 2: // CdlSetLoc
+      case 14: // CdlSetMode
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        break;
+
+      case 21: // CdlSeekL
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x02;
+        res.data[0] = statP;
+        statP |= 0x40;
+        stat = 3;
+        seeked = 1;
+        addIrqQueue(21 + 0x20);
+        break;
+
+      case 21 + 0x20: // CdlSeekL
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x02;
+        statP &= ~0x40;
+        res.data[0] = statP;
+        stat = 2;
         break;
 
       case 25: // CdlTest
@@ -1439,6 +1492,22 @@ pseudo.CstrCdrom = (function() {
         addIrqQueue(30 + 0x20);
         break;
 
+      case 250:
+        if (!reads) {
+          pseudo.CstrMain.error('READ_ACK !reads');
+        }
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x02;
+        res.data[0] = statP;
+
+        if (!seeked) {
+          pseudo.CstrMain.error('READ_ACK !seeked');
+        }
+        statP |= 0x20;
+        stat = 3;
+        cdreadint = 1;
+        break;
+
       default:
         pseudo.CstrMain.error('CD prevIrq -> '+prevIrq);
         break;
@@ -1448,15 +1517,70 @@ pseudo.CstrCdrom = (function() {
     }
   }
 
+  function interruptRead() {
+    if (!reads) {
+      pseudo.CstrMain.error('interruptRead !reads');
+    }
+
+    if (stat) {
+      pseudo.CstrMain.error('interruptRead stat');
+    }
+    occupied = 1;
+    res.p = 0; res.c = 1; res.ok = 1;
+    statP |= 0x22;
+    statP &= ~0x40;
+    res.data[0] = statP;
+
+    trackRead();
+
+    var buf = pseudo.CstrMain.fetchBuffer();
+
+    // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
+    //   transfer.data.fill(0);
+    //   stat = CD_STAT_DISK_ERROR;
+    //   res.data[0] |= 0x01;
+    //   cdreadint = 1;
+    //   return;
+    // }
+
+    for (var i=0; i<(2352 - 12); i++) {
+      transfer.data[i] = buf[i];
+    }
+    stat = 1;
+
+    sector.data[2]++;
+    if (sector.data[2] == 75) {
+      sector.data[2] = 0;
+      
+      sector.data[1]++;
+      if (sector.data[1] == 60) {
+        sector.data[1] = 0;
+        sector.data[0]++;
+      }
+    }
+    readed = 0;
+
+    if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
+      addIrqQueue(9); // CdlPause
+    }
+    else {
+      cdreadint = 1;
+    }
+    pseudo.CstrBus.interruptSet(2);
+  }
+
   return {
     reset() {
       resetParam(param);
       resetRes(res);
       resetSect(sector);
+      transfer.data.fill(0);
+      transfer.p = 0;
 
       ctrl = stat = statP = re2 = 0;
       occupied = readed = reads = seeked = 0;
-      irq = cdint = 0;
+      irq = cdint = cdreadint = 0;
+      mode = 0;
     },
 
     update() {
@@ -1464,6 +1588,13 @@ pseudo.CstrCdrom = (function() {
         if (cdint++ === 16) {
           interrupt();
           cdint = 0;
+        }
+      }
+
+      if (cdreadint) {
+        if (cdreadint++ === 1024) {
+          interruptRead();
+          cdreadint = 0;
         }
       }
     },
@@ -1490,6 +1621,7 @@ pseudo.CstrCdrom = (function() {
       
           switch(data) {
             case 1: // CdlNop
+            case 21: // CdlSeekL
             case 25: // CdlTest
             case 26: // CdlId
             case 30: // CdlReadToc
@@ -1502,11 +1634,24 @@ pseudo.CstrCdrom = (function() {
                 seeked = 0;
 
                 for (var i=0; i<3; i++) {
-                    sector.data[i] = ((param.data[i])/16 * 10 + (param.data[i])%16);
+                  sector.data[i] = (Math.round((param.data[i])/16) * 10 + (param.data[i])%16);
                 }
                 sector.data[3] = 0;
                 ctrl |= 0x80; stat = 0; addIrqQueue(data);
               }
+              break;
+
+            case 6: // CdlReadN
+              irq = 0;
+              if (reads) { reads = 0; } statP &= ~0x20;
+              ctrl |= 0x80;
+              stat = 0;
+              reads = 1; readed = 0xff; addIrqQueue(250);
+              break;
+
+            case 14: // CdlSetMode
+              mode = param.data[0];
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
 
             default:
@@ -1550,7 +1695,7 @@ pseudo.CstrCdrom = (function() {
             }
 
             if (reads && !res.ok) {
-              pseudo.CstrMain.error('CD W 0x1803 reads && !res.ok');
+              cdreadint = 1;
             }
             return;
           }
@@ -3039,23 +3184,17 @@ pseudo.CstrMain = (function() {
     trackRead(time) {
       if (!iso) {
         cdBfr.fill(0);
-        return;
+        return 0;
       }
-
-      //console.log(time[0]+' '+time[1]+' '+time[2]);
-      //console.log(((time[0])/16 * 10 + (time[0])%16)+' '+((time[1])/16 * 10 + (time[1])%16)+' '+((time[2])/16 * 10 + (time[2])%16));
       
-      //console.log(time.minute+' '+time.sec+' '+time.frame);
-
-      var offset = (((((time[0])/16 * 10 + (time[0])%16)) * 60 + ( ((time[1])/16 * 10 + (time[1])%16)) - 2) * 75 + ( ((time[2])/16 * 10 + (time[2])%16))) * 2352 + 12;
+      var offset = ((((Math.round((time[0])/16) * 10 + (time[0])%16)) * 60 + ( (Math.round((time[1])/16) * 10 + (time[1])%16)) - 2) * 75 + ( (Math.round((time[2])/16) * 10 + (time[2])%16))) * 2352 + 12;
       var size = (2352 - 12);
-
-      //console.log(offset);
 
       chunkReader2(iso, offset, size, function(data) {
         var hi = new Uint8Array(data);
         cdBfr.set(hi.slice(0, (2352 - 12)));
       });
+      return 1;
     },
 
     fetchBuffer() {
