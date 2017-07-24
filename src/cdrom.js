@@ -1281,12 +1281,42 @@ pseudo.CstrCdrom = (function() {
 
 // #endif
 
+#define hwr  mem.__hwr
+
+#define CD_REG(r)\
+  directMemB(hwr.ub, 0x1800|r)
+
 pseudo.CstrCdrom = (function() {
   var ctrl;
+  var readed;
+  var re2;
+  var occupied;
+
+  var param = {
+    p: undefined
+  };
+
+  var res = {
+    ok: undefined
+  };
+
+  function resetParam(prm) {
+    prm.p = 0;
+  }
+
+  function resetRes(rrs) {
+    rrs.ok = 0;
+  }
   
   return {
     reset() {
+      resetParam(param);
+      resetRes(res);
+
       ctrl = 0;
+      readed = 0;
+      re2 = 0;
+      occupied = 0;
     },
 
     update() {
@@ -1308,11 +1338,31 @@ pseudo.CstrCdrom = (function() {
           break;
 
         case 2:
-          psx.error('CD W '+hex(addr)+' <- '+hex(data));
+          if (ctrl&0x01) {
+            console.dir('CD W 0x1802 case 1 -> '+data);
+            switch(data) {
+              case 31:
+                re2 = data;
+                break;
+                
+              default:
+                psx.error('CD W 0x1802 case 1 -> '+data);
+                break;
+            }
+          }
+          else if (!(ctrl&0x01) && param.p < 8) {
+            psx.error('CD W 0x1802 case 2');
+          }
           break;
 
         case 3:
-          psx.error('CD W '+hex(addr)+' <- '+hex(data));
+          if (data == 0x07 && ctrl&0x01) {
+            psx.error('CD W 0x1803 case 1');
+          }
+          
+          if (data == 0x80 && !(ctrl&0x01) && readed == 0) {
+            psx.error('CD W 0x1803 case 2');
+          }
           break;
       }
     },
@@ -1320,8 +1370,21 @@ pseudo.CstrCdrom = (function() {
     scopeR(addr) {
       switch(addr&0xf) {
         case 0:
-          psx.error('CD R '+hex(addr));
-          return 0;
+          if (res.ok) {
+            psx.error('CD R 0x1800 case 1');
+          }
+          else {
+            psx.error('CD R 0x1800 case 2');
+          }
+          
+          if (occupied) {
+            psx.error('CD R 0x1800 case 3');
+          }
+          
+          ctrl |= 0x18;
+          CD_REG(0) = ctrl;
+          console.dir('CD R 0x1800 CD_REG(0) -> '+hex(CD_REG(0)));
+          return CD_REG(0);
 
         case 1:
           psx.error('CD R '+hex(addr));
@@ -1342,5 +1405,7 @@ pseudo.CstrCdrom = (function() {
     }
   };
 })();
+
+#undef hwr
 
 #endif

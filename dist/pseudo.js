@@ -1292,12 +1292,42 @@ pseudo.CstrBus = (function() {
 
 // #endif
 
+
+
+
+
+
 pseudo.CstrCdrom = (function() {
   var ctrl;
+  var readed;
+  var re2;
+  var occupied;
+
+  var param = {
+    p: undefined
+  };
+
+  var res = {
+    ok: undefined
+  };
+
+  function resetParam(prm) {
+    prm.p = 0;
+  }
+
+  function resetRes(rrs) {
+    rrs.ok = 0;
+  }
   
   return {
     reset() {
+      resetParam(param);
+      resetRes(res);
+
       ctrl = 0;
+      readed = 0;
+      re2 = 0;
+      occupied = 0;
     },
 
     update() {
@@ -1319,11 +1349,31 @@ pseudo.CstrCdrom = (function() {
           break;
 
         case 2:
-          pseudo.CstrMain.error('CD W '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+          if (ctrl&0x01) {
+            console.dir('CD W 0x1802 case 1 -> '+data);
+            switch(data) {
+              case 31:
+                re2 = data;
+                break;
+                
+              default:
+                pseudo.CstrMain.error('CD W 0x1802 case 1 -> '+data);
+                break;
+            }
+          }
+          else if (!(ctrl&0x01) && param.p < 8) {
+            pseudo.CstrMain.error('CD W 0x1802 case 2');
+          }
           break;
 
         case 3:
-          pseudo.CstrMain.error('CD W '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+          if (data == 0x07 && ctrl&0x01) {
+            pseudo.CstrMain.error('CD W 0x1803 case 1');
+          }
+          
+          if (data == 0x80 && !(ctrl&0x01) && readed == 0) {
+            pseudo.CstrMain.error('CD W 0x1803 case 2');
+          }
           break;
       }
     },
@@ -1331,8 +1381,21 @@ pseudo.CstrCdrom = (function() {
     scopeR(addr) {
       switch(addr&0xf) {
         case 0:
-          pseudo.CstrMain.error('CD R '+('0x'+(addr>>>0).toString(16)));
-          return 0;
+          if (res.ok) {
+            pseudo.CstrMain.error('CD R 0x1800 case 1');
+          }
+          else {
+            pseudo.CstrMain.error('CD R 0x1800 case 2');
+          }
+          
+          if (occupied) {
+            pseudo.CstrMain.error('CD R 0x1800 case 3');
+          }
+          
+          ctrl |= 0x18;
+          pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = ctrl;
+          console.dir('CD R 0x1800 CD_REG(0) -> '+('0x'+(pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0]>>>0).toString(16)));
+          return pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
 
         case 1:
           pseudo.CstrMain.error('CD R '+('0x'+(addr>>>0).toString(16)));
@@ -1353,6 +1416,8 @@ pseudo.CstrCdrom = (function() {
     }
   };
 })();
+
+
 
 
 // 32-bit accessor
