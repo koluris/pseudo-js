@@ -834,7 +834,8 @@ pseudo.CstrCdrom = (function() {
     var prevIrq = irq;
 
     if (stat) {
-      psx.error('CD prevIrq stat');
+      CD_INT();
+      return;
     }
 
     irq = 0xff;
@@ -852,6 +853,7 @@ pseudo.CstrCdrom = (function() {
       case 2: // CdlSetLoc
       case 11: // CdlMute
       case 12: // CdlDemute
+      case 13: // CdlSetFilter
       case 14: // CdlSetMode
         setResultSize(1);
         statP |= 0x02;
@@ -895,6 +897,40 @@ pseudo.CstrCdrom = (function() {
         setResultSize(1);
         res.data[0] = statP;
         stat = CD_STAT_COMPLETE;
+        break;
+
+      case 16: // CdlGetLocL
+        {
+          setResultSize(8);
+          for (var i=0; i<8; i++) {
+            res.data[i] = transfer.data[i];
+          }
+          stat = CD_STAT_ACKNOWLEDGE;
+        }
+        break;
+
+      case 17: // CdlGetLocP
+        setResultSize(8);
+        res.data[0] = 1;
+        res.data[1] = 1;
+
+        res.data[2] = BCD2INT(sector.prev[0]);
+        res.data[3] = BCD2INT(sector.prev[1])-2;
+        res.data[4] = sector.prev[2];
+
+        if (SIGN_EXT_8(res.data[3]) < 0) {
+            res.data[3] += 60;
+            res.data[2] -= 1;
+        }
+
+        res.data[2] = INT2BCD(res.data[2]);
+        res.data[3] = INT2BCD(res.data[3]);
+
+        res.data[5] = sector.prev[0];
+        res.data[6] = sector.prev[1];
+        res.data[7] = sector.prev[2];
+        
+        stat = CD_STAT_ACKNOWLEDGE;
         break;
 
       case 19: // CdlGetTN
@@ -1160,6 +1196,9 @@ pseudo.CstrCdrom = (function() {
           switch(data) {
             case 1: // CdlNop
             case 3: // CdlStart
+            case 13: // CdlSetFilter
+            case 16: // CdlGetLocL
+            case 17: // CdlGetLocP
             case 19: // CdlGetTN
             case 20: // CdlGetTD
             case 21: // CdlSeekL
@@ -1184,6 +1223,7 @@ pseudo.CstrCdrom = (function() {
               break;
 
             case 6: // CdlReadN
+            case 27: // CdlReadS
               irq = 0;
               stopRead();
               ctrl |= 0x80;
@@ -1320,8 +1360,11 @@ pseudo.CstrCdrom = (function() {
           return CD_REG(1);
 
         case 2:
-          psx.error('CD R '+hex(addr));
-          return 0;
+          if (!readed) {
+            psx.error('CD R !readed');
+            return 0;
+          }
+          return transfer.data[transfer.p++];
 
         case 3:
           if (stat) {
@@ -1344,6 +1387,7 @@ pseudo.CstrCdrom = (function() {
 
       switch(chcr) {
         case 0x11000000:
+        case 0x11400100:
           if (!readed) {
             break;
           }

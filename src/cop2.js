@@ -270,7 +270,7 @@ pseudo.CstrCop2 = (function() {
 
         case 28:
         case 29:
-          psx.error('opcodeMFC2 -> '+addr);
+          oooo(cop2d.uw, addr) = LIM(IR1>>7, 0x1f, 0, 0) | (LIM(IR2>>7, 0x1f, 0, 0)<<5) | (LIM(IR3>>7, 0x1f, 0, 0)<<10);
           break;
 
         case 30:

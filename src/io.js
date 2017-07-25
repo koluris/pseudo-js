@@ -99,6 +99,7 @@ pseudo.CstrHardware = (function() {
             return;
 
           /* unused */
+          case 0x10f6:
           case 0x2041: // DIP Switch?
             directMemB(hwr.ub, addr) = data;
             return;
@@ -156,6 +157,7 @@ pseudo.CstrHardware = (function() {
           case 0x1014:
           case 0x1070:
           case 0x1074:
+          case 0x1130:
             return directMemH(hwr.uh, addr);
         }
         psx.error('Hardware Read h '+hex(addr));
@@ -169,6 +171,10 @@ pseudo.CstrHardware = (function() {
         switch(addr) {
           case 0x1040: // Controls
             return sio.read.b(addr);
+
+          /* unused */
+          case 0x10f6:
+            return directMemB(hwr.ub, addr);
         }
         psx.error('Hardware Read b '+hex(addr));
       }

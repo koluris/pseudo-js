@@ -324,6 +324,9 @@ pseudo.CstrAudio = (function() {
 
       // HW
       switch (addr) {
+        case 0x1da4: // ???
+          return;
+
         case 0x1d80: // Volume L
           spuVolumeL = setVolume(data);
           return;
@@ -379,7 +382,7 @@ pseudo.CstrAudio = (function() {
         case 0x1db6:
           return;
       }
-      psx.error('SPU scopeR '+hex(addr)+' <- '+hex(data));
+      psx.error('SPU scopeW '+hex(addr)+' <- '+hex(data));
     },
 
     scopeR: function(addr) {
@@ -401,6 +404,13 @@ pseudo.CstrAudio = (function() {
 
       // HW
       switch (addr) {
+        //case 0x1da4:
+        case 0x1db0:
+        case 0x1db2:
+        case 0x1db4:
+        case 0x1db6:
+        case 0x1d80:
+        case 0x1d82:
         case 0x1d90:
         case 0x1d92: // ???
           return spuAcc(addr);

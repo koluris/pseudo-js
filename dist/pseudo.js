@@ -490,6 +490,9 @@ pseudo.CstrAudio = (function() {
 
       // HW
       switch (addr) {
+        case 0x1da4: // ???
+          return;
+
         case 0x1d80: // Volume L
           spuVolumeL = setVolume(data);
           return;
@@ -545,7 +548,7 @@ pseudo.CstrAudio = (function() {
         case 0x1db6:
           return;
       }
-      pseudo.CstrMain.error('SPU scopeR '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+      pseudo.CstrMain.error('SPU scopeW '+('0x'+(addr>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
     },
 
     scopeR: function(addr) {
@@ -567,6 +570,13 @@ pseudo.CstrAudio = (function() {
 
       // HW
       switch (addr) {
+        //case 0x1da4:
+        case 0x1db0:
+        case 0x1db2:
+        case 0x1db4:
+        case 0x1db6:
+        case 0x1d80:
+        case 0x1d82:
         case 0x1d90:
         case 0x1d92: // ???
           return pseudo.CstrMem.__hwr.uh[((addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
@@ -853,7 +863,8 @@ pseudo.CstrCdrom = (function() {
     var prevIrq = irq;
 
     if (stat) {
-      pseudo.CstrMain.error('CD prevIrq stat');
+      cdint = 1;
+      return;
     }
 
     irq = 0xff;
@@ -871,6 +882,7 @@ pseudo.CstrCdrom = (function() {
       case 2: // CdlSetLoc
       case 11: // CdlMute
       case 12: // CdlDemute
+      case 13: // CdlSetFilter
       case 14: // CdlSetMode
         res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
@@ -914,6 +926,40 @@ pseudo.CstrCdrom = (function() {
         res.p = 0; res.c = 1; res.ok = 1;
         res.data[0] = statP;
         stat = 2;
+        break;
+
+      case 16: // CdlGetLocL
+        {
+          res.p = 0; res.c = 8; res.ok = 1;
+          for (var i=0; i<8; i++) {
+            res.data[i] = transfer.data[i];
+          }
+          stat = 3;
+        }
+        break;
+
+      case 17: // CdlGetLocP
+        res.p = 0; res.c = 8; res.ok = 1;
+        res.data[0] = 1;
+        res.data[1] = 1;
+
+        res.data[2] = (Math.floor((sector.prev[0])/16) * 10 + (sector.prev[0])%16);
+        res.data[3] = (Math.floor((sector.prev[1])/16) * 10 + (sector.prev[1])%16)-2;
+        res.data[4] = sector.prev[2];
+
+        if (((res.data[3])<<24>>24) < 0) {
+            res.data[3] += 60;
+            res.data[2] -= 1;
+        }
+
+        res.data[2] = (Math.floor((res.data[2])/10) * 16 + (res.data[2])%10);
+        res.data[3] = (Math.floor((res.data[3])/10) * 16 + (res.data[3])%10);
+
+        res.data[5] = sector.prev[0];
+        res.data[6] = sector.prev[1];
+        res.data[7] = sector.prev[2];
+        
+        stat = 3;
         break;
 
       case 19: // CdlGetTN
@@ -1179,6 +1225,9 @@ pseudo.CstrCdrom = (function() {
           switch(data) {
             case 1: // CdlNop
             case 3: // CdlStart
+            case 13: // CdlSetFilter
+            case 16: // CdlGetLocL
+            case 17: // CdlGetLocP
             case 19: // CdlGetTN
             case 20: // CdlGetTD
             case 21: // CdlSeekL
@@ -1203,6 +1252,7 @@ pseudo.CstrCdrom = (function() {
               break;
 
             case 6: // CdlReadN
+            case 27: // CdlReadS
               irq = 0;
               if (reads) { reads = 0; } statP &= ~0x20;
               ctrl |= 0x80;
@@ -1339,8 +1389,11 @@ pseudo.CstrCdrom = (function() {
           return pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
 
         case 2:
-          pseudo.CstrMain.error('CD R '+('0x'+(addr>>>0).toString(16)));
-          return 0;
+          if (!readed) {
+            pseudo.CstrMain.error('CD R !readed');
+            return 0;
+          }
+          return transfer.data[transfer.p++];
 
         case 3:
           if (stat) {
@@ -1363,6 +1416,7 @@ pseudo.CstrCdrom = (function() {
 
       switch(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
         case 0x11000000:
+        case 0x11400100:
           if (!readed) {
             break;
           }
@@ -1551,7 +1605,7 @@ pseudo.CstrCop2 = (function() {
 
         case 28:
         case 29:
-          pseudo.CstrMain.error('opcodeMFC2 -> '+addr);
+          cop2d.uw[( addr)] = (((cop2d.sh[(9<<1)+0]>>7) <  0x1f) ? (cop2c.uw[(31)] |= (1<< 0),  0x1f) : (((cop2d.sh[(9<<1)+0]>>7) >  0) ? (cop2c.uw[(31)] |= (1<< 0),  0) : ((cop2d.sh[(9<<1)+0]>>7)))) | ((((cop2d.sh[(10<<1)+0]>>7) <  0x1f) ? (cop2c.uw[(31)] |= (1<< 0),  0x1f) : (((cop2d.sh[(10<<1)+0]>>7) >  0) ? (cop2c.uw[(31)] |= (1<< 0),  0) : ((cop2d.sh[(10<<1)+0]>>7))))<<5) | ((((cop2d.sh[(11<<1)+0]>>7) <  0x1f) ? (cop2c.uw[(31)] |= (1<< 0),  0x1f) : (((cop2d.sh[(11<<1)+0]>>7) >  0) ? (cop2c.uw[(31)] |= (1<< 0),  0) : ((cop2d.sh[(11<<1)+0]>>7))))<<10);
           break;
 
         case 30:
@@ -1992,6 +2046,7 @@ pseudo.CstrHardware = (function() {
             return;
 
           
+          case 0x10f6:
           case 0x2041: // DIP Switch?
             pseudo.CstrMem.__hwr.ub[(( addr)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = data;
             return;
@@ -2049,6 +2104,7 @@ pseudo.CstrHardware = (function() {
           case 0x1014:
           case 0x1070:
           case 0x1074:
+          case 0x1130:
             return pseudo.CstrMem.__hwr.uh[(( addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
         }
         pseudo.CstrMain.error('Hardware Read h '+('0x'+(addr>>>0).toString(16)));
@@ -2062,6 +2118,10 @@ pseudo.CstrHardware = (function() {
         switch(addr) {
           case 0x1040: // Controls
             return pseudo.CstrSerial.read.b(addr);
+
+          
+          case 0x10f6:
+            return pseudo.CstrMem.__hwr.ub[(( addr)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
         }
         pseudo.CstrMain.error('Hardware Read b '+('0x'+(addr>>>0).toString(16)));
       }
