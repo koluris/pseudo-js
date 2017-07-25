@@ -1546,19 +1546,18 @@ pseudo.CstrCop2 = (function() {
 
 
 
+
+
+
 pseudo.CstrCounters = (function() {
   var timer = [];
   var vbk, hsc;
 
-  // Exposed class functions/variables
   return {
     reset() {
       for (var i=0; i<3; i++) {
         timer[i] = {
-          mode  : 0,
-          count : 0,
-          target  : 0,
-          bound : 0xffff
+          __bound : 0xffff
         };
       }
 
@@ -1567,42 +1566,42 @@ pseudo.CstrCounters = (function() {
     },
 
     update() {
-      timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
+      pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += pseudo.CstrMem.__hwr.uw[((0x1104+(0<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x100 ? 64 : 64/8;
 
-      if (timer[0].count >= timer[0].bound) {
-        timer[0].count = 0;
-        if (timer[0].mode&0x50) {
+      if (pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[0].__bound) {
+        pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
+        if (pseudo.CstrMem.__hwr.uw[((0x1104+(0<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x50) {
           //pseudo.CstrBus.interruptSet(4);
           pseudo.CstrMain.error('IRQ_RTC0');
         }
       }
 
-      if (!(timer[1].mode&0x100)) {
-        timer[1].count += 64;
+      if (!(pseudo.CstrMem.__hwr.uw[((0x1104+(1<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x100)) {
+        pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += 64;
 
-        if (timer[1].count >= timer[1].bound) {
-          timer[1].count = 0;
-          if (timer[1].mode&0x50) {
+        if (pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[1].__bound) {
+          pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
+          if (pseudo.CstrMem.__hwr.uw[((0x1104+(1<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x50) {
             //pseudo.CstrBus.interruptSet(5);
             pseudo.CstrMain.error('IRQ_RTC1');
           }
         }
       }
       else if ((hsc += 64) >= (33868800/15734)) { hsc = 0;
-        if (++timer[1].count >= timer[1].bound) {
-          timer[1].count = 0;
-          if (timer[1].mode&0x50) {
+        if (++pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[1].__bound) {
+          pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
+          if (pseudo.CstrMem.__hwr.uw[((0x1104+(1<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x50) {
             pseudo.CstrBus.interruptSet(5);
           }
         }
       }
 
-      if (!(timer[2].mode&1)) {
-        timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
+      if (!(pseudo.CstrMem.__hwr.uw[((0x1104+(2<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&1)) {
+        pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += pseudo.CstrMem.__hwr.uw[((0x1104+(2<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x200 ? 64/8 : 64;
 
-        if (timer[2].count >= timer[2].bound) {
-          timer[2].count = 0;
-          if (timer[2].mode&0x50) {
+        if (pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[2].__bound) {
+          pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
+          if (pseudo.CstrMem.__hwr.uw[((0x1104+(2<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x50) {
             pseudo.CstrBus.interruptSet(6);
           }
         }
@@ -1616,21 +1615,21 @@ pseudo.CstrCounters = (function() {
     },
 
     scopeW(addr, data) {
-      var p = (addr>>>4)&3; // ((addr&0xf)>>>2)
+      var p = (addr>>>4)&3;
 
       switch(addr&0xf) {
         case 0:
-          timer[p].count = data&0xffff;
+          pseudo.CstrMem.__hwr.uh[((0x1100+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = data&0xffff;
           return;
 
         case 4:
-          timer[p].mode  = data;
-          timer[p].bound = timer[p].mode&8 ? timer[p].target : 0xffff;
+           pseudo.CstrMem.__hwr.uw[((0x1104+(p<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
+          timer[p].__bound = pseudo.CstrMem.__hwr.uw[((0x1104+(p<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&8 ? pseudo.CstrMem.__hwr.uh[((0x1108+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] : 0xffff;
           return;
 
         case 8:
-          timer[p].target  = data&0xffff;
-          timer[p].bound = timer[p].mode&8 ? timer[p].target : 0xffff;
+            pseudo.CstrMem.__hwr.uh[((0x1108+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = data&0xffff;
+          timer[p].__bound = pseudo.CstrMem.__hwr.uw[((0x1104+(p<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&8 ? pseudo.CstrMem.__hwr.uh[((0x1108+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] : 0xffff;
           return;
       }
 
@@ -1642,13 +1641,13 @@ pseudo.CstrCounters = (function() {
 
       switch(addr&0xf) {
         case 0:
-          return timer[p].count;
+          return pseudo.CstrMem.__hwr.uh[((0x1100+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
 
         case 4:
-          return timer[p].mode;
+          return pseudo.CstrMem.__hwr.uw[((0x1104+(p<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2];
 
         case 8:
-          return timer[p].target;
+          return pseudo.CstrMem.__hwr.uh[((0x1108+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
       }
 
       pseudo.CstrMain.error('RTC Read '+('0x'+(addr&0xf>>>0).toString(16)));
@@ -1657,6 +1656,128 @@ pseudo.CstrCounters = (function() {
   };
 })();
 
+
+
+// #define RTC_COUNT  0
+// #define RTC_MODE   4
+// #define RTC_TARGET 8
+
+// #define (addr>>>4)&3//   (addr>>>4)&3
+
+
+// #define 0xffff//   0xffff
+
+
+// pseudo.CstrCounters = (function() {
+//   var timer = [];
+//   var vbk, hsc;
+
+//   // Exposed class functions/variables
+//   return {
+//     reset() {
+//       for (var i=0; i<3; i++) {
+//         timer[i] = {
+//           mode  : 0,
+//           count : 0,
+//           target  : 0,
+//           bound : 0xffff
+//         };
+//       }
+
+//       vbk = 0;
+//       hsc = 0;
+//     },
+
+//     update() {
+//       timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
+
+//       if (timer[0].count >= timer[0].bound) {
+//         timer[0].count = 0;
+//         if (timer[0].mode&0x50) {
+//           //pseudo.CstrBus.interruptSet(4);
+//           pseudo.CstrMain.error('IRQ_RTC0');
+//         }
+//       }
+
+//       if (!(timer[1].mode&0x100)) {
+//         timer[1].count += 64;
+
+//         if (timer[1].count >= timer[1].bound) {
+//           timer[1].count = 0;
+//           if (timer[1].mode&0x50) {
+//             //pseudo.CstrBus.interruptSet(5);
+//             pseudo.CstrMain.error('IRQ_RTC1');
+//           }
+//         }
+//       }
+//       else if ((hsc += 64) >= (33868800/15734)) { hsc = 0;
+//         if (++timer[1].count >= timer[1].bound) {
+//           timer[1].count = 0;
+//           if (timer[1].mode&0x50) {
+//             pseudo.CstrBus.interruptSet(5);
+//           }
+//         }
+//       }
+
+//       if (!(timer[2].mode&1)) {
+//         timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
+
+//         if (timer[2].count >= timer[2].bound) {
+//           timer[2].count = 0;
+//           if (timer[2].mode&0x50) {
+//             pseudo.CstrBus.interruptSet(6);
+//           }
+//         }
+//       }
+
+//       if ((vbk += 64) >= (33868800/60)) { vbk = 0;
+//         pseudo.CstrBus.interruptSet(0);
+//          pseudo.CstrGraphics.redraw();
+//         pseudo.CstrMips.setbp();
+//       }
+//     },
+
+//     scopeW(addr, data) {
+//       var p = (addr>>>4)&3; // ((addr&0xf)>>>2)
+
+//       switch(addr&0xf) {
+//         case RTC_COUNT:
+//           timer[p].count = data&0xffff;
+//           return;
+
+//         case RTC_MODE:
+//           timer[p].mode  = data;
+//           timer[p].bound = timer[p].mode&8 ? timer[p].target : 0xffff;
+//           return;
+
+//         case RTC_TARGET:
+//           timer[p].target  = data&0xffff;
+//           timer[p].bound = timer[p].mode&8 ? timer[p].target : 0xffff;
+//           return;
+//       }
+
+//       pseudo.CstrMain.error('RTC Write '+('0x'+(addr&0xf>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
+//     },
+
+//     scopeR(addr) {
+//       var p = (addr>>>4)&3;
+
+//       switch(addr&0xf) {
+//         case RTC_COUNT:
+//           return timer[p].count;
+
+//         case RTC_MODE:
+//           return timer[p].mode;
+
+//         case RTC_TARGET:
+//           return timer[p].target;
+//       }
+
+//       pseudo.CstrMain.error('RTC Read '+('0x'+(addr&0xf>>>0).toString(16)));
+//       return 0;
+//     }
+//   };
+// })();
 
 // pseudo.CstrCounter = (function() {
 //   return {
