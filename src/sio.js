@@ -79,6 +79,16 @@ pseudo.CstrSerial = (function() {
                       bfr[1] = 0x41; //parp
                       break;
 
+                    case 0x43:
+                      bfr[1] = 0x43; //parp
+                      break;
+
+                    case 0x45:
+                      bfr[1] = 0xf3; //parp
+                      bfr[3] = 0x00;
+                      bfr[4] = 0x00;
+                      break;
+
                     default:
                       console.dir('SIO write b data '+hex(data));
                       break;
@@ -134,6 +144,9 @@ pseudo.CstrSerial = (function() {
 
           case 0x104a:
             return control;
+
+          case 0x104e:
+            return baud;
         }
         psx.error('SIO read h '+hex(addr));
       },

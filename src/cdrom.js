@@ -775,6 +775,8 @@ pseudo.CstrCdrom = (function() {
 
   var res = {
     data: new UintBcap(8),
+    tn: new UintBcap(6),
+    td: new UintBcap(4),
     p: undefined,
     c: undefined,
     ok: undefined
@@ -798,6 +800,8 @@ pseudo.CstrCdrom = (function() {
 
   function resetRes(rrs) {
     rrs.data.fill(0);
+    rrs.tn.fill(0);
+    rrs.td.fill(0);
     rrs.p = 0;
     rrs.c = 0;
     rrs.ok = 0;
@@ -846,12 +850,21 @@ pseudo.CstrCdrom = (function() {
         break;
 
       case 2: // CdlSetLoc
+      case 11: // CdlMute
       case 12: // CdlDemute
       case 14: // CdlSetMode
         setResultSize(1);
         statP |= 0x02;
         res.data[0] = statP;
         stat = CD_STAT_ACKNOWLEDGE;
+        break;
+
+      case 3: // CdlStart
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = CD_STAT_ACKNOWLEDGE;
+        statP |= 0x80;
         break;
 
       case 9: // CdlPause
@@ -884,6 +897,32 @@ pseudo.CstrCdrom = (function() {
         stat = CD_STAT_COMPLETE;
         break;
 
+      case 19: // CdlGetTN
+        setResultSize(3);
+        statP |= 0x02;
+        res.data[0] = statP;
+        //psx.fetchTN(res.tn);
+        res.tn[0] = 1;
+        res.tn[1] = 1;
+        stat = CD_STAT_ACKNOWLEDGE;
+        res.data[1] = INT2BCD(res.tn[0]);
+        res.data[2] = INT2BCD(res.tn[1]);
+        break;
+
+      case 20: // CdlGetTD
+        setResultSize(4);
+        statP |= 0x02;
+        //iso.fetchTD(res.td);
+        res.td[0] = 0;
+        res.td[1] = 2;
+        res.td[2] = 0;
+        stat = CD_STAT_ACKNOWLEDGE;
+        res.data[0] = statP;
+        res.data[1] = INT2BCD(res.td[2]);
+        res.data[2] = INT2BCD(res.td[1]);
+        res.data[3] = INT2BCD(res.td[0]);
+        break;
+
       case 21: // CdlSeekL
         setResultSize(1);
         statP |= 0x02;
@@ -902,6 +941,23 @@ pseudo.CstrCdrom = (function() {
         stat = CD_STAT_COMPLETE;
         break;
 
+      case 22: // CdlSeekP
+        setResultSize(1);
+        statP |= 0x2;
+        res.data[0] = statP;
+        statP |= 0x40;
+        stat = CD_STAT_ACKNOWLEDGE;
+        addIrqQueue(22 + 0x20);
+        break;
+
+      case 22 + 0x20: // CdlSeekP
+        setResultSize(1);
+        statP |= 0x2;
+        statP &= ~0x40;
+        res.data[0] = statP;
+        stat = CD_STAT_COMPLETE;
+        break;
+
       case 25: // CdlTest
         stat = CD_STAT_ACKNOWLEDGE;
 
@@ -913,6 +969,10 @@ pseudo.CstrCdrom = (function() {
               var test20 = [0x98, 0x06, 0x10, 0xc3];
               res.data.set(test20);
             }
+            break;
+
+          case 0x04:
+          case 0x05:
             break;
 
           default:
@@ -944,6 +1004,13 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         stat = CD_STAT_ACKNOWLEDGE;
         addIrqQueue(30 + 0x20);
+        break;
+
+      case 30 + 0x20: // CdlReadToc
+        setResultSize(1);
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = CD_STAT_COMPLETE;
         break;
 
       case READ_ACK:
@@ -1092,7 +1159,11 @@ pseudo.CstrCdrom = (function() {
       
           switch(data) {
             case 1: // CdlNop
+            case 3: // CdlStart
+            case 19: // CdlGetTN
+            case 20: // CdlGetTD
             case 21: // CdlSeekL
+            case 22: // CdlSeekP
             case 25: // CdlTest
             case 26: // CdlId
             case 30: // CdlReadToc
@@ -1123,6 +1194,11 @@ pseudo.CstrCdrom = (function() {
             case 9: // CdlPause
             case 10: // CdlInit
               stopRead();
+              defaultCtrlAndStat();
+              break;
+
+            case 11: // CdlMute
+              muted = 1;
               defaultCtrlAndStat();
               break;
 

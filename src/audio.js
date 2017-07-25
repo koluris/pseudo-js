@@ -401,6 +401,10 @@ pseudo.CstrAudio = (function() {
 
       // HW
       switch (addr) {
+        case 0x1d90:
+        case 0x1d92: // ???
+          return spuAcc(addr);
+
         case 0x1da6: // Transfer Address
           return spuAddr>>>3;
 

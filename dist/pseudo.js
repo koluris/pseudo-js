@@ -567,6 +567,10 @@ pseudo.CstrAudio = (function() {
 
       // HW
       switch (addr) {
+        case 0x1d90:
+        case 0x1d92: // ???
+          return pseudo.CstrMem.__hwr.uh[((addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
+
         case 0x1da6: // Transfer Address
           return spuAddr>>>3;
 
@@ -689,6 +693,10 @@ pseudo.CstrBus = (function() {
         pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
 
         switch(chan) {
+          case 0: // MDEC in
+          case 1: // MDEC out
+            break;
+
           case 2: pseudo.CstrGraphics   .executeDMA(addr); break; // Graphics
           case 3: pseudo.CstrCdrom.executeDMA(addr); break; // CD-ROM
           case 4: pseudo.CstrAudio.executeDMA(addr); break; // Audio
@@ -786,6 +794,8 @@ pseudo.CstrCdrom = (function() {
 
   var res = {
     data: new Uint8Array(8),
+    tn: new Uint8Array(6),
+    td: new Uint8Array(4),
     p: undefined,
     c: undefined,
     ok: undefined
@@ -809,6 +819,8 @@ pseudo.CstrCdrom = (function() {
 
   function resetRes(rrs) {
     rrs.data.fill(0);
+    rrs.tn.fill(0);
+    rrs.td.fill(0);
     rrs.p = 0;
     rrs.c = 0;
     rrs.ok = 0;
@@ -857,12 +869,21 @@ pseudo.CstrCdrom = (function() {
         break;
 
       case 2: // CdlSetLoc
+      case 11: // CdlMute
       case 12: // CdlDemute
       case 14: // CdlSetMode
         res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
         res.data[0] = statP;
         stat = 3;
+        break;
+
+      case 3: // CdlStart
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 3;
+        statP |= 0x80;
         break;
 
       case 9: // CdlPause
@@ -895,6 +916,32 @@ pseudo.CstrCdrom = (function() {
         stat = 2;
         break;
 
+      case 19: // CdlGetTN
+        res.p = 0; res.c = 3; res.ok = 1;
+        statP |= 0x02;
+        res.data[0] = statP;
+        //pseudo.CstrMain.fetchTN(res.tn);
+        res.tn[0] = 1;
+        res.tn[1] = 1;
+        stat = 3;
+        res.data[1] = (Math.floor((res.tn[0])/10) * 16 + (res.tn[0])%10);
+        res.data[2] = (Math.floor((res.tn[1])/10) * 16 + (res.tn[1])%10);
+        break;
+
+      case 20: // CdlGetTD
+        res.p = 0; res.c = 4; res.ok = 1;
+        statP |= 0x02;
+        //iso.fetchTD(res.td);
+        res.td[0] = 0;
+        res.td[1] = 2;
+        res.td[2] = 0;
+        stat = 3;
+        res.data[0] = statP;
+        res.data[1] = (Math.floor((res.td[2])/10) * 16 + (res.td[2])%10);
+        res.data[2] = (Math.floor((res.td[1])/10) * 16 + (res.td[1])%10);
+        res.data[3] = (Math.floor((res.td[0])/10) * 16 + (res.td[0])%10);
+        break;
+
       case 21: // CdlSeekL
         res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
@@ -913,6 +960,23 @@ pseudo.CstrCdrom = (function() {
         stat = 2;
         break;
 
+      case 22: // CdlSeekP
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x2;
+        res.data[0] = statP;
+        statP |= 0x40;
+        stat = 3;
+        addIrqQueue(22 + 0x20);
+        break;
+
+      case 22 + 0x20: // CdlSeekP
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x2;
+        statP &= ~0x40;
+        res.data[0] = statP;
+        stat = 2;
+        break;
+
       case 25: // CdlTest
         stat = 3;
 
@@ -924,6 +988,10 @@ pseudo.CstrCdrom = (function() {
               var test20 = [0x98, 0x06, 0x10, 0xc3];
               res.data.set(test20);
             }
+            break;
+
+          case 0x04:
+          case 0x05:
             break;
 
           default:
@@ -955,6 +1023,13 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         stat = 3;
         addIrqQueue(30 + 0x20);
+        break;
+
+      case 30 + 0x20: // CdlReadToc
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x02;
+        res.data[0] = statP;
+        stat = 2;
         break;
 
       case 250:
@@ -1103,7 +1178,11 @@ pseudo.CstrCdrom = (function() {
       
           switch(data) {
             case 1: // CdlNop
+            case 3: // CdlStart
+            case 19: // CdlGetTN
+            case 20: // CdlGetTD
             case 21: // CdlSeekL
+            case 22: // CdlSeekP
             case 25: // CdlTest
             case 26: // CdlId
             case 30: // CdlReadToc
@@ -1134,6 +1213,11 @@ pseudo.CstrCdrom = (function() {
             case 9: // CdlPause
             case 10: // CdlInit
               if (reads) { reads = 0; } statP &= ~0x20;
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
+              break;
+
+            case 11: // CdlMute
+              muted = 1;
               ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
 
@@ -1833,6 +1917,11 @@ pseudo.CstrHardware = (function() {
           return;
         }
 
+        if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
+          pseudo.CstrMem.__hwr.uw[(( addr)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
+          return;
+        }
+
         switch(addr) {
           case 0x1070:
             pseudo.CstrMem.__hwr.uw[((0x1070)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] &= data&pseudo.CstrMem.__hwr.uw[((0x1074)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2];
@@ -1925,6 +2014,10 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrGraphics.scopeR(addr);
         }
 
+        if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
+          return pseudo.CstrMem.__hwr.uw[(( addr)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2];
+        }
+
         switch(addr) {
           
           case 0x1014:
@@ -1939,7 +2032,7 @@ pseudo.CstrHardware = (function() {
       },
 
       h(addr) {
-        if (addr >= 0x1044 && addr <= 0x104a) { // Controls
+        if (addr >= 0x1044 && addr <= 0x104e) { // Controls
           return pseudo.CstrSerial.read.h(addr);
         }
 
@@ -3410,6 +3503,16 @@ pseudo.CstrSerial = (function() {
                       bfr[1] = 0x41; //parp
                       break;
 
+                    case 0x43:
+                      bfr[1] = 0x43; //parp
+                      break;
+
+                    case 0x45:
+                      bfr[1] = 0xf3; //parp
+                      bfr[3] = 0x00;
+                      bfr[4] = 0x00;
+                      break;
+
                     default:
                       console.dir('SIO write b data '+('0x'+(data>>>0).toString(16)));
                       break;
@@ -3465,6 +3568,9 @@ pseudo.CstrSerial = (function() {
 
           case 0x104a:
             return control;
+
+          case 0x104e:
+            return baud;
         }
         pseudo.CstrMain.error('SIO read h '+('0x'+(addr>>>0).toString(16)));
       },

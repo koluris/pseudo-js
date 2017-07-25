@@ -24,6 +24,11 @@ pseudo.CstrHardware = (function() {
           return;
         }
 
+        if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
+          directMemW(hwr.uw, addr) = data;
+          return;
+        }
+
         switch(addr) {
           case 0x1070:
             data32 &= data&mask32;
@@ -116,6 +121,10 @@ pseudo.CstrHardware = (function() {
           return vs.scopeR(addr);
         }
 
+        if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
+          return directMemW(hwr.uw, addr);
+        }
+
         switch(addr) {
           /* unused */
           case 0x1014:
@@ -130,7 +139,7 @@ pseudo.CstrHardware = (function() {
       },
 
       h(addr) {
-        if (addr >= 0x1044 && addr <= 0x104a) { // Controls
+        if (addr >= 0x1044 && addr <= 0x104e) { // Controls
           return sio.read.h(addr);
         }
 

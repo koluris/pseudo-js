@@ -70,6 +70,10 @@ pseudo.CstrBus = (function() {
         chcr = data;
 
         switch(chan) {
+          case 0: // MDEC in
+          case 1: // MDEC out
+            break;
+
           case 2: vs   .executeDMA(addr); break; // Graphics
           case 3: cdrom.executeDMA(addr); break; // CD-ROM
           case 4: audio.executeDMA(addr); break; // Audio
