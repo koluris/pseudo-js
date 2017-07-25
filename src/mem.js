@@ -64,6 +64,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             directMemH(ram.uh, addr) = data;
             return;
 
@@ -90,6 +91,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             directMemB(ram.ub, addr) = data;
             return;
 
@@ -119,6 +121,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             return directMemW(ram.uw, addr);
 
           case 0xbfc: // BIOS
@@ -145,6 +148,9 @@ pseudo.CstrMem = (function() {
           case 0x802: // Mirror
           case 0x807: // Mirror
             return directMemH(ram.uh, addr);
+
+          case 0xbfc: // BIOS
+            return directMemH(rom.uh, addr);
 
           case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;

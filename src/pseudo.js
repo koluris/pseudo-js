@@ -58,6 +58,14 @@ pseudo.CstrMain = (function() {
     }
   }
 
+  // function isoReader(file, fn) {
+  //   var reader = new FileReader();
+  //   reader.onload = function(e) { // Callback
+  //     fn(e.dest.result);
+  //   };
+  //   reader.readAsBuffer(file);
+  // }
+
   function reset() {
     // Prohibit all user actions
     if (unusable) {

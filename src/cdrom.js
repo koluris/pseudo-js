@@ -978,7 +978,8 @@ pseudo.CstrCdrom = (function() {
     }
 
     if (stat) {
-      psx.error('interruptRead stat');
+      CDREAD_INT();
+      return;
     }
     occupied = 1;
     setResultSize(1);
@@ -986,7 +987,32 @@ pseudo.CstrCdrom = (function() {
     statP &= ~0x40;
     res.data[0] = statP;
 
+    cpu.pause();
     trackRead();
+
+    // var buf = psx.fetchBuffer();
+    // transfer.data.set(buf);
+    // stat = CD_STAT_DATA_READY;
+
+    // sector.data[2]++;
+    // if (sector.data[2] === 75) {
+    //   sector.data[2] = 0;
+      
+    //   sector.data[1]++;
+    //   if (sector.data[1] === 60) {
+    //     sector.data[1] = 0;
+    //     sector.data[0]++;
+    //   }
+    // }
+    // readed = 0;
+
+    // if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
+    //   addIrqQueue(9); // CdlPause
+    // }
+    // else {
+    //   CDREAD_INT();
+    // }
+    // bus.interruptSet(IRQ_CD);
   }
 
   return {
@@ -995,11 +1021,11 @@ pseudo.CstrCdrom = (function() {
       stat = CD_STAT_DATA_READY;
 
       sector.data[2]++;
-      if (sector.data[2] == 75) {
+      if (sector.data[2] === 75) {
         sector.data[2] = 0;
         
         sector.data[1]++;
-        if (sector.data[1] == 60) {
+        if (sector.data[1] === 60) {
           sector.data[1] = 0;
           sector.data[0]++;
         }
@@ -1013,6 +1039,7 @@ pseudo.CstrCdrom = (function() {
         CDREAD_INT();
       }
       bus.interruptSet(IRQ_CD);
+      cpu.resume();
     },
 
     reset() {

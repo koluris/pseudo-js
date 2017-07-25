@@ -401,6 +401,7 @@ pseudo.CstrMips = (function() {
 
       opcodeCount = 0;
       pc = 0xbfc00000;
+      paused = false;
       setptr(pc);
 
       // Clear console out
@@ -419,11 +420,11 @@ pseudo.CstrMips = (function() {
 
     run() {
       bp = false;
+      requestAF = requestAnimationFrame(cpu.run);
 
       while (!bp) { // And u don`t stop!
         step(false);
       }
-      requestAF = requestAnimationFrame(cpu.run);
     },
 
     exeHeader(hdr) {
@@ -451,6 +452,16 @@ pseudo.CstrMips = (function() {
     readbase(addr) {
       return r[addr];
     },
+
+    pause() {
+      cancelAnimationFrame(requestAF);
+      requestAF = undefined;
+      bp = true;
+    },
+
+    resume() {
+      cpu.run();
+    }
   };
 })();
 

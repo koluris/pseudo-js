@@ -989,7 +989,8 @@ pseudo.CstrCdrom = (function() {
     }
 
     if (stat) {
-      pseudo.CstrMain.error('interruptRead stat');
+      cdreadint = 1;
+      return;
     }
     occupied = 1;
     res.p = 0; res.c = 1; res.ok = 1;
@@ -997,7 +998,32 @@ pseudo.CstrCdrom = (function() {
     statP &= ~0x40;
     res.data[0] = statP;
 
+    pseudo.CstrMips.pause();
     trackRead();
+
+    // var buf = pseudo.CstrMain.fetchBuffer();
+    // transfer.data.set(buf);
+    // stat = 1;
+
+    // sector.data[2]++;
+    // if (sector.data[2] === 75) {
+    //   sector.data[2] = 0;
+      
+    //   sector.data[1]++;
+    //   if (sector.data[1] === 60) {
+    //     sector.data[1] = 0;
+    //     sector.data[0]++;
+    //   }
+    // }
+    // readed = 0;
+
+    // if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
+    //   addIrqQueue(9); // CdlPause
+    // }
+    // else {
+    //   cdreadint = 1;
+    // }
+    // pseudo.CstrBus.interruptSet(2);
   }
 
   return {
@@ -1006,11 +1032,11 @@ pseudo.CstrCdrom = (function() {
       stat = 1;
 
       sector.data[2]++;
-      if (sector.data[2] == 75) {
+      if (sector.data[2] === 75) {
         sector.data[2] = 0;
         
         sector.data[1]++;
-        if (sector.data[1] == 60) {
+        if (sector.data[1] === 60) {
           sector.data[1] = 0;
           sector.data[0]++;
         }
@@ -1024,6 +1050,7 @@ pseudo.CstrCdrom = (function() {
         cdreadint = 1;
       }
       pseudo.CstrBus.interruptSet(2);
+      pseudo.CstrMips.resume();
     },
 
     reset() {
@@ -1895,6 +1922,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1] = data;
             return;
 
@@ -1921,6 +1949,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             pseudo.CstrMem.__ram.ub[(( addr)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = data;
             return;
 
@@ -1950,6 +1979,7 @@ pseudo.CstrMem = (function() {
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
+          case 0xa01: // Mirror
             return pseudo.CstrMem.__ram.uw[(( addr)&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
 
           case 0xbfc: // BIOS
@@ -1976,6 +2006,9 @@ pseudo.CstrMem = (function() {
           case 0x802: // Mirror
           case 0x807: // Mirror
             return pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1];
+
+          case 0xbfc: // BIOS
+            return pseudo.CstrMem.__rom.uh[(( addr)&(pseudo.CstrMem.__rom.uh.byteLength-1))>>>1];
 
           case 0x1f8: // Scratchpad + Hardware
             addr&=0xffff;
@@ -2441,6 +2474,7 @@ pseudo.CstrMips = (function() {
 
       opcodeCount = 0;
       r[32] = 0xbfc00000;
+      paused = false;
       ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
 
       // Clear console out
@@ -2459,11 +2493,11 @@ pseudo.CstrMips = (function() {
 
     run() {
       bp = false;
+      requestAF = requestAnimationFrame(pseudo.CstrMips.run);
 
       while (!bp) { // And u don`t stop!
         step(false);
       }
-      requestAF = requestAnimationFrame(pseudo.CstrMips.run);
     },
 
     exeHeader(hdr) {
@@ -2491,6 +2525,16 @@ pseudo.CstrMips = (function() {
     readbase(addr) {
       return r[addr];
     },
+
+    pause() {
+      cancelAnimationFrame(requestAF);
+      requestAF = undefined;
+      bp = true;
+    },
+
+    resume() {
+      pseudo.CstrMips.run();
+    }
   };
 })();
 
@@ -2559,6 +2603,14 @@ pseudo.CstrMain = (function() {
       reader.readAsArrayBuffer(file.slice(start, end));
     }
   }
+
+  // function isoReader(file, fn) {
+  //   var reader = new FileReader();
+  //   reader.onload = function(e) { // Callback
+  //     fn(e.target.result);
+  //   };
+  //   reader.readAsArrayBuffer(file);
+  // }
 
   function reset() {
     // Prohibit all user actions
