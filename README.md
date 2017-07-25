@@ -3,7 +3,7 @@
 ## Overview
 **PSeudo** emulator is being developed using **.h headers** in addition to **.js files**. It helps me keep the workspace clean and simple, while at the same time code gets inlined for further optimization. The codebase is compatible with **ES6 JavaScript** onwards. Also, please use **Chrome** browser for best results (this is due to V8 optimization).
 
-![Demos](https://raw.githubusercontent.com/dkoliris/pseudo/master/res/demos.jpg)
+![Commercial](https://raw.githubusercontent.com/dkoliris/pseudo/master/res/commercial.jpg)
 
 Check out the up-to-date [Live version of PSeudo](http://vuemaps.com/pseudo)
 
@@ -28,6 +28,8 @@ Here's a list with the overall progress of the emulator, broken down in distinct
 * `10% -> GTE`
 
 **PSeudo** does not run commercial games at this point. I want to be able to run all demos/cractros available first, then proceed with the CD-ROM and MDEC implementation. Also, for quite some time I will keep working on it with the provided CPU Interpreter. An attempt for speedup will be made later on with a **JavaScript Tracer**.
+
+![Demos](https://raw.githubusercontent.com/dkoliris/pseudo/master/res/demos.jpg)
 
 ## How-to
 You need to run this project from a localhost server, like **Apache**. In order to build **PSeudo**, just run the `build` command on the terminal. You must also include a valid **BIOS** file like "SCPH1001" on the `bios` folder in order to test the emulator. I will not provide information on how and where to find that.
