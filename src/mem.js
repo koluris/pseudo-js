@@ -27,6 +27,7 @@ pseudo.CstrMem = (function() {
           case 0x800: // Mirror
           case 0x801: // Mirror
           case 0x802: // Mirror
+          case 0x803: // Mirror
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
@@ -114,6 +115,7 @@ pseudo.CstrMem = (function() {
           case 0x800: // Mirror
           case 0x801: // Mirror
           case 0x802: // Mirror
+          case 0x803: // Mirror
           case 0x807: // Mirror
 
           case 0xa00: // Mirror

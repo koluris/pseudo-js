@@ -763,7 +763,7 @@ pseudo.CstrCdrom = (function() {
 
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, statP, re2;
-  var occupied, readed, reads, seeked;
+  var occupied, readed, reads, seeked, muted;
   var irq, cdint, cdreadint;
   var mode;
 
@@ -786,7 +786,7 @@ pseudo.CstrCdrom = (function() {
   };
 
   var transfer = {
-    data: new UintBcap(CDFRAMESIZERAW),
+    data: new UintBcap(UDF_FRAMESIZERAW),
     p: 0
   };
 
@@ -846,6 +846,7 @@ pseudo.CstrCdrom = (function() {
         break;
 
       case 2: // CdlSetLoc
+      case 12: // CdlDemute
       case 14: // CdlSetMode
         setResultSize(1);
         statP |= 0x02;
@@ -954,7 +955,8 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
 
         if (!seeked) {
-          psx.error('READ_ACK !seeked');
+          seeked = 1;
+          statP |= 0x40;
         }
         statP |= 0x20;
         stat = CD_STAT_ACKNOWLEDGE;
@@ -985,26 +987,11 @@ pseudo.CstrCdrom = (function() {
     res.data[0] = statP;
 
     trackRead();
-    //cpu.setbp();
   }
 
   return {
     interruptRead2(buf) {
-      //var buf = psx.fetchBuffer();
-      // console.log(buf);
-      // psx.error(0);
-
-      // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
-      //   transfer.data.fill(0);
-      //   stat = CD_STAT_DISK_ERROR;
-      //   res.data[0] |= 0x01;
-      //   CDREAD_INT();
-      //   return;
-      // }
-
-      for (var i=0; i<DATASIZE; i++) {
-        transfer.data[i] = buf[i];
-      }
+      transfer.data.set(buf);
       stat = CD_STAT_DATA_READY;
 
       sector.data[2]++;
@@ -1026,7 +1013,6 @@ pseudo.CstrCdrom = (function() {
         CDREAD_INT();
       }
       bus.interruptSet(IRQ_CD);
-      //cpu.run();
     },
 
     reset() {
@@ -1037,23 +1023,23 @@ pseudo.CstrCdrom = (function() {
       transfer.p = 0;
 
       ctrl = stat = statP = re2 = 0;
-      occupied = readed = reads = seeked = 0;
+      occupied = readed = reads = seeked = muted = 0;
       irq = cdint = cdreadint = 0;
       mode = 0;
     },
 
     update() {
       if (cdint) {
-        if (cdint++ === 16) {
-          interrupt();
+        if (cdint++ >= 16) {
           cdint = 0;
+          interrupt();
         }
       }
 
       if (cdreadint) {
-        if (cdreadint++ === 1024) {
-          interruptRead();
+        if (cdreadint++ >= 1024) {
           cdreadint = 0;
+          interruptRead();
         }
       }
     },
@@ -1074,7 +1060,7 @@ pseudo.CstrCdrom = (function() {
           occupied = 0;
   
           if (ctrl&0x01) {
-            psx.error('CD W 0x1801 case 1');
+            return;
           }
       
           switch(data) {
@@ -1113,6 +1099,11 @@ pseudo.CstrCdrom = (function() {
               defaultCtrlAndStat();
               break;
 
+            case 12: // CdlDemute
+              muted = 0;
+              defaultCtrlAndStat();
+              break;
+
             case 14: // CdlSetMode
               mode = param.data[0];
               defaultCtrlAndStat();
@@ -1122,11 +1113,24 @@ pseudo.CstrCdrom = (function() {
               psx.error('CD W 0x1801 data -> '+data);
               break;
           }
+
+          if (stat !== CD_STAT_NO_INTR) {
+            bus.interruptSet(IRQ_CD);
+          }
           break;
 
         case 2:
           if (ctrl&0x01) {
             switch(data) {
+              case 7:
+                param.p = 0;
+                param.c = 0;
+                res.ok  = 1;
+                ctrl &= ~0x03;
+                break;
+
+              case 0:
+              case 1:
               case 24:
               case 31:
                 re2 = data;
@@ -1169,6 +1173,9 @@ pseudo.CstrCdrom = (function() {
             switch(mode&0x30) {
               case 0x00:
                 transfer.p += 12;
+                break;
+
+              case 0x20:
                 break;
 
               default:

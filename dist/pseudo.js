@@ -774,7 +774,7 @@ pseudo.CstrBus = (function() {
 
 pseudo.CstrCdrom = (function() {
   var ctrl, stat, statP, re2;
-  var occupied, readed, reads, seeked;
+  var occupied, readed, reads, seeked, muted;
   var irq, cdint, cdreadint;
   var mode;
 
@@ -857,6 +857,7 @@ pseudo.CstrCdrom = (function() {
         break;
 
       case 2: // CdlSetLoc
+      case 12: // CdlDemute
       case 14: // CdlSetMode
         res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
@@ -965,7 +966,8 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
 
         if (!seeked) {
-          pseudo.CstrMain.error('READ_ACK !seeked');
+          seeked = 1;
+          statP |= 0x40;
         }
         statP |= 0x20;
         stat = 3;
@@ -996,26 +998,11 @@ pseudo.CstrCdrom = (function() {
     res.data[0] = statP;
 
     trackRead();
-    //pseudo.CstrMips.setbp();
   }
 
   return {
     interruptRead2(buf) {
-      //var buf = pseudo.CstrMain.fetchBuffer();
-      // console.log(buf);
-      // pseudo.CstrMain.error(0);
-
-      // if (buf[0] === 0 && buf[1] === 0 && buf[2] === 0 & buf[3] === 0 && buf[4] === 0 && buf[5] === 0 && buf[6] === 0 && buf[7] === 0) {
-      //   transfer.data.fill(0);
-      //   stat = 5;
-      //   res.data[0] |= 0x01;
-      //   cdreadint = 1;
-      //   return;
-      // }
-
-      for (var i=0; i<(2352 - 12); i++) {
-        transfer.data[i] = buf[i];
-      }
+      transfer.data.set(buf);
       stat = 1;
 
       sector.data[2]++;
@@ -1037,7 +1024,6 @@ pseudo.CstrCdrom = (function() {
         cdreadint = 1;
       }
       pseudo.CstrBus.interruptSet(2);
-      //pseudo.CstrMips.run();
     },
 
     reset() {
@@ -1048,23 +1034,23 @@ pseudo.CstrCdrom = (function() {
       transfer.p = 0;
 
       ctrl = stat = statP = re2 = 0;
-      occupied = readed = reads = seeked = 0;
+      occupied = readed = reads = seeked = muted = 0;
       irq = cdint = cdreadint = 0;
       mode = 0;
     },
 
     update() {
       if (cdint) {
-        if (cdint++ === 16) {
-          interrupt();
+        if (cdint++ >= 16) {
           cdint = 0;
+          interrupt();
         }
       }
 
       if (cdreadint) {
-        if (cdreadint++ === 1024) {
-          interruptRead();
+        if (cdreadint++ >= 1024) {
           cdreadint = 0;
+          interruptRead();
         }
       }
     },
@@ -1085,7 +1071,7 @@ pseudo.CstrCdrom = (function() {
           occupied = 0;
   
           if (ctrl&0x01) {
-            pseudo.CstrMain.error('CD W 0x1801 case 1');
+            return;
           }
       
           switch(data) {
@@ -1124,6 +1110,11 @@ pseudo.CstrCdrom = (function() {
               ctrl |= 0x80; stat = 0; addIrqQueue(data);
               break;
 
+            case 12: // CdlDemute
+              muted = 0;
+              ctrl |= 0x80; stat = 0; addIrqQueue(data);
+              break;
+
             case 14: // CdlSetMode
               mode = param.data[0];
               ctrl |= 0x80; stat = 0; addIrqQueue(data);
@@ -1133,11 +1124,24 @@ pseudo.CstrCdrom = (function() {
               pseudo.CstrMain.error('CD W 0x1801 data -> '+data);
               break;
           }
+
+          if (stat !== 0) {
+            pseudo.CstrBus.interruptSet(2);
+          }
           break;
 
         case 2:
           if (ctrl&0x01) {
             switch(data) {
+              case 7:
+                param.p = 0;
+                param.c = 0;
+                res.ok  = 1;
+                ctrl &= ~0x03;
+                break;
+
+              case 0:
+              case 1:
               case 24:
               case 31:
                 re2 = data;
@@ -1180,6 +1184,9 @@ pseudo.CstrCdrom = (function() {
             switch(mode&0x30) {
               case 0x00:
                 transfer.p += 12;
+                break;
+
+              case 0x20:
                 break;
 
               default:
@@ -1851,6 +1858,7 @@ pseudo.CstrMem = (function() {
           case 0x800: // Mirror
           case 0x801: // Mirror
           case 0x802: // Mirror
+          case 0x803: // Mirror
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
@@ -1938,6 +1946,7 @@ pseudo.CstrMem = (function() {
           case 0x800: // Mirror
           case 0x801: // Mirror
           case 0x802: // Mirror
+          case 0x803: // Mirror
           case 0x807: // Mirror
 
           case 0xa00: // Mirror
@@ -2503,9 +2512,7 @@ pseudo.CstrMips = (function() {
 pseudo.CstrMain = (function() {
   // HTML elements
   var dropzone;
-
   var iso, unusable;
-  var cdBfr = new Uint8Array(2352);
 
   // AJAX function
   function request(path, fn) {
@@ -2558,7 +2565,6 @@ pseudo.CstrMain = (function() {
     if (unusable) {
       return false;
     }
-    cdBfr.fill(0);
 
     // Reset all emulator components
      pseudo.CstrTexCache.reset();
@@ -2679,24 +2685,20 @@ pseudo.CstrMain = (function() {
 
     trackRead(time) {
       if (!iso) {
-        cdBfr.fill(0);
-        return 0;
+        return;
       }
 
-      var offset = ((((Math.floor((time[0])/16) * 10 + (time[0])%16)) * 60 + ( (Math.floor((time[1])/16) * 10 + (time[1])%16)) - 2) * 75 + ( (Math.floor((time[2])/16) * 10 + (time[2])%16))) * 2352 + 12;
-      var size = (2352 - 12);
+      var minute = (Math.floor((time[0])/16) * 10 + (time[0])%16);
+      var sec    = (Math.floor((time[1])/16) * 10 + (time[1])%16);
+      var frame  = (Math.floor((time[2])/16) * 10 + (time[2])%16);
+
+      var offset = (((minute) * 60 + ( sec) - 2) * 75 + ( frame)) * 2352 + 12;
+      var size   = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
         pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
-        //var hi = new Uint8Array(data);
-        //cdBfr.set(hi.slice(0, (2352 - 12)));
+        // slice(0, DATASIZE);
       });
-      
-      return 1;
-    },
-
-    fetchBuffer() {
-     return cdBfr;
     }
   };
 })();

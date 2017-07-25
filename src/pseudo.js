@@ -4,15 +4,13 @@
 #define EXE_HEADER_SIZE\
   0x800
 
-#define MSF2SECT(m, s, f)\
+#define MSF2SECTOR(m, s, f)\
   (((m) * 60 + (s) - 2) * 75 + (f))
 
 pseudo.CstrMain = (function() {
   // HTML elements
   var dropzone;
-
   var iso, unusable;
-  var cdBfr = new UintBcap(CDFRAMESIZERAW);
 
   // AJAX function
   function request(path, fn) {
@@ -65,7 +63,6 @@ pseudo.CstrMain = (function() {
     if (unusable) {
       return false;
     }
-    cdBfr.fill(0);
 
     // Reset all emulator components
      tcache.reset();
@@ -186,24 +183,20 @@ pseudo.CstrMain = (function() {
 
     trackRead(time) {
       if (!iso) {
-        cdBfr.fill(0);
-        return 0;
+        return;
       }
 
-      var offset = MSF2SECT(BCD2INT(time[0]), BCD2INT(time[1]), BCD2INT(time[2])) * CDFRAMESIZERAW + 12;
-      var size = DATASIZE;
+      var minute = BCD2INT(time[0]);
+      var sec    = BCD2INT(time[1]);
+      var frame  = BCD2INT(time[2]);
+
+      var offset = MSF2SECTOR(minute, sec, frame) * UDF_FRAMESIZERAW + 12;
+      var size   = UDF_DATASIZE;
 
       chunkReader2(iso, offset, size, function(data) {
         cdrom.interruptRead2(new UintBcap(data));
-        //var hi = new UintBcap(data);
-        //cdBfr.set(hi.slice(0, DATASIZE));
+        // slice(0, DATASIZE);
       });
-      
-      return 1;
-    },
-
-    fetchBuffer() {
-     return cdBfr;
     }
   };
 })();

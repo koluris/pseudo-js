@@ -1,11 +1,11 @@
 #define cdrom\
   pseudo.CstrCdrom
 
-#define CDFRAMESIZERAW\
+#define UDF_FRAMESIZERAW\
   2352
 
-#define DATASIZE\
-  (CDFRAMESIZERAW - 12)
+#define UDF_DATASIZE\
+  (UDF_FRAMESIZERAW - 12)
 
 #define BCD2INT(n)\
   (Math.floor((n)/16) * 10 + (n)%16)
