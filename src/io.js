@@ -134,7 +134,7 @@ pseudo.CstrHardware = (function() {
           return sio.read.h(addr);
         }
 
-        if (addr >= 0x1100 && addr <= 0x1124) { // Rootcounters
+        if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
           return rootcnt.scopeR(addr);
         }
 

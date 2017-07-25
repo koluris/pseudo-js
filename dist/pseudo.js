@@ -1567,46 +1567,46 @@ pseudo.CstrCounters = (function() {
     },
 
     update() {
-      // timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
+      timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
 
-      // if (timer[0].count >= timer[0].bound) {
-      //   timer[0].count = 0;
-      //   if (timer[0].mode&0x50) {
-      //     //pseudo.CstrBus.interruptSet(4);
-      //     pseudo.CstrMain.error('IRQ_RTC0');
-      //   }
-      // }
+      if (timer[0].count >= timer[0].bound) {
+        timer[0].count = 0;
+        if (timer[0].mode&0x50) {
+          //pseudo.CstrBus.interruptSet(4);
+          pseudo.CstrMain.error('IRQ_RTC0');
+        }
+      }
 
-      // if (!(timer[1].mode&0x100)) {
-      //   timer[1].count += 64;
+      if (!(timer[1].mode&0x100)) {
+        timer[1].count += 64;
 
-      //   if (timer[1].count >= timer[1].bound) {
-      //     timer[1].count = 0;
-      //     if (timer[1].mode&0x50) {
-      //       //pseudo.CstrBus.interruptSet(5);
-      //       pseudo.CstrMain.error('IRQ_RTC1');
-      //     }
-      //   }
-      // }
-      // else if ((hsc += 64) >= (33868800/15734)) { hsc = 0;
-      //   if (++timer[1].count >= timer[1].bound) {
-      //     timer[1].count = 0;
-      //     if (timer[1].mode&0x50) {
-      //       pseudo.CstrBus.interruptSet(5);
-      //     }
-      //   }
-      // }
+        if (timer[1].count >= timer[1].bound) {
+          timer[1].count = 0;
+          if (timer[1].mode&0x50) {
+            //pseudo.CstrBus.interruptSet(5);
+            pseudo.CstrMain.error('IRQ_RTC1');
+          }
+        }
+      }
+      else if ((hsc += 64) >= (33868800/15734)) { hsc = 0;
+        if (++timer[1].count >= timer[1].bound) {
+          timer[1].count = 0;
+          if (timer[1].mode&0x50) {
+            pseudo.CstrBus.interruptSet(5);
+          }
+        }
+      }
 
-      // if (!(timer[2].mode&1)) {
-      //   timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
+      if (!(timer[2].mode&1)) {
+        timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
 
-      //   if (timer[2].count >= timer[2].bound) {
-      //     timer[2].count = 0;
-      //     if (timer[2].mode&0x50) {
-      //       pseudo.CstrBus.interruptSet(6);
-      //     }
-      //   }
-      // }
+        if (timer[2].count >= timer[2].bound) {
+          timer[2].count = 0;
+          if (timer[2].mode&0x50) {
+            pseudo.CstrBus.interruptSet(6);
+          }
+        }
+      }
 
       if ((vbk += 64) >= (33868800/60)) { vbk = 0;
         pseudo.CstrBus.interruptSet(0);
@@ -1822,7 +1822,7 @@ pseudo.CstrHardware = (function() {
           return pseudo.CstrSerial.read.h(addr);
         }
 
-        if (addr >= 0x1100 && addr <= 0x1124) { // Rootcounters
+        if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
           return pseudo.CstrCounters.scopeR(addr);
         }
 
