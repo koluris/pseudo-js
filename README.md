@@ -15,13 +15,13 @@ Here's a list with the overall progress of the emulator, broken down in distinct
 * `85% -> Mem IO`
 * `70% -> GPU Textures`
 * `70% -> Audio`
-* `60% -> GPU Primitives & Commands`
-* `50% -> Interrupts`
-* `45% -> Rootcounters`
-* `35% -> CD Decoder`
-* `35% -> DMA`
-* `20% -> Serial IO`
-* `10% -> GTE`
+* `65% -> GPU Primitives & Commands`
+* `60% -> Interrupts`
+* `55% -> Rootcounters`
+* `55% -> CD Decoder`
+* `45% -> DMA`
+* `25% -> Serial IO`
+* `15% -> GTE`
 
 **PSeudo** can load some initial game screens, but nothing more for now. Also, for quite some time I will keep working on it with the provided slow CPU Interpreter. An attempt for speedup will be made later on with a **JavaScript Tracer**.
 
