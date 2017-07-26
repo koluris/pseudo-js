@@ -3,8 +3,7 @@
 
 ![Commercial](https://raw.githubusercontent.com/dkoliris/pseudo/master/res/commercial.jpg)
 
-**Use Chrome for a descent experience**
-Check out the up-to-date [Live version of PSeudo](http://vuemaps.com/pseudo)
+**Use Chrome for a descent experience:** [Live version of PSeudo](http://vuemaps.com/pseudo)
 
 **Important note to developers:** It's official, the usage of **"let"** and **"const"** ES6 variable declaration is slower than **"var"** about 20% overall. I made a new branch, and I was able to compare both products. I tried to be nice, but... Chrome isn't up to the task for now :)
 
