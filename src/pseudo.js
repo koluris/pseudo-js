@@ -202,8 +202,10 @@ pseudo.CstrMain = (function() {
       var size   = UDF_DATASIZE;
 
       chunkReader2(iso, offset, size, function(data) {
-        cdrom.interruptRead2(new UintBcap(data));
-        // slice(0, DATASIZE);
+        var hi = new UintBcap(data);
+        var sliced = hi.slice(0, UDF_DATASIZE);
+        cdrom.interruptRead2(sliced);
+        // slice(0, DATASIZE);å
       });
     }
   };

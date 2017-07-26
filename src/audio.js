@@ -324,7 +324,13 @@ pseudo.CstrAudio = (function() {
 
       // HW
       switch (addr) {
+        case 0x1da0:
         case 0x1da4: // ???
+        case 0x1dae:
+        case 0x1db8:
+        case 0x1dba:
+        case 0x1dbc:
+        case 0x1dbe:
           return;
 
         case 0x1d80: // Volume L

@@ -1091,7 +1091,7 @@ pseudo.CstrCdrom = (function() {
     statP &= ~0x40;
     res.data[0] = statP;
 
-    cpu.pause();
+    //cpu.pause();
     trackRead();
     $('#blink').css({ 'background':'#f5cb0f' });
 
@@ -1145,7 +1145,7 @@ pseudo.CstrCdrom = (function() {
         CDREAD_INT();
       }
       bus.interruptSet(IRQ_CD);
-      cpu.resume();
+      //cpu.resume();
       $('#blink').css({ 'background':'transparent' });
       $('#kb').text(Math.round(kbRead/1024)+' kb');
     },

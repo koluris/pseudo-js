@@ -490,7 +490,13 @@ pseudo.CstrAudio = (function() {
 
       // HW
       switch (addr) {
+        case 0x1da0:
         case 0x1da4: // ???
+        case 0x1dae:
+        case 0x1db8:
+        case 0x1dba:
+        case 0x1dbc:
+        case 0x1dbe:
           return;
 
         case 0x1d80: // Volume L
@@ -843,9 +849,9 @@ pseudo.CstrCdrom = (function() {
   }
 
   function trackRead() {
-    sector.prev[0] = (Math.floor((sector.data[0])/10) * 16 + (sector.data[0])%10);
-    sector.prev[1] = (Math.floor((sector.data[1])/10) * 16 + (sector.data[1])%10);
-    sector.prev[2] = (Math.floor((sector.data[2])/10) * 16 + (sector.data[2])%10);
+    sector.prev[0] = (parseInt((sector.data[0])/10) * 16 + (sector.data[0])%10);
+    sector.prev[1] = (parseInt((sector.data[1])/10) * 16 + (sector.data[1])%10);
+    sector.prev[2] = (parseInt((sector.data[2])/10) * 16 + (sector.data[2])%10);
 
     pseudo.CstrMain.trackRead(sector.prev);
   }
@@ -944,8 +950,8 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = 1;
         res.data[1] = 1;
 
-        res.data[2] = (Math.floor((sector.prev[0])/16) * 10 + (sector.prev[0])%16);
-        res.data[3] = (Math.floor((sector.prev[1])/16) * 10 + (sector.prev[1])%16)-2;
+        res.data[2] = (parseInt((sector.prev[0])/16) * 10 + (sector.prev[0])%16);
+        res.data[3] = (parseInt((sector.prev[1])/16) * 10 + (sector.prev[1])%16)-2;
         res.data[4] = sector.prev[2];
 
         if (((res.data[3])<<24>>24) < 0) {
@@ -953,8 +959,8 @@ pseudo.CstrCdrom = (function() {
             res.data[2] -= 1;
         }
 
-        res.data[2] = (Math.floor((res.data[2])/10) * 16 + (res.data[2])%10);
-        res.data[3] = (Math.floor((res.data[3])/10) * 16 + (res.data[3])%10);
+        res.data[2] = (parseInt((res.data[2])/10) * 16 + (res.data[2])%10);
+        res.data[3] = (parseInt((res.data[3])/10) * 16 + (res.data[3])%10);
 
         res.data[5] = sector.prev[0];
         res.data[6] = sector.prev[1];
@@ -971,8 +977,8 @@ pseudo.CstrCdrom = (function() {
         res.tn[0] = 1;
         res.tn[1] = 1;
         stat = 3;
-        res.data[1] = (Math.floor((res.tn[0])/10) * 16 + (res.tn[0])%10);
-        res.data[2] = (Math.floor((res.tn[1])/10) * 16 + (res.tn[1])%10);
+        res.data[1] = (parseInt((res.tn[0])/10) * 16 + (res.tn[0])%10);
+        res.data[2] = (parseInt((res.tn[1])/10) * 16 + (res.tn[1])%10);
         break;
 
       case 20: // CdlGetTD
@@ -984,9 +990,9 @@ pseudo.CstrCdrom = (function() {
         res.td[2] = 0;
         stat = 3;
         res.data[0] = statP;
-        res.data[1] = (Math.floor((res.td[2])/10) * 16 + (res.td[2])%10);
-        res.data[2] = (Math.floor((res.td[1])/10) * 16 + (res.td[1])%10);
-        res.data[3] = (Math.floor((res.td[0])/10) * 16 + (res.td[0])%10);
+        res.data[1] = (parseInt((res.td[2])/10) * 16 + (res.td[2])%10);
+        res.data[2] = (parseInt((res.td[1])/10) * 16 + (res.td[1])%10);
+        res.data[3] = (parseInt((res.td[0])/10) * 16 + (res.td[0])%10);
         break;
 
       case 21: // CdlSeekL
@@ -1120,7 +1126,7 @@ pseudo.CstrCdrom = (function() {
     statP &= ~0x40;
     res.data[0] = statP;
 
-    pseudo.CstrMips.pause();
+    //pseudo.CstrMips.pause();
     trackRead();
     $('#blink').css({ 'background':'#f5cb0f' });
 
@@ -1174,7 +1180,7 @@ pseudo.CstrCdrom = (function() {
         cdreadint = 1;
       }
       pseudo.CstrBus.interruptSet(2);
-      pseudo.CstrMips.resume();
+      //pseudo.CstrMips.resume();
       $('#blink').css({ 'background':'transparent' });
       $('#kb').text(Math.round(kbRead/1024)+' kb');
     },
@@ -1250,7 +1256,7 @@ pseudo.CstrCdrom = (function() {
                 seeked = 0;
 
                 for (var i=0; i<3; i++) {
-                  sector.data[i] = (Math.floor((param.data[i])/16) * 10 + (param.data[i])%16);
+                  sector.data[i] = (parseInt((param.data[i])/16) * 10 + (param.data[i])%16);
                 }
                 sector.data[3] = 0;
                 ctrl |= 0x80; stat = 0; addIrqQueue(data);
@@ -2004,6 +2010,10 @@ pseudo.CstrHardware = (function() {
           case 0x1060: // RAM Size
           case 0x1074:
           case 0x10f0:
+
+          case 0x1d80:
+          case 0x1d84:
+          case 0x1d8c: // SPU in 32 bits?
             pseudo.CstrMem.__hwr.uw[(( addr)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
             return;
         }
@@ -2203,7 +2213,9 @@ pseudo.CstrMem = (function() {
 
           case 0xa00: // Mirror
           case 0xa01: // Mirror
-            pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1] = data;
+            if (pseudo.CstrMips.writeOK()) {
+              pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1] = data;
+            }
             return;
 
           case 0x1f8: // Scratchpad + Hardware
@@ -2230,7 +2242,9 @@ pseudo.CstrMem = (function() {
 
           case 0xa00: // Mirror
           case 0xa01: // Mirror
-            pseudo.CstrMem.__ram.ub[(( addr)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = data;
+            if (pseudo.CstrMips.writeOK()) {
+              pseudo.CstrMem.__ram.ub[(( addr)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = data;
+            }
             return;
 
           case 0x1f8: // Scratchpad + Hardware
@@ -2285,6 +2299,8 @@ pseudo.CstrMem = (function() {
           case 0x801: // Mirror
           case 0x802: // Mirror
           case 0x807: // Mirror
+
+          case 0xa01: // Mirror
             return pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1];
 
           case 0xbfc: // BIOS
@@ -2426,7 +2442,8 @@ pseudo.CstrMips = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    var code = ptr[(( r[32])&(ptr.byteLength-1))>>>2];
+    //var code = ptr[(( r[32])&(ptr.byteLength-1))>>>2];
+    var code = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw[(( r[32])&(pseudo.CstrMem.__rom.uw.byteLength-1))>>>2] : pseudo.CstrMem.__ram.uw[(( r[32])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
     opcodeCount++;
     r[32]  += 4;
     r[0] = 0; // As weird as this seems, it is needed
@@ -3020,16 +3037,18 @@ pseudo.CstrMain = (function() {
         return;
       }
 
-      var minute = (Math.floor((time[0])/16) * 10 + (time[0])%16);
-      var sec    = (Math.floor((time[1])/16) * 10 + (time[1])%16);
-      var frame  = (Math.floor((time[2])/16) * 10 + (time[2])%16);
+      var minute = (parseInt((time[0])/16) * 10 + (time[0])%16);
+      var sec    = (parseInt((time[1])/16) * 10 + (time[1])%16);
+      var frame  = (parseInt((time[2])/16) * 10 + (time[2])%16);
 
       var offset = (((minute) * 60 + ( sec) - 2) * 75 + ( frame)) * 2352 + 12;
       var size   = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
-        pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
-        // slice(0, DATASIZE);
+        var hi = new Uint8Array(data);
+        var sliced = hi.slice(0, (2352 - 12));
+        pseudo.CstrCdrom.interruptRead2(sliced);
+        // slice(0, DATASIZE);å
       });
     }
   };

@@ -51,6 +51,10 @@ pseudo.CstrHardware = (function() {
           case 0x1060: // RAM Size
           case 0x1074:
           case 0x10f0:
+
+          case 0x1d80:
+          case 0x1d84:
+          case 0x1d8c: // SPU in 32 bits?
             directMemW(hwr.uw, addr) = data;
             return;
         }
