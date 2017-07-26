@@ -766,6 +766,7 @@ pseudo.CstrCdrom = (function() {
   var occupied, readed, reads, seeked, muted;
   var irq, cdint, cdreadint;
   var mode;
+  var kbRead;
 
   var param = {
     data: new UintBcap(8),
@@ -1092,6 +1093,7 @@ pseudo.CstrCdrom = (function() {
 
     cpu.pause();
     trackRead();
+    $('#blink').css({ 'background':'#f5cb0f' });
 
     // var buf = psx.fetchBuffer();
     // transfer.data.set(buf);
@@ -1120,6 +1122,7 @@ pseudo.CstrCdrom = (function() {
 
   return {
     interruptRead2(buf) {
+      kbRead += buf.bLen;
       transfer.data.set(buf);
       stat = CD_STAT_DATA_READY;
 
@@ -1143,6 +1146,8 @@ pseudo.CstrCdrom = (function() {
       }
       bus.interruptSet(IRQ_CD);
       cpu.resume();
+      $('#blink').css({ 'background':'transparent' });
+      $('#kb').text(Math.round(kbRead/1024)+' kb');
     },
 
     reset() {
@@ -1156,6 +1161,7 @@ pseudo.CstrCdrom = (function() {
       occupied = readed = reads = seeked = muted = 0;
       irq = cdint = cdreadint = 0;
       mode = 0;
+      kbRead = 0;
     },
 
     update() {

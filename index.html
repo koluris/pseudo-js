@@ -36,6 +36,9 @@
     }
 
     /* General */
+    * {
+      box-SIZING: border-box;
+    }
     BODY {
       color: white;
       BACKGROUND: #1f1f1f;
@@ -107,6 +110,25 @@
       DISPLAY: block;
       MARGIN: 0 auto;
     }
+    #screen-led {
+      DISPLAY: flex;
+      ALIGN-items: center;
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+    }
+    #blink {
+      BACKGROUND: transparent;
+      width: 10px;
+      HEIGHT: 10px;
+      border-radius: 5px;
+      border: 1px solid #f5cb0f;
+    }
+    #kb {
+      color: #93a0a8;
+      font-size: 11px;
+      MARGIN-left: 8px;
+    }
     #screen-properties {
       DISPLAY: flex;
       ALIGN-items: center;
@@ -119,12 +141,13 @@
       MARGIN-RIGHT: 8px;
     }
     #double {
+      DISPLAY: flex;
+      JUSTIFY-content: center;
+      ALIGN-items: center;
       color: white;
       font-size: 12px;
-      text-ALIGN: center;
-      width: 24px;
-      HEIGHT: 24px;
-      line-HEIGHT: 24px;
+      width: 28px;
+      HEIGHT: 28px;
       border-radius: 14px;
       border: 2px solid white;
       cursor: pointer;
@@ -251,6 +274,10 @@
             <canvas id="screen" width="320" HEIGHT="240">
               No support for <code>canvas</code> element.
             </canvas>
+            <div id="screen-led">
+              <div id="blink"></div>
+              <div id="kb">0 kb</div>
+            </div>
             <div id="screen-properties">
               <div id="resolution"></div>
               <div id="double" onclick="pseudo.CstrRender.doubleResolution()">x2</div>

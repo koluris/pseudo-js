@@ -795,6 +795,7 @@ pseudo.CstrCdrom = (function() {
   var occupied, readed, reads, seeked, muted;
   var irq, cdint, cdreadint;
   var mode;
+  var kbRead;
 
   var param = {
     data: new Uint8Array(8),
@@ -1121,6 +1122,7 @@ pseudo.CstrCdrom = (function() {
 
     pseudo.CstrMips.pause();
     trackRead();
+    $('#blink').css({ 'background':'#f5cb0f' });
 
     // var buf = pseudo.CstrMain.fetchBuffer();
     // transfer.data.set(buf);
@@ -1149,6 +1151,7 @@ pseudo.CstrCdrom = (function() {
 
   return {
     interruptRead2(buf) {
+      kbRead += buf.byteLength;
       transfer.data.set(buf);
       stat = 1;
 
@@ -1172,6 +1175,8 @@ pseudo.CstrCdrom = (function() {
       }
       pseudo.CstrBus.interruptSet(2);
       pseudo.CstrMips.resume();
+      $('#blink').css({ 'background':'transparent' });
+      $('#kb').text(Math.round(kbRead/1024)+' kb');
     },
 
     reset() {
@@ -1185,6 +1190,7 @@ pseudo.CstrCdrom = (function() {
       occupied = readed = reads = seeked = muted = 0;
       irq = cdint = cdreadint = 0;
       mode = 0;
+      kbRead = 0;
     },
 
     update() {
