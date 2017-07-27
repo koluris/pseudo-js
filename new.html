@@ -58,14 +58,14 @@
       HEIGHT: 100%;
     }
     #header {
-      BACKGROUND: RGBA(0, 0, 0, .1);
+      BACKGROUND: RGBA(0, 0, 0, .2);
       HEIGHT: 25px;
-      border-bottom: 1px solid RGBA(255, 255, 255, .1);
+      border-bottom: 1px solid RGBA(255, 255, 255, .15);
     }
     #main {
       DISPLAY: flex;
       flex: 1;
-      MARGIN-bottom: 10px;
+      MARGIN-bottom: 15px;
     }
     #main .header {
       DISPLAY: flex;
@@ -83,18 +83,19 @@
       ALIGN-items: center;
       flex: 1;
       position: relative;
-      BACKGROUND: black;
+      BACKGROUND: RGBA(0, 0, 0, .5);
       min-HEIGHT: 250px;
     }
     #screen {
       DISPLAY: block;
+      BACKGROUND: black;
     }
     #screen-led {
       DISPLAY: flex;
       ALIGN-items: center;
       position: absolute;
       bottom: 8px;
-      left: 8px;
+      left: 10px;
     }
     #blink {
       BACKGROUND: transparent;
@@ -113,7 +114,7 @@
       ALIGN-items: center;
       position: absolute;
       top: 8px;
-      RIGHT: 8px;
+      RIGHT: 10px;
     }
     #resolution {
       color: #f5cb0f;
@@ -134,7 +135,7 @@
     #footer {
       DISPLAY: flex;
       HEIGHT: 180px;
-      MARGIN-bottom: 10px;
+      MARGIN-bottom: 15px;
     }
     #footer .header {
       font: normal 27px 'Oswald 400', sans-serif;
@@ -237,7 +238,7 @@
         <div class="panel-r">
           <div id="dropzone" ondrop="pseudo.CstrMain.drop.file(this, event)" ONDRAGENTER="pseudo.CstrMain.drop.enter(this)" ONDRAGLEAVE="pseudo.CstrMain.drop.exit(this)" ONDRAGOVER="pseudo.CstrMain.drop.over(event)">
             <IMG src="res/drop.png"/>
-            <div>PLACE PSX FILES HERE</div>
+            <div>DRAG & DROP PSX FILES</div>
             <div>iso bin psx exe</div>
           </div>
         </div>
