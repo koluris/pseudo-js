@@ -893,6 +893,7 @@ pseudo.CstrCdrom = (function() {
       case 12: // CdlDemute
       case 13: // CdlSetFilter
       case 14: // CdlSetMode
+      case 15: // CdlGetParam ???
         res.p = 0; res.c = 1; res.ok = 1;
         statP |= 0x02;
         res.data[0] = statP;
@@ -905,6 +906,13 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         stat = 3;
         statP |= 0x80;
+        break;
+
+      case 7: // CdlIdle
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x2;
+        res.data[0] = statP;
+        stat = 2;
         break;
 
       case 9: // CdlPause
@@ -1128,9 +1136,9 @@ pseudo.CstrCdrom = (function() {
     statP &= ~0x40;
     res.data[0] = statP;
 
+    pseudo.CstrMips.pause();
     trackRead();
-
-    //divBlink.css({ 'background':'#f5cb0f' });
+    divBlink.css({ 'background':'#f5cb0f' });
   }
 
   return {
@@ -1159,8 +1167,9 @@ pseudo.CstrCdrom = (function() {
       }
       pseudo.CstrBus.interruptSet(2);
 
-      //divBlink.css({ 'background':'transparent' });
-      //divKb.innerText = Math.round(kbRead/1024)+' kb';
+      pseudo.CstrMips.resume();
+      divBlink.css({ 'background':'transparent' });
+      divKb.innerText = Math.round(kbRead/1024)+' kb';
     },
 
     awake(blink, kb) {
@@ -1222,6 +1231,7 @@ pseudo.CstrCdrom = (function() {
             case 1: // CdlNop
             case 3: // CdlStart
             case 13: // CdlSetFilter
+            case 15: // CdlGetParam ???
             case 16: // CdlGetLocL
             case 17: // CdlGetLocP
             case 19: // CdlGetTN
@@ -1256,6 +1266,7 @@ pseudo.CstrCdrom = (function() {
               reads = 1; readed = 0xff; addIrqQueue(250);
               break;
 
+            case 7: // CdlInit
             case 9: // CdlPause
             case 10: // CdlInit
               if (reads) { reads = 0; } statP &= ~0x20;
@@ -2657,6 +2668,16 @@ pseudo.CstrMips = (function() {
 
     readbase(addr) {
       return r[addr];
+    },
+
+    pause() {
+      cancelAnimationFrame(requestAF);
+      requestAF = undefined;
+      bp = true;
+    },
+
+    resume() {
+      pseudo.CstrMips.run();
     }
   };
 })();

@@ -451,6 +451,16 @@ pseudo.CstrMips = (function() {
 
     readbase(addr) {
       return r[addr];
+    },
+
+    pause() {
+      cancelAnimationFrame(requestAF);
+      requestAF = undefined;
+      bp = true;
+    },
+
+    resume() {
+      cpu.run();
     }
   };
 })();

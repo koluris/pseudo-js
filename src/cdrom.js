@@ -866,6 +866,7 @@ pseudo.CstrCdrom = (function() {
       case 12: // CdlDemute
       case 13: // CdlSetFilter
       case 14: // CdlSetMode
+      case 15: // CdlGetParam ???
         setResultSize(1);
         statP |= 0x02;
         res.data[0] = statP;
@@ -878,6 +879,13 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         stat = CD_STAT_ACKNOWLEDGE;
         statP |= 0x80;
+        break;
+
+      case 7: // CdlIdle
+        setResultSize(1);
+        statP |= 0x2;
+        res.data[0] = statP;
+        stat = CD_STAT_COMPLETE;
         break;
 
       case 9: // CdlPause
@@ -1101,9 +1109,9 @@ pseudo.CstrCdrom = (function() {
     statP &= ~0x40;
     res.data[0] = statP;
 
+    cpu.pause();
     trackRead();
-
-    //divBlink.css({ 'background':'#f5cb0f' });
+    divBlink.css({ 'background':'#f5cb0f' });
   }
 
   return {
@@ -1132,8 +1140,9 @@ pseudo.CstrCdrom = (function() {
       }
       bus.interruptSet(IRQ_CD);
 
-      //divBlink.css({ 'background':'transparent' });
-      //divKb.innerText = Math.round(kbRead/1024)+' kb';
+      cpu.resume();
+      divBlink.css({ 'background':'transparent' });
+      divKb.innerText = Math.round(kbRead/1024)+' kb';
     },
 
     awake(blink, kb) {
@@ -1195,6 +1204,7 @@ pseudo.CstrCdrom = (function() {
             case 1: // CdlNop
             case 3: // CdlStart
             case 13: // CdlSetFilter
+            case 15: // CdlGetParam ???
             case 16: // CdlGetLocL
             case 17: // CdlGetLocP
             case 19: // CdlGetTN
@@ -1229,6 +1239,7 @@ pseudo.CstrCdrom = (function() {
               startRead();
               break;
 
+            case 7: // CdlInit
             case 9: // CdlPause
             case 10: // CdlInit
               stopRead();
