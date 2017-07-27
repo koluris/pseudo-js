@@ -797,12 +797,12 @@ pseudo.CstrBus = (function() {
 
 
 pseudo.CstrCdrom = (function() {
+  // HTML elements
   var divBlink, divKb;
 
-  var ctrl, stat, statP, re2;
-  var occupied, readed, reads, seeked, muted;
+  var ctrl, mode, stat, statP, re2;
+  var occupied, reads, seeked, readed;
   var irq, cdint, cdreadint;
-  var mode;
   var kbRead;
 
   var param = {
@@ -1130,7 +1130,7 @@ pseudo.CstrCdrom = (function() {
 
     trackRead();
 
-    divBlink.css({ 'background':'#f5cb0f' });
+    //divBlink.css({ 'background':'#f5cb0f' });
   }
 
   return {
@@ -1159,8 +1159,8 @@ pseudo.CstrCdrom = (function() {
       }
       pseudo.CstrBus.interruptSet(2);
 
-      divBlink.css({ 'background':'transparent' });
-      divKb.innerText = Math.round(kbRead/1024)+' kb';
+      //divBlink.css({ 'background':'transparent' });
+      //divKb.innerText = Math.round(kbRead/1024)+' kb';
     },
 
     awake(blink, kb) {
@@ -1421,6 +1421,9 @@ pseudo.CstrCdrom = (function() {
             pseudo.CstrMem.__ram.ub[(( i + pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = transfer.data[i + transfer.p];
           }
           transfer.p += size;
+          break;
+
+        case 0: // ???
           break;
 
         default:
@@ -1791,156 +1794,6 @@ pseudo.CstrCounters = (function() {
 })();
 
 
-
-// #define RTC_COUNT  0
-// #define RTC_MODE   4
-// #define RTC_TARGET 8
-
-// #define (addr>>>4)&3//   (addr>>>4)&3
-
-
-// #define 0xffff//   0xffff
-
-
-// pseudo.CstrCounters = (function() {
-//   var timer = [];
-//   var vbk, hsc;
-
-//   // Exposed class functions/variables
-//   return {
-//     reset() {
-//       for (var i=0; i<3; i++) {
-//         timer[i] = {
-//           mode  : 0,
-//           count : 0,
-//           target  : 0,
-//           bound : 0xffff
-//         };
-//       }
-
-//       vbk = 0;
-//       hsc = 0;
-//     },
-
-//     update() {
-//       timer[0].count += timer[0].mode&0x100 ? 64 : 64/8;
-
-//       if (timer[0].count >= timer[0].bound) {
-//         timer[0].count = 0;
-//         if (timer[0].mode&0x50) {
-//           //pseudo.CstrBus.interruptSet(4);
-//           pseudo.CstrMain.error('IRQ_RTC0');
-//         }
-//       }
-
-//       if (!(timer[1].mode&0x100)) {
-//         timer[1].count += 64;
-
-//         if (timer[1].count >= timer[1].bound) {
-//           timer[1].count = 0;
-//           if (timer[1].mode&0x50) {
-//             //pseudo.CstrBus.interruptSet(5);
-//             pseudo.CstrMain.error('IRQ_RTC1');
-//           }
-//         }
-//       }
-//       else if ((hsc += 64) >= (33868800/15734)) { hsc = 0;
-//         if (++timer[1].count >= timer[1].bound) {
-//           timer[1].count = 0;
-//           if (timer[1].mode&0x50) {
-//             pseudo.CstrBus.interruptSet(5);
-//           }
-//         }
-//       }
-
-//       if (!(timer[2].mode&1)) {
-//         timer[2].count += timer[2].mode&0x200 ? 64/8 : 64;
-
-//         if (timer[2].count >= timer[2].bound) {
-//           timer[2].count = 0;
-//           if (timer[2].mode&0x50) {
-//             pseudo.CstrBus.interruptSet(6);
-//           }
-//         }
-//       }
-
-//       if ((vbk += 64) >= (33868800/60)) { vbk = 0;
-//         pseudo.CstrBus.interruptSet(0);
-//          pseudo.CstrGraphics.redraw();
-//         pseudo.CstrMips.setbp();
-//       }
-//     },
-
-//     scopeW(addr, data) {
-//       var p = (addr>>>4)&3; // ((addr&0xf)>>>2)
-
-//       switch(addr&0xf) {
-//         case RTC_COUNT:
-//           timer[p].count = data&0xffff;
-//           return;
-
-//         case RTC_MODE:
-//           timer[p].mode  = data;
-//           timer[p].bound = timer[p].mode&8 ? timer[p].target : 0xffff;
-//           return;
-
-//         case RTC_TARGET:
-//           timer[p].target  = data&0xffff;
-//           timer[p].bound = timer[p].mode&8 ? timer[p].target : 0xffff;
-//           return;
-//       }
-
-//       pseudo.CstrMain.error('RTC Write '+('0x'+(addr&0xf>>>0).toString(16))+' <- '+('0x'+(data>>>0).toString(16)));
-//     },
-
-//     scopeR(addr) {
-//       var p = (addr>>>4)&3;
-
-//       switch(addr&0xf) {
-//         case RTC_COUNT:
-//           return timer[p].count;
-
-//         case RTC_MODE:
-//           return timer[p].mode;
-
-//         case RTC_TARGET:
-//           return timer[p].target;
-//       }
-
-//       pseudo.CstrMain.error('RTC Read '+('0x'+(addr&0xf>>>0).toString(16)));
-//       return 0;
-//     }
-//   };
-// })();
-
-// pseudo.CstrCounter = (function() {
-//   return {
-//     tick() {
-//       timer[1].count += time*15;
-
-//       if (!(timer[1].mode&0x0008)) {
-//         if (timer[1].count >= 0xffff) {
-//           timer[1].count = 0;
-//           if ((timer[1].mode&0x0040)&&(hardINTmask&0x0020)) {
-//             pseudo.CstrBus.interruptSet(5);
-//           }
-//         }
-//       }
-//       else {
-//         if (timer[1].count >= timer[1].target) {
-//           timer[1].count = 0;
-//           if ((timer[1].mode&0x0040)&&(hardINTmask&0x0020)) {
-//             pseudo.CstrBus.interruptSet(5);
-//           }
-//         }
-//       }
-
-//       if (!(timer[2].mode&0x0001)) {
-//         timer[2].count += time*4125;
-//       }
-//     }
-//   }
-// });
 
 
 pseudo.CstrHardware = (function() {
@@ -2824,7 +2677,7 @@ pseudo.CstrMips = (function() {
 
 
 pseudo.CstrMain = (function() {
-  var html;
+  var divDropzone;
   var iso, unusable;
 
   // AJAX function
@@ -2872,14 +2725,6 @@ pseudo.CstrMain = (function() {
       reader.readAsArrayBuffer(file.slice(start, end));
     }
   }
-
-  // function isoReader(file, fn) {
-  //   var reader = new FileReader();
-  //   reader.onload = function(e) { // Callback
-  //     fn(e.target.result);
-  //   };
-  //   reader.readAsArrayBuffer(file);
-  // }
 
   function reset() {
     // Prohibit all user actions
@@ -3012,14 +2857,19 @@ pseudo.CstrMain = (function() {
       var sec    = (parseInt((time[1])/16) * 10 + (time[1])%16);
       var frame  = (parseInt((time[2])/16) * 10 + (time[2])%16);
 
+      // var minute = (parseInt((time.minute)/16) * 10 + (time.minute)%16);
+      // var sec    = (parseInt((time.sec)/16) * 10 + (time.sec)%16);
+      // var frame  = (parseInt((time.frame)/16) * 10 + (time.frame)%16);
+
+      // console.dir(minute+' '+sec+' '+frame);
+
       var offset = (((minute) * 60 + ( sec) - 2) * 75 + ( frame)) * 2352 + 12;
       var size   = (2352 - 12);
 
       chunkReader2(iso, offset, size, function(data) {
-        var hi = new Uint8Array(data);
-        var sliced = hi.slice(0, (2352 - 12));
-        pseudo.CstrCdrom.interruptRead2(sliced);
-        // slice(0, DATASIZE);å
+        // pseudo.CstrCdrom.cdromRead2(new Uint8Array(data));
+        pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
+        // slice(0, DATASIZE)
       });
     }
   };

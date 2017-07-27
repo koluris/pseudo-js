@@ -8,7 +8,7 @@
   (((m) * 60 + (s) - 2) * 75 + (f))
 
 pseudo.CstrMain = (function() {
-  var html;
+  var divDropzone;
   var iso, unusable;
 
   // AJAX function
@@ -188,10 +188,17 @@ pseudo.CstrMain = (function() {
       var sec    = BCD2INT(time[1]);
       var frame  = BCD2INT(time[2]);
 
+      // var minute = BCD2INT(time.minute);
+      // var sec    = BCD2INT(time.sec);
+      // var frame  = BCD2INT(time.frame);
+
+      // console.dir(minute+' '+sec+' '+frame);
+
       var offset = MSF2SECTOR(minute, sec, frame) * UDF_FRAMESIZERAW + 12;
       var size   = UDF_DATASIZE;
 
       chunkReader2(iso, offset, size, function(data) {
+        // cdrom.cdromRead2(new UintBcap(data));
         cdrom.interruptRead2(new UintBcap(data));
         // slice(0, DATASIZE)
       });

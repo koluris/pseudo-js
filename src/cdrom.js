@@ -80,6 +80,8 @@
   }
 
 pseudo.CstrCdrom = (function() {
+  var divBlink, divKb;
+
   var busres = new UintBcap(8);
   var buspar = new UintBcap(8);
   var control, status;
@@ -87,6 +89,7 @@ pseudo.CstrCdrom = (function() {
   var kind, blockEnd, reads, mode;
   var motorSeek = {}, motorBase = {}, motorRead = {};
   var seekLoc = {}, destLoc = {};
+  var kbRead;
 
   // Booleans
   var seeks, pause, mute, retr;
@@ -325,8 +328,6 @@ pseudo.CstrCdrom = (function() {
   }
 
   function cdromRead() {
-    var temp = 0;
-
     interrupt.status = (interrupt.status & 0xf8) | CD_DATAREADY;
 
     if (pause) {
@@ -335,13 +336,17 @@ pseudo.CstrCdrom = (function() {
 
     if (reads === 1) {
       psx.trackRead(seekLoc);
-      
-      // if (psx.fetchBuffer()[0] === 0) {
-      //   temp |= 0x02;
-      // }
-      // else {
-        sector.bfr.set(psx.fetchBuffer());
-      //}
+      divBlink.css({ 'background':'#f5cb0f' });
+    }
+  }
+
+  return {
+    cdromRead2(buf) {
+      kbRead += buf.bLen;
+      sector.bfr.set(buf);
+
+      divBlink.css({ 'background':'transparent' });
+      divKb.innerText = Math.round(kbRead/1024)+' kb';
 
       if (status & CD_STATUS_SHELL) {
         psx.error('*** status & CD_STATUS_SHELL');
@@ -351,19 +356,19 @@ pseudo.CstrCdrom = (function() {
       //   temp |= 0x08;
       // }
       
-      if (temp) {
-        result.value[0] = status | CD_STATUS_ERROR;
-        result.value[1] = 0;
-        result.size = 2;
-        control |= CD_CTRL_RES;
+      // if (temp) {
+      //   result.value[0] = status | CD_STATUS_ERROR;
+      //   result.value[1] = 0;
+      //   result.size = 2;
+      //   control |= CD_CTRL_RES;
 
-        if (!retr) {
-          psx.error('retr');
-        }
+      //   if (!retr) {
+      //     psx.error('retr');
+      //   }
         
-        interrupt.status = (interrupt.status & 0xf8) | CD_DISKERROR;
-        return;
-      }
+      //   interrupt.status = (interrupt.status & 0xf8) | CD_DISKERROR;
+      //   return;
+      // }
 
       switch((mode & (CD_MODE_SIZE0 | CD_MODE_SIZE1)) >> 4) {
         case 0:
@@ -385,27 +390,30 @@ pseudo.CstrCdrom = (function() {
       if ((mute === 0) && (mode & CD_MODE_RT) && (sector.firstRead !== -1)) {
         psx.error('(sector.firstRead !== -1)');
       }
-    }
+      control |= CD_CTRL_RES;
+      result.value[0] = status;
+      result.size     = 1;
+      result.pointer  = 0;
 
-    control |= CD_CTRL_RES;
-    result.value[0] = status;
-    result.size     = 1;
-    result.pointer  = 0;
+      if (mode & CD_MODE_REPT) {
+        psx.error('*** mode & CD_MODE_REPT');
+      }
 
-    if (mode & CD_MODE_REPT) {
-      psx.error('*** mode & CD_MODE_REPT');
-    }
+      refreshCDLoc(destLoc);
+    },
 
-    refreshCDLoc(destLoc);
-  }
+    awake(blink, kb) {
+      divBlink = blink;
+      divKb    = kb;
+    },
 
-  return {
     reset() {
       busres.fill(0);
       buspar.fill(0);
 
       control |= CD_CTRL_PH | CD_CTRL_NP;
       status  |= CD_STATUS_STANDBY;
+      kbRead = 0;
 
       interrupt.status = 0xe0;
       interrupt.onhold = false;
@@ -762,12 +770,12 @@ pseudo.CstrCdrom = (function() {
   cdreadint = 1
 
 pseudo.CstrCdrom = (function() {
+  // HTML elements
   var divBlink, divKb;
 
-  var ctrl, stat, statP, re2;
-  var occupied, readed, reads, seeked, muted;
+  var ctrl, mode, stat, statP, re2;
+  var occupied, reads, seeked, readed;
   var irq, cdint, cdreadint;
-  var mode;
   var kbRead;
 
   var param = {
@@ -1095,7 +1103,7 @@ pseudo.CstrCdrom = (function() {
 
     trackRead();
 
-    divBlink.css({ 'background':'#f5cb0f' });
+    //divBlink.css({ 'background':'#f5cb0f' });
   }
 
   return {
@@ -1124,8 +1132,8 @@ pseudo.CstrCdrom = (function() {
       }
       bus.interruptSet(IRQ_CD);
 
-      divBlink.css({ 'background':'transparent' });
-      divKb.innerText = Math.round(kbRead/1024)+' kb';
+      //divBlink.css({ 'background':'transparent' });
+      //divKb.innerText = Math.round(kbRead/1024)+' kb';
     },
 
     awake(blink, kb) {
@@ -1386,6 +1394,9 @@ pseudo.CstrCdrom = (function() {
             directMemB(ram.ub, i + madr) = transfer.data[i + transfer.p];
           }
           transfer.p += size;
+          break;
+
+        case 0: // ???
           break;
 
         default:
