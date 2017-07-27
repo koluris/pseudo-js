@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PSeudo</title>
+
+  <STYLE>
+    @import url('css/normalize.css');
+
+    @font-face {
+      src: url('css/oswald-400.woff2');
+      font-FAMILY: 'Oswald 400';
+    }
+    @font-face {
+      src: url('css/ps.woff2');
+      font-FAMILY: 'PS';
+    }
+    * {
+      box-SIZING: border-box;
+    }
+    html, BODY {
+      color: white;
+      BACKGROUND: #222 url('res/noise.png');
+      HEIGHT: 100%;
+    }
+    .centered-h, .centered-v {
+      DISPLAY: flex;
+      flex: 1;
+      MARGIN: 0 12%;
+    }
+    .centered-v {
+      flex-direction: column;
+    }
+    #container {
+      DISPLAY: flex;
+      flex-direction: column;
+      HEIGHT: 100%;
+    }
+    #header {
+      BACKGROUND: RGBA(0, 0, 0, .1);
+      HEIGHT: 25px;
+      border-bottom: 1px solid RGBA(255, 255, 255, .1);
+    }
+    #main {
+      DISPLAY: flex;
+      flex: 1;
+      MARGIN-bottom: 10px;
+    }
+    #main .header {
+      DISPLAY: flex;
+      ALIGN-items: center;
+      min-HEIGHT: 50px;
+    }
+    #main .brand {
+      font: normal 28px 'PS', sans-serif;
+      letter-SPACING: 1px;
+      MARGIN-left: 15px;
+    }
+    #main .screen {
+      DISPLAY: flex;
+      JUSTIFY-content: center;
+      ALIGN-items: center;
+      flex: 1;
+      BACKGROUND: black;
+      min-HEIGHT: 250px;
+    }
+    #footer {
+      DISPLAY: flex;
+      HEIGHT: 180px;
+      MARGIN-bottom: 10px;
+    }
+  </STYLE>
+</head>
+<BODY>
+  <div id="container">
+    <div id="header">
+    </div>
+
+    <div id="main">
+      <div class="centered-v">
+        <div class="header">
+           <IMG src="res/ps.png" width="32"/>
+           <div class="brand">PSeudo</div>
+        </div>
+
+        <div class="screen">
+          <div STYLE="BACKGROUND:Yellow;width:200px;HEIGHT:200px">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="footer">
+      <div class="centered-h">
+        <div STYLE="flex:1;border-top:1px solid RGBA(255, 255, 255, .1);border-bottom:1px solid RGBA(255, 255, 255, .1)">
+        </div>
+        <div STYLE="width:180px;border:5px solid RGBA(255, 255, 255, .1);border-radius:90px">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="dist/quer-3.2.1.min.js"></script>
+  <script src="dist/pseudo.js"></script>
+
+  <script>
+  </script>
+</BODY>
+</html>
