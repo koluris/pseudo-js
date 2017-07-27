@@ -762,6 +762,8 @@ pseudo.CstrCdrom = (function() {
   cdreadint = 1
 
 pseudo.CstrCdrom = (function() {
+  var divBlink, divKb;
+
   var ctrl, stat, statP, re2;
   var occupied, readed, reads, seeked, muted;
   var irq, cdint, cdreadint;
@@ -1091,33 +1093,9 @@ pseudo.CstrCdrom = (function() {
     statP &= ~0x40;
     res.data[0] = statP;
 
-    //cpu.pause();
     trackRead();
-    $('#blink').css({ 'background':'#f5cb0f' });
 
-    // var buf = psx.fetchBuffer();
-    // transfer.data.set(buf);
-    // stat = CD_STAT_DATA_READY;
-
-    // sector.data[2]++;
-    // if (sector.data[2] === 75) {
-    //   sector.data[2] = 0;
-      
-    //   sector.data[1]++;
-    //   if (sector.data[1] === 60) {
-    //     sector.data[1] = 0;
-    //     sector.data[0]++;
-    //   }
-    // }
-    // readed = 0;
-
-    // if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
-    //   addIrqQueue(9); // CdlPause
-    // }
-    // else {
-    //   CDREAD_INT();
-    // }
-    // bus.interruptSet(IRQ_CD);
+    divBlink.css({ 'background':'#f5cb0f' });
   }
 
   return {
@@ -1145,9 +1123,15 @@ pseudo.CstrCdrom = (function() {
         CDREAD_INT();
       }
       bus.interruptSet(IRQ_CD);
-      //cpu.resume();
-      $('#blink').css({ 'background':'transparent' });
-      $('#kb').text(Math.round(kbRead/1024)+' kb');
+
+      divBlink.css({ 'background':'transparent' });
+      divKb.innerText = Math.round(kbRead/1024)+' kb';
+    },
+
+    awake(blink, kb) {
+      // Get HTML elements
+      divBlink = blink;
+      divKb    = kb[0];
     },
 
     reset() {

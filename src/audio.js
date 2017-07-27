@@ -287,7 +287,7 @@ pseudo.CstrAudio = (function() {
       if (addr >= 0x1c00 && addr <= 0x1d7e) {
         var n = spuChannel(addr);
 
-        switch (addr&0xf) {
+        switch(addr&0xf) {
           case 0x0: // Volume L
             spuVoices[n].volume.l = setVolume(data);
             return;
@@ -323,7 +323,7 @@ pseudo.CstrAudio = (function() {
       }
 
       // HW
-      switch (addr) {
+      switch(addr) {
         case 0x1da0:
         case 0x1da4: // ???
         case 0x1dae:
@@ -394,7 +394,7 @@ pseudo.CstrAudio = (function() {
     scopeR: function(addr) {
       // Channels
       if (addr >= 0x1c00 && addr <= 0x1d7e) {
-        switch (addr&0xf) {
+        switch(addr&0xf) {
           case 0x0:
           case 0x2:
           case 0x4:
@@ -409,7 +409,7 @@ pseudo.CstrAudio = (function() {
       }
 
       // HW
-      switch (addr) {
+      switch(addr) {
         //case 0x1da4:
         case 0x1db0:
         case 0x1db2:
@@ -455,7 +455,7 @@ pseudo.CstrAudio = (function() {
     executeDMA: function(addr) {
       var size = (bcr>>16)*(bcr&0xffff)*2;
 
-      switch (chcr) {
+      switch(chcr) {
         case 0x01000201: // Write DMA Mem
           dataMem.write(madr, size);
           return;

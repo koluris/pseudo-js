@@ -353,8 +353,7 @@
 }
 
 pseudo.CstrRender = (function() {
-  // HTML elements
-  var screen, resolution;
+  var divScreen, divRes, divDouble, divFooter;
   
   var ctx, attrib, bfr; // WebGL Context
   var blend, bit, ofs;
@@ -386,13 +385,15 @@ pseudo.CstrRender = (function() {
 
   // Exposed class functions/variables
   return {
-    awake(divScreen, divResolution) {
+    awake(screen, resolution, double, footer) {
       // Get HTML elements
-      screen     = divScreen[0];
-      resolution = divResolution[0];
+      divScreen = screen[0];
+      divRes    = resolution[0];
+      divDouble = double;
+      divFooter = footer;
 
       // WebGL Canvas
-      ctx = screen.fetchContext(WebGL);
+      ctx = divScreen.fetchContext(WebGL);
       ctx. enable(ctx.BLEND);
       ctx.disable(ctx.DEPTH_TEST);
       ctx.disable(ctx.CULL_FACE);
@@ -470,14 +471,14 @@ pseudo.CstrRender = (function() {
 
         // Native PSX resolution
         ctx.uniform2f(attrib._r, data.w/2, data.h/2);
-        resolution.innerText = data.w+' x '+data.h;
+        divRes.innerText = data.w+' x '+data.h;
 
         // Construct desired resolution
         var w = (res.override.w || data.w) * res.multiplier;
         var h = (res.override.h || data.h) * res.multiplier;
 
-        screen.width = w;
-        screen.hei   = h;
+        divScreen.width = w;
+        divScreen.hei   = h;
         ctx.viewport(0, 0, w, h);
       }
       else {
@@ -490,10 +491,10 @@ pseudo.CstrRender = (function() {
 
       // Show/hide elements
       if (res.multiplier === 1) {
-        $('#footer').show();
+        divFooter.show();
       }
       else {
-        $('#footer').hide();
+        divFooter.hide();
       }
       
       // Redraw

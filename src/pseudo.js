@@ -8,8 +8,7 @@
   (((m) * 60 + (s) - 2) * 75 + (f))
 
 pseudo.CstrMain = (function() {
-  // HTML elements
-  var dropzone;
+  var html;
   var iso, unusable;
 
   // AJAX function
@@ -103,11 +102,13 @@ pseudo.CstrMain = (function() {
 
   // Exposed class functions/variables
   return {
-    awake(screen, blink, kb, res, double, output, dropzone) {
-      unusable = false;
+    awake(screen, blink, kb, res, double, output, dropzone, footer) {
+      divDropzone = dropzone;
+         unusable = false;
       
-      render.awake(screen, res);
+      render.awake(screen, res, double, footer);
        audio.awake();
+       cdrom.awake(blink, kb);
          cpu.awake(output);
 
       request('bios/scph1001.bin', function(resp) {
@@ -131,9 +132,9 @@ pseudo.CstrMain = (function() {
     },
 
     drop: {
-      file(element, e) {
+      file(e) {
         e.preventDefault();
-        psx.drop.exit(element);
+        psx.drop.exit();
         
         var dt = e.dataTransfer;
 
@@ -173,12 +174,12 @@ pseudo.CstrMain = (function() {
         e.preventDefault();
       },
 
-      enter(element) {
-        dropzone.addClass('dropzone-active');
+      enter() {
+        divDropzone.addClass('dropzone-active');
       },
 
-      exit(element) {
-        dropzone.removeClass('dropzone-active');
+      exit() {
+        divDropzone.removeClass('dropzone-active');
       }
     },
 

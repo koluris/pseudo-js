@@ -41,13 +41,12 @@
   if (pc === 0xb0) {\
     if (r[9] === 59 || r[9] === 61) {\
       var char = Chars.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>');\
-      output.append(char.toUpperCase());\
+      divOutput.append(char.toUpperCase());\
     }\
   }
 
 pseudo.CstrMips = (function() {
-  // HTML elements
-  var output;
+  var divOutput;
   var bp, opcodeCount, requestAF, ptr, temp;
 
   // Base + Coprocessor
@@ -73,8 +72,8 @@ pseudo.CstrMips = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    //var code = directMemW(ptr, pc);
-    var code = pc>>>20 === 0xbfc ? directMemW(rom.uw, pc) : directMemW(ram.uw, pc);
+    var code = directMemW(ptr, pc);
+    //var code = pc>>>20 === 0xbfc ? directMemW(rom.uw, pc) : directMemW(ram.uw, pc);
     opcodeCount++;
     pc  += 4;
     r[0] = 0; // As weird as this seems, it is needed
@@ -384,8 +383,8 @@ pseudo.CstrMips = (function() {
 
   // Exposed class functions/variables
   return {
-    awake(element) {
-      output = element;
+    awake(output) {
+      divOutput = output;
     },
 
     reset() {
@@ -406,7 +405,7 @@ pseudo.CstrMips = (function() {
       setptr(pc);
 
       // Clear console out
-      output.text(' ');
+      divOutput.text(' ');
 
       // BIOS bootstrap
       cpu.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM');
@@ -439,7 +438,7 @@ pseudo.CstrMips = (function() {
     },
 
     consoleWrite(kind, str) {
-      output.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
+      divOutput.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
     },
 
     setbp() {
@@ -452,16 +451,6 @@ pseudo.CstrMips = (function() {
 
     readbase(addr) {
       return r[addr];
-    },
-
-    pause() {
-      cancelAnimationFrame(requestAF);
-      requestAF = undefined;
-      bp = true;
-    },
-
-    resume() {
-      cpu.run();
     }
   };
 })();

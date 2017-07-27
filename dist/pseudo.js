@@ -453,7 +453,7 @@ pseudo.CstrAudio = (function() {
       if (addr >= 0x1c00 && addr <= 0x1d7e) {
         var n = (addr>>>4)&0x1f;
 
-        switch (addr&0xf) {
+        switch(addr&0xf) {
           case 0x0: // Volume L
             spuVoices[n].volume.l = setVolume(data);
             return;
@@ -489,7 +489,7 @@ pseudo.CstrAudio = (function() {
       }
 
       // HW
-      switch (addr) {
+      switch(addr) {
         case 0x1da0:
         case 0x1da4: // ???
         case 0x1dae:
@@ -560,7 +560,7 @@ pseudo.CstrAudio = (function() {
     scopeR: function(addr) {
       // Channels
       if (addr >= 0x1c00 && addr <= 0x1d7e) {
-        switch (addr&0xf) {
+        switch(addr&0xf) {
           case 0x0:
           case 0x2:
           case 0x4:
@@ -575,7 +575,7 @@ pseudo.CstrAudio = (function() {
       }
 
       // HW
-      switch (addr) {
+      switch(addr) {
         //case 0x1da4:
         case 0x1db0:
         case 0x1db2:
@@ -621,7 +621,7 @@ pseudo.CstrAudio = (function() {
     executeDMA: function(addr) {
       var size = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff)*2;
 
-      switch (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+      switch(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
         case 0x01000201: // Write DMA Mem
           dataMem.write(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
           return;
@@ -797,6 +797,8 @@ pseudo.CstrBus = (function() {
 
 
 pseudo.CstrCdrom = (function() {
+  var divBlink, divKb;
+
   var ctrl, stat, statP, re2;
   var occupied, readed, reads, seeked, muted;
   var irq, cdint, cdreadint;
@@ -1126,33 +1128,9 @@ pseudo.CstrCdrom = (function() {
     statP &= ~0x40;
     res.data[0] = statP;
 
-    //pseudo.CstrMips.pause();
     trackRead();
-    $('#blink').css({ 'background':'#f5cb0f' });
 
-    // var buf = pseudo.CstrMain.fetchBuffer();
-    // transfer.data.set(buf);
-    // stat = 1;
-
-    // sector.data[2]++;
-    // if (sector.data[2] === 75) {
-    //   sector.data[2] = 0;
-      
-    //   sector.data[1]++;
-    //   if (sector.data[1] === 60) {
-    //     sector.data[1] = 0;
-    //     sector.data[0]++;
-    //   }
-    // }
-    // readed = 0;
-
-    // if ((transfer.data[4+2]&0x80) && (mode&0x02)) {
-    //   addIrqQueue(9); // CdlPause
-    // }
-    // else {
-    //   cdreadint = 1;
-    // }
-    // pseudo.CstrBus.interruptSet(2);
+    divBlink.css({ 'background':'#f5cb0f' });
   }
 
   return {
@@ -1180,9 +1158,15 @@ pseudo.CstrCdrom = (function() {
         cdreadint = 1;
       }
       pseudo.CstrBus.interruptSet(2);
-      //pseudo.CstrMips.resume();
-      $('#blink').css({ 'background':'transparent' });
-      $('#kb').text(Math.round(kbRead/1024)+' kb');
+
+      divBlink.css({ 'background':'transparent' });
+      divKb.innerText = Math.round(kbRead/1024)+' kb';
+    },
+
+    awake(blink, kb) {
+      // Get HTML elements
+      divBlink = blink;
+      divKb    = kb[0];
     },
 
     reset() {
@@ -2415,8 +2399,7 @@ pseudo.CstrMem = (function() {
 
 
 pseudo.CstrMips = (function() {
-  // HTML elements
-  var output;
+  var divOutput;
   var bp, opcodeCount, requestAF, ptr, temp;
 
   // Base + Coprocessor
@@ -2442,8 +2425,8 @@ pseudo.CstrMips = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    //var code = ptr[(( r[32])&(ptr.byteLength-1))>>>2];
-    var code = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw[(( r[32])&(pseudo.CstrMem.__rom.uw.byteLength-1))>>>2] : pseudo.CstrMem.__ram.uw[(( r[32])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
+    var code = ptr[(( r[32])&(ptr.byteLength-1))>>>2];
+    //var code = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw[(( r[32])&(pseudo.CstrMem.__rom.uw.byteLength-1))>>>2] : pseudo.CstrMem.__ram.uw[(( r[32])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
     opcodeCount++;
     r[32]  += 4;
     r[0] = 0; // As weird as this seems, it is needed
@@ -2478,7 +2461,7 @@ pseudo.CstrMips = (function() {
           case 8: // JR
             branch(r[((code>>>21)&0x1f)]);
             ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
-            if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { var char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>'); output.append(char.toUpperCase()); } };
+            if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { var char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>'); divOutput.append(char.toUpperCase()); } };
             return;
 
           case 9: // JALR
@@ -2753,8 +2736,8 @@ pseudo.CstrMips = (function() {
 
   // Exposed class functions/variables
   return {
-    awake(element) {
-      output = element;
+    awake(output) {
+      divOutput = output;
     },
 
     reset() {
@@ -2775,7 +2758,7 @@ pseudo.CstrMips = (function() {
       ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
 
       // Clear console out
-      output.text(' ');
+      divOutput.text(' ');
 
       // BIOS bootstrap
       pseudo.CstrMips.consoleWrite('info', 'BIOS file has been written to ROM');
@@ -2808,7 +2791,7 @@ pseudo.CstrMips = (function() {
     },
 
     consoleWrite(kind, str) {
-      output.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
+      divOutput.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
     },
 
     setbp() {
@@ -2821,16 +2804,6 @@ pseudo.CstrMips = (function() {
 
     readbase(addr) {
       return r[addr];
-    },
-
-    pause() {
-      cancelAnimationFrame(requestAF);
-      requestAF = undefined;
-      bp = true;
-    },
-
-    resume() {
-      pseudo.CstrMips.run();
     }
   };
 })();
@@ -2851,8 +2824,7 @@ pseudo.CstrMips = (function() {
 
 
 pseudo.CstrMain = (function() {
-  // HTML elements
-  var dropzone;
+  var html;
   var iso, unusable;
 
   // AJAX function
@@ -2946,19 +2918,18 @@ pseudo.CstrMain = (function() {
 
   // Exposed class functions/variables
   return {
-    awake() {
-      dropzone = $('#dropzone');
-      unusable = false;
+    awake(screen, blink, kb, res, double, output, dropzone, footer) {
+      divDropzone = dropzone;
+         unusable = false;
+      
+      pseudo.CstrRender.awake(screen, res, double, footer);
+       pseudo.CstrAudio.awake();
+       pseudo.CstrCdrom.awake(blink, kb);
+         pseudo.CstrMips.awake(output);
 
-      $(function() { // DOMContentLoaded
-         pseudo.CstrRender.awake($('#screen'), $('#resolution'));
-          pseudo.CstrAudio.awake();
-            pseudo.CstrMips.awake($('#output'));
-
-        request('bios/scph1001.bin', function(resp) {
-          // Move BIOS to Mem
-          pseudo.CstrMem.__rom.ub.set(new Uint8Array(resp));
-        });
+      request('bios/scph1001.bin', function(resp) {
+        // Move BIOS to Mem
+        pseudo.CstrMem.__rom.ub.set(new Uint8Array(resp));
       });
     },
 
@@ -2977,9 +2948,9 @@ pseudo.CstrMain = (function() {
     },
 
     drop: {
-      file(element, e) {
+      file(e) {
         e.preventDefault();
-        pseudo.CstrMain.drop.exit(element);
+        pseudo.CstrMain.drop.exit();
         
         var dt = e.dataTransfer;
 
@@ -3019,12 +2990,12 @@ pseudo.CstrMain = (function() {
         e.preventDefault();
       },
 
-      enter(element) {
-        dropzone.addClass('dropzone-active');
+      enter() {
+        divDropzone.addClass('dropzone-active');
       },
 
-      exit(element) {
-        dropzone.removeClass('dropzone-active');
+      exit() {
+        divDropzone.removeClass('dropzone-active');
       }
     },
 
@@ -3181,8 +3152,7 @@ pseudo.CstrMain = (function() {
 
 
 pseudo.CstrRender = (function() {
-  // HTML elements
-  var screen, resolution;
+  var divScreen, divRes, divDouble, divFooter;
   
   var ctx, attrib, bfr; // 'webgl', { preserveDrawingBuffer: true } Context
   var blend, bit, ofs;
@@ -3214,13 +3184,15 @@ pseudo.CstrRender = (function() {
 
   // Exposed class functions/variables
   return {
-    awake(divScreen, divResolution) {
+    awake(screen, resolution, double, footer) {
       // Get HTML elements
-      screen     = divScreen[0];
-      resolution = divResolution[0];
+      divScreen = screen[0];
+      divRes    = resolution[0];
+      divDouble = double;
+      divFooter = footer;
 
       // 'webgl', { preserveDrawingBuffer: true } Canvas
-      ctx = screen.getContext('webgl', { preserveDrawingBuffer: true });
+      ctx = divScreen.getContext('webgl', { preserveDrawingBuffer: true });
       ctx. enable(ctx.BLEND);
       ctx.disable(ctx.DEPTH_TEST);
       ctx.disable(ctx.CULL_FACE);
@@ -3298,14 +3270,14 @@ pseudo.CstrRender = (function() {
 
         // Native PSX resolution
         ctx.uniform2f(attrib._r, data.w/2, data.h/2);
-        resolution.innerText = data.w+' x '+data.h;
+        divRes.innerText = data.w+' x '+data.h;
 
         // Construct desired resolution
         var w = (res.override.w || data.w) * res.multiplier;
         var h = (res.override.h || data.h) * res.multiplier;
 
-        screen.width = w;
-        screen.height   = h;
+        divScreen.width = w;
+        divScreen.height   = h;
         ctx.viewport(0, 0, w, h);
       }
       else {
@@ -3318,10 +3290,10 @@ pseudo.CstrRender = (function() {
 
       // Show/hide elements
       if (res.multiplier === 1) {
-        $('#footer').show();
+        divFooter.show();
       }
       else {
-        $('#footer').hide();
+        divFooter.hide();
       }
       
       // Redraw

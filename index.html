@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>PSeudo™</title>
+  <title>PSeudo</title>
 
   <STYLE>
     @import url('css/normalize.css');
@@ -10,11 +10,11 @@
     /* Fonts */
     @font-face {
       src: url('css/oswald-300.woff2');
-      font-FAMILY: 'Oswald-300';
+      font-FAMILY: 'Oswald 300';
     }
     @font-face {
       src: url('css/oswald-400.woff2');
-      font-FAMILY: 'Oswald-400';
+      font-FAMILY: 'Oswald 400';
     }
     @font-face {
       src: url('css/ps.woff2');
@@ -39,83 +39,75 @@
     * {
       box-SIZING: border-box;
     }
-    BODY {
+    html, BODY {
       color: white;
-      BACKGROUND: #1f1f1f url('res/noise.png');
+      BACKGROUND: #222 url('res/noise.png');
       font: normal 13px 'Helvetica Neue', sans-serif;
-    }
-    #root {
-      DISPLAY: flex;
-      flex-direction: column;
-      position: absolute;
-      width: 100%;
       HEIGHT: 100%;
     }
-    #top {
-      BACKGROUND: #161616;
-      min-HEIGHT: 28px;
-      border-bottom: 1px solid RGBA(255, 255, 255, .2);
-    }
-    #bottom {
+    .centered-h, .centered-v {
       DISPLAY: flex;
-      flex: 1;
-    }
-    #pane-left {
-      DISPLAY: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-    #pane-r {
-      border-left: 1px solid RGBA(255, 255, 255, .2);
-      overflow-Y: scroll;
-    }
-    .spacer {
-      DISPLAY: flex;
-      ALIGN-items: center;
       flex: 1;
       MARGIN: 0 12%;
     }
-
-    /* Header */
-    #bar-header {
+    .centered-v {
+      flex-direction: column;
+    }
+    #container {
       DISPLAY: flex;
+      flex-direction: column;
+      HEIGHT: 100%;
+    }
+
+    /* Small header */
+    #header {
+      BACKGROUND: RGBA(0, 0, 0, .2);
+      HEIGHT: 25px;
+      border-bottom: 1px solid RGBA(255, 255, 255, .15);
+    }
+
+    /* Main */
+    #main {
+      DISPLAY: flex;
+      flex: 1;
+      MARGIN-bottom: 15px;
+    }
+    #main .header {
+      DISPLAY: flex;
+      ALIGN-items: center;
       min-HEIGHT: 50px;
     }
-    #bar-header > .spacer > IMG {
-      width: 30px;
+    #main .ps {
+      width: 32px;
     }
-    #brand {
+    #main .brand {
       font: normal 28px 'PS', sans-serif;
       letter-SPACING: 2px;
-      MARGIN-left: 12px;
+      MARGIN-left: 15px;
     }
 
     /* Screen */
-    #bar-screen {
-      DISPLAY: flex;
-      flex: 1;
-      BACKGROUND: linear-Gradient(to bottom, transparent 0%, transparent 15%, #191919 15%, #191919 85%, transparent 85%, transparent 100%);
-      min-HEIGHT: 280px;
-    }
-    #container-screen {
+    #main .screen {
       DISPLAY: flex;
       JUSTIFY-content: center;
       ALIGN-items: center;
       flex: 1;
       position: relative;
       BACKGROUND: black;
-      MARGIN: 0 12% 20px 12%;
+      min-HEIGHT: 250px;
     }
     #screen {
       DISPLAY: block;
-      MARGIN: 0 auto;
+      BACKGROUND: black;
     }
-    #screen-led {
+
+    /* CD-ROM indication */
+    #main .screen > .led {
       DISPLAY: flex;
       ALIGN-items: center;
       position: absolute;
       bottom: 8px;
-      left: 8px;
+      left: 10px;
     }
     #blink {
       BACKGROUND: transparent;
@@ -129,12 +121,14 @@
       font-size: 11px;
       MARGIN-left: 8px;
     }
-    #screen-properties {
+
+    /* Information */
+    #main .screen > .properties {
       DISPLAY: flex;
       ALIGN-items: center;
       position: absolute;
       top: 8px;
-      RIGHT: 8px;
+      RIGHT: 10px;
     }
     #resolution {
       color: #f5cb0f;
@@ -153,23 +147,23 @@
       cursor: pointer;
     }
 
-    /* Boxes */
-    #bar-boxes {
-      flex: 1;
+    /* Panels */
+    #footer {
       DISPLAY: flex;
-      MARGIN: 0 12% 20px 12%;
+      HEIGHT: 180px;
+      MARGIN-bottom: 15px;
     }
-    .box-header {
-      font: normal 26px 'Oswald-400', sans-serif;
-      MARGIN-bottom: 8px;
+    #footer .header {
+      font: normal 27px 'Oswald 400', sans-serif;
+      letter-SPACING: 1px;
     }
-
-    /* Output */
-    #box-output {
+    #footer .panel-l {
       DISPLAY: flex;
       flex-direction: column;
       flex: 1;
     }
+
+    /* Console */
     #output {
       flex: 1;
       color: #93a0a8;
@@ -188,127 +182,89 @@
     #output > .info > span, #output > .error > span {
       color: #f5cb0f;
     }
-
-    /* Dropzone */
-    #box-dropzone {
+    #footer .panel-r {
       DISPLAY: flex;
-      flex-direction: column;
-      min-width: 250px;
-      PADDING-left: 30px;
+      width: 180px;
+      MARGIN-left: 15px;
     }
+
+    /* File drop */
     #dropzone {
       DISPLAY: flex;
       flex-direction: column;
       JUSTIFY-content: center;
       ALIGN-items: center;
       flex: 1;
-      border: 5px dashed RGBA(255, 255, 255, .1);
+      BACKGROUND: RGBA(0, 0, 0, .1);
+      text-ALIGN: center;
+      border: 5px solid RGBA(255, 255, 255, .1);
+      border-radius: 90px;
       transition: border .2s ease-in-out;
     }
     .dropzone-active {
-      border: 5px dashed #1ba1a4 !important;
+      border: 5px solid #93a0a8 !important;
     }
     #dropzone > IMG {
-      width: 52px;
+      width: 45px;
       MARGIN-bottom: 20px;
     }
     #dropzone > div:nth-child(2) {
-      color: #fff;
-      font: normal 15px 'Oswald-400', sans-serif;
+      font: normal 15px 'Oswald 400', sans-serif;
     }
     #dropzone > div:nth-child(3) {
       color: #93a0a8;
-      font: normal 13px 'Oswald-300', sans-serif;
+      font: normal 13px 'Oswald 300', sans-serif;
+      MARGIN-bottom: 5px;
     }
     #dropzone > IMG, #dropzone > div {
       pointer-events: none !important;
     }
-
-    /* Homebrew */
-    #homebrew {
-      flex: 1;
-      overflow-Y: scroll;
-    }
-    #homebrew > .item {
-      color: #93a0a8;
-      text-ALIGN: RIGHT;
-      HEIGHT: 36px;
-      line-HEIGHT: 36px;
-      PADDING: 0 7px;
-      cursor: pointer;
-    }
-    #homebrew > .item:nth-child(even) {
-      BACKGROUND: RGBA(0, 0, 0, .25);
-    }
-    #homebrew > .item:hover {
-      color: #1ba1a4;
-      text-decoration: underline;
-    }
   </STYLE>
 </head>
 <BODY>
-  <div id="root">
-
-    <!-- Top -->
-    <div id="top">
+  <div id="container">
+    <div id="header">
     </div>
 
-    <!-- Bottom -->
-    <div id="bottom">
-
-      <!-- Pane L -->
-      <div id="pane-left">
-
-        <!-- Header -->
-        <div id="bar-header">
-          <div class="spacer">
-            <IMG src="res/ps.png"/>
-            <div id="brand">PSeudo</div>
-            <div STYLE="color:white;flex:1;font:normal 14px 'Oswald-400', sans-serif;text-ALIGN:RIGHT;cursor:pointer" onclick="pseudo.CstrMain.run('bios')">Power Up!</div>
-          </div>
+    <!-- Main -->
+    <div id="main">
+      <div class="centered-v">
+        <div class="header">
+           <IMG class="ps" src="res/ps.png"/>
+           <div class="brand">PSeudo</div>
         </div>
 
         <!-- Screen -->
-        <div id="bar-screen">
-          <div id="container-screen">
-            <canvas id="screen" width="320" HEIGHT="240">
-              No support for <code>canvas</code> element.
-            </canvas>
-            <div id="screen-led">
-              <div id="blink"></div>
-              <div id="kb">0 kb</div>
-            </div>
-            <div id="screen-properties">
-              <div id="resolution"></div>
-              <div id="double" onclick="pseudo.CstrRender.doubleResolution()">x2</div>
-            </div>
+        <div class="screen">
+          <canvas id="screen" width="320" HEIGHT="240">
+            No support for <code>canvas</code> element.
+          </canvas>
+          <div class="led">
+            <div id="blink"></div>
+            <div id="kb">0 kb</div>
           </div>
-        </div>
-
-        <!-- Boxes -->
-        <div id="bar-boxes">
-
-          <!-- Output -->
-          <div id="box-output">
-            <div class="box-header">CONSOLE</div>
-            <div id="output"></div>
-          </div>
-
-          <!-- DropZone -->
-          <div id="box-dropzone">
-            <div class="box-header">DROP-ZONE</div>
-            <div id="dropzone" ondrop="pseudo.CstrMain.drop.file(this, event)" ONDRAGENTER="pseudo.CstrMain.drop.enter(this)" ONDRAGLEAVE="pseudo.CstrMain.drop.exit(this)" ONDRAGOVER="pseudo.CstrMain.drop.over(event)">
-              <IMG src="res/drop.png"/>
-              <div>DRAG & DROP PSX FILES HERE</div>
-              <div>Extension .iso, .bin, .psx, .exe</div>
-            </div>
+          <div class="properties">
+            <div id="resolution"></div>
+            <div id="double" onclick="pseudo.CstrRender.doubleResolution()">x2</div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Pane R -->
-      <div id="pane-r">
-        <div id="homebrew"></div>
+    <!-- Panels -->
+    <div id="footer">
+      <div class="centered-h">
+        <div class="panel-l">
+          <div class="header">CONSOLE</div>
+          <div id="output"></div>
+        </div>
+        <div class="panel-r">
+          <div id="dropzone" ondrop="pseudo.CstrMain.drop.file(event)" ONDRAGENTER="pseudo.CstrMain.drop.enter()" ONDRAGLEAVE="pseudo.CstrMain.drop.exit()" ONDRAGOVER="pseudo.CstrMain.drop.over(event)">
+            <IMG src="res/drop.png"/>
+            <div>DRAG & DROP PSX FILES</div>
+            <div>iso bin psx exe</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -320,32 +276,19 @@
   <script src="dist/pseudo.js"></script>
 
   <script>
-    // List all homebrew demos
-    $([
-      'another-fix.psx',
-      'bad-004.psx',
-      'before-time.psx',
-      'blend-x.psx',
-      'bubble-bobble.psx',
-      'casper.psx',
-      'champ-2000.psx',
-      'chrome.psx',
-      'deadline.psx',
-      'deub-intr.psx',
-      'far-brausch.psx',
-      'ff9.psx',
-      'flaptron.psx',
-      'print-text.psx',
-      'stc-012.psx',
-      'stc-020.psx',
-      'stuntmaster.psx',
-      'va.psx'
-    ]).each(function(i, s) { // Add action to run
-      $('#homebrew').append('<div class="item" onclick="pseudo.CstrMain.run(\'homebrew/'+s+'\')">'+s+'</div>');
-    });
+    $(function() {
+      var screen   = $('#screen');
+      var blink    = $('#blink');
+      var kb       = $('#kb');
+      var res      = $('#resolution');
+      var double   = $('#double');
+      var output   = $('#output');
+      var dropzone = $('#dropzone');
+      var footer   = $('#footer');
 
-    // Startup
-    pseudo.CstrMain.awake();
+      // Startup
+      pseudo.CstrMain.awake(screen, blink, kb, res, double, output, dropzone, footer);
+    });
   </script>
 </BODY>
 </html>
