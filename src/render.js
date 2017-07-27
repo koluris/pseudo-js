@@ -490,10 +490,10 @@ pseudo.CstrRender = (function() {
 
       // Show/hide elements
       if (res.multiplier === 1) {
-        $('#bar-boxes').show();
+        $('#footer').show();
       }
       else {
-        $('#bar-boxes').hide();
+        $('#footer').hide();
       }
       
       // Redraw

@@ -103,19 +103,16 @@ pseudo.CstrMain = (function() {
 
   // Exposed class functions/variables
   return {
-    awake() {
-      dropzone = $('#dropzone');
+    awake(screen, blink, kb, res, double, output, dropzone) {
       unusable = false;
+      
+      render.awake(screen, res);
+       audio.awake();
+         cpu.awake(output);
 
-      $(function() { // DOMContentLoaded
-         render.awake($('#screen'), $('#resolution'));
-          audio.awake();
-            cpu.awake($('#output'));
-
-        request('bios/scph1001.bin', function(resp) {
-          // Move BIOS to Mem
-          rom.ub.set(new UintBcap(resp));
-        });
+      request('bios/scph1001.bin', function(resp) {
+        // Move BIOS to Mem
+        rom.ub.set(new UintBcap(resp));
       });
     },
 

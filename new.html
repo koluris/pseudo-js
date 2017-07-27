@@ -7,6 +7,7 @@
   <STYLE>
     @import url('css/normalize.css');
 
+    /* Fonts */
     @font-face {
       src: url('css/oswald-300.woff2');
       font-FAMILY: 'Oswald 300';
@@ -57,11 +58,15 @@
       flex-direction: column;
       HEIGHT: 100%;
     }
+
+    /* Small header */
     #header {
       BACKGROUND: RGBA(0, 0, 0, .2);
       HEIGHT: 25px;
       border-bottom: 1px solid RGBA(255, 255, 255, .15);
     }
+
+    /* Main */
     #main {
       DISPLAY: flex;
       flex: 1;
@@ -72,25 +77,32 @@
       ALIGN-items: center;
       min-HEIGHT: 50px;
     }
+    #main .ps {
+      width: 32px;
+    }
     #main .brand {
       font: normal 28px 'PS', sans-serif;
       letter-SPACING: 2px;
       MARGIN-left: 15px;
     }
+
+    /* Screen */
     #main .screen {
       DISPLAY: flex;
       JUSTIFY-content: center;
       ALIGN-items: center;
       flex: 1;
       position: relative;
-      BACKGROUND: RGBA(0, 0, 0, .5);
+      BACKGROUND: black;
       min-HEIGHT: 250px;
     }
     #screen {
       DISPLAY: block;
       BACKGROUND: black;
     }
-    #screen-led {
+
+    /* CD-ROM indication */
+    #main .screen > .led {
       DISPLAY: flex;
       ALIGN-items: center;
       position: absolute;
@@ -109,7 +121,9 @@
       font-size: 11px;
       MARGIN-left: 8px;
     }
-    #screen-properties {
+
+    /* Information */
+    #main .screen > .properties {
       DISPLAY: flex;
       ALIGN-items: center;
       position: absolute;
@@ -132,6 +146,8 @@
       border: 2px solid white;
       cursor: pointer;
     }
+
+    /* Panels */
     #footer {
       DISPLAY: flex;
       HEIGHT: 180px;
@@ -146,6 +162,8 @@
       flex-direction: column;
       flex: 1;
     }
+
+    /* Console */
     #output {
       flex: 1;
       color: #93a0a8;
@@ -169,6 +187,8 @@
       width: 180px;
       MARGIN-left: 15px;
     }
+
+    /* File drop */
     #dropzone {
       DISPLAY: flex;
       flex-direction: column;
@@ -206,22 +226,24 @@
     <div id="header">
     </div>
 
+    <!-- Main -->
     <div id="main">
       <div class="centered-v">
         <div class="header">
-           <IMG src="res/ps.png" width="32"/>
+           <IMG class="ps" src="res/ps.png"/>
            <div class="brand">PSeudo</div>
         </div>
 
+        <!-- Screen -->
         <div class="screen">
           <canvas id="screen" width="320" HEIGHT="240">
             No support for <code>canvas</code> element.
           </canvas>
-          <div id="screen-led">
+          <div class="led">
             <div id="blink"></div>
             <div id="kb">0 kb</div>
           </div>
-          <div id="screen-properties">
+          <div class="properties">
             <div id="resolution"></div>
             <div id="double" onclick="pseudo.CstrRender.doubleResolution()">x2</div>
           </div>
@@ -229,6 +251,7 @@
       </div>
     </div>
 
+    <!-- Panels -->
     <div id="footer">
       <div class="centered-h">
         <div class="panel-l">
@@ -253,8 +276,18 @@
   <script src="dist/pseudo.js"></script>
 
   <script>
-    // Startup
-    pseudo.CstrMain.awake();
+    $(function() {
+      var screen   = $('#screen');
+      var blink    = $('#blink');
+      var kb       = $('#kb');
+      var res      = $('#resolution');
+      var double   = $('#double');
+      var output   = $('#output');
+      var dropzone = $('#dropzone');
+
+      // Startup
+      pseudo.CstrMain.awake(screen, blink, kb, res, double, output, dropzone);
+    });
   </script>
 </BODY>
 </html>
