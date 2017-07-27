@@ -57,14 +57,6 @@ pseudo.CstrMain = (function() {
     }
   }
 
-  // function isoReader(file, fn) {
-  //   var reader = new FileReader();
-  //   reader.onload = function(e) { // Callback
-  //     fn(e.dest.result);
-  //   };
-  //   reader.readAsBuffer(file);
-  // }
-
   function reset() {
     // Prohibit all user actions
     if (unusable) {
@@ -200,10 +192,8 @@ pseudo.CstrMain = (function() {
       var size   = UDF_DATASIZE;
 
       chunkReader2(iso, offset, size, function(data) {
-        var hi = new UintBcap(data);
-        var sliced = hi.slice(0, UDF_DATASIZE);
-        cdrom.interruptRead2(sliced);
-        // slice(0, DATASIZE);å
+        cdrom.interruptRead2(new UintBcap(data));
+        // slice(0, DATASIZE)
       });
     }
   };
