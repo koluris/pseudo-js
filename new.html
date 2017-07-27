@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8"/>
   <title>PSeudo</title>
 
   <STYLE>
     @import url('css/normalize.css');
 
+    @font-face {
+      src: url('css/oswald-300.woff2');
+      font-FAMILY: 'Oswald 300';
+    }
     @font-face {
       src: url('css/oswald-400.woff2');
       font-FAMILY: 'Oswald 400';
@@ -14,12 +19,29 @@
       src: url('css/ps.woff2');
       font-FAMILY: 'PS';
     }
+
+    /* Text Selection */
+    ::selection {
+      color: white;
+      BACKGROUND: RGBA(255, 255, 255, .15);
+    }
+
+    /* ScrollBar */
+    ::-webkit-scrollbar {
+      width: 3px;
+    }
+    ::-webkit-scrollbar-thumb {
+      BACKGROUND: #93a0a8;
+    }
+
+    /* General */
     * {
       box-SIZING: border-box;
     }
     html, BODY {
       color: white;
       BACKGROUND: #222 url('res/noise.png');
+      font: normal 13px 'Helvetica Neue', sans-serif;
       HEIGHT: 100%;
     }
     .centered-h, .centered-v {
@@ -52,7 +74,7 @@
     }
     #main .brand {
       font: normal 28px 'PS', sans-serif;
-      letter-SPACING: 1px;
+      letter-SPACING: 2px;
       MARGIN-left: 15px;
     }
     #main .screen {
@@ -60,13 +82,121 @@
       JUSTIFY-content: center;
       ALIGN-items: center;
       flex: 1;
+      position: relative;
       BACKGROUND: black;
       min-HEIGHT: 250px;
+    }
+    #screen {
+      DISPLAY: block;
+    }
+    #screen-led {
+      DISPLAY: flex;
+      ALIGN-items: center;
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+    }
+    #blink {
+      BACKGROUND: transparent;
+      width: 10px;
+      HEIGHT: 10px;
+      border-radius: 5px;
+      border: 1px solid #f5cb0f;
+    }
+    #kb {
+      color: #93a0a8;
+      font-size: 11px;
+      MARGIN-left: 8px;
+    }
+    #screen-properties {
+      DISPLAY: flex;
+      ALIGN-items: center;
+      position: absolute;
+      top: 8px;
+      RIGHT: 8px;
+    }
+    #resolution {
+      color: #f5cb0f;
+      MARGIN-RIGHT: 8px;
+    }
+    #double {
+      DISPLAY: flex;
+      JUSTIFY-content: center;
+      ALIGN-items: center;
+      color: white;
+      font-size: 12px;
+      width: 28px;
+      HEIGHT: 28px;
+      border-radius: 14px;
+      border: 2px solid white;
+      cursor: pointer;
     }
     #footer {
       DISPLAY: flex;
       HEIGHT: 180px;
       MARGIN-bottom: 10px;
+    }
+    #footer .header {
+      font: normal 27px 'Oswald 400', sans-serif;
+      letter-SPACING: 1px;
+    }
+    #footer .panel-l {
+      DISPLAY: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    #output {
+      flex: 1;
+      color: #93a0a8;
+      font: normal 13px 'Andale Mono', sans-serif;
+      border-top: 1px solid RGBA(255, 255, 255, .1);
+      border-bottom: 1px solid RGBA(255, 255, 255, .1);
+      PADDING: 7px 0;
+      overflow-Y: scroll;
+    }
+    #output > .info {
+      color: #1ba1a4;
+    }
+    #output > .error {
+      color: #de1429;
+    }
+    #output > .info > span, #output > .error > span {
+      color: #f5cb0f;
+    }
+    #footer .panel-r {
+      DISPLAY: flex;
+      width: 180px;
+      MARGIN-left: 15px;
+    }
+    #dropzone {
+      DISPLAY: flex;
+      flex-direction: column;
+      JUSTIFY-content: center;
+      ALIGN-items: center;
+      flex: 1;
+      BACKGROUND: RGBA(0, 0, 0, .1);
+      text-ALIGN: center;
+      border: 5px solid RGBA(255, 255, 255, .1);
+      border-radius: 90px;
+      transition: border .2s ease-in-out;
+    }
+    .dropzone-active {
+      border: 5px solid #93a0a8 !important;
+    }
+    #dropzone > IMG {
+      width: 45px;
+      MARGIN-bottom: 20px;
+    }
+    #dropzone > div:nth-child(2) {
+      font: normal 15px 'Oswald 400', sans-serif;
+    }
+    #dropzone > div:nth-child(3) {
+      color: #93a0a8;
+      font: normal 13px 'Oswald 300', sans-serif;
+      MARGIN-bottom: 5px;
+    }
+    #dropzone > IMG, #dropzone > div {
+      pointer-events: none !important;
     }
   </STYLE>
 </head>
@@ -83,7 +213,16 @@
         </div>
 
         <div class="screen">
-          <div STYLE="BACKGROUND:Yellow;width:200px;HEIGHT:200px">
+          <canvas id="screen" width="320" HEIGHT="240">
+            No support for <code>canvas</code> element.
+          </canvas>
+          <div id="screen-led">
+            <div id="blink"></div>
+            <div id="kb">0 kb</div>
+          </div>
+          <div id="screen-properties">
+            <div id="resolution"></div>
+            <div id="double" onclick="pseudo.CstrRender.doubleResolution()">x2</div>
           </div>
         </div>
       </div>
@@ -91,18 +230,30 @@
 
     <div id="footer">
       <div class="centered-h">
-        <div STYLE="flex:1;border-top:1px solid RGBA(255, 255, 255, .1);border-bottom:1px solid RGBA(255, 255, 255, .1)">
+        <div class="panel-l">
+          <div class="header">CONSOLE</div>
+          <div id="output"></div>
         </div>
-        <div STYLE="width:180px;border:5px solid RGBA(255, 255, 255, .1);border-radius:90px">
+        <div class="panel-r">
+          <div id="dropzone" ondrop="pseudo.CstrMain.drop.file(this, event)" ONDRAGENTER="pseudo.CstrMain.drop.enter(this)" ONDRAGLEAVE="pseudo.CstrMain.drop.exit(this)" ONDRAGOVER="pseudo.CstrMain.drop.over(event)">
+            <IMG src="res/drop.png"/>
+            <div>PLACE PSX FILES HERE</div>
+            <div>iso bin psx exe</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Fork me on GitHub -->
+  <a href="https://GitHub.com/dkoliris/pseudo"><IMG STYLE="position:absolute;width:120px;top:0;left:0" src="https://camo.GitHubusercontent.com/82b228a3648bf44fc1163ef44c62fcc60081495e/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f7265645f6161303030302e706e67" alt="Fork me on GitHub"></a>
+
   <script src="dist/quer-3.2.1.min.js"></script>
   <script src="dist/pseudo.js"></script>
 
   <script>
+    // Startup
+    pseudo.CstrMain.awake();
   </script>
 </BODY>
 </html>
