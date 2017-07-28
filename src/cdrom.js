@@ -36,6 +36,7 @@
 #define CD_MODE_REPT       0x04
 #define CD_MODE_SIZE0      0x10
 #define CD_MODE_SIZE1      0x20
+#define CD_MODE_RT         0x40
 #define CD_MODE_SPEED      0x80
 
 #define CD_READTIME\
@@ -56,26 +57,21 @@
   status |= CD_STATUS_READ
 
 #define invokeInterrupt()\
-  if ((interrupt.status & 0x7) !== 0) {\
+  if (interrupt.status&0x7) {\
     bus.interruptSet(IRQ_CD);\
   }
 
 #define parameterClear()\
   resetVals(parameter);\
-  control |= CD_CTRL_NP;\
-  control |= CD_CTRL_PH
-
-#define resultClear()\
-  resetVals(result);\
-  control &= ~CD_CTRL_RES
+  control |= (CD_CTRL_NP|CD_CTRL_PH) 
 
 // Must stop CDDA as well
 #define stopRead()\
   if (reads) {\
-    status &= ~(CD_STATUS_SEEK | CD_STATUS_READ | CD_STATUS_PLAY);\
+    pause = false;\
     motorSeek.enabled = false;\
     motorRead.enabled = false;\
-    pause = false;\
+    status &= ~(CD_STATUS_SEEK | CD_STATUS_READ | CD_STATUS_PLAY);\
     reads = 0;\
   }
 
@@ -129,6 +125,7 @@ pseudo.CstrCdrom = (function() {
   }
 
   function refreshCDLoc(loc) {
+    //console.log(loc.minute+' '+loc.sec+' '+loc.frame);
     var minute = BCD2INT(loc.minute);
     var sec    = BCD2INT(loc.sec);
     var frame  = BCD2INT(loc.frame);
@@ -147,16 +144,17 @@ pseudo.CstrCdrom = (function() {
   }
 
   function main() {
-    control &= ~CD_CTRL_BUSY;
     resetVals(result);
+    control &= ~CD_CTRL_BUSY;
     control &= ~CD_CTRL_RES;
+
     interrupt.status = (interrupt.status & 0xf8) | CD_ACKNOWLEDGE;
     
     if (status & CD_STATUS_ERROR) {
       psx.error('status & CD_STATUS_ERROR');
     }
     else {
-      if (kind == CD_CMD_NONBLOCKING) {
+      if (kind === CD_CMD_NONBLOCKING) {
         if (blockEnd) {
           interrupt.status = (interrupt.status & 0xf8) | CD_COMPLETE;
           blockEnd = 0;
@@ -213,8 +211,7 @@ pseudo.CstrCdrom = (function() {
           reads = 1;
           sector.firstRead = true;
           retr = true;
-          status |= CD_STATUS_STANDBY;
-          status |= CD_STATUS_READ;
+          status |= (CD_STATUS_STANDBY|CD_STATUS_READ);
           invokeSeek();
           busres[0] = status;
           kind = CD_CMD_BLOCKING;
@@ -335,6 +332,7 @@ pseudo.CstrCdrom = (function() {
     }
 
     if (reads === 1) {
+      console.log(seekLoc.minute+' '+seekLoc.sec+' '+seekLoc.frame);
       psx.trackRead(seekLoc);
       divBlink.css({ 'background':'#f5cb0f' });
     }
@@ -387,15 +385,16 @@ pseudo.CstrCdrom = (function() {
       dma.pointer = 0;
       control &= ~CD_CTRL_DMA;
       
-      if ((mute === 0) && (mode & CD_MODE_RT) && (sector.firstRead !== -1)) {
+      if (!mute && (mode&CD_MODE_RT) && (sector.firstRead !== -1)) {
         psx.error('(sector.firstRead !== -1)');
       }
-      control |= CD_CTRL_RES;
+      
       result.value[0] = status;
-      result.size     = 1;
+      control |= CD_CTRL_RES;
+      result.size = 1;
       result.pointer  = 0;
 
-      if (mode & CD_MODE_REPT) {
+      if (mode&CD_MODE_REPT) {
         psx.error('*** mode & CD_MODE_REPT');
       }
 
@@ -411,8 +410,8 @@ pseudo.CstrCdrom = (function() {
       busres.fill(0);
       buspar.fill(0);
 
-      control |= CD_CTRL_PH | CD_CTRL_NP;
-      status  |= CD_STATUS_STANDBY;
+      control = CD_CTRL_PH | CD_CTRL_NP;
+      status = CD_STATUS_STANDBY;
       kbRead = 0;
 
       interrupt.status = 0xe0;
@@ -508,15 +507,15 @@ pseudo.CstrCdrom = (function() {
         case 0: // Set Mode
           switch(data) {
             case 0x00:
-              control &= ~(CD_CTRL_MODE0 | CD_CTRL_MODE1);
+              control &= (~(CD_CTRL_MODE0 | CD_CTRL_MODE1));
               return;
 
             case 0x01:
-              control = (control | CD_CTRL_MODE0) & ~CD_CTRL_MODE1;
+              control = (control | CD_CTRL_MODE0) & (~CD_CTRL_MODE1);
               return;
 
             case 0x02:
-              control = (control | CD_CTRL_MODE1) & ~CD_CTRL_MODE0;
+              control = (control | CD_CTRL_MODE1) & (~CD_CTRL_MODE0);
               return;
 
             case 0x03:
@@ -539,9 +538,12 @@ pseudo.CstrCdrom = (function() {
                   interrupt.onholdParam.pointer = parameter.pointer;
                   return;
                 }
-
-                command(data);
               }
+              else {
+                return;
+              }
+
+              command(data);
               return;
 
             case 0x03:
@@ -642,15 +644,22 @@ pseudo.CstrCdrom = (function() {
         case 1:
           switch(control&0x03) {
             case 0x01:
-              if (control & CD_CTRL_RES) {
-                var temp = result.value[result.pointer];
+              {
+                var ret = 0;
 
-                if (result.pointer++ + 1 >= result.size) {
-                  resultClear();
+                if (control & CD_CTRL_RES) {
+                  ret = result.value[result.pointer];
+
+                  if (result.pointer++ + 1 >= result.size) {
+                    resetVals(result);
+                    control &= ~CD_CTRL_RES;
+                  }
                 }
-                return temp;
+                else {
+                  ret = 0;
+                }
+                return ret;
               }
-              return 0;
           }
           psx.error('scopeR 0x1801 control&0x03 '+hex(control&0x03));
           return 0;

@@ -801,10 +801,6 @@ pseudo.CstrBus = (function() {
 
 
 
-
-
-
-
 // Must stop CDDA as well
 
 
@@ -865,6 +861,7 @@ pseudo.CstrCdrom = (function() {
   }
 
   function refreshCDLoc(loc) {
+    //console.log(loc.minute+' '+loc.sec+' '+loc.frame);
     var minute = (parseInt((loc.minute)/16) * 10 + (loc.minute)%16);
     var sec    = (parseInt((loc.sec)/16) * 10 + (loc.sec)%16);
     var frame  = (parseInt((loc.frame)/16) * 10 + (loc.frame)%16);
@@ -883,16 +880,17 @@ pseudo.CstrCdrom = (function() {
   }
 
   function main() {
-    control &= ~0x80;
     resetVals(result);
+    control &= ~0x80;
     control &= ~0x20;
+
     interrupt.status = (interrupt.status & 0xf8) | 0x03;
     
     if (status & 0x01) {
       pseudo.CstrMain.error('status & CD_STATUS_ERROR');
     }
     else {
-      if (kind == 1) {
+      if (kind === 1) {
         if (blockEnd) {
           interrupt.status = (interrupt.status & 0xf8) | 0x02;
           blockEnd = 0;
@@ -913,12 +911,12 @@ pseudo.CstrCdrom = (function() {
       }
     }
 
-    for (var i=0; (i < 8) && (buspar[i] !== 0); buspar[i++] = 0) {
+    for (var i=0; i<8 && buspar[i]; buspar[i++] = 0) {
       buspar[i] = param.value[i];
     }
-    resetVals(parameter); control |= 0x08; control |= 0x10;
+    resetVals(parameter); control |= (0x08|0x10);
 
-    for (var i=0; (i < 8) && (busres[i] !== 0); busres[i++] = 0) {
+    for (var i=0; i<8 && busres[i]; busres[i++] = 0) {
       result.value[i] = busres[i];
       result.size = i + 1;
       result.pointer = 0;
@@ -936,7 +934,7 @@ pseudo.CstrCdrom = (function() {
           break;
 
         case 0x02: // CdlSetLoc
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          if (reads) { pause = false; motorSeek.enabled = false; motorRead.enabled = false; status &= ~(0x40 | 0x20 | 0x80); reads = 0; };
           buspar[0] = destLoc.minute;
           buspar[1] = destLoc.sec;
           buspar[2] = destLoc.frame;
@@ -945,33 +943,32 @@ pseudo.CstrCdrom = (function() {
           break;
 
         case 0x06: // CdlReadN
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          if (reads) { pause = false; motorSeek.enabled = false; motorRead.enabled = false; status &= ~(0x40 | 0x20 | 0x80); reads = 0; };
           reads = 1;
           sector.firstRead = true;
           retr = true;
-          status |= 0x02;
-          status |= 0x20;
+          status |= (0x02|0x20);
           motorSeek.enabled = true; motorSeek.limit = motorSeek.sinc + (((33868800 / 121) / 64)/2);
           busres[0] = status;
           kind = 0;
           break;
 
         case 0x08: //CdlStop
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          if (reads) { pause = false; motorSeek.enabled = false; motorRead.enabled = false; status &= ~(0x40 | 0x20 | 0x80); reads = 0; };
           status &= ~0x02;
           busres[0] = status;
           kind = 1;
           break;
 
         case 0x09: // CdlPause
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          if (reads) { pause = false; motorSeek.enabled = false; motorRead.enabled = false; status &= ~(0x40 | 0x20 | 0x80); reads = 0; };
           status |= 0x02;
           busres[0] = status;
           kind = 1;
           break;
 
         case 0x0a: // CdlInit
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          if (reads) { pause = false; motorSeek.enabled = false; motorRead.enabled = false; status &= ~(0x40 | 0x20 | 0x80); reads = 0; };
           status |= 0x02;
           busres[0] = status;
           mode = 0;
@@ -1015,7 +1012,7 @@ pseudo.CstrCdrom = (function() {
           break;
 
         case 0x15: // CdlSeekL
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          if (reads) { pause = false; motorSeek.enabled = false; motorRead.enabled = false; status &= ~(0x40 | 0x20 | 0x80); reads = 0; };
           seekLoc.minute = destLoc.minute;
           seekLoc.sec    = destLoc.sec;
           seekLoc.frame  = destLoc.frame;
@@ -1039,7 +1036,7 @@ pseudo.CstrCdrom = (function() {
           break;
 
         case 0x1a: // CdlCheckId
-          if (reads) { status &= ~(0x40 | 0x20 | 0x80); motorSeek.enabled = false; motorRead.enabled = false; pause = false; reads = 0; };
+          if (reads) { pause = false; motorSeek.enabled = false; motorRead.enabled = false; status &= ~(0x40 | 0x20 | 0x80); reads = 0; };
           busres.set([0x00, 0x00, 0x00, 0x00, 'S', 'C', 'E', 'A']); // 0x08, 0x90 for Audio CD
           kind = 1;
           break;
@@ -1071,6 +1068,7 @@ pseudo.CstrCdrom = (function() {
     }
 
     if (reads === 1) {
+      console.log(seekLoc.minute+' '+seekLoc.sec+' '+seekLoc.frame);
       pseudo.CstrMain.trackRead(seekLoc);
       divBlink.css({ 'background':'#f5cb0f' });
     }
@@ -1078,7 +1076,6 @@ pseudo.CstrCdrom = (function() {
 
   return {
     cdromRead2(buf) {
-      var temp = 0;
       kbRead += buf.byteLength;
       sector.bfr.set(buf);
 
@@ -1089,23 +1086,23 @@ pseudo.CstrCdrom = (function() {
         pseudo.CstrMain.error('*** status & CD_STATUS_SHELL');
       }
 
-      if (sector.bfr[0] === seekLoc.minute && sector.bfr[1] === seekLoc.sec && sector.bfr[2] === seekLoc.frame) {
-        temp |= 0x08;
-      }
+      // if (sector.bfr[0] === seekLoc.minute && sector.bfr[1] === seekLoc.sec && sector.bfr[2] === seekLoc.frame) {
+      //   temp |= 0x08;
+      // }
       
-      if (temp) {
-        result.value[0] = status | 0x01;
-        result.value[1] = 0;
-        result.size = 2;
-        control |= 0x20;
+      // if (temp) {
+      //   result.value[0] = status | 0x01;
+      //   result.value[1] = 0;
+      //   result.size = 2;
+      //   control |= 0x20;
 
-        if (!retr) {
-          pseudo.CstrMain.error('retr');
-        }
+      //   if (!retr) {
+      //     pseudo.CstrMain.error('retr');
+      //   }
         
-        interrupt.status = (interrupt.status & 0xf8) | 0x05;
-        return;
-      }
+      //   interrupt.status = (interrupt.status & 0xf8) | 0x05;
+      //   return;
+      // }
 
       switch((mode & (0x10 | 0x20)) >> 4) {
         case 0:
@@ -1124,15 +1121,16 @@ pseudo.CstrCdrom = (function() {
       dma.pointer = 0;
       control &= ~0x40;
       
-      if ((mute === 0) && (mode & CD_MODE_RT) && (sector.firstRead !== -1)) {
+      if (!mute && (mode&0x40) && (sector.firstRead !== -1)) {
         pseudo.CstrMain.error('(sector.firstRead !== -1)');
       }
-      control |= 0x20;
+      
       result.value[0] = status;
-      result.size     = 1;
+      control |= 0x20;
+      result.size = 1;
       result.pointer  = 0;
 
-      if (mode & 0x04) {
+      if (mode&0x04) {
         pseudo.CstrMain.error('*** mode & CD_MODE_REPT');
       }
 
@@ -1148,8 +1146,8 @@ pseudo.CstrCdrom = (function() {
       busres.fill(0);
       buspar.fill(0);
 
-      control |= 0x10 | 0x08;
-      status  |= 0x02;
+      control = 0x10 | 0x08;
+      status = 0x02;
       kbRead = 0;
 
       interrupt.status = 0xe0;
@@ -1211,7 +1209,7 @@ pseudo.CstrCdrom = (function() {
           
           if ((interrupt.status & 0x07) === 0x00) {
             main();
-            if ((interrupt.status & 0x7) !== 0) { pseudo.CstrBus.interruptSet(2); };
+            if (interrupt.status&0x7) { pseudo.CstrBus.interruptSet(2); };
           }
           else {
             motorBase.enabled = true;
@@ -1231,7 +1229,7 @@ pseudo.CstrCdrom = (function() {
             if (reads) {
               motorSeek.enabled = true; motorSeek.limit = motorSeek.sinc + (((33868800 / 121) / 64)/2);
             }
-            if ((interrupt.status & 0x7) !== 0) { pseudo.CstrBus.interruptSet(2); };
+            if (interrupt.status&0x7) { pseudo.CstrBus.interruptSet(2); };
           }
           else {
             pseudo.CstrMain.error('2');
@@ -1245,15 +1243,15 @@ pseudo.CstrCdrom = (function() {
         case 0: // Set Mode
           switch(data) {
             case 0x00:
-              control &= ~(0x01 | 0x02);
+              control &= (~(0x01 | 0x02));
               return;
 
             case 0x01:
-              control = (control | 0x01) & ~0x02;
+              control = (control | 0x01) & (~0x02);
               return;
 
             case 0x02:
-              control = (control | 0x02) & ~0x01;
+              control = (control | 0x02) & (~0x01);
               return;
 
             case 0x03:
@@ -1276,9 +1274,12 @@ pseudo.CstrCdrom = (function() {
                   interrupt.onholdParam.pointer = parameter.pointer;
                   return;
                 }
-
-                command(data);
               }
+              else {
+                return;
+              }
+
+              command(data);
               return;
 
             case 0x03:
@@ -1304,7 +1305,7 @@ pseudo.CstrCdrom = (function() {
               switch(data) {
                 case 0x07:
                 case 0x1f:
-                  resetVals(parameter); control |= 0x08; control |= 0x10;
+                  resetVals(parameter); control |= (0x08|0x10);
                   return;
 
                 case 0x18:
@@ -1379,15 +1380,22 @@ pseudo.CstrCdrom = (function() {
         case 1:
           switch(control&0x03) {
             case 0x01:
-              if (control & 0x20) {
-                var temp = result.value[result.pointer];
+              {
+                var ret = 0;
 
-                if (result.pointer++ + 1 >= result.size) {
-                  resetVals(result); control &= ~0x20;
+                if (control & 0x20) {
+                  ret = result.value[result.pointer];
+
+                  if (result.pointer++ + 1 >= result.size) {
+                    resetVals(result);
+                    control &= ~0x20;
+                  }
                 }
-                return temp;
+                else {
+                  ret = 0;
+                }
+                return ret;
               }
-              return 0;
           }
           pseudo.CstrMain.error('scopeR 0x1801 control&0x03 '+('0x'+(control&0x03>>>0).toString(16)));
           return 0;
@@ -1410,11 +1418,11 @@ pseudo.CstrCdrom = (function() {
     },
 
     executeDMA(addr) {
-      var size = ((pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff)) * 4;
-
       if (!(control & 0x40)) {
         pseudo.CstrMain.error('CD DMA !(CD->Control & CtrlDMA)');
       }
+
+      var size = ((pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff)) * 4;
 
       if (!size) {
         pseudo.CstrMain.error('CD DMA !size');
@@ -1430,7 +1438,7 @@ pseudo.CstrCdrom = (function() {
           }
         }
 
-        var offset = pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x1fffff;
+        var offset = pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2];
         for (var i=0; i<size; i++) {
           pseudo.CstrMem.__ram.ub[(( i + offset)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = dma.bfr[i + dma.pointer];
         }
