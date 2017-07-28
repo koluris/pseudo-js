@@ -1,4 +1,4 @@
-#if 0
+#if 1
 
 // Based on Mizvekov`s work, circa 2001. Thanks a lot!
 
@@ -177,12 +177,12 @@ pseudo.CstrCdrom = (function() {
       }
     }
 
-    for (var i=0; (i < 8) && (buspar[i] !== 0); buspar[i++] = 0) {
+    for (var i=0; i<8 && buspar[i]; buspar[i++] = 0) {
       buspar[i] = param.value[i];
     }
     parameterClear();
 
-    for (var i=0; (i < 8) && (busres[i] !== 0); busres[i++] = 0) {
+    for (var i=0; i<8 && busres[i]; busres[i++] = 0) {
       result.value[i] = busres[i];
       result.size = i + 1;
       result.pointer = 0;
@@ -673,11 +673,11 @@ pseudo.CstrCdrom = (function() {
     },
 
     executeDMA(addr) {
-      var size = ((bcr>>16)*(bcr&0xffff)) * 4;
-
       if (!(control & CD_CTRL_DMA)) {
         psx.error('CD DMA !(CD->Control & CtrlDMA)');
       }
+
+      var size = ((bcr>>16)*(bcr&0xffff)) * 4;
 
       if (!size) {
         psx.error('CD DMA !size');
@@ -693,7 +693,7 @@ pseudo.CstrCdrom = (function() {
           }
         }
 
-        var offset = madr&0x1fffff;
+        var offset = madr;
         for (var i=0; i<size; i++) {
           directMemB(ram.ub, i + offset) = dma.bfr[i + dma.pointer];
         }
@@ -1120,12 +1120,10 @@ pseudo.CstrCdrom = (function() {
       transfer.data.set(buf);
       stat = CD_STAT_DATA_READY;
 
-      sector.data[2]++;
-      if (sector.data[2] === 75) {
+      if (++sector.data[2] >= 75) {
         sector.data[2] = 0;
         
-        sector.data[1]++;
-        if (sector.data[1] === 60) {
+        if (++sector.data[1] >= 60) {
           sector.data[1] = 0;
           sector.data[0]++;
         }

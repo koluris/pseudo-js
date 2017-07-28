@@ -184,13 +184,13 @@ pseudo.CstrMain = (function() {
         return;
       }
 
-      var minute = BCD2INT(time[0]);
-      var sec    = BCD2INT(time[1]);
-      var frame  = BCD2INT(time[2]);
+      // var minute = BCD2INT(time[0]);
+      // var sec    = BCD2INT(time[1]);
+      // var frame  = BCD2INT(time[2]);
 
-      // var minute = BCD2INT(time.minute);
-      // var sec    = BCD2INT(time.sec);
-      // var frame  = BCD2INT(time.frame);
+      var minute = BCD2INT(time.minute);
+      var sec    = BCD2INT(time.sec);
+      var frame  = BCD2INT(time.frame);
 
       // console.dir(minute+' '+sec+' '+frame);
 
@@ -198,8 +198,8 @@ pseudo.CstrMain = (function() {
       var size   = UDF_DATASIZE;
 
       chunkReader2(iso, offset, size, function(data) {
-        // cdrom.cdromRead2(new UintBcap(data));
-        cdrom.interruptRead2(new UintBcap(data));
+        cdrom.cdromRead2(new UintBcap(data));
+        // cdrom.interruptRead2(new UintBcap(data));
         // slice(0, DATASIZE)
       });
     }
