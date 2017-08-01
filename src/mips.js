@@ -389,8 +389,7 @@ pseudo.CstrMips = (function() {
 
     reset() {
       // Break emulation loop
-      cancelAnimationFrame(requestAF);
-      requestAF = undefined;
+      cpu.pause();
 
       // Reset processors
          r.fill(0);
@@ -399,10 +398,8 @@ pseudo.CstrMips = (function() {
       copr[12] = 0x10900000;
       copr[15] = 0x2;
 
+      setptr(pc = 0xbfc00000);
       opcodeCount = 0;
-      pc = 0xbfc00000;
-      paused = false;
-      setptr(pc);
 
       // Clear console out
       divOutput.text(' ');

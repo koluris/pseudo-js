@@ -154,6 +154,7 @@ pseudo.CstrMain = (function() {
               chunkReader(file, 0x9340, 32, function(name) { // Get Name
                 iso = file;
                 if (reset()) {
+                  cpu.setbase(32, cpu.readbase(31));
                   cpu.run();
                 }
               });

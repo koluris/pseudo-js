@@ -284,12 +284,11 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000401:
-          do {
+          while (madr !== 0xffffff) {
             var count = directMemW(ram.uw, madr);
             dataMem.write(true, (madr+4)&0x1ffffc, count>>>24);
             madr = count&0xffffff;
           }
-          while (madr !== 0xffffff);
           return;
       }
       psx.error('GPU DMA '+hex(chcr));

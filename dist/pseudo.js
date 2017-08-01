@@ -248,7 +248,7 @@ pseudo.CstrAudio = (function() {
         // Overflow
         if (chn.size === 65536) {
           pseudo.CstrMips.consoleWrite('error', 'SPU Channel size overflow > '+65536);
-          return;
+          //return;
         }
       }
 
@@ -2609,8 +2609,7 @@ pseudo.CstrMips = (function() {
 
     reset() {
       // Break emulation loop
-      cancelAnimationFrame(requestAF);
-      requestAF = undefined;
+      pseudo.CstrMips.pause();
 
       // Reset processors
          r.fill(0);
@@ -2619,10 +2618,8 @@ pseudo.CstrMips = (function() {
       copr[12] = 0x10900000;
       copr[15] = 0x2;
 
+      ptr = r[32] = 0xbfc00000>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
       opcodeCount = 0;
-      r[32] = 0xbfc00000;
-      paused = false;
-      ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
 
       // Clear console out
       divOutput.text(' ');
@@ -2847,6 +2844,7 @@ pseudo.CstrMain = (function() {
               chunkReader(file, 0x9340, 32, function(name) { // Get Name
                 iso = file;
                 if (reset()) {
+                  pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
                   pseudo.CstrMips.run();
                 }
               });

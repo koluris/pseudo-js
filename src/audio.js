@@ -82,7 +82,7 @@ pseudo.CstrAudio = (function() {
         // Overflow
         if (chn.size === USHRT_MAX) {
           cpu.consoleWrite(MSG_ERROR, 'SPU Channel size overflow > '+USHRT_MAX);
-          return;
+          //return;
         }
       }
 
