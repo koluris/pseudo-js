@@ -722,7 +722,7 @@ pseudo.CstrBus = (function() {
             pseudo.CstrMain.error('DMA Channel '+chan);
             break;
         }
-        pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data&(~0x01000000);
+        pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data & ~0x01000000;
 
         if (pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&(1<<(16+chan))) {
           pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] |= 1<<(24+chan);
@@ -2844,7 +2844,7 @@ pseudo.CstrMain = (function() {
               chunkReader(file, 0x9340, 32, function(name) { // Get Name
                 iso = file;
                 if (reset()) {
-                  pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
+                  //pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
                   pseudo.CstrMips.run();
                 }
               });
@@ -3890,12 +3890,11 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000401:
-          do {
+          while (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0xffffff) {
             var count = pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
             dataMem.write(true, (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]+4)&0x1ffffc, count>>>24);
             pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = count&0xffffff;
           }
-          while (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0xffffff);
           return;
       }
       pseudo.CstrMain.error('GPU DMA '+('0x'+(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>>0).toString(16)));
