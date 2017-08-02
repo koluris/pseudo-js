@@ -185,13 +185,13 @@ pseudo.CstrMain = (function() {
         return;
       }
 
-      // var minute = BCD2INT(time[0]);
-      // var sec    = BCD2INT(time[1]);
-      // var frame  = BCD2INT(time[2]);
+      var minute = BCD2INT(time[0]);
+      var sec    = BCD2INT(time[1]);
+      var frame  = BCD2INT(time[2]);
 
-      var minute = BCD2INT(time.minute);
-      var sec    = BCD2INT(time.sec);
-      var frame  = BCD2INT(time.frame);
+      // var minute = BCD2INT(time.minute);
+      // var sec    = BCD2INT(time.sec);
+      // var frame  = BCD2INT(time.frame);
 
       // console.dir(minute+' '+sec+' '+frame);
 
