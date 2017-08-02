@@ -398,8 +398,9 @@ pseudo.CstrMips = (function() {
       copr[12] = 0x10900000;
       copr[15] = 0x2;
 
-      setptr(pc = 0xbfc00000);
       opcodeCount = 0;
+      pc = 0xbfc00000;
+      setptr(pc);
 
       // Clear console out
       divOutput.text(' ');

@@ -2618,8 +2618,9 @@ pseudo.CstrMips = (function() {
       copr[12] = 0x10900000;
       copr[15] = 0x2;
 
-      ptr = r[32] = 0xbfc00000>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
       opcodeCount = 0;
+      r[32] = 0xbfc00000;
+      ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
 
       // Clear console out
       divOutput.text(' ');
@@ -2844,7 +2845,7 @@ pseudo.CstrMain = (function() {
               chunkReader(file, 0x9340, 32, function(name) { // Get Name
                 iso = file;
                 if (reset()) {
-                  //pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
+                  pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
                   pseudo.CstrMips.run();
                 }
               });
