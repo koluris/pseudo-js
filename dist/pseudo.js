@@ -248,7 +248,7 @@ pseudo.CstrAudio = (function() {
         // Overflow
         if (chn.size === 65536) {
           pseudo.CstrMips.consoleWrite('error', 'SPU Channel size overflow > '+65536);
-          //return;
+          return;
         }
       }
 
