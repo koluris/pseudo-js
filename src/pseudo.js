@@ -29,7 +29,7 @@ pseudo.CstrMain = (function() {
   }
 
   // Chunk reader function
-  function chunkReader(file, start, size, fn) {
+  function chunkReader(file, start, size, kind, fn) {
     var end = start+size;
 
     // Check boundaries
@@ -39,21 +39,14 @@ pseudo.CstrMain = (function() {
         fn(e.dest.result);
       };
       // Read sliced area
-      reader.readAsText(file.slice(start, end));
-    }
-  }
+      var slice = file.slice(start, end);
 
-  function chunkReader2(file, start, size, fn) {
-    var end = start+size;
-
-    // Check boundaries
-    if (file.size > end) {
-      var reader = new FileReader();
-      reader.onload = function(e) { // Callback
-        fn(e.dest.result);
-      };
-      // Read sliced area
-      reader.readAsBuffer(file.slice(start, end));
+      if (kind === 'text') {
+        reader.readAsText(slice);
+      }
+      else {
+        reader.readAsBuffer(slice);
+      }
     }
   }
 
@@ -134,7 +127,7 @@ pseudo.CstrMain = (function() {
           var file = dt.files[0];
           
           // PS-X EXE
-          chunkReader(file, 0, 8, function(id) {
+          chunkReader(file, 0, 8, 'text', function(id) {
             if (id === 'PS-X EXE') {
               var reader = new FileReader();
               reader.onload = function(e) { // Callback
@@ -149,9 +142,9 @@ pseudo.CstrMain = (function() {
           });
 
           // ISO 9660
-          chunkReader(file, 0x9319, 5, function(id) {
+          chunkReader(file, 0x9319, 5, 'text', function(id) {
             if (id === 'CD001') {
-              chunkReader(file, 0x9340, 32, function(name) { // Get Name
+              chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
                 iso = file;
                 if (reset()) {
                   cpu.setbase(32, cpu.readbase(31));
@@ -198,7 +191,7 @@ pseudo.CstrMain = (function() {
       var offset = MSF2SECTOR(minute, sec, frame) * UDF_FRAMESIZERAW + 12;
       var size   = UDF_DATASIZE;
 
-      chunkReader2(iso, offset, size, function(data) {
+      chunkReader(iso, offset, size, 'raw', function(data) {
         cdrom.cdromRead2(new UintBcap(data));
         // cdrom.interruptRead2(new UintBcap(data));
         // slice(0, DATASIZE)
