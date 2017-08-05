@@ -113,7 +113,7 @@ pseudo.CstrCdrom = (function() {
   }
 
   function resetVals(val) {
-    val.value.fill(0);
+    ioZero(val.value);
     val.size    = 0;
     val.pointer = 0;
   }
@@ -407,8 +407,8 @@ pseudo.CstrCdrom = (function() {
     },
 
     reset() {
-      busres.fill(0);
-      buspar.fill(0);
+      ioZero(busres);
+      ioZero(buspar);
 
       control = CD_CTRL_PH | CD_CTRL_NP;
       status = CD_STATUS_STANDBY;
@@ -434,10 +434,10 @@ pseudo.CstrCdrom = (function() {
       resetLoc(seekLoc);
       resetLoc(destLoc);
 
-      sector.bfr.fill(0);
+      ioZero(sector.bfr);
       sector.firstRead = false;
 
-      dma.bfr.fill(0);
+      ioZero(dma.bfr);
       dma.size = 0;
       dma.pointer = 0;
       
@@ -813,23 +813,23 @@ pseudo.CstrCdrom = (function() {
   };
 
   function resetParam(prm) {
-    prm.data.fill(0);
+    ioZero(prm.data);
     prm.p = 0;
     prm.c = 0;
   }
 
   function resetRes(rrs) {
-    rrs.data.fill(0);
-    rrs.tn.fill(0);
-    rrs.td.fill(0);
+    ioZero(rrs.data);
+    ioZero(rrs.tn);
+    ioZero(rrs.td);
     rrs.p = 0;
     rrs.c = 0;
     rrs.ok = 0;
   }
 
   function resetSect(sect) {
-    sect.data.fill(0);
-    sect.prev.fill(0);
+    ioZero(sect.data);
+    ioZero(sect.prev);
   }
 
   function trackRead() {
@@ -1162,7 +1162,7 @@ pseudo.CstrCdrom = (function() {
       resetParam(param);
       resetRes(res);
       resetSect(sector);
-      transfer.data.fill(0);
+      ioZero(transfer.data);
       transfer.p = 0;
 
       ctrl = stat = statP = re2 = 0;

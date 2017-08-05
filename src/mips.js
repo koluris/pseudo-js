@@ -72,10 +72,8 @@ pseudo.CstrMips = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    var code = directMemW(ptr, pc);
-    //var code = pc>>>20 === 0xbfc ? directMemW(rom.uw, pc) : directMemW(ram.uw, pc);
+    var code = directMemW(ptr, pc); pc += 4;
     opcodeCount++;
-    pc  += 4;
     r[0] = 0; // As weird as this seems, it is needed
 
     switch(opcode) {
@@ -392,8 +390,8 @@ pseudo.CstrMips = (function() {
       cpu.pause();
 
       // Reset processors
-         r.fill(0);
-      copr.fill(0);
+      ioZero(r);
+      ioZero(copr);
 
       copr[12] = 0x10900000;
       copr[15] = 0x2;

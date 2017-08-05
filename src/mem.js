@@ -14,8 +14,8 @@ pseudo.CstrMem = (function() {
 
     reset() {
       // Reset all, except for BIOS?
-      ram.ub.fill(0);
-      hwr.ub.fill(0);
+      ioZero(ram.ub);
+      ioZero(hwr.ub);
     },
 
     write: {

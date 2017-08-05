@@ -437,7 +437,7 @@ pseudo.CstrRender = (function() {
     },
 
     reset() {
-      info.fill(0);
+      ioZero(info);
       info[7]  = 2;
       spriteTP = 0;
          blend = 0;

@@ -86,11 +86,13 @@ pseudo.CstrAudio = (function() {
         }
       }
 
-      // Operators
-      if (spuMem.ub[p+1] === 3 || spuMem.ub[p+1] === 7) { // Termination
+      // Fin
+      var operator = spuMem.ub[p+1];
+
+      if (operator === 3 || operator === 7) { // Termination
         return;
       }
-      if (spuMem.ub[p+1] === 6) { // Repeat
+      if (operator === 6) { // Repeat
         chn.raddr = chn.size;
       }
 
@@ -101,9 +103,12 @@ pseudo.CstrAudio = (function() {
 
   function decodeStream() {
     for (var n=0; n<MAX_CHANNELS; n++) {
-      // Channel on?
       var chn = spuVoices[n];
-      if (chn.on === false) continue;
+      
+      // Channel on?
+      if (chn.on === false) {
+        continue;
+      }
 
       for (var i=0; i<SBUF_SIZE; i++) {
         chn.count += chn.freq;
@@ -145,7 +150,7 @@ pseudo.CstrAudio = (function() {
     }
 
     // Clear
-    sbuf.temp.fill(0);
+    ioZero(sbuf.temp);
     return sbuf.final;
   }
 
@@ -228,28 +233,28 @@ pseudo.CstrAudio = (function() {
         var float  = int16ToFloat32(decodeStream());
 
         if (stereo) {
-          output.fetchChannelData(0).set(float.slice(0, SBUF_SIZE-1));
+          output.fetchChannelData(0).set(float.slice(0, SBUF_SIZE));
           output.fetchChannelData(1).set(float.slice(SBUF_SIZE));
         }
         else {
-          output.fetchChannelData(0).set(float.slice(0, SBUF_SIZE-1));
+          output.fetchChannelData(0).set(float.slice(0, SBUF_SIZE));
         }
       };
 
       // Touch Devices
-      window.addEventListener('touchstart', function() {
-        var buffer = ctxAudio.createBuffer(1, 1, 22050);
-        var source = ctxAudio.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctxAudio.destination);
-        source.noteOn(0);
-      }, false);
+      // window.addEventListener('touchstart', function() {
+      //   var buffer = ctxAudio.createBuffer(1, 1, 22050);
+      //   var source = ctxAudio.createBufferSource();
+      //   source.buffer = buffer;
+      //   source.connect(ctxAudio.destination);
+      //   source.noteOn(0);
+      // }, false);
     },
 
     reset: function() {
-      spuMem.uh.fill(0);
-      sbuf.temp.fill(0);
-      sbuf.final.fill(0);
+      ioZero(spuMem.uh);
+      ioZero(sbuf.temp);
+      ioZero(sbuf.final);
 
       // Variables
       spuAddr = ~0;
@@ -272,7 +277,7 @@ pseudo.CstrAudio = (function() {
           }
         };
 
-        spuVoices[n].buffer.sh.fill(0);
+        ioZero(spuVoices[n].buffer.sh);
       }
 
       // Connect

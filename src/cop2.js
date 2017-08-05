@@ -157,8 +157,8 @@ pseudo.CstrCop2 = (function() {
 
   return {
     reset() {
-      cop2c.ub.fill(0);
-      cop2d.ub.fill(0);
+      ioZero(cop2c.ub);
+      ioZero(cop2d.ub);
     },
 
     execute(code) {

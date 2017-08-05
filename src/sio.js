@@ -26,7 +26,7 @@ pseudo.CstrSerial = (function() {
 
   return {
     reset() {
-      bfr.fill(0);
+      ioZero(bfr);
       baud     = 0;
       control  = 0;
       mode     = 0;
@@ -47,8 +47,8 @@ pseudo.CstrSerial = (function() {
             control = data;
 
             if (control&SIO_CTRL_RESET_ERROR) {
-              status  &= (~SIO_STAT_IRQ);
-              control &= (~SIO_CTRL_RESET_ERROR);
+              status  &= ~SIO_STAT_IRQ;
+              control &= ~SIO_CTRL_RESET_ERROR;
             }
 
             if (control&SIO_CTRL_RESET || !control) {
@@ -110,7 +110,7 @@ pseudo.CstrSerial = (function() {
             }
 
             if (data === 1) {
-              status &= !SIO_STAT_TX_EMPTY;
+              status &= ~SIO_STAT_TX_EMPTY;
               status |=  SIO_STAT_RX_READY;
               padst = 1;
               parp  = 0;

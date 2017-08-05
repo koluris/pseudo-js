@@ -140,6 +140,9 @@ var pseudo = window.pseudo || {};
 
 
 
+
+
+
 // Console output
 
 
@@ -252,11 +255,13 @@ pseudo.CstrAudio = (function() {
         }
       }
 
-      // Operators
-      if (spuMem.ub[p+1] === 3 || spuMem.ub[p+1] === 7) { // Termination
+      // Fin
+      var operator = spuMem.ub[p+1];
+
+      if (operator === 3 || operator === 7) { // Termination
         return;
       }
-      if (spuMem.ub[p+1] === 6) { // Repeat
+      if (operator === 6) { // Repeat
         chn.raddr = chn.size;
       }
 
@@ -267,9 +272,12 @@ pseudo.CstrAudio = (function() {
 
   function decodeStream() {
     for (var n=0; n<24; n++) {
-      // Channel on?
       var chn = spuVoices[n];
-      if (chn.on === false) continue;
+      
+      // Channel on?
+      if (chn.on === false) {
+        continue;
+      }
 
       for (var i=0; i<1024; i++) {
         chn.count += chn.freq;
@@ -324,7 +332,7 @@ pseudo.CstrAudio = (function() {
         spuVoices[n].raddr = 0;
         spuVoices[n].size  = 0;
 
-        //ioZero(spuVoices[n].buffer.sh);
+        //spuVoices[n].buffer.sh.fill(0);
         depackVAG(spuVoices[n]);
       }
     }
@@ -394,22 +402,22 @@ pseudo.CstrAudio = (function() {
         var float  = int16ToFloat32(decodeStream());
 
         if (stereo) {
-          output.getChannelData(0).set(float.slice(0, 1024 -1));
+          output.getChannelData(0).set(float.slice(0, 1024));
           output.getChannelData(1).set(float.slice(1024));
         }
         else {
-          output.getChannelData(0).set(float.slice(0, 1024 -1));
+          output.getChannelData(0).set(float.slice(0, 1024));
         }
       };
 
       // Touch Devices
-      window.addEventListener('touchstart', function() {
-        var buffer = ctxAudio.createBuffer(1, 1, 22050);
-        var source = ctxAudio.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctxAudio.destination);
-        source.noteOn(0);
-      }, false);
+      // window.addEventListener('touchstart', function() {
+      //   var buffer = ctxAudio.createBuffer(1, 1, 22050);
+      //   var source = ctxAudio.createBufferSource();
+      //   source.buffer = buffer;
+      //   source.connect(ctxAudio.destination);
+      //   source.noteOn(0);
+      // }, false);
     },
 
     reset: function() {
@@ -2287,10 +2295,8 @@ pseudo.CstrMips = (function() {
 
   // Base CPU stepper
   function step(inslot) {
-    var code = ptr[(( r[32])&(ptr.byteLength-1))>>>2];
-    //var code = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw[(( r[32])&(pseudo.CstrMem.__rom.uw.byteLength-1))>>>2] : pseudo.CstrMem.__ram.uw[(( r[32])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
+    var code = ptr[(( r[32])&(ptr.byteLength-1))>>>2]; r[32] += 4;
     opcodeCount++;
-    r[32]  += 4;
     r[0] = 0; // As weird as this seems, it is needed
 
     switch(((code>>>26)&0x3f)) {
@@ -2607,7 +2613,7 @@ pseudo.CstrMips = (function() {
       pseudo.CstrMips.pause();
 
       // Reset processors
-         r.fill(0);
+      r.fill(0);
       copr.fill(0);
 
       copr[12] = 0x10900000;
@@ -2715,7 +2721,7 @@ pseudo.CstrMain = (function() {
   }
 
   // Chunk reader function
-  function chunkReader(file, start, size, fn) {
+  function chunkReader(file, start, size, kind, fn) {
     var end = start+size;
 
     // Check boundaries
@@ -2725,21 +2731,14 @@ pseudo.CstrMain = (function() {
         fn(e.target.result);
       };
       // Read sliced area
-      reader.readAsText(file.slice(start, end));
-    }
-  }
+      var slice = file.slice(start, end);
 
-  function chunkReader2(file, start, size, fn) {
-    var end = start+size;
-
-    // Check boundaries
-    if (file.size > end) {
-      var reader = new FileReader();
-      reader.onload = function(e) { // Callback
-        fn(e.target.result);
-      };
-      // Read sliced area
-      reader.readAsArrayBuffer(file.slice(start, end));
+      if (kind === 'text') {
+        reader.readAsText(slice);
+      }
+      else {
+        reader.readAsArrayBuffer(slice);
+      }
     }
   }
 
@@ -2820,7 +2819,7 @@ pseudo.CstrMain = (function() {
           var file = dt.files[0];
           
           // PS-X EXE
-          chunkReader(file, 0, 8, function(id) {
+          chunkReader(file, 0, 8, 'text', function(id) {
             if (id === 'PS-X EXE') {
               var reader = new FileReader();
               reader.onload = function(e) { // Callback
@@ -2835,9 +2834,9 @@ pseudo.CstrMain = (function() {
           });
 
           // ISO 9660
-          chunkReader(file, 0x9319, 5, function(id) {
+          chunkReader(file, 0x9319, 5, 'text', function(id) {
             if (id === 'CD001') {
-              chunkReader(file, 0x9340, 32, function(name) { // Get Name
+              chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
                 iso = file;
                 if (reset()) {
                   pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
@@ -2884,7 +2883,7 @@ pseudo.CstrMain = (function() {
       var offset = (((minute) * 60 + ( sec) - 2) * 75 + ( frame)) * 2352 + 12;
       var size   = (2352 - 12);
 
-      chunkReader2(iso, offset, size, function(data) {
+      chunkReader(iso, offset, size, 'raw', function(data) {
         pseudo.CstrCdrom.cdromRead2(new Uint8Array(data));
         // pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
         // slice(0, DATASIZE)
@@ -3396,8 +3395,8 @@ pseudo.CstrSerial = (function() {
             control = data;
 
             if (control&0x010) {
-              status  &= (~0x200);
-              control &= (~0x010);
+              status  &= ~0x200;
+              control &= ~0x010;
             }
 
             if (control&0x040 || !control) {
@@ -3459,7 +3458,7 @@ pseudo.CstrSerial = (function() {
             }
 
             if (data === 1) {
-              status &= !0x004;
+              status &= ~0x004;
               status |=  0x002;
               padst = 1;
               parp  = 0;
