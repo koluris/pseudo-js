@@ -2839,7 +2839,7 @@ pseudo.CstrMain = (function() {
               chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
                 iso = file;
                 if (reset()) {
-                  pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
+                  //pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
                   pseudo.CstrMips.run();
                 }
               });
@@ -2884,8 +2884,8 @@ pseudo.CstrMain = (function() {
       var size   = (2352 - 12);
 
       chunkReader(iso, offset, size, 'raw', function(data) {
-        pseudo.CstrCdrom.cdromRead2(new Uint8Array(data));
-        // pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
+        // pseudo.CstrCdrom.cdromRead2(new Uint8Array(data));
+        pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
         // slice(0, DATASIZE)
       });
     }
