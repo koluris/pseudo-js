@@ -2680,6 +2680,10 @@ pseudo.CstrMips = (function() {
 
     resume() {
       pseudo.CstrMips.run();
+    },
+
+    setpc(addr) {
+      ptr = addr>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
     }
   };
 })();
@@ -2839,7 +2843,8 @@ pseudo.CstrMain = (function() {
               chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
                 iso = file;
                 if (reset()) {
-                  //pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
+                  pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
+                  pseudo.CstrMips.setpc(pseudo.CstrMips.readbase(32));
                   pseudo.CstrMips.run();
                 }
               });

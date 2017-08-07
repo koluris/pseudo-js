@@ -457,6 +457,10 @@ pseudo.CstrMips = (function() {
 
     resume() {
       cpu.run();
+    },
+
+    setpc(addr) {
+      setptr(addr);
     }
   };
 })();
