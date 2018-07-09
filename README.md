@@ -1,8 +1,6 @@
 ## Overview
 **PSeudo** emulator is being developed using **.h headers** in addition to **.js files**. This technique helps me keep the workspace clean and simple, while at the same time modular code gets inlined for optimization. The codebase is compatible with **ES6 JavaScript** onwards.
 
-**Use Chrome for a decent experience:** [Live version of PSeudo](http://vuemaps.com/pseudo)
-
 ![Commercial](https://raw.githubusercontent.com/dkoliris/pseudo/master/res/commercial.jpg)
 
 ## Completion
