@@ -60,6 +60,7 @@ pseudo.CstrMain = (function() {
      tcache.reset();
      render.reset();
          vs.reset();
+       mdec.reset();
         mem.reset();
       audio.reset();
     rootcnt.reset();

@@ -143,6 +143,8 @@ var pseudo = window.pseudo || {};
 
 
 
+
+
 // Console output
 
 
@@ -1838,7 +1840,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
-          pseudo.CstrMem.__hwr.uw[(( addr)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
+          pseudo.CstrMdec.scopeW(addr, data);
           return;
         }
 
@@ -1940,7 +1942,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
-          return pseudo.CstrMem.__hwr.uw[(( addr)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2];
+          return pseudo.CstrMdec.scopeR(addr);
         }
 
         switch(addr) {
@@ -2000,6 +2002,41 @@ pseudo.CstrHardware = (function() {
 })();
 
 
+pseudo.CstrMdec = (function() {
+  var cmd, status;
+
+  // Exposed class functions/variables
+  return {
+    reset() {
+      cmd    = 0;
+      status = 0;
+    },
+
+    scopeW(addr, data) {
+      switch(addr&0xf) {
+        case 0:
+          cmd = data;
+          return;
+
+        case 4:
+          if (data&0x80000000) {
+            pseudo.CstrMdec.reset();
+          }
+          return;
+      }
+    },
+
+    scopeR(addr) {
+      switch(addr&0xf) {
+        case 0:
+          return cmd;
+
+        case 4:
+          return status;
+      }
+    }
+  };
+})();
 
 
 
@@ -2756,6 +2793,7 @@ pseudo.CstrMain = (function() {
      pseudo.CstrTexCache.reset();
      pseudo.CstrRender.reset();
          pseudo.CstrGraphics.reset();
+       pseudo.CstrMdec.reset();
         pseudo.CstrMem.reset();
       pseudo.CstrAudio.reset();
     pseudo.CstrCounters.reset();

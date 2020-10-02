@@ -287,7 +287,9 @@
       var footer   = $('#footer');
 
       // Startup
-      pseudo.CstrMain.awake(screen, blink, kb, res, double, output, dropzone, footer);
+      setTimeout(function(){
+        pseudo.CstrMain.awake(screen, blink, kb, res, double, output, dropzone, footer);
+      }, 1000);
     });
   </script>
 </BODY>

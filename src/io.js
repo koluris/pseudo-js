@@ -25,7 +25,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
-          directMemW(hwr.uw, addr) = data;
+          mdec.scopeW(addr, data);
           return;
         }
 
@@ -127,7 +127,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
-          return directMemW(hwr.uw, addr);
+          return mdec.scopeR(addr);
         }
 
         switch(addr) {
