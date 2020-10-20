@@ -47,7 +47,7 @@ pseudo.CstrCounters = (function() {
 
       if (temp >= bound(0) && count(0) < bound(0)) { temp = 0;
         if (mode(0) & 0x50) {
-          psx.error('RTC timer[0].count >= timer[0].bound');
+          bus.interruptSet(IRQ_RTC0);
         }
       }
       count(0) = temp;

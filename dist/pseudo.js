@@ -1602,7 +1602,7 @@ pseudo.CstrCounters = (function() {
 
       if (temp >= bounds[0] && pseudo.CstrMem.__hwr.uh[((0x1100 + (0 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] < bounds[0]) { temp = 0;
         if (pseudo.CstrMem.__hwr.uw[((0x1104 + (0 << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0x50) {
-          pseudo.CstrMain.error('RTC timer[0].count >= timer[0].bound');
+          pseudo.CstrBus.interruptSet(4);
         }
       }
       pseudo.CstrMem.__hwr.uh[((0x1100 + (0 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = temp;
@@ -2421,8 +2421,7 @@ pseudo.CstrMips = (function() {
 
     run() {
       bp = false;
-      //window.requestAnimationFrame = function(f) { return setTimeout(f, 1) }
-      requestAF = setTimeout(pseudo.CstrMips.run, 1);//requestAnimationFrame(pseudo.CstrMips.run);
+      requestAF = setTimeout(pseudo.CstrMips.run, 1); //requestAnimationFrame(pseudo.CstrMips.run);
 
       while (!bp) { // And u don`t stop!
         step(false);
