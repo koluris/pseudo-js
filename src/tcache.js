@@ -23,7 +23,7 @@ pseudo.CstrTexCache = (function() {
                     pos: { // Mem position of texture and color lookup table
                     },
 
-                    tex: ctx.createTexture()
+                    tex: undefined
                 };
             }
 
@@ -35,14 +35,9 @@ pseudo.CstrTexCache = (function() {
 
         reset(ctx) {
             for (const tc of cache) {
-                ctx.deleteTexture(tc.tex);
-                tc.pos.w  = 0;
-                tc.pos.h  = 0;
-                tc.pos.cc = 0;
-                tc.uid    = 0;
-                tc.tex    = 0;
-
-                tcache.createTexture(ctx, tc, 256, 256);
+                if (tc.tex) {
+                    ctx.deleteTexture(tc.tex);
+                }
             }
 
             index = 0;
@@ -50,13 +45,6 @@ pseudo.CstrTexCache = (function() {
 
         pixel2texel(p) {
             return COLOR_32BIT(p ? 255 : 0, (p >>> 10) << 3, (p >>> 5) << 3, p << 3);
-        },
-
-        createTexture(ctx, tc, w, h) {
-            tc.tex = ctx.createTexture();
-            ctx.bindTexture  (ctx.TEXTURE_2D, tc.tex);
-            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
         },
 
         fetchTexture(ctx, tp, clut) {
@@ -89,10 +77,10 @@ pseudo.CstrTexCache = (function() {
                     for (var h = 0, idx = 0; h < 256; h++) {
                         for (var w = 0; w < (256 / 4); w++) {
                             const p = vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>> 0x0) & 15];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>> 0x4) & 15];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>> 0x8) & 15];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>> 0xc) & 15];
+                            tex.bfr.uw[idx++] = tex.cc[(p >>>  0) & 15];
+                            tex.bfr.uw[idx++] = tex.cc[(p >>>  4) & 15];
+                            tex.bfr.uw[idx++] = tex.cc[(p >>>  8) & 15];
+                            tex.bfr.uw[idx++] = tex.cc[(p >>> 12) & 15];
                         }
                     }
                     break;
@@ -106,8 +94,8 @@ pseudo.CstrTexCache = (function() {
                     for (var h = 0, idx = 0; h < 256; h++) {
                         for (var w = 0; w < (256 / 2); w++) {
                             const p = vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
-                            tex.bfr.uw[idx++] = tex.cc[(p >> 0) & 255];
-                            tex.bfr.uw[idx++] = tex.cc[(p >> 8) & 255];
+                            tex.bfr.uw[idx++] = tex.cc[(p >>> 0) & 255];
+                            tex.bfr.uw[idx++] = tex.cc[(p >>> 8) & 255];
                         }
                     }
                     break;
@@ -127,8 +115,11 @@ pseudo.CstrTexCache = (function() {
             }
 
             // Attach texture
-            ctx.bindTexture(ctx.TEXTURE_2D, tc.tex);
-            ctx.texPhoto2D (ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, tex.bfr.ub);
+            tc.tex = ctx.createTexture();
+            ctx.bindTexture  (ctx.TEXTURE_2D, tc.tex);
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
+            ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, tex.bfr.ub);
 
             // Advance cache counter
             tc.uid = uid;
@@ -145,82 +136,5 @@ pseudo.CstrTexCache = (function() {
         }
     };
 })();
-
-// pseudo.CstrTexCache = (function() {
-//   var bTex  = union(TEX_SIZE*TEX_SIZE*4);
-//   var ctbl2 = union(TEX_SIZE*4);
-
-//   function pixel2texel(tx, p, n) {
-//     do {
-//       var c = vram.uh[p++];
-//       tx.ub[idx++] = (c>>0x0)<<3;
-//       tx.ub[idx++] = (c>>0x5)<<3;
-//       tx.ub[idx++] = (c>>0xa)<<3;
-//       tx.ub[idx++] = c ? COLOR_MAX : 0;
-//     }
-//     while (--n);
-//   }
-
-//   return {
-//     fetchTexture(ctx, tp, clut) {
-//       var id = tp | (clut<<16);
-      
-//       if (stack[id]) {
-//         ctx.bindTexture(ctx.TEXTURE_2D, stack[id]);
-//         return;
-//       }
-
-//       var tex  = (tp&15)*64+(tp&16)*(FRAME_W*256/16);
-//       var ctbl = (clut&0x7fff)*16;
-
-//       switch((tp>>7)&3) {
-//         case 0: // 04-bit
-//           idx = 0;
-//           pixel2texel(ctbl2, ctbl, 16);
-//           idx = 0;
-//           for (var v=0; v<256; v++) {
-//             for (var h=0; h<256/4; h++) {
-//               var c = vram.uh[tex+h];
-//               bTex.uw[idx++] = ctbl2.uw[(c>> 0)&15];
-//               bTex.uw[idx++] = ctbl2.uw[(c>> 4)&15];
-//               bTex.uw[idx++] = ctbl2.uw[(c>> 8)&15];
-//               bTex.uw[idx++] = ctbl2.uw[(c>>12)&15];
-//             }
-//             tex += FRAME_W;
-//           }
-//           break;
-
-//         case 1: // 08-bit
-//           idx = 0;
-//           pixel2texel(ctbl2, ctbl, 256);
-//           idx = 0;
-//           for (var v=0; v<256; v++) {
-//             for (var h=0; h<256/2; h++) {
-//               var c = vram.uh[tex+h];
-//               bTex.uw[idx++] = ctbl2.uw[(c>>0)&255];
-//               bTex.uw[idx++] = ctbl2.uw[(c>>8)&255];
-//             }
-//             tex += FRAME_W;
-//           }
-//           break;
-
-//         case 2: // 16-bit
-//           idx = 0;
-//           for (var v=0; v<256; v++) {
-//             pixel2texel(bTex, tex, 256);
-//             tex += FRAME_W;
-//           }
-//           break;
-//       }
-
-//       // Create texture
-//       stack[id] = ctx.createTexture();
-//       ctx.bindTexture  (ctx.TEXTURE_2D, stack[id]);
-//       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-//       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-//       ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, bTex.ub);
-//     }
-//   };
-// })();
 
 #undef vram
