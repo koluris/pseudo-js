@@ -362,21 +362,6 @@ pseudo.CstrMips = (function() {
     // Execute instruction in slot
     step(true);
     pc = addr;
-
-    if (opcodeCount >= PSX_CYCLE) {
-      // Rootcounters, interrupts
-      rootcnt.update();
-        cdrom.update();
-      bus.interruptsUpdate();
-
-      // Exceptions
-      if (data32&mask32) {
-        if ((copr[12]&0x401) === 0x401) {
-          exception(0x400, false);
-        }
-      }
-      opcodeCount %= PSX_CYCLE;
-    }
   }
 
   // Exposed class functions/variables
@@ -420,6 +405,21 @@ pseudo.CstrMips = (function() {
 
       while (!bp) { // And u don`t stop!
         step(false);
+
+        if (opcodeCount >= 100) {
+          // Rootcounters, interrupts
+          rootcnt.update(100);
+            cdrom.update();
+          bus.interruptsUpdate();
+    
+          // Exceptions
+          if (data32 & mask32) {
+            if ((copr[12] & 0x401) === 0x401) {
+              exception(0x400, false);
+            }
+          }
+          opcodeCount = 0;
+        }
       }
     },
 

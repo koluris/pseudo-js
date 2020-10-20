@@ -77,10 +77,6 @@ var pseudo = window.pseudo || {};
 
 
 
-// This is uttermost experimental, it's the Achilles' heel
-
-
-
 
 
 
@@ -154,11 +150,6 @@ var pseudo = window.pseudo || {};
 
 
 // Arithmetic operations
-
-
-
-
-
 
 
 
@@ -1721,8 +1712,8 @@ pseudo.CstrCounters = (function() {
       hsc = 0;
     },
 
-    update() {
-      pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += pseudo.CstrMem.__hwr.uw[((0x1104+(0<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x100 ? 64 : 64/8;
+    update(threshold) {
+      pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += pseudo.CstrMem.__hwr.uw[((0x1104+(0<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x100 ? threshold : threshold/8;
 
       if (pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[0].__bound) {
         pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
@@ -1733,7 +1724,7 @@ pseudo.CstrCounters = (function() {
       }
 
       if (!(pseudo.CstrMem.__hwr.uw[((0x1104+(1<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x100)) {
-        pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += 64;
+        pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += threshold;
 
         if (pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[1].__bound) {
           pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
@@ -1743,7 +1734,7 @@ pseudo.CstrCounters = (function() {
           }
         }
       }
-      else if ((hsc += 64) >= (33868800/15734)) { hsc = 0;
+      else if ((hsc += threshold) >= (33868800 / 60 / 480)) { hsc = 0;
         if (++pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[1].__bound) {
           pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
           if (pseudo.CstrMem.__hwr.uw[((0x1104+(1<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x50) {
@@ -1753,7 +1744,7 @@ pseudo.CstrCounters = (function() {
       }
 
       if (!(pseudo.CstrMem.__hwr.uw[((0x1104+(2<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&1)) {
-        pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += pseudo.CstrMem.__hwr.uw[((0x1104+(2<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x200 ? 64/8 : 64;
+        pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += pseudo.CstrMem.__hwr.uw[((0x1104+(2<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x200 ? threshold/8 : threshold;
 
         if (pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[2].__bound) {
           pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
@@ -1763,7 +1754,9 @@ pseudo.CstrCounters = (function() {
         }
       }
 
-      if ((vbk += 64) >= (33868800/60)) { vbk = 0;
+      vbk += threshold * 2;
+
+      if (vbk >= (33868800 / 60)) { vbk = 0;
         pseudo.CstrBus.interruptSet(0);
          pseudo.CstrGraphics.redraw();
         pseudo.CstrMips.setbp();
@@ -2622,21 +2615,6 @@ pseudo.CstrMips = (function() {
     // Execute instruction in slot
     step(true);
     r[32] = addr;
-
-    if (opcodeCount >= 64) {
-      // Rootcounters, interrupts
-      pseudo.CstrCounters.update();
-        pseudo.CstrCdrom.update();
-      pseudo.CstrBus.interruptsUpdate();
-
-      // Exceptions
-      if (pseudo.CstrMem.__hwr.uw[((0x1070)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&pseudo.CstrMem.__hwr.uw[((0x1074)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
-        if ((copr[12]&0x401) === 0x401) {
-          copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80; ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
-        }
-      }
-      opcodeCount %= 64;
-    }
   }
 
   // Exposed class functions/variables
@@ -2680,6 +2658,21 @@ pseudo.CstrMips = (function() {
 
       while (!bp) { // And u don`t stop!
         step(false);
+
+        if (opcodeCount >= 100) {
+          // Rootcounters, interrupts
+          pseudo.CstrCounters.update(100);
+            pseudo.CstrCdrom.update();
+          pseudo.CstrBus.interruptsUpdate();
+    
+          // Exceptions
+          if (pseudo.CstrMem.__hwr.uw[((0x1070)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & pseudo.CstrMem.__hwr.uw[((0x1074)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+            if ((copr[12] & 0x401) === 0x401) {
+              copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80; ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+            }
+          }
+          opcodeCount = 0;
+        }
       }
     },
 
@@ -3075,9 +3068,6 @@ pseudo.CstrRender = (function() {
     multiplier: 1
   };
 
-  // Information
-  info = new Uint32Array(8);
-
   // Generic function for shaders
   function createShader(kind, content) {
     var shader = ctx.createShader(kind);
@@ -3146,8 +3136,6 @@ pseudo.CstrRender = (function() {
     },
 
     reset() {
-      info.fill(0);
-      info[7]  = 2;
       spriteTP = 0;
          blend = 0;
 
@@ -3345,12 +3333,10 @@ pseudo.CstrRender = (function() {
         case 0xe1: // TEXTURE PAGE
           blend = (data[0]>>>5)&3;
           spriteTP = data[0]&0x7ff;
-          pseudo.CstrGraphics.texp(spriteTP);
           ctx.blendFunc(bit[blend].src, bit[blend].target);
           return;
 
         case 0xe2: // TEXTURE WINDOW
-          info[2] = data[0]&0xfffff;
           return;
 
         case 0xe3: // DRAW AREA START
@@ -3361,8 +3347,6 @@ pseudo.CstrRender = (function() {
 
             drawArea.start.h = drawAreaCalc(pane.h);
             drawArea.start.v = drawAreaCalc(pane.v);
-
-            info[3] = data[0]&0x3fffff;
           }
           return;
 
@@ -3374,20 +3358,15 @@ pseudo.CstrRender = (function() {
 
             drawArea.end.h = drawAreaCalc(pane.h);
             drawArea.end.v = drawAreaCalc(pane.v);
-
-            info[4] = data[0]&0x3fffff;
           }
           return;
 
         case 0xe5: // DRAW OFFSET
           ofs.h = (((data[0])<<0>>0)<<21)>>21;
           ofs.v = (((data[0])<<0>>0)<<10)>>21;
-
-          info[5] = data[0]&0x7fffff;
           return;
 
         case 0xe6: // STP
-          pseudo.CstrGraphics.stp(data);
           return;
       }
       pseudo.CstrMips.consoleWrite('error', 'GPU Render Primitive '+('0x'+(addr>>>0).toString(16)));
@@ -3663,7 +3642,21 @@ pseudo.CstrTexCache = (function() {
 
 
 
-
+// #define GPU_DITHER           0x00000200
+// #define GPU_DRAWINGALLOWED   0x00000400
+// #define GPU_MASKDRAWN        0x00000800
+// #define GPU_MASKENABLED      0x00001000
+// #define GPU_WIDTHBITS        0x00070000
+// #define GPU_DOUBLEHEIGHT     0x00080000
+// #define GPU_PAL              0x00100000
+// #define GPU_RGB24            0x00200000
+// #define GPU_INTERLACED       0x00400000
+// #define GPU_DISPLAYDISABLED  0x00800000
+// #define GPU_IDLE             0x04000000
+// #define GPU_READYFORVRAM     0x08000000
+// #define GPU_READYFORCOMMANDS 0x10000000
+// #define GPU_DMABITS          0x60000000
+// #define GPU_ODDLINES         0x80000000
 
 
 
@@ -3676,7 +3669,32 @@ pseudo.CstrTexCache = (function() {
 
 
 pseudo.CstrGraphics = (function() {
-  var status, data, modeDMA;
+  const GPU_STAT_ODDLINES         = 0x80000000;
+  const GPU_STAT_DMABITS          = 0x60000000;
+  const GPU_STAT_READYFORCOMMANDS = 0x10000000;
+  const GPU_STAT_READYFORVRAM     = 0x08000000;
+  const GPU_STAT_IDLE             = 0x04000000;
+  const GPU_STAT_DISPLAYDISABLED  = 0x00800000;
+  const GPU_STAT_INTERLACED       = 0x00400000;
+  const GPU_STAT_RGB24            = 0x00200000;
+  const GPU_STAT_PAL              = 0x00100000;
+  const GPU_STAT_DOUBLEHEIGHT     = 0x00080000;
+  const GPU_STAT_WIDTHBITS        = 0x00070000;
+  const GPU_STAT_MASKENABLED      = 0x00001000;
+  const GPU_STAT_MASKDRAWN        = 0x00000800;
+  const GPU_STAT_DRAWINGALLOWED   = 0x00000400;
+  const GPU_STAT_DITHER           = 0x00000200;
+
+  const GPU_DMA_NONE     = 0;
+  const GPU_DMA_MEM2VRAM = 2;
+  const GPU_DMA_VRAM2MEM = 3;
+
+  const ret = {
+    status: 0,
+      data: 0,
+  };
+
+  var modeDMA, vpos, vdiff, isVideoPAL, isVideo24Bit;
 
   // VRAM Operations
   var vrop = {
@@ -3714,16 +3732,12 @@ pseudo.CstrGraphics = (function() {
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
-  function infoSet(n) {
-    data = pseudo.CstrRender.infoRead[n&0xff];
-  }
-
   function fetchFromRAM(stream, addr, size) {
     var count = 0;
 
     // False alarm!
     if (!vrop.enabled) {
-      modeDMA = 0;
+      modeDMA = GPU_DMA_NONE;
       return 0;
     }
     size <<= 1;
@@ -3763,14 +3777,14 @@ pseudo.CstrGraphics = (function() {
 
   function fetchEnd(count) {
     if (vrop.v.p >= vrop.v.end) {
-      modeDMA = 0;
+      modeDMA = GPU_DMA_NONE;
       vrop.enabled = false;
 
-      // if (count%2 === 1) {
-      //     count++;
-      // }
+      if (count % 2 === 1) {
+          count++;
+      }
     }
-    return count>>1;
+    return count >>> 1;
   }
 
   var dataMem = {
@@ -3778,23 +3792,23 @@ pseudo.CstrGraphics = (function() {
       var i = 0;
       
       while (i < size) {
-        if (modeDMA === 2) {
+        if (modeDMA === GPU_DMA_MEM2VRAM) {
           if ((i += fetchFromRAM(stream, addr, size-i)) >= size) {
             continue;
           }
           addr += i;
         }
         
-        data = stream ? pseudo.CstrMem.__ram.uw[(( addr)&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] : addr;
+        ret.data = stream ? pseudo.CstrMem.__ram.uw[(( addr)&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] : addr;
         addr += 4;
         i++;
 
         if (!pipe.size) {
-          var prim  = (data>>>24)&0xff;
-          var count = sizePrim[prim];
+          const prim  = (ret.data>>>24)&0xff;
+          const count = sizePrim[prim];
 
           if (count) {
-            pipe.data[0] = data;
+            pipe.data[0] = ret.data;
             pipe.prim = prim;
             pipe.size = count;
             pipe.row  = 1;
@@ -3804,7 +3818,7 @@ pseudo.CstrGraphics = (function() {
           }
         }
         else {
-          pipe.data[pipe.row] = data;
+          pipe.data[pipe.row] = ret.data;
           pipe.row++;
         }
 
@@ -3815,10 +3829,6 @@ pseudo.CstrGraphics = (function() {
           pseudo.CstrRender.draw(pipe.prim, pipe.data);
         }
       }
-    },
-
-    read(addr, size) {
-      // Oops
     }
   }
 
@@ -3831,13 +3841,17 @@ pseudo.CstrGraphics = (function() {
 
   // Exposed class functions/variables
   return {
-    __vram: union(1024*512*2),
+    __vram: union(1024 * 512 * 2),
 
     reset() {
       pseudo.CstrGraphics.__vram.uh.fill(0);
-      status  = 0x14802000;
-      data    = 0x400;
-      modeDMA = 0;
+      ret.data     = 0x400;
+      ret.status   = GPU_STAT_READYFORCOMMANDS | GPU_STAT_IDLE | GPU_STAT_DISPLAYDISABLED | 0x2000;
+      modeDMA      = GPU_DMA_NONE;
+      vpos         = 0;
+      vdiff        = 0;
+      isVideoPAL   = false;
+      isVideo24Bit = false;
 
       // VRAM Operations
       vrop.enabled = false;
@@ -3853,7 +3867,7 @@ pseudo.CstrGraphics = (function() {
     },
 
     redraw() {
-      status ^= 0x80000000;
+      ret.status ^= GPU_STAT_ODDLINES;
     },
 
     scopeW(addr, data) {
@@ -3865,7 +3879,9 @@ pseudo.CstrGraphics = (function() {
         case 4:
           switch((data>>>24)&0xff) {
             case 0x00:
-              status = 0x14802000;
+              ret.status   = 0x14802000;
+              isVideoPAL   = false;
+              isVideo24Bit = false;
               return;
 
             case 0x01:
@@ -3873,54 +3889,78 @@ pseudo.CstrGraphics = (function() {
               return;
 
             case 0x04:
-              modeDMA = data&3;
+              modeDMA = data & 3;
+              return;
+
+            case 0x05:
+              vpos = Math.max(vpos, (data >>> 10) & 0x1ff);
+              return;
+                
+            case 0x07:
+              vdiff = ((data >>> 10) & 0x3ff) - (data & 0x3ff);
               return;
 
             case 0x08:
-              pseudo.CstrRender.resize({
-                w: resMode[(data&3) | ((data&0x40)>>>4)],
-                h: (data&4) ? 480 : 240
-              });
+              isVideoPAL   = ((data) & 8) ? true : false;
+              isVideo24Bit = ((data >>> 4) & 1) ? true : false;
+
+              {
+                // Basic info
+                const w = resMode[(data & 3) | ((data & 0x40) >>> 4)];
+                const h = (data & 4) ? 480 : 240;
+                
+                if ((data >>> 5) & 1) { // No distinction for interlaced
+                  pseudo.CstrRender.resize({ w: w, h: h });
+                }
+                else { // Normal modes
+                  if (h == vdiff) {
+                    pseudo.CstrRender.resize({ w: w, h: h });
+                  }
+                  else {
+                    vdiff = vdiff == 226 ? 240 : vdiff; // paradox-059
+                    pseudo.CstrRender.resize({ w: w, h: vpos ? vpos : vdiff });
+                  }
+                }
+              }
               return;
 
             case 0x10:
-              infoSet(data);
+              switch(data & 0xffffff) {
+                case 7:
+                    ret.data = 2;
+                    return;
+              }
               return;
 
             
             case 0x02:
             case 0x03:
-            case 0x05:
             case 0x06:
-            case 0x07:
               return;
           }
-          pseudo.CstrMain.error('GPU Write Status '+('0x'+((data>>>24)&0xff>>>0).toString(16)));
+          pseudo.CstrMain.error('GPU Write Status ' + ('0x'+((data>>>24)&0xff>>>0).toString(16)));
           return;
       }
     },
 
     scopeR(addr) {
-      switch(addr&0xf) {
+      switch(addr & 0xf) {
         case 0:
-          return data;
+          return ret.data;
 
         case 4:
-          status |=  0x08000000;
-          status &= ~0x00080000;
-          return status;
+          return ret.status | GPU_STAT_READYFORVRAM;
       }
     },
 
     executeDMA(addr) {
-      var size = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff);
+      const size = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] >>> 16) * (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0xffff);
 
       switch(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
         case 0x00000401: // Disable DMA?
           return;
 
-        case 0x01000200:
-          dataMem.read(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
+        case 0x01000200: // Read
           return;
 
         case 0x01000201:
@@ -3928,14 +3968,14 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000401:
-          while (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0xffffff) {
-            var count = pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
+          while(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0xffffff) {
+            const count = pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
             dataMem.write(true, (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]+4)&0x1ffffc, count>>>24);
             pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = count&0xffffff;
           }
           return;
       }
-      pseudo.CstrMain.error('GPU DMA '+('0x'+(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>>0).toString(16)));
+      pseudo.CstrMain.error('GPU DMA ' + ('0x'+(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>>0).toString(16)));
     },
 
     inread(data) {
@@ -3947,15 +3987,7 @@ pseudo.CstrGraphics = (function() {
       vrop.h.end   = vrop.h.start + k.n4;
       vrop.v.end   = vrop.v.start + k.n5;
       
-      modeDMA = 2;
-    },
-
-    texp(spriteTP) {
-      status = (status&(~0x7ff)) | spriteTP;
-    },
-
-    stp(data) {
-      status = (status&(~(3<<11))) | ((data[0]&3)<<11);
+      modeDMA = GPU_DMA_MEM2VRAM;
     }
   };
 })();

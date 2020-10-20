@@ -6,11 +6,7 @@
 
 // Assume NTSC for now
 #define PSX_VSYNC\
-  (PSX_CLK/60)
+  (PSX_CLK / 60)
 
 #define PSX_HSYNC\
-  (PSX_CLK/15734)
-
-// This is uttermost experimental, it's the Achilles' heel
-#define PSX_CYCLE\
-  64
+  (PSX_CLK / 60 / 480)

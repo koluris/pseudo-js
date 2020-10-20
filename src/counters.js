@@ -27,8 +27,8 @@ pseudo.CstrCounters = (function() {
       hsc = 0;
     },
 
-    update() {
-      count(0) += mode(0)&0x100 ? PSX_CYCLE : PSX_CYCLE/8;
+    update(threshold) {
+      count(0) += mode(0)&0x100 ? threshold : threshold/8;
 
       if (count(0) >= bound(0)) {
         count(0) = 0;
@@ -39,7 +39,7 @@ pseudo.CstrCounters = (function() {
       }
 
       if (!(mode(1)&0x100)) {
-        count(1) += PSX_CYCLE;
+        count(1) += threshold;
 
         if (count(1) >= bound(1)) {
           count(1) = 0;
@@ -49,7 +49,7 @@ pseudo.CstrCounters = (function() {
           }
         }
       }
-      else if ((hsc += PSX_CYCLE) >= PSX_HSYNC) { hsc = 0;
+      else if ((hsc += threshold) >= PSX_HSYNC) { hsc = 0;
         if (++count(1) >= bound(1)) {
           count(1) = 0;
           if (mode(1)&0x50) {
@@ -59,7 +59,7 @@ pseudo.CstrCounters = (function() {
       }
 
       if (!(mode(2)&1)) {
-        count(2) += mode(2)&0x200 ? PSX_CYCLE/8 : PSX_CYCLE;
+        count(2) += mode(2)&0x200 ? threshold/8 : threshold;
 
         if (count(2) >= bound(2)) {
           count(2) = 0;
@@ -69,7 +69,9 @@ pseudo.CstrCounters = (function() {
         }
       }
 
-      if ((vbk += PSX_CYCLE) >= PSX_VSYNC) { vbk = 0;
+      vbk += threshold * 2;
+
+      if (vbk >= PSX_VSYNC) { vbk = 0;
         bus.interruptSet(IRQ_VSYNC);
          vs.redraw();
         cpu.setbp();
