@@ -1,34 +1,28 @@
 #define hwr  mem.__hwr
 #define ram  mem.__ram
 
-#define CD_REG(r)\
-  directMemB(hwr.ub, 0x1800|r)
+#define CD_REG(r) \
+  directMemB(hwr.ub, 0x1800 | r)
 
-#define defaultCtrlAndStat()\
-  ctrl |= 0x80;\
-  stat = CD_STAT_NO_INTR;\
-  addIrqQueue(data)
+#define defaultCtrlAndStat() \
+  ctrl |= 0x80; \
+  stat = CD_STAT_NO_INTR; \
+  interruptQueue(data)
 
-#define CD_INT()\
-  cdint = 1
-
-#define setResultSize(size)\
-  res.p  = 0;\
-  res.c  = size;\
+#define setResultSize(size) \
+  res.p  = 0; \
+  res.c  = size; \
   res.ok = 1
 
-#define stopRead()\
-  if (reads) {\
-      reads = 0;\
+#define stopRead() \
+  if (reads) { \
+      reads = 0; \
   }
 
-#define startRead()\
-  reads = 1;\
-  readed = 0xff;\
-  addIrqQueue(6)
-
-#define CDREAD_INT()\
-  cdreadint = 1
+#define startRead() \
+  reads = 1; \
+  readed = 0xff; \
+  interruptQueue(6)
 
 pseudo.CstrCdrom = (function() {
   const CD_STAT_NO_INTR     = 0;
@@ -98,11 +92,11 @@ pseudo.CstrCdrom = (function() {
     psx.trackRead(sector.prev);
   }
 
-  function addIrqQueue(code) {
+  function interruptQueue(code) {
     irq = code;
 
     if (!stat) {
-      CD_INT();
+      cdint = 1
     }
   }
 
@@ -110,20 +104,20 @@ pseudo.CstrCdrom = (function() {
     var prevIrq = irq;
 
     if (stat) {
-      CD_INT();
+      cdint = 1
       return;
     }
 
     irq = 0xff;
-    ctrl &= ~0x80;
+    ctrl &= (~(0x80));
 
     switch(prevIrq) {
-      case 1: // CdlNop
+      case  1: // CdlNop
         setResultSize(1);
         stat = CD_STAT_ACKNOWLEDGE;
         break;
 
-      case 2: // CdlSetloc
+      case  2: // CdlSetloc
       case 11: // CdlMute
       case 12: // CdlDemute
       case 13: // CdlSetfilter
@@ -134,7 +128,7 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         break;
 
-      case 3: // CdlStart
+      case  3: // CdlStart
         setResultSize(1);
         stat = CD_STAT_ACKNOWLEDGE;
         statP |= 0x02;
@@ -142,7 +136,7 @@ pseudo.CstrCdrom = (function() {
         statP |= 0x80;
         break;
 
-      case 6: // CdlReadN
+      case  6: // CdlReadN
           if (!reads) {
             return;
           }
@@ -157,25 +151,25 @@ pseudo.CstrCdrom = (function() {
             seeked = 1;
             statP |= 0x40;
           }
-          CDREAD_INT();
+          cdreadint = 1
           break;
 
-      case 7: // CdlIdle
+      case  7: // CdlIdle
         setResultSize(1);
         stat = CD_STAT_COMPLETE;
         statP |= 0x02;
         res.data[0] = statP;
         break;
 
-      case 9: // CdlPause
+      case  9: // CdlPause
         setResultSize(1);
         stat = CD_STAT_ACKNOWLEDGE;
         ctrl |= 0x80;
         res.data[0] = statP;
-        addIrqQueue(prevIrq + 0x20);
+        interruptQueue(prevIrq + 0x20);
         break;
 
-      case 9 + 0x20: // CdlPause
+      case  9 + 0x20: // CdlPause
         setResultSize(1);
         stat = CD_STAT_COMPLETE;
         statP |= 0x02;
@@ -188,7 +182,7 @@ pseudo.CstrCdrom = (function() {
         stat = CD_STAT_ACKNOWLEDGE;
         statP |= 0x02;
         res.data[0] = statP;
-        addIrqQueue(prevIrq + 0x20);
+        interruptQueue(prevIrq + 0x20);
         break;
 
       case 10 + 0x20: // CdlInit
@@ -260,7 +254,7 @@ pseudo.CstrCdrom = (function() {
         statP |= 0x02;
         res.data[0] = statP;
         statP |= 0x40;
-        addIrqQueue(prevIrq + 0x20);
+        interruptQueue(prevIrq + 0x20);
         seeked = 1;
         break;
 
@@ -278,7 +272,7 @@ pseudo.CstrCdrom = (function() {
         statP |= 0x2;
         res.data[0] = statP;
         statP |= 0x40;
-        addIrqQueue(prevIrq + 0x20);
+        interruptQueue(prevIrq + 0x20);
         break;
 
       case 22 + 0x20: // CdlSeekP
@@ -305,7 +299,7 @@ pseudo.CstrCdrom = (function() {
     }
 
     if (stat) {
-      CDREAD_INT();
+      cdreadint = 1
       return;
     }
 
@@ -339,10 +333,10 @@ pseudo.CstrCdrom = (function() {
       readed = 0;
 
       if ((transfer.data[4 + 2] & 0x80) && (mode & 0x02)) {
-        addIrqQueue(9); // CdlPause
+        interruptQueue(9); // CdlPause
       }
       else {
-        CDREAD_INT();
+        cdreadint = 1
       }
 
       bus.interruptSet(IRQ_CD);
@@ -499,11 +493,11 @@ pseudo.CstrCdrom = (function() {
             }
 
             if (irq) {
-              CD_INT();
+              cdint = 1
             }
 
             if (reads && !res.ok) {
-              CDREAD_INT();
+              cdreadint = 1
             }
             return;
           }

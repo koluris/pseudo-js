@@ -611,7 +611,7 @@ pseudo.CstrBus = (function() {
   // Definition and threshold of interrupts
   const interrupts = [{
       code: 0,
-      target: 1
+      target: 8
   }, {
       code: 1,
       target: 1
@@ -620,7 +620,7 @@ pseudo.CstrBus = (function() {
       target: 4
   }, {
       code: 3,
-      target: 1
+      target: 8
   }, {
       code: 4,
       target: 1
@@ -727,12 +727,6 @@ pseudo.CstrBus = (function() {
 
 
 
-
-
-
-
-
-
 pseudo.CstrCdrom = (function() {
   const CD_STAT_NO_INTR     = 0;
   const CD_STAT_DATA_READY  = 1;
@@ -801,11 +795,11 @@ pseudo.CstrCdrom = (function() {
     pseudo.CstrMain.trackRead(sector.prev);
   }
 
-  function addIrqQueue(code) {
+  function interruptQueue(code) {
     irq = code;
 
     if (!stat) {
-      cdint = 1;
+      cdint = 1
     }
   }
 
@@ -813,20 +807,20 @@ pseudo.CstrCdrom = (function() {
     var prevIrq = irq;
 
     if (stat) {
-      cdint = 1;
+      cdint = 1
       return;
     }
 
     irq = 0xff;
-    ctrl &= ~0x80;
+    ctrl &= (~(0x80));
 
     switch(prevIrq) {
-      case 1: // CdlNop
+      case  1: // CdlNop
         res.p = 0; res.c = 1; res.ok = 1;
         stat = CD_STAT_ACKNOWLEDGE;
         break;
 
-      case 2: // CdlSetloc
+      case  2: // CdlSetloc
       case 11: // CdlMute
       case 12: // CdlDemute
       case 13: // CdlSetfilter
@@ -837,7 +831,7 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         break;
 
-      case 3: // CdlStart
+      case  3: // CdlStart
         res.p = 0; res.c = 1; res.ok = 1;
         stat = CD_STAT_ACKNOWLEDGE;
         statP |= 0x02;
@@ -845,7 +839,7 @@ pseudo.CstrCdrom = (function() {
         statP |= 0x80;
         break;
 
-      case 6: // CdlReadN
+      case  6: // CdlReadN
           if (!reads) {
             return;
           }
@@ -860,25 +854,25 @@ pseudo.CstrCdrom = (function() {
             seeked = 1;
             statP |= 0x40;
           }
-          cdreadint = 1;
+          cdreadint = 1
           break;
 
-      case 7: // CdlIdle
+      case  7: // CdlIdle
         res.p = 0; res.c = 1; res.ok = 1;
         stat = CD_STAT_COMPLETE;
         statP |= 0x02;
         res.data[0] = statP;
         break;
 
-      case 9: // CdlPause
+      case  9: // CdlPause
         res.p = 0; res.c = 1; res.ok = 1;
         stat = CD_STAT_ACKNOWLEDGE;
         ctrl |= 0x80;
         res.data[0] = statP;
-        addIrqQueue(prevIrq + 0x20);
+        interruptQueue(prevIrq + 0x20);
         break;
 
-      case 9 + 0x20: // CdlPause
+      case  9 + 0x20: // CdlPause
         res.p = 0; res.c = 1; res.ok = 1;
         stat = CD_STAT_COMPLETE;
         statP |= 0x02;
@@ -891,7 +885,7 @@ pseudo.CstrCdrom = (function() {
         stat = CD_STAT_ACKNOWLEDGE;
         statP |= 0x02;
         res.data[0] = statP;
-        addIrqQueue(prevIrq + 0x20);
+        interruptQueue(prevIrq + 0x20);
         break;
 
       case 10 + 0x20: // CdlInit
@@ -963,7 +957,7 @@ pseudo.CstrCdrom = (function() {
         statP |= 0x02;
         res.data[0] = statP;
         statP |= 0x40;
-        addIrqQueue(prevIrq + 0x20);
+        interruptQueue(prevIrq + 0x20);
         seeked = 1;
         break;
 
@@ -981,7 +975,7 @@ pseudo.CstrCdrom = (function() {
         statP |= 0x2;
         res.data[0] = statP;
         statP |= 0x40;
-        addIrqQueue(prevIrq + 0x20);
+        interruptQueue(prevIrq + 0x20);
         break;
 
       case 22 + 0x20: // CdlSeekP
@@ -1008,7 +1002,7 @@ pseudo.CstrCdrom = (function() {
     }
 
     if (stat) {
-      cdreadint = 1;
+      cdreadint = 1
       return;
     }
 
@@ -1042,10 +1036,10 @@ pseudo.CstrCdrom = (function() {
       readed = 0;
 
       if ((transfer.data[4 + 2] & 0x80) && (mode & 0x02)) {
-        addIrqQueue(9); // CdlPause
+        interruptQueue(9); // CdlPause
       }
       else {
-        cdreadint = 1;
+        cdreadint = 1
       }
 
       pseudo.CstrBus.interruptSet(2);
@@ -1128,12 +1122,12 @@ pseudo.CstrCdrom = (function() {
             case 20: // CdlGetTD
             case 21: // CdlSeekL
             case 22: // CdlSeekP
-              ctrl |= 0x80; stat = CD_STAT_NO_INTR; addIrqQueue(data);
+              ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
               break;
 
             case 2: // CdlSetLoc
               if (reads) { reads = 0; };
-              ctrl |= 0x80; stat = CD_STAT_NO_INTR; addIrqQueue(data);
+              ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
               seeked = 0;
               for (var i = 0; i < 3; i++) {
                 sector.data[i] = (parseInt((param.data[i])/16) * 10 + (param.data[i])%16);
@@ -1147,18 +1141,18 @@ pseudo.CstrCdrom = (function() {
               irq = 0;
               stat = CD_STAT_NO_INTR;
               ctrl |= 0x80;
-              reads = 1; readed = 0xff; addIrqQueue(6);
+              reads = 1; readed = 0xff; interruptQueue(6);
               break;
 
             case 13: // CdlSetfilter
               //file    = param.data[0];
               //channel = param.data[1];
-              ctrl |= 0x80; stat = CD_STAT_NO_INTR; addIrqQueue(data);
+              ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
               break;
 
             case 14: // CdlSetmode
               mode = param.data[0];
-              ctrl |= 0x80; stat = CD_STAT_NO_INTR; addIrqQueue(data);
+              ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
               break;
 
             default:
@@ -1202,11 +1196,11 @@ pseudo.CstrCdrom = (function() {
             }
 
             if (irq) {
-              cdint = 1;
+              cdint = 1
             }
 
             if (reads && !res.ok) {
-              cdreadint = 1;
+              cdreadint = 1
             }
             return;
           }
@@ -1248,20 +1242,20 @@ pseudo.CstrCdrom = (function() {
 
           ctrl |= 0x18;
 
-          return pseudo.CstrMem.__hwr.ub[((0x1800|0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = ctrl;
+          return pseudo.CstrMem.__hwr.ub[((0x1800 | 0)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = ctrl;
 
         case 1:
-          pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
+          pseudo.CstrMem.__hwr.ub[((0x1800 | 1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
 
           if (res.ok) {
-            pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = res.data[res.p++];
+            pseudo.CstrMem.__hwr.ub[((0x1800 | 1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = res.data[res.p++];
 
             if (res.p === res.c) {
               res.ok = 0;
             }
           }
           
-          return pseudo.CstrMem.__hwr.ub[((0x1800|1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
+          return pseudo.CstrMem.__hwr.ub[((0x1800 | 1)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
 
         case 2:
           if (!readed) {
@@ -1271,19 +1265,19 @@ pseudo.CstrCdrom = (function() {
           return transfer.data[transfer.p++];
 
         case 3:
-          pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
+          pseudo.CstrMem.__hwr.ub[((0x1800 | 3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0;
 
           if (stat) {
             if (ctrl & 0x01) {
-              pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = stat | 0xe0;
+              pseudo.CstrMem.__hwr.ub[((0x1800 | 3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = stat | 0xe0;
             }
             else {
               pseudo.CstrMain.error('CD R CD_REG(3) = 0xff;');
-              pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0xff;
+              pseudo.CstrMem.__hwr.ub[((0x1800 | 3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0] = 0xff;
             }
           }
           
-          return pseudo.CstrMem.__hwr.ub[((0x1800|3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
+          return pseudo.CstrMem.__hwr.ub[((0x1800 | 3)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
       }
     },
 
@@ -1643,9 +1637,9 @@ pseudo.CstrCounters = (function() {
       vbk += threshold * 2;
 
       if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
-          pseudo.CstrBus.interruptSet(0);
-            pseudo.CstrGraphics.redraw();
-          pseudo.CstrMips.setbp();
+        pseudo.CstrBus.interruptSet(0);
+         pseudo.CstrGraphics.redraw();
+        pseudo.CstrMips.setbp();
       }
     },
 
@@ -3449,27 +3443,27 @@ pseudo.CstrGraphics = (function() {
 
   // Command Pipe
   var pipe = {
-    data: new Uint32Array(100)
+    data: new Uint32Array(256)
   };
 
   // Primitive Size
   var sizePrim = [
-    0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x10
-    4, 4, 4, 4, 7, 7, 7, 7, 5, 5, 5, 5, 9, 9, 9, 9, // 0x20
-    6, 6, 6, 6, 9, 9, 9, 9, 8, 8, 8, 8,12,12,12,12, // 0x30
-    3, 3, 3, 3, 0, 0, 0, 0, 5, 5, 5, 5, 6, 6, 6, 6, // 0x40
-    4, 4, 4, 4, 0, 0, 0, 0, 7, 7, 7, 7, 9, 9, 9, 9, // 0x50
-    3, 3, 3, 3, 4, 4, 4, 4, 2, 2, 2, 2, 0, 0, 0, 0, // 0x60
-    2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 3, 3, 3, 3, // 0x70
-    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x80
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x90
-    3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xa0
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xb0
-    3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xc0
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xd0
-    0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xe0
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xf0
+    0,1,3,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    4,4,4,4,7,7,7,7, 5,5,5,5,9,9,9,9,
+    6,6,6,6,9,9,9,9, 8,8,8,8,12,12,12,12,
+    3,3,3,3,0,0,0,0, 254,254,254,254,254,254,254,254,
+    4,4,4,4,0,0,0,0, 255,255,255,255,255,255,255,255,
+    3,3,3,3,4,4,4,4, 2,2,2,2,3,3,3,3,
+    2,2,2,2,3,3,3,3, 2,2,2,2,3,3,3,3,
+    4,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    3,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    3,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,1,1,1,1,1,1,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
   ];
 
   // Resolution Mode
@@ -3728,7 +3722,7 @@ pseudo.CstrGraphics = (function() {
     },
 
     inread(data) {
-      var k = { n2: (data[1]>>> 0)&0xffff, n3: (data[1]>>>16)&0xffff, n4: (data[2]>>> 0)&0xffff, n5: (data[2]>>>16)&0xffff,};
+      const k = { n2: (data[1]>>> 0)&0xffff, n3: (data[1]>>>16)&0xffff, n4: (data[2]>>> 0)&0xffff, n5: (data[2]>>>16)&0xffff,};
 
       vrop.enabled = true;
       vrop.h.p     = vrop.h.start = k.n2;
