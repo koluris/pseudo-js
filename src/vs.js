@@ -79,63 +79,11 @@ pseudo.CstrGraphics = (function() {
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
-  function fetchFromRAM(stream, addr, size) {
-    var count = 0;
-
-    // False alarm!
-    if (!vrop.enabled) {
-      modeDMA = GPU_DMA_NONE;
-      return 0;
-    }
-    size <<= 1;
-
-    while (vrop.v.p < vrop.v.end) {
-      while (vrop.h.p < vrop.h.end) {
-        // Keep position of vram
-        const pos = (vrop.v.p << 10) + vrop.h.p;
-
-        if (isVideo24Bit) {
-        }
-        else {
-          // Check if it`s a 16-bit (stream), or a 32-bit (command) address
-          if (stream) {
-            vram.uh[pos] = directMemH(ram.uh, addr);
-          }
-          else { // A dumb hack for now
-            if (!(count % 2)) {
-              vram.uw[pos >>> 1] = addr;
-            }
-          }
-        }
-
-        addr += 2;
-        vrop.h.p++;
-
-        if (++count === size) {
-          if (vrop.h.p === vrop.h.end) {
-            vrop.h.p = vrop.h.start;
-            vrop.v.p++;
-          }
-          return fetchEnd(count);
-        }
-      }
-
-      vrop.h.p = vrop.h.start;
-      vrop.v.p++;
-    }
-    return fetchEnd(count);
-  }
-
-  function fetchEnd(count) {
-    if (vrop.v.p >= vrop.v.end) {
-      modeDMA = GPU_DMA_NONE;
-      vrop.enabled = false;
-
-      if (count % 2 === 1) {
-          count++;
-      }
-    }
-    return count >>> 1;
+  function pipeReset() {
+    ioZero(pipe.data);
+    pipe.prim = 0;
+    pipe.size = 0;
+    pipe.row  = 0;
   }
 
   var dataMem = {
@@ -183,11 +131,68 @@ pseudo.CstrGraphics = (function() {
     }
   }
 
-  function pipeReset() {
-    ioZero(pipe.data);
-    pipe.prim = 0;
-    pipe.size = 0;
-    pipe.row  = 0;
+  function fetchFromRAM(stream, addr, size) {
+    var count = 0;
+
+    // False alarm!
+    if (!vrop.enabled) {
+      modeDMA = GPU_DMA_NONE;
+      return 0;
+    }
+    size <<= 1;
+
+    while (vrop.v.p < vrop.v.end) {
+      while (vrop.h.p < vrop.h.end) {
+        // Keep position of vram
+        const pos = (vrop.v.p << 10) + vrop.h.p;
+
+        if (isVideo24Bit) {
+        }
+        else {
+        }
+
+        // Check if it`s a 16-bit (stream), or a 32-bit (command) address
+        if (stream) {
+          vram.uh[pos] = directMemH(ram.uh, addr);
+        }
+        else { // A dumb hack for now
+          if (!(count % 2)) {
+            vram.uw[pos >>> 1] = addr;
+          }
+        }
+
+        addr += 2;
+        vrop.h.p++;
+
+        if (++count === size) {
+          if (vrop.h.p === vrop.h.end) {
+            vrop.h.p = vrop.h.start;
+            vrop.v.p++;
+          }
+          return fetchEnd(count);
+        }
+      }
+
+      vrop.h.p = vrop.h.start;
+      vrop.v.p++;
+    }
+    return fetchEnd(count);
+  }
+
+  function fetchEnd(count) {
+    if (vrop.v.p >= vrop.v.end) {
+      render.outputVRAM(vrop.raw, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
+      
+      vrop.raw.fill(0);
+      vrop.enabled = false;
+
+      modeDMA = GPU_DMA_NONE;
+    }
+
+    if (count % 2) {
+      count++;
+    }
+    return count >>> 1;
   }
 
   // Exposed class functions/variables
@@ -206,6 +211,7 @@ pseudo.CstrGraphics = (function() {
 
       // VRAM Operations
       vrop.enabled = false;
+      vrop.raw     = 0;
       vrop.h.p     = 0;
       vrop.h.start = 0;
       vrop.h.end   = 0;
@@ -330,15 +336,20 @@ pseudo.CstrGraphics = (function() {
     },
 
     inread(data) {
-      const k = READIMG(data);
+      const p = READIMG(data);
 
       vrop.enabled = true;
-      vrop.h.p     = vrop.h.start = k.n2;
-      vrop.v.p     = vrop.v.start = k.n3;
-      vrop.h.end   = vrop.h.start + k.n4;
-      vrop.v.end   = vrop.v.start + k.n5;
-      
+      vrop.raw     = new UintWcap(p.n4 * p.n5);
+
+      vrop.h.start = vrop.h.p = p.n2;
+      vrop.v.start = vrop.v.p = p.n3;
+      vrop.h.end   = vrop.h.p + p.n4;
+      vrop.v.end   = vrop.v.p + p.n5;
+
       modeDMA = GPU_DMA_MEM2VRAM;
+
+      // Cache invalidation
+      cache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
     }
   };
 })();

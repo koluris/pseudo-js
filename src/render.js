@@ -667,8 +667,7 @@ pseudo.CstrRender = (function() {
       cpu.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+psx.hex(addr));
     },
 
-    infoRead(n) {
-      return info[n];
+    outputVRAM(raw, iX, iY, iW, iH) {
     }
   };
 })();

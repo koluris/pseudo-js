@@ -3113,8 +3113,7 @@ pseudo.CstrRender = (function() {
       pseudo.CstrMips.consoleWrite('error', 'GPU Render Primitive '+pseudo.CstrMain.hex(addr));
     },
 
-    infoRead(n) {
-      return info[n];
+    outputVRAM(raw, iX, iY, iW, iH) {
     }
   };
 })();
@@ -3395,6 +3394,15 @@ pseudo.CstrTexCache = (function() {
       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
       ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, 256, 256, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, bTex.ub);
+    },
+
+    invalidate(iX, iY, iW, iH) {
+      // for (const tc in stack) {
+      //   if (((tc.pos.w + 255) >= iX) && ((tc.pos.h + 255) >= iY) && ((tc.pos.w) <= iW) && ((tc.pos.h) <= iH)) {
+      //     tc.uid = 0;
+      //     continue;
+      //   }
+      // }
     }
   };
 })();
@@ -3481,63 +3489,11 @@ pseudo.CstrGraphics = (function() {
     256, 320, 512, 640, 368, 384, 512, 640
   ];
 
-  function fetchFromRAM(stream, addr, size) {
-    var count = 0;
-
-    // False alarm!
-    if (!vrop.enabled) {
-      modeDMA = GPU_DMA_NONE;
-      return 0;
-    }
-    size <<= 1;
-
-    while (vrop.v.p < vrop.v.end) {
-      while (vrop.h.p < vrop.h.end) {
-        // Keep position of pseudo.CstrGraphics.__vram
-        const pos = (vrop.v.p << 10) + vrop.h.p;
-
-        if (isVideo24Bit) {
-        }
-        else {
-          // Check if it`s a 16-bit (stream), or a 32-bit (command) address
-          if (stream) {
-            pseudo.CstrGraphics.__vram.uh[pos] = pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1];
-          }
-          else { // A dumb hack for now
-            if (!(count % 2)) {
-              pseudo.CstrGraphics.__vram.uw[pos >>> 1] = addr;
-            }
-          }
-        }
-
-        addr += 2;
-        vrop.h.p++;
-
-        if (++count === size) {
-          if (vrop.h.p === vrop.h.end) {
-            vrop.h.p = vrop.h.start;
-            vrop.v.p++;
-          }
-          return fetchEnd(count);
-        }
-      }
-
-      vrop.h.p = vrop.h.start;
-      vrop.v.p++;
-    }
-    return fetchEnd(count);
-  }
-
-  function fetchEnd(count) {
-    if (vrop.v.p >= vrop.v.end) {
-      modeDMA = GPU_DMA_NONE;
-      vrop.enabled = false;
-
-      if (count % 2 === 1) {
-          count++;
-      }
-    }
-    return count >>> 1;
+  function pipeReset() {
+    pipe.data.fill(0);
+    pipe.prim = 0;
+    pipe.size = 0;
+    pipe.row  = 0;
   }
 
   var dataMem = {
@@ -3585,11 +3541,68 @@ pseudo.CstrGraphics = (function() {
     }
   }
 
-  function pipeReset() {
-    pipe.data.fill(0);
-    pipe.prim = 0;
-    pipe.size = 0;
-    pipe.row  = 0;
+  function fetchFromRAM(stream, addr, size) {
+    var count = 0;
+
+    // False alarm!
+    if (!vrop.enabled) {
+      modeDMA = GPU_DMA_NONE;
+      return 0;
+    }
+    size <<= 1;
+
+    while (vrop.v.p < vrop.v.end) {
+      while (vrop.h.p < vrop.h.end) {
+        // Keep position of pseudo.CstrGraphics.__vram
+        const pos = (vrop.v.p << 10) + vrop.h.p;
+
+        if (isVideo24Bit) {
+        }
+        else {
+        }
+
+        // Check if it`s a 16-bit (stream), or a 32-bit (command) address
+        if (stream) {
+          pseudo.CstrGraphics.__vram.uh[pos] = pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1];
+        }
+        else { // A dumb hack for now
+          if (!(count % 2)) {
+            pseudo.CstrGraphics.__vram.uw[pos >>> 1] = addr;
+          }
+        }
+
+        addr += 2;
+        vrop.h.p++;
+
+        if (++count === size) {
+          if (vrop.h.p === vrop.h.end) {
+            vrop.h.p = vrop.h.start;
+            vrop.v.p++;
+          }
+          return fetchEnd(count);
+        }
+      }
+
+      vrop.h.p = vrop.h.start;
+      vrop.v.p++;
+    }
+    return fetchEnd(count);
+  }
+
+  function fetchEnd(count) {
+    if (vrop.v.p >= vrop.v.end) {
+      pseudo.CstrRender.outputVRAM(vrop.raw, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
+      
+      vrop.raw.fill(0);
+      vrop.enabled = false;
+
+      modeDMA = GPU_DMA_NONE;
+    }
+
+    if (count % 2) {
+      count++;
+    }
+    return count >>> 1;
   }
 
   // Exposed class functions/variables
@@ -3608,6 +3621,7 @@ pseudo.CstrGraphics = (function() {
 
       // VRAM Operations
       vrop.enabled = false;
+      vrop.raw     = 0;
       vrop.h.p     = 0;
       vrop.h.start = 0;
       vrop.h.end   = 0;
@@ -3732,15 +3746,20 @@ pseudo.CstrGraphics = (function() {
     },
 
     inread(data) {
-      const k = { n2: (data[1]>>> 0)&0xffff, n3: (data[1]>>>16)&0xffff, n4: (data[2]>>> 0)&0xffff, n5: (data[2]>>>16)&0xffff,};
+      const p = { n2: (data[1]>>> 0)&0xffff, n3: (data[1]>>>16)&0xffff, n4: (data[2]>>> 0)&0xffff, n5: (data[2]>>>16)&0xffff,};
 
       vrop.enabled = true;
-      vrop.h.p     = vrop.h.start = k.n2;
-      vrop.v.p     = vrop.v.start = k.n3;
-      vrop.h.end   = vrop.h.start + k.n4;
-      vrop.v.end   = vrop.v.start + k.n5;
-      
+      vrop.raw     = new Uint32Array(p.n4 * p.n5);
+
+      vrop.h.start = vrop.h.p = p.n2;
+      vrop.v.start = vrop.v.p = p.n3;
+      vrop.h.end   = vrop.h.p + p.n4;
+      vrop.v.end   = vrop.v.p + p.n5;
+
       modeDMA = GPU_DMA_MEM2VRAM;
+
+      // Cache invalidation
+      cache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
     }
   };
 })();

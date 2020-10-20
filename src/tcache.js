@@ -87,6 +87,15 @@ pseudo.CstrTexCache = (function() {
       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
       ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, bTex.ub);
+    },
+
+    invalidate(iX, iY, iW, iH) {
+      // for (const tc in stack) {
+      //   if (((tc.pos.w + 255) >= iX) && ((tc.pos.h + 255) >= iY) && ((tc.pos.w) <= iW) && ((tc.pos.h) <= iH)) {
+      //     tc.uid = 0;
+      //     continue;
+      //   }
+      // }
     }
   };
 })();
