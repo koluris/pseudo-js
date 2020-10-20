@@ -105,14 +105,12 @@ pseudo.CstrMips = (function() {
 
           case 8: // JR
             branch(r[rs]);
-            setptr(pc);
             print();
             return;
 
           case 9: // JALR
             r[rd] = pc+4;
             branch(r[rs]);
-            setptr(pc);
             return;
 
           case 12: // SYSCALL
@@ -195,13 +193,20 @@ pseudo.CstrMips = (function() {
       case 1: // REGIMM
         switch(rt) {
           case 0: // BLTZ
-            if (SIGN_EXT_32(r[rs]) < 0) {
+            if (SIGN_EXT_32(r[rs]) <  0) {
               branch(b_addr);
             }
             return;
 
           case 1: // BGEZ
             if (SIGN_EXT_32(r[rs]) >= 0) {
+              branch(b_addr);
+            }
+            return;
+
+          case 16: // BLTZAL
+            r[31] = pc+4;
+            if (SIGN_EXT_32(r[rs]) <  0) {
               branch(b_addr);
             }
             return;
@@ -324,7 +329,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 38: // LWR
-        opcodeLWx(>>, 1);
+        opcodeLWx(>>>, 1);
         return;
 
       case 40: // SB
@@ -336,7 +341,7 @@ pseudo.CstrMips = (function() {
         return;
 
       case 42: // SWL
-        opcodeSWx(>>, 2);
+        opcodeSWx(>>>, 2);
         return;
 
       case 43: // SW
@@ -361,7 +366,8 @@ pseudo.CstrMips = (function() {
   function branch(addr) {
     // Execute instruction in slot
     step(true);
-    pc = addr;
+    pc = addr
+    setptr(pc);
   }
 
   // Exposed class functions/variables

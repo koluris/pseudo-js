@@ -3,7 +3,7 @@
 #define vram vs.__vram
 
 #define	TCACHE_MAX\
-  2048
+  384
 
 #define TEX_SIZE\
   256

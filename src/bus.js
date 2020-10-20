@@ -6,7 +6,7 @@
 pseudo.CstrBus = (function() {
   var interrupts = [{
     code: IRQ_VSYNC,
-    dest: 1
+    dest: 8
   }, {
     code: IRQ_GPU,
     dest: 1
@@ -15,7 +15,7 @@ pseudo.CstrBus = (function() {
     dest: 4
   }, {
     code: IRQ_DMA,
-    dest: 1
+    dest: 8
   }, {
     code: IRQ_RTC0,
     dest: 1
