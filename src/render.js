@@ -377,7 +377,7 @@ pseudo.CstrRender = (function() {
   }
 
   function drawAreaCalc(n) {
-    return Math.round((n * (res.override.w * res.multiplier)) / 100);
+    return Math.round((n * (res.native.w * res.multiplier)) / 100);
   }
 
   // Exposed class functions/variables
@@ -433,7 +433,7 @@ pseudo.CstrRender = (function() {
       ];
 
       // Texture Cache
-      tcache.init(ctx);
+      tcache.init();
     },
 
     reset() {
@@ -457,51 +457,25 @@ pseudo.CstrRender = (function() {
     },
 
     resize(data) {
-      // Same resolution? Ciao!
-      if (data.w === res.native.w && data.h === res.native.h) {
-        return;
-      }
+        // Same resolution? Ciao!
+        if (data.w === res.native.w && data.h === res.native.h) {
+            return;
+        }
 
-      // Check if we have a valid resolution
-      if (data.w > 0 && data.h > 0) {
-        // Store valid resolution
-        res.native.w = data.w;
-        res.native.h = data.h;
+        // Check if we have a valid resolution
+        if (data.w > 0 && data.h > 0) {
+            // Store valid resolution
+            res.native.w = data.w;
+            res.native.h = data.h;
+          
+            divRes.innerText = data.w + ' x ' + data.h;
+            divScreen.width  = 640;
+            divScreen.hei    = 480;
 
-        // Native PSX resolution
-        ctx.uniform2f(attrib._r, data.w/2, data.h/2);
-        divRes.innerText = data.w+' x '+data.h;
-
-        // Construct desired resolution
-        var w = (res.override.w || data.w) * res.multiplier;
-        var h = (res.override.h || data.h) * res.multiplier;
-
-        divScreen.width = w;
-        divScreen.hei   = h;
-        ctx.viewport(0, 0, w, h);
-        ctx.clear(ctx.COLOR_BUFFER_BIT);
-      }
-    },
-
-    doubleResolution() {
-      res.multiplier = res.multiplier === 1 ? 2 : 1;
-
-      // Show/hide elements
-      if (res.multiplier === 1) {
-        divFooter.show();
-      }
-      else {
-        divFooter.hide();
-      }
-      
-      // Redraw
-      var w = res.native.w;
-      var h = res.native.h;
-
-      res.native.w = -1;
-      res.native.h = -1;
-
-      render.resize({ w: w, h: h });
+            ctx.uniform2f(attrib._r, data.w / 2, data.h / 2);
+            ctx.viewport((640 - data.w) / 2, (480 - data.h) / 2, data.w, data.h);
+            ctx.clear(ctx.COLOR_BUFFER_BIT);
+        }
     },
 
     draw(addr, data) {

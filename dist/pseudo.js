@@ -2822,7 +2822,7 @@ pseudo.CstrRender = (function() {
   }
 
   function drawAreaCalc(n) {
-    return Math.round((n * (res.override.w * res.multiplier)) / 100);
+    return Math.round((n * (res.native.w * res.multiplier)) / 100);
   }
 
   // Exposed class functions/variables
@@ -2844,7 +2844,7 @@ pseudo.CstrRender = (function() {
       // Shaders
       var func = ctx.createProgram();
       ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '  attribute vec2 a_position;  attribute vec4 a_color;  attribute vec2 a_texCoord;  uniform vec2 u_resolution;  varying vec4 v_color;  varying vec2 v_texCoord;    void main() {    gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);    v_color = a_color;    v_texCoord = a_texCoord;  }'));
-      ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '  precision mediump float;  uniform sampler2D u_texture;  uniform bool u_enabled;  varying vec4 v_color;  varying vec2 v_texCoord;    void main() {    if (u_enabled) {      gl_FragColor = texture2D(u_texture, v_texCoord) * (v_color * vec4(2.0, 2.0, 2.0, 1));    }    else {      gl_FragColor = v_color;    }  }'));
+      ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '  precision mediump float;  uniform sampler2D u_texture;  uniform bool u_enabled;  varying vec4 v_color;  varying vec2 v_texCoord;    void main() {    if (u_enabled) {      gl_FragColor = texture2D(u_texture, v_texCoord) * (v_color * vec4(2.1, 2.1, 2.1, 1));    }    else {      gl_FragColor = v_color;    }  }'));
       ctx.linkProgram(func);
       ctx.getProgramParameter(func, ctx.LINK_STATUS);
       ctx.useProgram (func);
@@ -2878,7 +2878,7 @@ pseudo.CstrRender = (function() {
       ];
 
       // Texture Cache
-      pseudo.CstrTexCache.init(ctx);
+      pseudo.CstrTexCache.init();
     },
 
     reset() {
@@ -2902,51 +2902,25 @@ pseudo.CstrRender = (function() {
     },
 
     resize(data) {
-      // Same resolution? Ciao!
-      if (data.w === res.native.w && data.h === res.native.h) {
-        return;
-      }
+        // Same resolution? Ciao!
+        if (data.w === res.native.w && data.h === res.native.h) {
+            return;
+        }
 
-      // Check if we have a valid resolution
-      if (data.w > 0 && data.h > 0) {
-        // Store valid resolution
-        res.native.w = data.w;
-        res.native.h = data.h;
+        // Check if we have a valid resolution
+        if (data.w > 0 && data.h > 0) {
+            // Store valid resolution
+            res.native.w = data.w;
+            res.native.h = data.h;
+          
+            divRes.innerText = data.w + ' x ' + data.h;
+            divScreen.width  = 640;
+            divScreen.height    = 480;
 
-        // Native PSX resolution
-        ctx.uniform2f(attrib._r, data.w/2, data.h/2);
-        divRes.innerText = data.w+' x '+data.h;
-
-        // Construct desired resolution
-        var w = (res.override.w || data.w) * res.multiplier;
-        var h = (res.override.h || data.h) * res.multiplier;
-
-        divScreen.width = w;
-        divScreen.height   = h;
-        ctx.viewport(0, 0, w, h);
-        ctx.clear(ctx.COLOR_BUFFER_BIT);
-      }
-    },
-
-    doubleResolution() {
-      res.multiplier = res.multiplier === 1 ? 2 : 1;
-
-      // Show/hide elements
-      if (res.multiplier === 1) {
-        divFooter.show();
-      }
-      else {
-        divFooter.hide();
-      }
-      
-      // Redraw
-      var w = res.native.w;
-      var h = res.native.h;
-
-      res.native.w = -1;
-      res.native.h = -1;
-
-      pseudo.CstrRender.resize({ w: w, h: h });
+            ctx.uniform2f(attrib._r, data.w / 2, data.h / 2);
+            ctx.viewport((640 - data.w) / 2, (480 - data.h) / 2, data.w, data.h);
+            ctx.clear(ctx.COLOR_BUFFER_BIT);
+        }
     },
 
     draw(addr, data) {
@@ -3328,7 +3302,7 @@ pseudo.CstrTexCache = (function() {
     var tex;
 
     return {
-        init(ctx) {
+        init() {
             for (var i = 0; i < TCACHE_MAX; i++) {
                 cache[i] = {
                     pos: { // Mem position of texture and color lookup table
@@ -3430,7 +3404,7 @@ pseudo.CstrTexCache = (function() {
             ctx.bindTexture  (ctx.TEXTURE_2D, tc.tex);
             ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
             ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-            ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_INT_24_8, tex.bfr.uw);
+            ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, tex.bfr.ub);
 
             // Advance cache counter
             tc.uid = uid;

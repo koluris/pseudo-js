@@ -17,7 +17,7 @@ pseudo.CstrTexCache = (function() {
     var tex;
 
     return {
-        init(ctx) {
+        init() {
             for (var i = 0; i < TCACHE_MAX; i++) {
                 cache[i] = {
                     pos: { // Mem position of texture and color lookup table

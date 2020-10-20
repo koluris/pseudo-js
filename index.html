@@ -93,12 +93,12 @@
       ALIGN-items: center;
       flex: 1;
       position: relative;
-      BACKGROUND: black;
+      BACKGROUND: #111;
       min-HEIGHT: 250px;
     }
     #screen {
       DISPLAY: block;
-      BACKGROUND: black;
+      BACKGROUND: #111;
     }
 
     /* CD-ROM indication */
@@ -236,7 +236,7 @@
 
         <!-- Screen -->
         <div class="screen">
-          <canvas id="screen" width="320" HEIGHT="240">
+          <canvas id="screen" width="640" HEIGHT="480">
             No support for <code>canvas</code> element.
           </canvas>
           <div class="led">
@@ -245,7 +245,7 @@
           </div>
           <div class="properties">
             <div id="resolution"></div>
-            <div id="double" onclick="pseudo.CstrRender.doubleResolution()">x2</div>
+            <div id="double">x1</div>
           </div>
         </div>
       </div>
