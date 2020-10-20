@@ -177,7 +177,9 @@ pseudo.CstrHardware = (function() {
             return sio.read.b(addr);
 
           /* unused */
-          case 0x10f6:
+          case 0x10f6: // ?
+          case 0x1d68: // ?
+          case 0x1d78: // ?
             return directMemB(hwr.ub, addr);
         }
         psx.error('Hardware Read b '+psx.hex(addr));

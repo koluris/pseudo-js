@@ -161,6 +161,13 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         break;
 
+      case  8: // CdlStop
+        setResultSize(1);
+        stat = CD_STAT_COMPLETE;
+        statP &= (~(0x2));
+        res.data[0] = statP;
+        break;
+
       case  9: // CdlPause
         setResultSize(1);
         stat = CD_STAT_ACKNOWLEDGE;

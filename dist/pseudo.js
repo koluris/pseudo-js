@@ -864,6 +864,13 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         break;
 
+      case  8: // CdlStop
+        res.p = 0; res.c = 1; res.ok = 1;
+        stat = CD_STAT_COMPLETE;
+        statP &= (~(0x2));
+        res.data[0] = statP;
+        break;
+
       case  9: // CdlPause
         res.p = 0; res.c = 1; res.ok = 1;
         stat = CD_STAT_ACKNOWLEDGE;
@@ -1847,7 +1854,9 @@ pseudo.CstrHardware = (function() {
             return pseudo.CstrSerial.read.b(addr);
 
           
-          case 0x10f6:
+          case 0x10f6: // ?
+          case 0x1d68: // ?
+          case 0x1d78: // ?
             return pseudo.CstrMem.__hwr.ub[(( addr)&(pseudo.CstrMem.__hwr.ub.byteLength-1))>>>0];
         }
         pseudo.CstrMain.error('Hardware Read b '+pseudo.CstrMain.hex(addr));
