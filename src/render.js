@@ -431,6 +431,9 @@ pseudo.CstrRender = (function() {
         { src: ctx.ZERO,      dest: ctx.ONE_MINUS_SRC_COLOR, opaque:   0 },
         { src: ctx.SRC_ALPHA, dest: ctx.ONE,                 opaque:  64 },
       ];
+
+      // Texture Cache
+      tcache.init(ctx);
     },
 
     reset() {
@@ -448,6 +451,8 @@ pseudo.CstrRender = (function() {
         h: 0, v: 0
       };
 
+      // Texture Cache
+      tcache.reset(ctx);
       render.resize({ w: 320, h: 240 });
     },
 

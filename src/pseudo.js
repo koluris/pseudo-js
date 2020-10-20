@@ -51,7 +51,6 @@ pseudo.CstrMain = (function() {
 
   function reset() {
     // Reset all emulator components
-     tcache.reset();
      render.reset();
          vs.reset();
        mdec.reset();
@@ -83,7 +82,6 @@ pseudo.CstrMain = (function() {
        audio.awake();
        cdrom.awake(blink, kb);
          cpu.awake(output);
-      tcache.init();
 
       request('bios/scph1001.bin', function(resp) {
         // Completed

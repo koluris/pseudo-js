@@ -349,7 +349,7 @@ pseudo.CstrGraphics = (function() {
       modeDMA = GPU_DMA_MEM2VRAM;
 
       // Cache invalidation
-      cache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
+      tcache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
     }
   };
 })();
