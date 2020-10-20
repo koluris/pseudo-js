@@ -73,6 +73,72 @@ function union(size) {
   };
 }
 
+#define IRQ_VBLANK 0
+#define IRQ_GPU    1
+#define IRQ_CD     2
+#define IRQ_DMA    3
+#define IRQ_RTC0   4
+#define IRQ_RTC1   5
+#define IRQ_RTC2   6
+#define IRQ_SIO0   7
+#define IRQ_SIO1   8
+#define IRQ_SPU    9
+#define IRQ_PIO   10
+
+#define audio   pseudo.CstrAudio
+#define bus     pseudo.CstrBus
+#define cop2    pseudo.CstrCop2
+#define io      pseudo.CstrHardware
+#define mdec    pseudo.CstrMdec
+#define mem     pseudo.CstrMem
+#define render  pseudo.CstrRender
+#define rootcnt pseudo.CstrCounters
+#define sio     pseudo.CstrSerial
+#define tcache  pseudo.CstrTexCache
+#define vs      pseudo.CstrGraphics
+
+#define ioZero(mem)\
+  mem.fill(0)
+
+#define directMemW(mem, addr)\
+  mem[((addr)&(mem.bLen-1))>>>2]
+
+#define directMemH(mem, addr)\
+  mem[((addr)&(mem.bLen-1))>>>1]
+
+#define directMemB(mem, addr)\
+  mem[((addr)&(mem.bLen-1))>>>0]
+
+#define dpcr \
+  directMemW(hwr.uw, 0x10f0)
+
+#define dicr \
+  directMemW(hwr.uw, 0x10f4)
+
+#define madr \
+  directMemW(hwr.uw, (addr&0xfff0)|0)
+
+#define bcr \
+  directMemW(hwr.uw, (addr&0xfff0)|4)
+
+#define chcr \
+  directMemW(hwr.uw, (addr&0xfff0)|8)
+
+#define data32\
+  directMemW(mem.__hwr.uw, 0x1070)
+
+#define mask32\
+  directMemW(mem.__hwr.uw, 0x1074)
+
+#define data16\
+  directMemH(mem.__hwr.uh, 0x1070)
+
+#define mask16\
+  directMemH(mem.__hwr.uh, 0x1074)
+
+#define FRAME_W 1024
+#define FRAME_H 512
+
 // Declare our namespace
 'use strict';
 var pseudo = window.pseudo || {};

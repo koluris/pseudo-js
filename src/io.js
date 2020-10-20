@@ -35,7 +35,7 @@ pseudo.CstrHardware = (function() {
             return;
 
           case 0x10f4: // Thanks Calb, Galtor :)
-            icr = (icr&(~((data&0xff000000)|0xffffff)))|(data&0xffffff);
+            dicr = (dicr & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
             return;
 
           /* unused */
@@ -58,7 +58,7 @@ pseudo.CstrHardware = (function() {
             directMemW(hwr.uw, addr) = data;
             return;
         }
-        psx.error('Hardware Write w '+psx.hex(addr)+' <- '+psx.hex(data));
+        psx.error('Hardware Write w ' + psx.hex(addr) + ' <- ' + psx.hex(data));
       },
 
       h(addr, data) {
@@ -79,7 +79,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           case 0x1070:
-            data16 &= data&mask16;
+            data16 &= data & mask16;
             return;
           
           /* unused */
@@ -88,7 +88,7 @@ pseudo.CstrHardware = (function() {
             directMemH(hwr.uh, addr) = data;
             return;
         }
-        psx.error('Hardware Write h '+psx.hex(addr)+' <- '+psx.hex(data));
+        psx.error('Hardware Write h ' + psx.hex(addr) + ' <- ' + psx.hex(data));
       },
 
       b(addr, data) {
@@ -119,7 +119,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1100 && addr <= 0x1110) { // Rootcounters
-          return rootcnt.scopeR(addr);
+          return directMemW(hwr.uw, addr);
         }
 
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
@@ -149,7 +149,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
-          return rootcnt.scopeR(addr);
+          return directMemH(hwr.uh, addr);
         }
 
         if (addr >= 0x1c00 && addr <= 0x1e0e) { // Audio

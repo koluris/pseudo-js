@@ -24,95 +24,55 @@ function union(size) {
   };
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Declare our namespace
 'use strict';
 var pseudo = window.pseudo || {};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Assume NTSC for now
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -146,8 +106,6 @@ var pseudo = window.pseudo || {};
 
 
 // Arithmetic operations
-
-
 
 
 
@@ -636,73 +594,84 @@ pseudo.CstrAudio = (function() {
 
 
 
-
-
-
 pseudo.CstrBus = (function() {
-  var interrupts = [{
-    code: 0,
-    target: 8
+  // Interrupts
+  const IRQ_ENABLED  = 1;
+  const IRQ_DISABLED = 0;
+
+  // DMA channel
+  const DMA_MDEC_IN  = 0;
+  const DMA_MDEC_OUT = 1;
+  const DMA_GPU      = 2;
+  const DMA_CD       = 3;
+  const DMA_SPU      = 4;
+  const DMA_PARALLEL = 5;
+  const DMA_CLEAR_OT = 6;
+
+  // Definition and threshold of interrupts
+  const interrupts = [{
+      code: 0,
+      target: 1
   }, {
-    code: 1,
-    target: 1
+      code: 1,
+      target: 1
   }, {
-    code: 2,
-    target: 4
+      code: 2,
+      target: 4
   }, {
-    code: 3,
-    target: 8
+      code: 3,
+      target: 1
   }, {
-    code: 4,
-    target: 1
+      code: 4,
+      target: 1
   }, {
-    code: 5,
-    target: 1
+      code: 5,
+      target: 1
   }, {
-    code: 6,
-    target: 1
+      code: 6,
+      target: 1
   }, {
-    code: 7,
-    target: 8
+      code: 7,
+      target: 8
   }, {
-    code: 8,
-    target: 8
+      code: 8,
+      target: 8
   }, {
-    code: 9,
-    target: 1
+      code: 9,
+      target: 1
   }, {
-    code: 10,
-    target: 1
+      code: 10,
+      target: 1
   }];
 
   // Exposed class functions/variables
   return {
     reset() {
-      for (var item of interrupts) {
-        item.queued = 0;
+      for (const item of interrupts) {
+        item.queued = IRQ_DISABLED;
       }
     },
 
     interruptsUpdate() { // A method to schedule when IRQs should fire
-      for (var item of interrupts) {
+      for (const item of interrupts) {
         if (item.queued) {
           if (item.queued++ === item.target) {
-            pseudo.CstrMem.__hwr.uh[((0x1070)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] |= (1<<item.code);
-            item.queued = 0;
+            pseudo.CstrMem.__hwr.uh[((0x1070)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] |= (1 << item.code);
+            item.queued = IRQ_DISABLED;
             break;
           }
         }
       }
     },
 
-    interruptSet(n) {
-      interrupts[n].queued = 1;
+    interruptSet(code) {
+      interrupts[code].queued = IRQ_ENABLED;
     },
 
     checkDMA(addr, data) {
-      var chan = ((addr>>>4)&0xf) - 8;
+      const chan = ((addr >>> 4) & 0xf) - 8;
 
-      if (pseudo.CstrMem.__hwr.uw[((0x10f0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&(8<<(chan*4))) { // GPU does not execute sometimes
+      if (pseudo.CstrMem.__hwr.uw[((0x10f0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & (8 << (chan * 4))) {
         pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
 
         switch(chan) {
@@ -719,10 +688,11 @@ pseudo.CstrBus = (function() {
             pseudo.CstrMain.error('DMA Channel '+chan);
             break;
         }
-        pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data & ~0x01000000;
 
-        if (pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&(1<<(16+chan))) {
-          pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] |= 1<<(24+chan);
+        pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data & (~(0x01000000));
+
+        if (pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & (1 << (16 + chan))) {
+          pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] |= 1 << (24 + chan);
           pseudo.CstrBus.interruptSet(3);
         }
       }
@@ -1595,111 +1565,110 @@ pseudo.CstrCop2 = (function() {
 
 
 
+
+
+
+
 pseudo.CstrCounters = (function() {
-  var timer = [];
-  var vbk, hsc;
+  // PSX root clock
+  const PSX_CLOCK      = 33868800;
+  const PSX_VSYNC_NTSC = PSX_CLOCK / 60;
+  const PSX_VSYNC_PAL  = PSX_CLOCK / 50;
+  const PSX_HSYNC      = PSX_CLOCK / 60 / 480;
+
+  const RTC_COUNT  = 0;
+  const RTC_MODE   = 4;
+  const RTC_TARGET = 8;
+  const RTC_BOUND  = 0xffff;
+
+  var bounds = [];
+  var vbk, hbk;
 
   return {
     reset() {
-      for (var i=0; i<3; i++) {
-        timer[i] = {
-          __bound : 0xffff
-        };
+      for (var i = 0; i < 3; i++) {
+        bounds[i] = RTC_BOUND;
       }
 
       vbk = 0;
-      hsc = 0;
+      hbk = PSX_HSYNC;
     },
 
     update(threshold) {
-      pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += pseudo.CstrMem.__hwr.uw[((0x1104+(0<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x100 ? threshold : threshold/8;
+      var temp;
 
-      if (pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[0].__bound) {
-        pseudo.CstrMem.__hwr.uh[((0x1100+(0<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
-        if (pseudo.CstrMem.__hwr.uw[((0x1104+(0<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x50) {
-          //pseudo.CstrBus.interruptSet(4);
-          pseudo.CstrMain.error('IRQ_RTC0');
+      temp = pseudo.CstrMem.__hwr.uh[((0x1100 + (0 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] + ((pseudo.CstrMem.__hwr.uw[((0x1104 + (0 << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0x100) ? threshold : threshold / 8);
+
+      if (temp >= bounds[0] && pseudo.CstrMem.__hwr.uh[((0x1100 + (0 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] < bounds[0]) { temp = 0;
+        if (pseudo.CstrMem.__hwr.uw[((0x1104 + (0 << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0x50) {
+          pseudo.CstrMain.error('RTC timer[0].count >= timer[0].bound');
         }
       }
+      pseudo.CstrMem.__hwr.uh[((0x1100 + (0 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = temp;
 
-      if (!(pseudo.CstrMem.__hwr.uw[((0x1104+(1<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x100)) {
-        pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += threshold;
+      if (!(pseudo.CstrMem.__hwr.uw[((0x1104 + (1 << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0x100)) {
+        temp = pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] + threshold;
 
-        if (pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[1].__bound) {
-          pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
-          if (pseudo.CstrMem.__hwr.uw[((0x1104+(1<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x50) {
-            //pseudo.CstrBus.interruptSet(5);
-            pseudo.CstrMain.error('IRQ_RTC1');
+        if (temp >= bounds[1] && pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] < bounds[1]) { temp = 0;
+          if (pseudo.CstrMem.__hwr.uw[((0x1104 + (1 << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0x50) {
+            pseudo.CstrMain.error('RTC timer[1].count >= timer[1].bound');
           }
         }
+        pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = temp;
       }
-      else if ((hsc += threshold) >= (33868800 / 60 / 480)) { hsc = 0;
-        if (++pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[1].__bound) {
-          pseudo.CstrMem.__hwr.uh[((0x1100+(1<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
-          if (pseudo.CstrMem.__hwr.uw[((0x1104+(1<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x50) {
-            pseudo.CstrBus.interruptSet(5);
+      else {
+        if ((hbk -= threshold) <= 0) {
+          if (++pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] == bounds[1]) { pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
+
+            if (pseudo.CstrMem.__hwr.uw[((0x1104 + (1 << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0x50) {
+              pseudo.CstrBus.interruptSet(5);
+            }
           }
+          hbk = PSX_HSYNC;
         }
       }
 
-      if (!(pseudo.CstrMem.__hwr.uw[((0x1104+(2<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&1)) {
-        pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] += pseudo.CstrMem.__hwr.uw[((0x1104+(2<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x200 ? threshold/8 : threshold;
+      if (!(pseudo.CstrMem.__hwr.uw[((0x1104 + (2 << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 1)) {
+        temp = pseudo.CstrMem.__hwr.uh[((0x1100 + (2 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] + ((pseudo.CstrMem.__hwr.uw[((0x1104 + (2 << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0x200) ? threshold / 8 : threshold);
 
-        if (pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] >= timer[2].__bound) {
-          pseudo.CstrMem.__hwr.uh[((0x1100+(2<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = 0;
-          if (pseudo.CstrMem.__hwr.uw[((0x1104+(2<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0x50) {
+        if (temp >= bounds[2] && pseudo.CstrMem.__hwr.uh[((0x1100 + (2 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] < bounds[2]) { temp = 0;
+          if (pseudo.CstrMem.__hwr.uw[((0x1104 + (2 << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0x50) {
             pseudo.CstrBus.interruptSet(6);
           }
         }
+        pseudo.CstrMem.__hwr.uh[((0x1100 + (2 << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = temp;
       }
 
+      // Graphics
       vbk += threshold * 2;
 
-      if (vbk >= (33868800 / 60)) { vbk = 0;
-        pseudo.CstrBus.interruptSet(0);
-         pseudo.CstrGraphics.redraw();
-        pseudo.CstrMips.setbp();
+      if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
+          pseudo.CstrBus.interruptSet(0);
+            pseudo.CstrGraphics.redraw();
+          pseudo.CstrMips.setbp();
       }
     },
 
     scopeW(addr, data) {
-      var p = (addr>>>4)&3;
+      const p = (addr >>> 4) & 3;
 
-      switch(addr&0xf) {
-        case 0:
-          pseudo.CstrMem.__hwr.uh[((0x1100+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = data&0xffff;
+      switch(addr & 0xf) {
+        case RTC_COUNT:
+          pseudo.CstrMem.__hwr.uh[((0x1100 + (p << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = data & 0xffff;
           return;
 
-        case 4:
-           pseudo.CstrMem.__hwr.uw[((0x1104+(p<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
-          timer[p].__bound = pseudo.CstrMem.__hwr.uw[((0x1104+(p<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&8 ? pseudo.CstrMem.__hwr.uh[((0x1108+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] : 0xffff;
+        case RTC_MODE:
+          pseudo.CstrMem.__hwr.uw[((0x1104 + ( p << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
+          bounds[p] = ((pseudo.CstrMem.__hwr.uw[((0x1104 + (p << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 8) && pseudo.CstrMem.__hwr.uh[((0x1108 + (p << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1]) ? pseudo.CstrMem.__hwr.uh[((0x1108 + (p << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] : RTC_BOUND;
           return;
 
-        case 8:
-            pseudo.CstrMem.__hwr.uh[((0x1108+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = data&0xffff;
-          timer[p].__bound = pseudo.CstrMem.__hwr.uw[((0x1104+(p<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&8 ? pseudo.CstrMem.__hwr.uh[((0x1108+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] : 0xffff;
+        case RTC_TARGET:
+          pseudo.CstrMem.__hwr.uh[((0x1108 + (  p << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = data & 0xffff;
+          bounds[p] = ((pseudo.CstrMem.__hwr.uw[((0x1104 + (p << 4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 8) && pseudo.CstrMem.__hwr.uh[((0x1108 + (p << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1]) ? pseudo.CstrMem.__hwr.uh[((0x1108 + (p << 4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] : RTC_BOUND;
           return;
       }
 
-      pseudo.CstrMain.error('RTC Write '+pseudo.CstrMain.hex(addr&0xf)+' <- '+pseudo.CstrMain.hex(data));
-    },
-
-    scopeR(addr) {
-      var p = (addr>>>4)&3;
-
-      switch(addr&0xf) {
-        case 0:
-          return pseudo.CstrMem.__hwr.uh[((0x1100+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
-
-        case 4:
-          return pseudo.CstrMem.__hwr.uw[((0x1104+(p<<4))&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2];
-
-        case 8:
-          return pseudo.CstrMem.__hwr.uh[((0x1108+(p<<4))&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
-      }
-
-      pseudo.CstrMain.error('RTC Read '+pseudo.CstrMain.hex(addr&0xf));
-      return 0;
+      pseudo.CstrMain.error('RTC Write: '+ pseudo.CstrMain.hex(addr & 0xf));
     }
   };
 })();
@@ -1742,7 +1711,7 @@ pseudo.CstrHardware = (function() {
             return;
 
           case 0x10f4: // Thanks Calb, Galtor :)
-            pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = (pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&(~((data&0xff000000)|0xffffff)))|(data&0xffffff);
+            pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = (pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
             return;
 
           
@@ -1765,7 +1734,7 @@ pseudo.CstrHardware = (function() {
             pseudo.CstrMem.__hwr.uw[(( addr)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
             return;
         }
-        pseudo.CstrMain.error('Hardware Write w '+pseudo.CstrMain.hex(addr)+' <- '+pseudo.CstrMain.hex(data));
+        pseudo.CstrMain.error('Hardware Write w ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
       },
 
       h(addr, data) {
@@ -1786,7 +1755,7 @@ pseudo.CstrHardware = (function() {
 
         switch(addr) {
           case 0x1070:
-            pseudo.CstrMem.__hwr.uh[((0x1070)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] &= data&pseudo.CstrMem.__hwr.uh[((0x1074)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
+            pseudo.CstrMem.__hwr.uh[((0x1070)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] &= data & pseudo.CstrMem.__hwr.uh[((0x1074)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
             return;
           
           
@@ -1795,7 +1764,7 @@ pseudo.CstrHardware = (function() {
             pseudo.CstrMem.__hwr.uh[(( addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1] = data;
             return;
         }
-        pseudo.CstrMain.error('Hardware Write h '+pseudo.CstrMain.hex(addr)+' <- '+pseudo.CstrMain.hex(data));
+        pseudo.CstrMain.error('Hardware Write h ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
       },
 
       b(addr, data) {
@@ -1826,7 +1795,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1100 && addr <= 0x1110) { // Rootcounters
-          return pseudo.CstrCounters.scopeR(addr);
+          return pseudo.CstrMem.__hwr.uw[(( addr)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2];
         }
 
         if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
@@ -1856,7 +1825,7 @@ pseudo.CstrHardware = (function() {
         }
 
         if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
-          return pseudo.CstrCounters.scopeR(addr);
+          return pseudo.CstrMem.__hwr.uh[(( addr)&(pseudo.CstrMem.__hwr.uh.byteLength-1))>>>1];
         }
 
         if (addr >= 0x1c00 && addr <= 0x1e0e) { // Audio
@@ -2015,6 +1984,27 @@ pseudo.CstrMem = (function() {
     }
   };
 })();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3412,22 +3402,6 @@ pseudo.CstrTexCache = (function() {
 
 
 
-
-// #define GPU_DITHER           0x00000200
-// #define GPU_DRAWINGALLOWED   0x00000400
-// #define GPU_MASKDRAWN        0x00000800
-// #define GPU_MASKENABLED      0x00001000
-// #define GPU_WIDTHBITS        0x00070000
-// #define GPU_DOUBLEHEIGHT     0x00080000
-// #define GPU_PAL              0x00100000
-// #define GPU_RGB24            0x00200000
-// #define GPU_INTERLACED       0x00400000
-// #define GPU_DISPLAYDISABLED  0x00800000
-// #define GPU_IDLE             0x04000000
-// #define GPU_READYFORVRAM     0x08000000
-// #define GPU_READYFORCOMMANDS 0x10000000
-// #define GPU_DMABITS          0x60000000
-// #define GPU_ODDLINES         0x80000000
 
 
 

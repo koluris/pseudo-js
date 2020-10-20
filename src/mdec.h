@@ -1,2 +1,0 @@
-#define mdec\
-  pseudo.CstrMdec
