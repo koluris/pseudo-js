@@ -331,7 +331,7 @@ pseudo.CstrCop2 = (function() {
 
         /* unused */
         case 31:
-          psx.error('opcodeCTC2 -> '+addr+' <- '+hex(data));
+          psx.error('opcodeCTC2 -> '+addr+' <- '+psx.hex(data));
           break;
       }
 

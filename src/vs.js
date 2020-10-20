@@ -301,7 +301,7 @@ pseudo.CstrGraphics = (function() {
             case 0x06:
               return;
           }
-          psx.error('GPU Write Status ' + hex(GPU_COMMAND(data)));
+          psx.error('GPU Write Status ' + psx.hex(GPU_COMMAND(data)));
           return;
       }
     },
@@ -338,7 +338,7 @@ pseudo.CstrGraphics = (function() {
           }
           return;
       }
-      psx.error('GPU DMA ' + hex(chcr));
+      psx.error('GPU DMA ' + psx.hex(chcr));
     },
 
     inread(data) {

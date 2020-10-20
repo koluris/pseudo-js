@@ -521,7 +521,7 @@ pseudo.CstrCdrom = (function() {
                 return;
 
               default:
-                psx.error('mode&0x30 -> ' + hex(mode & 0x30));
+                psx.error('mode&0x30 -> ' + psx.hex(mode & 0x30));
                 return;
             }
           }
@@ -605,7 +605,7 @@ pseudo.CstrCdrom = (function() {
         return;
 
         default:
-          psx.error('CD DMA -> '+hex(chcr));
+          psx.error('CD DMA -> '+psx.hex(chcr));
           return;
       }
     }

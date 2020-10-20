@@ -2,202 +2,115 @@
 #define rom  mem.__rom
 #define hwr  mem.__hwr
 
-#define MSB(x)\
-  x>>>20
+#define definitionMemW(maccess, width, hw, size) \
+    if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { \
+        if (cpu.writeOK()) { \
+            maccess(ram.width, addr) = data; \
+        } \
+        return; \
+    } \
+    \
+    if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { \
+        maccess(hwr.width, addr) = data; \
+        return; \
+    } \
+    \
+    if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { \
+        io.write.hw(addr & 0xffff, data); \
+        return; \
+    } \
+    \
+    if ((addr) == 0xfffe0130) { \
+        return; \
+    } \
+    \
+    psx.error('Mem W ' + size + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data))
+
+#define definitionMemR(maccess, width, hw, size) \
+    if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { \
+        return maccess(ram.width, addr); \
+    } \
+    \
+    if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { \
+        return maccess(hwr.width, addr); \
+    } \
+    \
+    if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { \
+        return io.read.hw(addr & 0xffff); \
+    } \
+    \
+    if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { \
+        return maccess(rom.width, addr); \
+    } \
+    \
+    if ((addr) == 0xfffe0130) { \
+        return 0; \
+    } \
+    \
+    psx.error('Mem R ' + size + ' ' + psx.hex(addr)); \
+    return 0
 
 pseudo.CstrMem = (function() {
-  // Exposed class functions/variables
+  // This mask unifies the RAM mirrors (0, 8, A) into one unique case
+  const MEM_MASK = 0x00ffffff;
+    
+  const MEM_BOUNDS_RAM = 0xf0800000 & MEM_MASK;
+  const MEM_BOUNDS_SCR = 0x1f800400 & MEM_MASK;
+  const MEM_BOUNDS_HWR = 0x1f804000 & MEM_MASK;
+  const MEM_BOUNDS_ROM = 0xbfc80000 & MEM_MASK;
+
+  const PSX_EXE_HEADER_SIZE = 0x800;
+
   return {
     __ram: union(0x200000),
     __rom: union(0x80000),
     __hwr: union(0x4000),
 
     reset() {
-      // Reset all, except for BIOS?
-      ioZero(ram.ub);
-      ioZero(hwr.ub);
+      // Reset all, except for BIOS
+      ram.ub.fill(0);
+      hwr.ub.fill(0);
+    },
+
+    writeROM(data) {
+      rom.ub.set(new UintBcap(data));
+    },
+
+    writeExecutable(data) {
+      const header = new UintWcap(data, 0, PSX_EXE_HEADER_SIZE);
+      const offset = header[2 + 4] & (ram.ub.bLen - 1); // Offset needs boundaries... huh?
+      const size   = header[2 + 5];
+
+      ram.ub.set(new UintBcap(data, PSX_EXE_HEADER_SIZE, size), offset);
+
+      return header;
     },
 
     write: {
       w(addr, data) {
-        switch(MSB(addr)) {
-          case 0x000: // Base RAM
-          case 0x001: // Base RAM
-
-          case 0x800: // Mirror
-          case 0x801: // Mirror
-          case 0x802: // Mirror
-          case 0x803: // Mirror
-          case 0x807: // Mirror
-
-          case 0xa00: // Mirror
-          case 0xa01: // Mirror
-            if (cpu.writeOK()) {
-              directMemW(ram.uw, addr) = data;
-            }
-            return;
-
-          case 0x1f8: // Scratchpad + Hardware
-            addr&=0xffff;
-            if (addr <= 0x3ff) {
-              directMemW(hwr.uw, addr) = data;
-              return;
-            }
-            io.write.w(addr, data);
-            return;
-        }
-
-        if (addr === 0xfffe0130) { // Mem Access
-          return;
-        }
-        psx.error('Mem Write w '+hex(addr)+' <- '+hex(data));
+        definitionMemW(directMemW, uw, w, 32);
       },
 
       h(addr, data) {
-        switch(MSB(addr)) {
-          case 0x000: // Base RAM
-          case 0x001: // Base RAM
-
-          case 0x800: // Mirror
-          case 0x801: // Mirror
-          case 0x802: // Mirror
-          case 0x807: // Mirror
-
-          case 0xa00: // Mirror
-          case 0xa01: // Mirror
-            if (cpu.writeOK()) {
-              directMemH(ram.uh, addr) = data;
-            }
-            return;
-
-          case 0x1f8: // Scratchpad + Hardware
-            addr&=0xffff;
-            if (addr <= 0x3ff) {
-              directMemH(hwr.uh, addr) = data;
-              return;
-            }
-            io.write.h(addr, data);
-            return;
-        }
-        psx.error('Mem Write h '+hex(addr)+' <- '+hex(data));
+        definitionMemW(directMemH, uh, h, 16);
       },
 
       b(addr, data) {
-        switch(MSB(addr)) {
-          case 0x000: // Base RAM
-          case 0x001: // Base RAM
-
-          case 0x800: // Mirror
-          case 0x801: // Mirror
-          case 0x802: // Mirror
-          case 0x807: // Mirror
-
-          case 0xa00: // Mirror
-          case 0xa01: // Mirror
-            if (cpu.writeOK()) {
-              directMemB(ram.ub, addr) = data;
-            }
-            return;
-
-          case 0x1f8: // Scratchpad + Hardware
-            addr&=0xffff;
-            if (addr <= 0x3ff) {
-              directMemB(hwr.ub, addr) = data;
-              return;
-            }
-            io.write.b(addr, data);
-            return;
-        }
-        psx.error('Mem Write b '+hex(addr)+' <- '+hex(data));
+        definitionMemW(directMemB, ub, b, 08);
       }
     },
 
     read: {
       w(addr) {
-        switch(MSB(addr)) {
-          case 0x000: // Base RAM
-          case 0x001: // Base RAM
-
-          case 0x800: // Mirror
-          case 0x801: // Mirror
-          case 0x802: // Mirror
-          case 0x803: // Mirror
-          case 0x807: // Mirror
-
-          case 0xa00: // Mirror
-          case 0xa01: // Mirror
-            return directMemW(ram.uw, addr);
-
-          case 0xbfc: // BIOS
-            return directMemW(rom.uw, addr);
-
-          case 0x1f8: // Scratchpad + Hardware
-            addr&=0xffff;
-            if (addr <= 0x3ff) {
-              return directMemW(hwr.uw, addr);
-            }
-            return io.read.w(addr);
-        }
-        psx.error('Mem Read w '+hex(addr));
-        return 0;
+        definitionMemR(directMemW, uw, w, 32);
       },
 
       h(addr) {
-        switch(MSB(addr)) {
-          case 0x000: // Base RAM
-          case 0x001: // Base RAM
-
-          case 0x800: // Mirror
-          case 0x801: // Mirror
-          case 0x802: // Mirror
-          case 0x807: // Mirror
-
-          case 0xa01: // Mirror
-            return directMemH(ram.uh, addr);
-
-          case 0xbfc: // BIOS
-            return directMemH(rom.uh, addr);
-
-          case 0x1f8: // Scratchpad + Hardware
-            addr&=0xffff;
-            if (addr <= 0x3ff) {
-              return directMemH(hwr.uh, addr);
-            }
-            return io.read.h(addr);
-        }
-        psx.error('Mem Read h '+hex(addr));
-        return 0;
+        definitionMemR(directMemH, uh, h, 16);
       },
 
       b(addr) {
-        switch(MSB(addr)) {
-          case 0x000: // Base RAM
-          case 0x001: // Base RAM
-
-          case 0x800: // Mirror
-          case 0x801: // Mirror
-          case 0x802: // Mirror
-          case 0x807: // Mirror
-
-          case 0xa00: // Mirror
-          case 0xa01: // Mirror
-            return directMemB(ram.ub, addr);
-
-          case 0xbfc: // BIOS
-            return directMemB(rom.ub, addr);
-
-          case 0x1f8: // Scratchpad + Hardware
-            addr&=0xffff;
-            if (addr <= 0x3ff) {
-              return directMemB(hwr.ub, addr);
-            }
-            return io.read.b(addr);
-
-          case 0x1f0: // PIO? What do u want?
-            return 0;
-        }
-        psx.error('Mem Read b '+hex(addr));
-        return 0;
+        definitionMemR(directMemB, ub, b, 08);
       }
     },
 
@@ -205,11 +118,11 @@ pseudo.CstrMem = (function() {
       if (!bcr || chcr !== 0x11000002) {
         return;
       }
-      madr&=0xffffff;
+      madr &= 0xffffff;
 
-      while (--bcr) {
-        directMemW(ram.uw, madr) = (madr-4)&0xffffff;
-        madr-=4;
+      while(--bcr) {
+        directMemW(ram.uw, madr) = (madr - 4) & 0xffffff;
+        madr -= 4;
       }
       directMemW(ram.uw, madr) = 0xffffff;
     }

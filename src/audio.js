@@ -319,7 +319,7 @@ pseudo.CstrAudio = (function() {
           case 0xc:
             return;
         }
-        psx.error('SPU scopeW < 0x1d80 '+(hex(addr))+' <- '+hex(data));
+        psx.error('SPU scopeW < 0x1d80 '+(psx.hex(addr))+' <- '+psx.hex(data));
       }
 
       // Reverb
@@ -393,7 +393,7 @@ pseudo.CstrAudio = (function() {
         case 0x1db6:
           return;
       }
-      psx.error('SPU scopeW '+hex(addr)+' <- '+hex(data));
+      psx.error('SPU scopeW '+psx.hex(addr)+' <- '+psx.hex(data));
     },
 
     scopeR: function(addr) {
@@ -410,7 +410,7 @@ pseudo.CstrAudio = (function() {
           case 0xe:
             return spuAcc(addr);
         }
-        psx.error('SPU scopeR phase '+hex(addr&0xf));
+        psx.error('SPU scopeR phase '+psx.hex(addr&0xf));
       }
 
       // HW
@@ -453,7 +453,7 @@ pseudo.CstrAudio = (function() {
         case 0x1e0e:
           return spuAcc(addr);
       }
-      psx.error('SPU scopeR -> '+(hex(addr)));
+      psx.error('SPU scopeR -> '+(psx.hex(addr)));
       return 0;
     },
 
@@ -469,7 +469,7 @@ pseudo.CstrAudio = (function() {
           dataMem.read(madr, size);
           return;
       }
-      psx.error('SPU DMA case '+hex(chcr));
+      psx.error('SPU DMA case '+psx.hex(chcr));
     }
   };
 })();

@@ -394,7 +394,7 @@ pseudo.CstrRender = (function() {
       ctx. enable(ctx.BLEND);
       ctx.disable(ctx.DEPTH_TEST);
       ctx.disable(ctx.CULL_FACE);
-      ctx.clearColor(0.0, 0.0, 0.0, 1.0);
+      ctx.clearColor(0.1, 0.1, 0.1, 0.0);
 
       // Shaders
       var func = ctx.createFunction();
@@ -449,7 +449,6 @@ pseudo.CstrRender = (function() {
       };
 
       render.resize({ w: 320, h: 240 });
-      ctx.clear(ctx.COLOR_BUFFER_BIT);
     },
 
     resize(data) {
@@ -475,9 +474,7 @@ pseudo.CstrRender = (function() {
         divScreen.width = w;
         divScreen.hei   = h;
         ctx.viewport(0, 0, w, h);
-      }
-      else {
-        console.info('Not a valid resolution');
+        ctx.clear(ctx.COLOR_BUFFER_BIT);
       }
     },
 
@@ -667,7 +664,7 @@ pseudo.CstrRender = (function() {
         case 0xe6: // STP
           return;
       }
-      cpu.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+hex(addr));
+      cpu.consoleWrite(MSG_ERROR, 'GPU Render Primitive '+psx.hex(addr));
     },
 
     infoRead(n) {

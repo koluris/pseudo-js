@@ -62,7 +62,7 @@ pseudo.CstrSerial = (function() {
             baud = data;
             return;
         }
-        psx.error('SIO write h '+hex(addr)+' <- '+hex(data));
+        psx.error('SIO write h '+psx.hex(addr)+' <- '+psx.hex(data));
       },
 
       b(addr, data) {
@@ -90,7 +90,7 @@ pseudo.CstrSerial = (function() {
                       break;
 
                     default:
-                      console.dir('SIO write b data '+hex(data));
+                      console.dir('SIO write b data '+psx.hex(data));
                       break;
                   }
                 }
@@ -132,7 +132,7 @@ pseudo.CstrSerial = (function() {
             }
             return;
         }
-        psx.error('SIO write b '+hex(addr)+' <- '+hex(data));
+        psx.error('SIO write b '+psx.hex(addr)+' <- '+psx.hex(data));
       }
     },
 
@@ -148,7 +148,7 @@ pseudo.CstrSerial = (function() {
           case 0x104e:
             return baud;
         }
-        psx.error('SIO read h '+hex(addr));
+        psx.error('SIO read h '+psx.hex(addr));
       },
 
       b(addr) {
@@ -166,7 +166,7 @@ pseudo.CstrSerial = (function() {
               return bfr[parp];
             }
         }
-        psx.error('SIO read b '+hex(addr));
+        psx.error('SIO read b '+psx.hex(addr));
       }
     }
   };

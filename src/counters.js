@@ -97,7 +97,7 @@ pseudo.CstrCounters = (function() {
           return;
       }
 
-      psx.error('RTC Write '+hex(addr&0xf)+' <- '+hex(data));
+      psx.error('RTC Write '+psx.hex(addr&0xf)+' <- '+psx.hex(data));
     },
 
     scopeR(addr) {
@@ -114,7 +114,7 @@ pseudo.CstrCounters = (function() {
           return dst(p);
       }
 
-      psx.error('RTC Read '+hex(addr&0xf));
+      psx.error('RTC Read '+psx.hex(addr&0xf));
       return 0;
     }
   };

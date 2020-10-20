@@ -429,10 +429,11 @@ pseudo.CstrMips = (function() {
       }
     },
 
-    exeHeader(hdr) {
-      pc    = hdr[2+ 2];
-      r[28] = hdr[2+ 3];
-      r[29] = hdr[2+10];
+    parseExeHeader(header) {
+      r[28] = header[2 + 3];
+      r[29] = header[2 + 10];
+      pc = header[2 + 2];
+      setptr(pc);
     },
 
     writeOK() {
