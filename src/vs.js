@@ -108,15 +108,19 @@ pseudo.CstrGraphics = (function() {
     while (vrop.v.p < vrop.v.end) {
       while (vrop.h.p < vrop.h.end) {
         // Keep position of vram
-        var pos = (vrop.v.p<<10)+vrop.h.p;
+        const pos = (vrop.v.p << 10) + vrop.h.p;
 
-        // Check if it`s a 16-bit (stream), or a 32-bit (command) address
-        if (stream) {
-          vram.uh[pos] = directMemH(ram.uh, addr);
+        if (isVideo24Bit) {
         }
-        else { // A dumb hack for now
-          if (!(count%2)) {
-            vram.uw[pos>>>1] = addr;
+        else {
+          // Check if it`s a 16-bit (stream), or a 32-bit (command) address
+          if (stream) {
+            vram.uh[pos] = directMemH(ram.uh, addr);
+          }
+          else { // A dumb hack for now
+            if (!(count % 2)) {
+              vram.uw[pos >>> 1] = addr;
+            }
           }
         }
 

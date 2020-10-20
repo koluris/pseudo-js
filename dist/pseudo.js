@@ -3492,15 +3492,19 @@ pseudo.CstrGraphics = (function() {
     while (vrop.v.p < vrop.v.end) {
       while (vrop.h.p < vrop.h.end) {
         // Keep position of pseudo.CstrGraphics.__vram
-        var pos = (vrop.v.p<<10)+vrop.h.p;
+        const pos = (vrop.v.p << 10) + vrop.h.p;
 
-        // Check if it`s a 16-bit (stream), or a 32-bit (command) address
-        if (stream) {
-          pseudo.CstrGraphics.__vram.uh[pos] = pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1];
+        if (isVideo24Bit) {
         }
-        else { // A dumb hack for now
-          if (!(count%2)) {
-            pseudo.CstrGraphics.__vram.uw[pos>>>1] = addr;
+        else {
+          // Check if it`s a 16-bit (stream), or a 32-bit (command) address
+          if (stream) {
+            pseudo.CstrGraphics.__vram.uh[pos] = pseudo.CstrMem.__ram.uh[(( addr)&(pseudo.CstrMem.__ram.uh.byteLength-1))>>>1];
+          }
+          else { // A dumb hack for now
+            if (!(count % 2)) {
+              pseudo.CstrGraphics.__vram.uw[pos >>> 1] = addr;
+            }
           }
         }
 
