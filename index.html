@@ -276,6 +276,16 @@
   <script src="dist/pseudo.js"></script>
 
   <script>
+    $(document).keydown(function(e) {
+      pseudo.CstrSerial.padListener(e.keyCode, true);
+      //console.info('down' + e.keyCode);
+    });
+
+    $(document).keyup(function(e) {
+      pseudo.CstrSerial.padListener(e.keyCode, false);
+      //console.info('up' + e.keyCode);
+    });
+
     $(function() {
       var screen   = $('#screen');
       var blink    = $('#blink');

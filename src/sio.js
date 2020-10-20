@@ -19,21 +19,49 @@
 #define SIO_CTRL_RTS           0x020
 #define SIO_CTRL_RESET         0x040
 
-pseudo.CstrSerial = (function() {
-  var baud, control, mode, status, bfrCount, padst, parp;
+#define btnCheck(btn) \
+    if (pushed) { \
+        btnState &=  (0xffff ^ (1 << btn)); \
+    } \
+    else { \
+        btnState |= ~(0xffff ^ (1 << btn)); \
+    }
 
+pseudo.CstrSerial = (function() {
+  const PAD_BTN_SELECT   =  0;
+  const PAD_BTN_START    =  3;
+  const PAD_BTN_UP       =  4;
+  const PAD_BTN_RIGHT    =  5;
+  const PAD_BTN_DOWN     =  6;
+  const PAD_BTN_LEFT     =  7;
+  const PAD_BTN_L2       =  8;
+  const PAD_BTN_R2       =  9;
+  const PAD_BTN_L1       = 10;
+  const PAD_BTN_R1       = 11;
+  const PAD_BTN_TRIANGLE = 12;
+  const PAD_BTN_CIRCLE   = 13;
+  const PAD_BTN_CROSS    = 14;
+  const PAD_BTN_SQUARE   = 15;
+
+  var baud, control, mode, status, padst, parp;
   var bfr = new UintBcap(256);
 
   return {
     reset() {
       ioZero(bfr);
+      btnState = 0xffff;
       baud     = 0;
       control  = 0;
       mode     = 0;
       status   = SIO_STAT_TX_READY | SIO_STAT_TX_EMPTY;
-      bfrCount = 0;
       padst    = 0;
       parp     = 0;
+
+      bfr[0] = 0x00;
+      bfr[1] = 0x41;
+      bfr[2] = 0x5a;
+      bfr[3] = 0xff;
+      bfr[4] = 0xff;
     },
 
     write: {
@@ -76,17 +104,11 @@ pseudo.CstrSerial = (function() {
 
                   switch(data) {
                     case 0x42:
-                      bfr[1] = 0x41; //parp
+                      bfr[1] = 0x41;
                       break;
 
                     case 0x43:
-                      bfr[1] = 0x43; //parp
-                      break;
-
-                    case 0x45:
-                      bfr[1] = 0xf3; //parp
-                      bfr[3] = 0x00;
-                      bfr[4] = 0x00;
+                      bfr[1] = 0x43;
                       break;
 
                     default:
@@ -100,7 +122,7 @@ pseudo.CstrSerial = (function() {
               case 2:
                 parp++;
                 
-                if (parp !== bfrCount) {
+                if (parp !== 5) {
                   bus.interruptSet(IRQ_SIO0);
                 }
                 else {
@@ -115,19 +137,8 @@ pseudo.CstrSerial = (function() {
               padst = 1;
               parp  = 0;
 
-              if (control&SIO_CTRL_DTR) {
-                switch(control) {
-                  case 0x1003:
-                  case 0x3003:
-                    bfrCount = 4;
-                    bfr[0] = 0x00;
-                    bfr[1] = 0x41;
-                    bfr[2] = 0x5a;
-                    bfr[3] = 0xff;
-                    bfr[4] = 0xff;
-                    bus.interruptSet(IRQ_SIO0);
-                    return;
-                }
+              if (control & SIO_CTRL_DTR) {
+                bus.interruptSet(IRQ_SIO0);
               }
             }
             return;
@@ -155,19 +166,32 @@ pseudo.CstrSerial = (function() {
         switch(addr) {
           case 0x1040:
             {
-              if (!(status&SIO_STAT_RX_READY)) {
+              if (!(status & SIO_STAT_RX_READY)) {
                 return 0;
               }
 
-              if (parp === bfrCount) {
-                status &= ~SIO_STAT_RX_READY;
-                status |=  SIO_STAT_TX_EMPTY;
+              if (parp === 5) {
+                status &= (~(SIO_STAT_RX_READY));
+                status |= SIO_STAT_TX_EMPTY;
               }
               return bfr[parp];
             }
         }
         psx.error('SIO read b '+psx.hex(addr));
       }
+    },
+
+    padListener(code, pushed) {
+      if (code == 49) { // Start
+        btnCheck(PAD_BTN_START);
+      }
+
+      if (code == 90) { // X
+        btnCheck(PAD_BTN_CROSS);
+      }
+
+      bfr[3] = (btnState >>> 0) & 0xff;
+      bfr[4] = (btnState >>> 8) & 0xff;
     }
   };
 })();
