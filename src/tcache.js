@@ -34,12 +34,18 @@ pseudo.CstrTexCache = (function() {
         },
 
         reset(ctx) {
+            // Cached white texture for non-textured shader
+            const white = ctx.createTexture();
+            ctx.bindTexture(ctx.TEXTURE_2D, white);
+            ctx.texPhoto2D (ctx.TEXTURE_2D, 0, ctx.RGBA, 1, 1, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, new UintBcap([255, 255, 255, 255]));
+
+            // Reset texture cache
             for (const tc of cache) {
                 if (tc.tex) {
                     ctx.deleteTexture(tc.tex);
                 }
+                tc.uid = -1;
             }
-
             index = 0;
         },
 
