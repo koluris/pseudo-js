@@ -2226,431 +2226,427 @@ pseudo.CstrMem = (function() {
 
 
 pseudo.CstrMips = (function() {
-  var divOutput;
-  var bp, opcodeCount, requestAF, ptr, temp;
+    var divOutput;
+    var bp, opcodeCount, requestAF, ptr;
 
-  // Base + Coprocessor
-  var    r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
-  var copr = new Uint32Array(16);
+    // Base + Coprocessor
+    const    r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
+    const copr = new Uint32Array(16);
 
-  // Cache for expensive calculation
-  var power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
+    // Cache for expensive calculation
+    const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
 
-  var mask = [
-    [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
-    [0x00000000, 0xff000000, 0xffff0000, 0xffffff00],
-    [0xffffff00, 0xffff0000, 0xff000000, 0x00000000],
-    [0x00000000, 0x000000ff, 0x0000ffff, 0x00ffffff],
-  ];
+    const mask = [
+        [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
+        [0x00000000, 0xff000000, 0xffff0000, 0xffffff00],
+        [0xffffff00, 0xffff0000, 0xff000000, 0x00000000],
+        [0x00000000, 0x000000ff, 0x0000ffff, 0x00ffffff],
+    ];
 
-  var shift = [
-    [0x18, 0x10, 0x08, 0x00],
-    [0x00, 0x08, 0x10, 0x18],
-    [0x18, 0x10, 0x08, 0x00],
-    [0x00, 0x08, 0x10, 0x18],
-  ];
+    const shift = [
+        [0x18, 0x10, 0x08, 0x00],
+        [0x00, 0x08, 0x10, 0x18],
+        [0x18, 0x10, 0x08, 0x00],
+        [0x00, 0x08, 0x10, 0x18],
+    ];
 
-  // Base CPU stepper
-  function step(inslot) {
-    var code = ptr[(( r[32])&(ptr.byteLength-1))>>>2]; r[32] += 4;
-    opcodeCount++;
-    r[0] = 0; // As weird as this seems, it is needed
+    // Base CPU stepper
+    function step(inslot) {
+        const code = ptr[(( r[32])&(ptr.byteLength-1))>>>2]; r[32] += 4;
+        opcodeCount++;
+        r[0] = 0; // As weird as this seems, it is needed
 
-    switch(((code>>>26)&0x3f)) {
-      case 0: // SPECIAL
-        switch(code&0x3f) {
-          case 0: // SLL
-            r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] << ((code>>>6)&0x1f);
-            return;
+        switch(((code >>> 26) & 0x3f)) {
+            case 0: // SPECIAL
+                switch(code & 0x3f) {
+                    case 0: // SLL
+                        r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] << ((code >>> 6) & 0x1f);
+                        return;
 
-          case 2: // SRL
-            r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] >>> ((code>>>6)&0x1f);
-            return;
+                    case 2: // SRL
+                        r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] >>> ((code >>> 6) & 0x1f);
+                        return;
 
-          case 3: // SRA
-            r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)]) << 0 >> 0) >> ((code>>>6)&0x1f);
-            return;
+                    case 3: // SRA
+                        r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)]) << 0 >> 0) >> ((code >>> 6) & 0x1f);
+                        return;
 
-          case 4: // SLLV
-            r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] << (r[((code>>>21)&0x1f)]&0x1f);
-            return;
+                    case 4: // SLLV
+                        r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] << (r[((code>>>21)&0x1f)] & 0x1f);
+                        return;
 
-          case 6: // SRLV
-            r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] >>> (r[((code>>>21)&0x1f)]&0x1f);
-            return;
+                    case 6: // SRLV
+                        r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] >>> (r[((code>>>21)&0x1f)] & 0x1f);
+                        return;
 
-          case 7: // SRAV
-            r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)]) << 0 >> 0) >> (r[((code>>>21)&0x1f)]&0x1f);
-            return;
+                    case 7: // SRAV
+                        r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)]) << 0 >> 0) >> (r[((code>>>21)&0x1f)] & 0x1f);
+                        return;
 
-          case 8: // JR
-            branch(r[((code>>>21)&0x1f)]);
-            if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { var char = String.fromCharCode(r[4]&0xff).replace(/\n/, '<br/>'); divOutput.append(char.toUpperCase()); } };
-            return;
+                    case 8: // JR
+                        branch(r[((code>>>21)&0x1f)]);
+                        if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { var char = String.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); divOutput.append(char.toUpperCase()); } };
+                        return;
 
-          case 9: // JALR
-            r[((code>>>11)&0x1f)] = r[32]+4;
-            branch(r[((code>>>21)&0x1f)]);
-            return;
+                    case 9: // JALR
+                        r[((code>>>11)&0x1f)] = r[32] + 4;
+                        branch(r[((code>>>21)&0x1f)]);
+                        return;
 
-          case 12: // SYSCALL
-            r[32]-=4;
-            copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x20; copr[14] = r[32]; r[32] = 0x80; ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
-            return;
+                    case 12: // SYSCALL
+                        r[32] -= 4;
+                        copr[12] = (copr[12] & 0xffffffc0) | ((copr[12] << 2) & 0x3f); copr[13] = 0x20; copr[14] = r[32]; r[32] = 0x80; ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+                        return;
 
-          case 13: // BREAK
-            return;
+                    case 13: // BREAK
+                        return;
 
-          case 16: // MFHI
-            r[((code>>>11)&0x1f)] = r[34];
-            return;
+                    case 16: // MFHI
+                        r[((code>>>11)&0x1f)] = r[34];
+                        return;
 
-          case 17: // MTHI
-            r[34] = r[((code>>>21)&0x1f)];
-            return;
+                    case 17: // MTHI
+                        r[34] = r[((code>>>21)&0x1f)];
+                        return;
 
-          case 18: // MFLO
-            r[((code>>>11)&0x1f)] = r[33];
-            return;
+                    case 18: // MFLO
+                        r[((code>>>11)&0x1f)] = r[33];
+                        return;
 
-          case 19: // MTLO
-            r[33] = r[((code>>>21)&0x1f)];
-            return;
+                    case 19: // MTLO
+                        r[33] = r[((code>>>21)&0x1f)];
+                        return;
 
-          case 24: // MULT
-            temp = ((r[((code>>>21)&0x1f)]) << 0 >> 0) *  ((r[((code>>>16)&0x1f)]) << 0 >> 0); r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
-            return;
+                    case 24: // MULT
+                        { const temp = ((r[((code>>>21)&0x1f)]) << 0 >> 0) *  ((r[((code>>>16)&0x1f)]) << 0 >> 0); r[33] = temp & 0xffffffff; r[34] = Math.floor(temp / power32); };
+                        return;
 
-          case 25: // MULTU
-            temp = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
-            return;
+                    case 25: // MULTU
+                        { const temp = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = temp & 0xffffffff; r[34] = Math.floor(temp / power32); };
+                        return;
 
-          case 26: // DIV
-            if ( ((r[((code>>>16)&0x1f)]) << 0 >> 0)) { r[33] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) /  ((r[((code>>>16)&0x1f)]) << 0 >> 0); r[34] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) %  ((r[((code>>>16)&0x1f)]) << 0 >> 0); };
-            return;
+                    case 26: // DIV
+                        if ( ((r[((code>>>16)&0x1f)]) << 0 >> 0)) { r[33] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) /  ((r[((code>>>16)&0x1f)]) << 0 >> 0); r[34] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) %  ((r[((code>>>16)&0x1f)]) << 0 >> 0); };
+                        return;
 
-          case 27: // DIVU
-            if ( r[((code>>>16)&0x1f)]) { r[33] = r[((code>>>21)&0x1f)] /  r[((code>>>16)&0x1f)]; r[34] = r[((code>>>21)&0x1f)] %  r[((code>>>16)&0x1f)]; };
-            return;
+                    case 27: // DIVU
+                        if ( r[((code>>>16)&0x1f)]) { r[33] = r[((code>>>21)&0x1f)] /  r[((code>>>16)&0x1f)]; r[34] = r[((code>>>21)&0x1f)] %  r[((code>>>16)&0x1f)]; };
+                        return;
 
-          case 32: // ADD
-          case 33: // ADDU
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
-            return;
+                    case 32: // ADD
+                    case 33: // ADDU
+                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
+                        return;
 
-          case 34: // SUB
-          case 35: // SUBU
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] - r[((code>>>16)&0x1f)];
-            return;
+                    case 34: // SUB
+                    case 35: // SUBU
+                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] - r[((code>>>16)&0x1f)];
+                        return;
 
-          case 36: // AND
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] & r[((code>>>16)&0x1f)];
-            return;
+                    case 36: // AND
+                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] & r[((code>>>16)&0x1f)];
+                        return;
 
-          case 37: // OR
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)];
-            return;
+                    case 37: // OR
+                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)];
+                        return;
 
-          case 38: // XOR
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] ^ r[((code>>>16)&0x1f)];
-            return;
+                    case 38: // XOR
+                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] ^ r[((code>>>16)&0x1f)];
+                        return;
 
-          case 39: // NOR
-            r[((code>>>11)&0x1f)] = ~(r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)]);
-            return;
+                    case 39: // NOR
+                        r[((code>>>11)&0x1f)] = (~(r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)]));
+                        return;
 
-          case 42: // SLT
-            r[((code>>>11)&0x1f)] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) < ((r[((code>>>16)&0x1f)]) << 0 >> 0);
-            return;
+                    case 42: // SLT
+                        r[((code>>>11)&0x1f)] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) < ((r[((code>>>16)&0x1f)]) << 0 >> 0);
+                        return;
 
-          case 43: // SLTU
-            r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] < r[((code>>>16)&0x1f)];
-            return;
+                    case 43: // SLTU
+                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] < r[((code>>>16)&0x1f)];
+                        return;
+                }
+
+                pseudo.CstrMain.error('Special CPU instruction ' + (code & 0x3f));
+                return;
+
+            case 1: // REGIMM
+                switch(((code>>>16)&0x1f)) {
+                    case 16: // BLTZAL
+                        r[31] = r[32] + 4;
+
+                    case 0: // BLTZ
+                        if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <  0) {
+                            branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                        }
+                        return;
+
+                    case 17: // BGEZAL
+                        r[31] = r[32] + 4;
+
+                    case 1: // BGEZ
+                        if (((r[((code>>>21)&0x1f)]) << 0 >> 0) >= 0) {
+                            branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                        }
+                        return;
+                }
+
+                pseudo.CstrMain.error('Bcond CPU instruction ' + ((code>>>16)&0x1f));
+                return;
+
+            case 2: // J
+                branch(((r[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
+                return;
+
+            case 3: // JAL
+                r[31] = r[32] + 4;
+                branch(((r[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
+                return;
+
+            case 4: // BEQ
+                if (r[((code>>>21)&0x1f)] === r[((code>>>16)&0x1f)]) {
+                    branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                }
+                return;
+
+            case 5: // BNE
+                if (r[((code>>>21)&0x1f)] !== r[((code>>>16)&0x1f)]) {
+                    branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                }
+                return;
+
+            case 6: // BLEZ
+                if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <= 0) {
+                    branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                }
+                return;
+
+            case 7: // BGTZ
+                if (((r[((code>>>21)&0x1f)]) << 0 >> 0) > 0) {
+                    branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                }
+                return;
+
+            case 8: // ADDI
+            case 9: // ADDIU
+                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code) << 16 >> 16));
+                return;
+
+            case 10: // SLTI
+                r[((code>>>16)&0x1f)] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
+                return;
+
+            case 11: // SLTIU
+                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] < (code & 0xffff);
+                return;
+
+            case 12: // ANDI
+                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] & (code & 0xffff);
+                return;
+
+            case 13: // ORI
+                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] | (code & 0xffff);
+                return;
+
+            case 14: // XORI
+                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] ^ (code & 0xffff);
+                return;
+
+            case 15: // LUI
+                r[((code>>>16)&0x1f)] = code << 16;
+                return;
+
+            case 16: // COP0
+                switch(((code>>>21)&0x1f)) {
+                    case 0: // MFC0
+                        r[((code>>>16)&0x1f)] = copr[((code>>>11)&0x1f)];
+                        return;
+
+                    case 4: // MTC0
+                        copr[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)];
+                        return;
+
+                    case 16: // RFE
+                        copr[12] = (copr[12] & 0xfffffff0) | ((copr[12] >>> 2) & 0xf);
+                        return;
+                }
+
+                pseudo.CstrMain.error('Coprocessor 0 instruction ' + ((code>>>21)&0x1f));
+                return;
+
+            case 18: // COP2
+                pseudo.CstrCop2.execute(code);
+                return;
+
+            case 32: // LB
+                r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
+                return;
+
+            case 33: // LH
+                r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
+                return;
+
+            case 34: // LWL
+                r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)] & mask[ 0][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3))) << shift[ 0][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]);
+                return;
+
+            case 35: // LW
+                r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))));
+                return;
+
+            case 36: // LBU
+                r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))));
+                return;
+
+            case 37: // LHU
+                r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))));
+                return;
+
+            case 38: // LWR
+                r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)] & mask[ 1][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3))) >>> shift[ 1][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]);
+                return;
+
+            case 40: // SB
+                pseudo.CstrMem.write.b((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
+                return;
+
+            case 41: // SH
+                pseudo.CstrMem.write.h((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
+                return;
+
+            case 42: // SWL
+                pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3)), (r[((code>>>16)&0x1f)] >>> shift[ 2][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]));
+                return;
+
+            case 43: // SW
+                pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
+                return;
+
+            case 46: // SWR
+                pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3)), (r[((code>>>16)&0x1f)] << shift[ 3][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]));
+                return;
+
+            case 50: // LWC2
+                pseudo.CstrCop2.opcodeMTC2(((code>>>16)&0x1f), pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16)))));
+                return;
+
+            case 58: // SWC2
+                pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))), pseudo.CstrCop2.opcodeMFC2(((code>>>16)&0x1f)));
+                return;
         }
-        pseudo.CstrMain.error('Special CPU instruction '+(code&0x3f));
-        return;
 
-      case 1: // REGIMM
-        switch(((code>>>16)&0x1f)) {
-          case 0: // BLTZ
-            if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <  0) {
-              branch((r[32]+((((code) << 16 >> 16))<<2)));
-            }
-            return;
-
-          case 1: // BGEZ
-            if (((r[((code>>>21)&0x1f)]) << 0 >> 0) >= 0) {
-              branch((r[32]+((((code) << 16 >> 16))<<2)));
-            }
-            return;
-
-          case 16: // BLTZAL
-            r[31] = r[32]+4;
-            if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <  0) {
-              branch((r[32]+((((code) << 16 >> 16))<<2)));
-            }
-            return;
-
-          case 17: // BGEZAL
-            r[31] = r[32]+4;
-            if (((r[((code>>>21)&0x1f)]) << 0 >> 0) >= 0) {
-              branch((r[32]+((((code) << 16 >> 16))<<2)));
-            }
-            return;
-        }
-        pseudo.CstrMain.error('Bcond CPU instruction '+((code>>>16)&0x1f));
-        return;
-
-      case 2: // J
-        branch(((r[32]&0xf0000000)|(code&0x3ffffff)<<2));
-        return;
-
-      case 3: // JAL
-        r[31] = r[32]+4;
-        branch(((r[32]&0xf0000000)|(code&0x3ffffff)<<2));
-        return;
-
-      case 4: // BEQ
-        if (r[((code>>>21)&0x1f)] === r[((code>>>16)&0x1f)]) {
-          branch((r[32]+((((code) << 16 >> 16))<<2)));
-        }
-        return;
-
-      case 5: // BNE
-        if (r[((code>>>21)&0x1f)] !== r[((code>>>16)&0x1f)]) {
-          branch((r[32]+((((code) << 16 >> 16))<<2)));
-        }
-        return;
-
-      case 6: // BLEZ
-        if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <= 0) {
-          branch((r[32]+((((code) << 16 >> 16))<<2)));
-        }
-        return;
-
-      case 7: // BGTZ
-        if (((r[((code>>>21)&0x1f)]) << 0 >> 0) > 0) {
-          branch((r[32]+((((code) << 16 >> 16))<<2)));
-        }
-        return;
-
-      case 8: // ADDI
-      case 9: // ADDIU
-        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code) << 16 >> 16));
-        return;
-
-      case 10: // SLTI
-        r[((code>>>16)&0x1f)] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
-        return;
-
-      case 11: // SLTIU
-        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] < (code&0xffff);
-        return;
-
-      case 12: // ANDI
-        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] & (code&0xffff);
-        return;
-
-      case 13: // ORI
-        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] | (code&0xffff);
-        return;
-
-      case 14: // XORI
-        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] ^ (code&0xffff);
-        return;
-
-      case 15: // LUI
-        r[((code>>>16)&0x1f)] = code<<16;
-        return;
-
-      case 16: // COP0
-        switch(((code>>>21)&0x1f)) {
-          case 0: // MFC0
-            r[((code>>>16)&0x1f)] = copr[((code>>>11)&0x1f)];
-            return;
-
-          case 4: // MTC0
-            copr[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)];
-            return;
-
-          case 16: // RFE
-            copr[12] = (copr[12]&0xfffffff0) | ((copr[12]>>>2)&0xf);
-            return;
-        }
-        pseudo.CstrMain.error('Coprocessor 0 instruction '+((code>>>21)&0x1f));
-        return;
-
-      case 18: // COP2
-        pseudo.CstrCop2.execute(code);
-        return;
-
-      case 32: // LB
-        r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))))) << 24 >> 24);
-        return;
-
-      case 33: // LH
-        r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))))) << 16 >> 16);
-        return;
-
-      case 34: // LWL
-        temp = (r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 0][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3) << shift[ 0][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3]);
-        return;
-
-      case 35: // LW
-        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))));
-        return;
-
-      case 36: // LBU
-        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))));
-        return;
-
-      case 37: // LHU
-        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))));
-        return;
-
-      case 38: // LWR
-        temp = (r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 1][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3) >>> shift[ 1][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3]);
-        return;
-
-      case 40: // SB
-        pseudo.CstrMem.write.b((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
-        return;
-
-      case 41: // SH
-        pseudo.CstrMem.write.h((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
-        return;
-
-      case 42: // SWL
-        temp = (r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3, (r[((code>>>16)&0x1f)] >>> shift[ 2][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3)&mask[ 2][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3]));
-        return;
-
-      case 43: // SW
-        pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
-        return;
-
-      case 46: // SWR
-        temp = (r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3, (r[((code>>>16)&0x1f)] << shift[ 3][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3)&mask[ 3][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3]));
-        return;
-
-      case 50: // LWC2
-        pseudo.CstrCop2.opcodeMTC2(((code>>>16)&0x1f), pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))));
-        return;
-
-      case 58: // SWC2
-        pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))), pseudo.CstrCop2.opcodeMFC2(((code>>>16)&0x1f)));
-        return;
+        pseudo.CstrMain.error('Basic CPU instruction ' + ((code >>> 26) & 0x3f));
     }
-    pseudo.CstrMain.error('Basic CPU instruction '+((code>>>26)&0x3f));
-  }
 
-  function branch(addr) {
-    // Execute instruction in slot
-    step(true);
-    r[32] = addr
-    ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
-  }
+    function branch(addr) {
+        // Execute instruction in slot
+        step(true);
+        r[32] = addr
+        ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+    }
 
-  // Exposed class functions/variables
-  return {
-    awake(output) {
-      divOutput = output;
-    },
+    // Exposed class functions/variables
+    return {
+        awake(output) {
+            divOutput = output;
+        },
 
-    reset() {
-      // Break emulation loop
-      pseudo.CstrMips.pause();
+        reset() {
+            // Break emulation loop
+            pseudo.CstrMips.pause();
 
-      // Reset processors
-      r.fill(0);
-      copr.fill(0);
+            // Reset processors
+            r.fill(0);
+            copr.fill(0);
 
-      copr[12] = 0x10900000;
-      copr[15] = 0x2;
+            copr[12] = 0x10900000;
+            copr[15] = 0x2;
 
-      opcodeCount = 0;
-      r[32] = 0xbfc00000;
-      ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+            opcodeCount = 0;
+            r[32] = 0xbfc00000;
+            ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
 
-      // Clear console out
-      divOutput.text(' ');
+            // Clear console out
+            divOutput.text(' ');
 
-      // BIOS bootstrap
-      pseudo.CstrMips.consoleWrite('info', 'BIOS file has been written to ROM');
-      var start = performance.now();
+            // BIOS bootstrap
+            pseudo.CstrMips.consoleWrite('info', 'BIOS file has been written to ROM');
+            const start = performance.now();
 
-      while (r[32] !== 0x80030000) {
-        step(false);
-      }
-      var delta = parseFloat(performance.now()-start).toFixed(2);
-      pseudo.CstrMips.consoleWrite('info', 'Bootstrap completed in '+delta+' ms');
-    },
+            while (r[32] !== 0x80030000) {
+                step(false);
+            }
+            const delta = parseFloat(performance.now() - start).toFixed(2);
+            pseudo.CstrMips.consoleWrite('info', 'Bootstrap completed in '+delta+' ms');
+        },
 
-    run() {
-      bp = false;
-      requestAF = setTimeout(pseudo.CstrMips.run, 1); //requestAnimationFrame(pseudo.CstrMips.run);
+        run() {
+            bp = false;
+            requestAF = setTimeout(pseudo.CstrMips.run, 1); //requestAnimationFrame(pseudo.CstrMips.run);
 
-      while (!bp) { // And u don`t stop!
-        step(false);
+            while (!bp) { // And u don`t stop!
+                step(false);
 
-        if (opcodeCount >= 100) {
-          // Rootcounters, interrupts
-          pseudo.CstrCounters.update(100);
-            pseudo.CstrCdrom.update();
-          pseudo.CstrBus.interruptsUpdate();
+                if (opcodeCount >= 100) {
+                    // Rootcounters, interrupts
+                    pseudo.CstrCounters.update(100);
+                      pseudo.CstrCdrom.update();
+                    pseudo.CstrBus.interruptsUpdate();
     
-          // Exceptions
-          if (pseudo.CstrMem.__hwr.uw[((0x1070)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & pseudo.CstrMem.__hwr.uw[((0x1074)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
-            if ((copr[12] & 0x401) === 0x401) {
-              copr[12] = (copr[12]&0xffffffc0)|((copr[12]<<2)&0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80; ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+                    // Exceptions
+                    if (pseudo.CstrMem.__hwr.uw[((0x1070)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & pseudo.CstrMem.__hwr.uw[((0x1074)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+                        if ((copr[12] & 0x401) === 0x401) {
+                            copr[12] = (copr[12] & 0xffffffc0) | ((copr[12] << 2) & 0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80; ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+                        }
+                    }
+                    opcodeCount = 0;
+                }
             }
-          }
-          opcodeCount = 0;
+        },
+
+        parseExeHeader(header) {
+            r[28] = header[2 + 3];
+            r[29] = header[2 + 10];
+            r[32] = header[2 + 2];
+            ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+        },
+
+        writeOK() {
+            return !(copr[12] & 0x10000);
+        },
+
+        consoleWrite(kind, str) {
+            divOutput.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
+        },
+
+        setbp() {
+            bp = true;
+        },
+
+        setbase(addr, data) {
+            r[addr] = data;
+        },
+
+        readbase(addr) {
+            return r[addr];
+        },
+
+        pause() {
+            //cancelAnimationFrame(requestAF);
+            //requestAF = undefined;
+            clearTimeout(requestAF);
+            bp = true;
+        },
+
+        resume() {
+            pseudo.CstrMips.run();
+        },
+
+        setpc(addr) {
+            ptr = addr >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
         }
-      }
-    },
-
-    parseExeHeader(header) {
-      r[28] = header[2 + 3];
-      r[29] = header[2 + 10];
-      r[32] = header[2 + 2];
-      ptr = r[32]>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
-    },
-
-    writeOK() {
-      return !(copr[12]&0x10000);
-    },
-
-    consoleWrite(kind, str) {
-      divOutput.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
-    },
-
-    setbp() {
-      bp = true;
-    },
-
-    setbase(addr, data) {
-      r[addr] = data;
-    },
-
-    readbase(addr) {
-      return r[addr];
-    },
-
-    pause() {
-      //cancelAnimationFrame(requestAF);
-      //requestAF = undefined;
-      clearTimeout(requestAF);
-      bp = true;
-    },
-
-    resume() {
-      pseudo.CstrMips.run();
-    },
-
-    setpc(addr) {
-      ptr = addr>>>20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
-    }
-  };
+    };
 })();
 
 
