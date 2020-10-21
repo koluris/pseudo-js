@@ -182,12 +182,36 @@ pseudo.CstrSerial = (function() {
     },
 
     padListener(code, pushed) {
-      if (code == 49) { // Start
-        btnCheck(PAD_BTN_START);
+      if (code == 50) { // Select
+          btnCheck(PAD_BTN_SELECT);
       }
-
+      
+      if (code == 49) { // Start
+          btnCheck(PAD_BTN_START);
+      }
+      
+      if (code == 38) { // Up
+          btnCheck(PAD_BTN_UP);
+      }
+      
+      if (code == 39) { // R
+          btnCheck(PAD_BTN_RIGHT);
+      }
+      
+      if (code == 40) { // Down
+          btnCheck(PAD_BTN_DOWN);
+      }
+      
+      if (code == 37) { // Left
+          btnCheck(PAD_BTN_LEFT);
+      }
+      
       if (code == 90) { // X
-        btnCheck(PAD_BTN_CROSS);
+          btnCheck(PAD_BTN_CROSS);
+      }
+      
+      if (code == 88) { // Z
+          btnCheck(PAD_BTN_CIRCLE);
       }
 
       bfr[3] = (btnState >>> 0) & 0xff;
