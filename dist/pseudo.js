@@ -70,6 +70,16 @@ function union(size) {
 
 
 
+// Arithmetic operations
+
+
+
+
+
+
+
+
+
 // Declare our namespace
 'use strict';
 var pseudo = window.pseudo || {};
@@ -102,16 +112,6 @@ var pseudo = window.pseudo || {};
 
 
 // Console output
-
-
-
-// Arithmetic operations
-
-
-
-
-
-
 
 
 
@@ -1354,11 +1354,13 @@ pseudo.CstrCdrom = (function() {
 
 
 
-
-
-
-
-
+// #define ((((a)) < -32768) ? (cop2c.uw[(31)] |= (1 << 24), -32768) : ((((a)) > 32767) ? (cop2c.uw[(31)] |= (1 << 24), 32767) : (((a))))) (((a) <  -32768.0) ? (cop2c.uw[(31)] |= (1 <<  24),  -32768.0) : (((a) >  32767.0) ? (cop2c.uw[(31)] |= (1 <<  24),  32767.0) : ((a))))
+// #define ((((a)) < -32768) ? (cop2c.uw[(31)] |= (1 << 23), -32768) : ((((a)) > 32767) ? (cop2c.uw[(31)] |= (1 << 23), 32767) : (((a))))) (((a) <  -32768.0) ? (cop2c.uw[(31)] |= (1 <<  23),  -32768.0) : (((a) >  32767.0) ? (cop2c.uw[(31)] |= (1 <<  23),  32767.0) : ((a))))
+// #define ((((a)) < -32768) ? (cop2c.uw[(31)] |= (1 << 22), -32768) : ((((a)) > 32767) ? (cop2c.uw[(31)] |= (1 << 22), 32767) : (((a))))) (((a) <  -32768.0) ? (cop2c.uw[(31)] |= (1 <<  22),  -32768.0) : (((a) >  32767.0) ? (cop2c.uw[(31)] |= (1 <<  22),  32767.0) : ((a))))
+// #define (((( a)) < 0) ? (cop2c.uw[(31)] |= (1 << 18), 0) : (((( a)) > 65535) ? (cop2c.uw[(31)] |= (1 << 18), 65535) : ((( a))))) (((a) <       0.0) ? (cop2c.uw[(31)] |= (1 <<  18),       0.0) : (((a) >  65535.0) ? (cop2c.uw[(31)] |= (1 <<  18),  65535.0) : ((a))))
+// #define ((((a)) < -1024) ? (cop2c.uw[(31)] |= (1 << 14), -1024) : ((((a)) > 1023) ? (cop2c.uw[(31)] |= (1 << 14), 1023) : (((a))))) (((a) <   -1024.0) ? (cop2c.uw[(31)] |= (1 <<  14),   -1024.0) : (((a) >   1023.0) ? (cop2c.uw[(31)] |= (1 <<  14),   1023.0) : ((a))))
+// #define ((((a)) < -1024) ? (cop2c.uw[(31)] |= (1 << 13), -1024) : ((((a)) > 1023) ? (cop2c.uw[(31)] |= (1 << 13), 1023) : (((a))))) (((a) <   -1024.0) ? (cop2c.uw[(31)] |= (1 <<  13),   -1024.0) : (((a) >   1023.0) ? (cop2c.uw[(31)] |= (1 <<  13),   1023.0) : ((a))))
+// #define (((( a)) < 0) ? (cop2c.uw[(31)] |= (1 << 12), 0) : (((( a)) > 4096) ? (cop2c.uw[(31)] |= (1 << 12), 4096) : ((( a))))) (((a) <       0.0) ? (cop2c.uw[(31)] |= (1 <<  12),       0.0) : (((a) >   4096.0) ? (cop2c.uw[(31)] |= (1 <<  12),   4096.0) : ((a))))
 
 
 
@@ -1366,192 +1368,258 @@ pseudo.CstrCdrom = (function() {
 
 
 pseudo.CstrCop2 = (function() {
-  var cop2c = union(32*4);
-  var cop2d = union(32*4);
+    const cop2c = union(32 * 4);
+    const cop2d = union(32 * 4);
 
-  return {
-    reset() {
-      cop2c.ub.fill(0);
-      cop2d.ub.fill(0);
-    },
-
-    execute(code) {
-      switch(code&0x3f) {
-        case 0: // BASIC
-          switch(((code>>>21)&0x1f)&7) {
-            case 0: // MFC2
-              pseudo.CstrMips.setbase(((code>>>16)&0x1f), pseudo.CstrCop2.opcodeMFC2(((code>>>11)&0x1f)));
-              return;
-
-            case 2: // CFC2
-              pseudo.CstrMips.setbase(((code>>>16)&0x1f), cop2c.uw[( ((code>>>11)&0x1f))]);
-              return;
-
-            case 4: // MTC2
-              pseudo.CstrCop2.opcodeMTC2(((code>>>11)&0x1f), pseudo.CstrMips.readbase(((code>>>16)&0x1f)));
-              return;
-
-            case 6: // CTC2
-              pseudo.CstrCop2.opcodeCTC2(((code>>>11)&0x1f), pseudo.CstrMips.readbase(((code>>>16)&0x1f)));
-              return;
-          }
-          pseudo.CstrMain.error('COP2 Basic '+(((code>>>21)&0x1f)&7));
-          return;
-
-        case 1: // RTPS
-          {
-            cop2c.uw[(31)] = 0;
-
-            cop2d.sw[(25)] = ((cop2c.sh[(0<<1)+0]*cop2d.sh[(0<<1)+0]+cop2c.sh[(0<<1)+1]*cop2d.sh[(0<<1)+1]+cop2c.sh[(1<<1)+0]*cop2d.sh[(1<<1)+0])>>12)+cop2c.sw[(5)];
-            cop2d.sw[(26)] = ((cop2c.sh[(1<<1)+1]*cop2d.sh[(0<<1)+0]+cop2c.sh[(2<<1)+0]*cop2d.sh[(0<<1)+1]+cop2c.sh[(2<<1)+1]*cop2d.sh[(1<<1)+0])>>12)+cop2c.sw[(6)];
-            cop2d.sw[(27)] = ((cop2c.sh[(3<<1)+0]*cop2d.sh[(0<<1)+0]+cop2c.sh[(3<<1)+1]*cop2d.sh[(0<<1)+1]+cop2c.sh[(4<<1)+0]*cop2d.sh[(1<<1)+0])>>12)+cop2c.sw[(7)];
-
-            cop2d.sh[(9<<1)+0] = (((cop2d.sw[(25)]) < -32768.0) ? (cop2c.uw[(31)] |= (1<<24), -32768.0) : (((cop2d.sw[(25)]) > 32767.0) ? (cop2c.uw[(31)] |= (1<<24), 32767.0) : ((cop2d.sw[(25)])))); cop2d.sh[(10<<1)+0] = (((cop2d.sw[(26)]) < -32768.0) ? (cop2c.uw[(31)] |= (1<<23), -32768.0) : (((cop2d.sw[(26)]) > 32767.0) ? (cop2c.uw[(31)] |= (1<<23), 32767.0) : ((cop2d.sw[(26)])))); cop2d.sh[(11<<1)+0] = (((cop2d.sw[(27)]) < -32768.0) ? (cop2c.uw[(31)] |= (1<<22), -32768.0) : (((cop2d.sw[(27)]) > 32767.0) ? (cop2c.uw[(31)] |= (1<<22), 32767.0) : ((cop2d.sw[(27)]))));
-
-            cop2d.uh[(16<<1)+0]  = cop2d.uh[(17<<1)+0];
-            cop2d.uh[(17<<1)+0]  = cop2d.uh[(18<<1)+0];
-            cop2d.uh[(18<<1)+0]  = cop2d.uh[(19<<1)+0];
-            cop2d.uh[(19<<1)+0]  = (((cop2d.sw[(27)]) < 0.0) ? (cop2c.uw[(31)] |= (1<<18), 0.0) : (((cop2d.sw[(27)]) > 65535.0) ? (cop2c.uw[(31)] |= (1<<18), 65535.0) : ((cop2d.sw[(27)]))));
-
-            var quotient = cop2c.sh[(26<<1)+0]*4096.0/cop2d.uh[(19<<1)+0];
-
-            cop2d.uw[(12)] = cop2d.uw[(13)];
-            cop2d.uw[(13)] = cop2d.uw[(14)];
-
-            cop2d.sh[(14<<1)+0]  = (((((cop2d.sh[(9<<1)+0]*quotient)>>12)+cop2c.sw[(24)]) < -1024.0) ? (cop2c.uw[(31)] |= (1<<14), -1024.0) : (((((cop2d.sh[(9<<1)+0]*quotient)>>12)+cop2c.sw[(24)]) > 1023.0) ? (cop2c.uw[(31)] |= (1<<14), 1023.0) : ((((cop2d.sh[(9<<1)+0]*quotient)>>12)+cop2c.sw[(24)]))));
-            cop2d.sh[(14<<1)+1]  = (((((cop2d.sh[(10<<1)+0]*quotient)>>12)+cop2c.sw[(25)]) < -1024.0) ? (cop2c.uw[(31)] |= (1<<13), -1024.0) : (((((cop2d.sh[(10<<1)+0]*quotient)>>12)+cop2c.sw[(25)]) > 1023.0) ? (cop2c.uw[(31)] |= (1<<13), 1023.0) : ((((cop2d.sh[(10<<1)+0]*quotient)>>12)+cop2c.sw[(25)]))));
-
-            cop2d.sw[(24)] = ((cop2c.sh[(27<<1)+0]*quotient)>>12)+cop2c.sw[(28)];
-            cop2d.sh[(8<<1)+0]  = (((cop2d.sw[(24)]) < 0.0) ? (cop2c.uw[(31)] |= (1<<12), 0.0) : (((cop2d.sw[(24)]) > 4096.0) ? (cop2c.uw[(31)] |= (1<<12), 4096.0) : ((cop2d.sw[(24)]))));
-          }
-          return;
-
-        case 48: // RTPT
-          {
-            var quotient;
-
-            cop2c.uw[(31)] = 0;
-            cop2d.uh[(16<<1)+0]  = cop2d.uh[(19<<1)+0];
-
-            for (var v=0; v<3; v++) {
-              var v1 = cop2d.sh[((v<<1)+0<<1)+0];
-              var v2 = cop2d.sh[((v<<1)+0<<1)+1];
-              var v3 = cop2d.sh[((v<<1)+1<<1)+0];
-
-              cop2d.sw[(25)] = ((cop2c.sh[(0<<1)+0]*v1+cop2c.sh[(0<<1)+1]*v2+cop2c.sh[(1<<1)+0]*v3)>>12)+cop2c.sw[(5)];
-              cop2d.sw[(26)] = ((cop2c.sh[(1<<1)+1]*v1+cop2c.sh[(2<<1)+0]*v2+cop2c.sh[(2<<1)+1]*v3)>>12)+cop2c.sw[(6)];
-              cop2d.sw[(27)] = ((cop2c.sh[(3<<1)+0]*v1+cop2c.sh[(3<<1)+1]*v2+cop2c.sh[(4<<1)+0]*v3)>>12)+cop2c.sw[(7)];
-
-              cop2d.sh[(9<<1)+0] = (((cop2d.sw[(25)]) < -32768.0) ? (cop2c.uw[(31)] |= (1<<24), -32768.0) : (((cop2d.sw[(25)]) > 32767.0) ? (cop2c.uw[(31)] |= (1<<24), 32767.0) : ((cop2d.sw[(25)])))); cop2d.sh[(10<<1)+0] = (((cop2d.sw[(26)]) < -32768.0) ? (cop2c.uw[(31)] |= (1<<23), -32768.0) : (((cop2d.sw[(26)]) > 32767.0) ? (cop2c.uw[(31)] |= (1<<23), 32767.0) : ((cop2d.sw[(26)])))); cop2d.sh[(11<<1)+0] = (((cop2d.sw[(27)]) < -32768.0) ? (cop2c.uw[(31)] |= (1<<22), -32768.0) : (((cop2d.sw[(27)]) > 32767.0) ? (cop2c.uw[(31)] |= (1<<22), 32767.0) : ((cop2d.sw[(27)]))));
-
-              cop2d.uh[(v+17<<1)+0] = (((cop2d.sw[(27)]) < 0.0) ? (cop2c.uw[(31)] |= (1<<18), 0.0) : (((cop2d.sw[(27)]) > 65535.0) ? (cop2c.uw[(31)] |= (1<<18), 65535.0) : ((cop2d.sw[(27)]))));
-              quotient = cop2c.sh[(26<<1)+0]*4096.0/cop2d.uh[(v+17<<1)+0];
-              
-              cop2d.sh[(v+12<<1)+0] = (((((cop2d.sh[(9<<1)+0]*quotient)>>12)+cop2c.sw[(24)]) < -1024.0) ? (cop2c.uw[(31)] |= (1<<14), -1024.0) : (((((cop2d.sh[(9<<1)+0]*quotient)>>12)+cop2c.sw[(24)]) > 1023.0) ? (cop2c.uw[(31)] |= (1<<14), 1023.0) : ((((cop2d.sh[(9<<1)+0]*quotient)>>12)+cop2c.sw[(24)]))));
-              cop2d.sh[(v+12<<1)+1] = (((((cop2d.sh[(10<<1)+0]*quotient)>>12)+cop2c.sw[(25)]) < -1024.0) ? (cop2c.uw[(31)] |= (1<<13), -1024.0) : (((((cop2d.sh[(10<<1)+0]*quotient)>>12)+cop2c.sw[(25)]) > 1023.0) ? (cop2c.uw[(31)] |= (1<<13), 1023.0) : ((((cop2d.sh[(10<<1)+0]*quotient)>>12)+cop2c.sw[(25)]))));
-            }
-            cop2d.sw[(24)] = ((cop2c.sh[(27<<1)+0]*quotient)>>12)+cop2c.sw[(28)];
-            cop2d.sh[(8<<1)+0]  = (((cop2d.sw[(24)]) < 0.0) ? (cop2c.uw[(31)] |= (1<<12), 0.0) : (((cop2d.sw[(24)]) > 4096.0) ? (cop2c.uw[(31)] |= (1<<12), 4096.0) : ((cop2d.sw[(24)]))));
-          }
-          return;
-      }
-      //pseudo.CstrMips.consoleWrite('error', 'COP2 Execute '+(code&0x3f));
-    },
-
-    opcodeMFC2(addr) {
-      switch(addr) {
-        case  1:
-        case  3:
-        case  5:
-        case  8:
-        case  9:
-        case 10:
-        case 11:
-          cop2d.sw[( addr)] = cop2d.sh[( addr<<1)+ 0];
-          break;
-
-        case  7:
-        case 16:
-        case 17:
-        case 18:
-        case 19:
-          cop2d.uw[( addr)] = cop2d.uh[( addr<<1)+ 0];
-          break;
-
-        case 15:
-          pseudo.CstrMain.error('opcodeMFC2 -> '+addr);
-          break;
-
-        case 28:
-        case 29:
-          cop2d.uw[( addr)] = (((cop2d.sh[(9<<1)+0]>>7) <  0x1f) ? (cop2c.uw[(31)] |= (1<< 0),  0x1f) : (((cop2d.sh[(9<<1)+0]>>7) >  0) ? (cop2c.uw[(31)] |= (1<< 0),  0) : ((cop2d.sh[(9<<1)+0]>>7)))) | ((((cop2d.sh[(10<<1)+0]>>7) <  0x1f) ? (cop2c.uw[(31)] |= (1<< 0),  0x1f) : (((cop2d.sh[(10<<1)+0]>>7) >  0) ? (cop2c.uw[(31)] |= (1<< 0),  0) : ((cop2d.sh[(10<<1)+0]>>7))))<<5) | ((((cop2d.sh[(11<<1)+0]>>7) <  0x1f) ? (cop2c.uw[(31)] |= (1<< 0),  0x1f) : (((cop2d.sh[(11<<1)+0]>>7) >  0) ? (cop2c.uw[(31)] |= (1<< 0),  0) : ((cop2d.sh[(11<<1)+0]>>7))))<<10);
-          break;
-
-        case 30:
-          return 0;
-      }
-
-      return cop2d.uw[( addr)];
-    },
-
-    opcodeMTC2(addr, data) {
-      switch(addr) {
-        case 15:
-          cop2d.uw[(12)] = cop2d.uw[(13)];
-          cop2d.uw[(13)] = cop2d.uw[(14)];
-          cop2d.uw[(14)] = data;
-          cop2d.uw[(15)] = data;
-          return;
-
-        case 28:
-          cop2d.uw[(28)] = data;
-          cop2d.sh[(9<<1)+0]  =(data&0x001f)<<7;
-          cop2d.sh[(10<<1)+0]  =(data&0x03e0)<<2;
-          cop2d.sh[(11<<1)+0]  =(data&0x7c00)>>3;
-          return;
-
-        case 30:
-          {
-            cop2d.uw[(30)] = data;
-            cop2d.uw[(31)] = 0;
-            var sbit = (cop2d.uw[(30)]&0x80000000) ? cop2d.uw[(30)] : ~cop2d.uw[(30)];
-
-            for ( ; sbit&0x80000000; sbit<<=1) {
-              cop2d.uw[(31)]++;
-            }
-          }
-          return;
-
-        case  7:
-        case 29:
-        case 31:
-          return;
-      }
-
-      cop2d.uw[( addr)] = data;
-    },
-
-    opcodeCTC2(addr, data) {
-      switch(addr) {
-        case  4:
-        case 12:
-        case 20:
-        case 26:
-        case 27:
-        case 29:
-        case 30:
-          data = ((data)<<16>>16); // ?
-          break;
-
-        
-        case 31:
-          pseudo.CstrMain.error('opcodeCTC2 -> '+addr+' <- '+pseudo.CstrMain.hex(data));
-          break;
-      }
-
-      cop2c.uw[( addr)] = data;
+    function limE(result) {
+        if (result > 0x1ffff) {
+            cop2c.uw[(31)] |= (1 << 17);
+            return 0x1ffff;
+        }
+        return result;
     }
-  };
+
+    function divide(n, d) {
+        if (n >= 0 && n < d * 2) {
+            return ((((n) << 0 >> 0) << 16) + d / 2) / d;
+        }
+        return 0xffffffff;
+    }
+
+    return {
+        reset() {
+            cop2c.ub.fill(0);
+            cop2d.ub.fill(0);
+        },
+
+        execute(code) {
+            switch(code & 0x3f) {
+                case 0: // BASIC
+                    switch(((code>>>21)&0x1f) & 7) {
+                        case 0: // MFC2
+                            pseudo.CstrMips.setbase(((code>>>16)&0x1f), pseudo.CstrCop2.opcodeMFC2(((code>>>11)&0x1f)));
+                            return;
+
+                        case 2: // CFC2
+                            pseudo.CstrMips.setbase(((code>>>16)&0x1f), cop2c.uw[( ((code>>>11)&0x1f))]);
+                            return;
+
+                        case 4: // MTC2
+                            pseudo.CstrCop2.opcodeMTC2(((code>>>11)&0x1f), pseudo.CstrMips.readbase(((code>>>16)&0x1f)));
+                            return;
+
+                        case 6: // CTC2
+                            pseudo.CstrCop2.opcodeCTC2(((code>>>11)&0x1f), pseudo.CstrMips.readbase(((code>>>16)&0x1f)));
+                            return;
+                    }
+
+                    pseudo.CstrMain.error('COP2 Basic ' + (((code>>>21)&0x1f) & 7));
+                    return;
+
+                case 1: // RTPS
+                    {
+                        // cop2c.uw[(31)] = 0;
+
+                        // cop2d.sw[(25)] = ((cop2c.sh[(0 << 1) + 0] * cop2d.sh[(0 << 1) + 0] + cop2c.sh[(0 << 1) + 1] * cop2d.sh[(0 << 1) + 1] + cop2c.sh[(1 << 1) + 0] * cop2d.sh[(1 << 1) + 0]) >> 12) + cop2c.sw[(5)];
+                        // cop2d.sw[(26)] = ((cop2c.sh[(1 << 1) + 1] * cop2d.sh[(0 << 1) + 0] + cop2c.sh[(2 << 1) + 0] * cop2d.sh[(0 << 1) + 1] + cop2c.sh[(2 << 1) + 1] * cop2d.sh[(1 << 1) + 0]) >> 12) + cop2c.sw[(6)];
+                        // cop2d.sw[(27)] = ((cop2c.sh[(3 << 1) + 0] * cop2d.sh[(0 << 1) + 0] + cop2c.sh[(3 << 1) + 1] * cop2d.sh[(0 << 1) + 1] + cop2c.sh[(4 << 1) + 0] * cop2d.sh[(1 << 1) + 0]) >> 12) + cop2c.sw[(7)];
+
+                        // cop2d.sh[(9 << 1) + 0] = ((((cop2d.sw[(25)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 24), -32768) : ((((cop2d.sw[(25)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 24), 32767) : (((cop2d.sw[(25)]))))); cop2d.sh[(10 << 1) + 0] = ((((cop2d.sw[(26)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 23), -32768) : ((((cop2d.sw[(26)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 23), 32767) : (((cop2d.sw[(26)]))))); cop2d.sh[(11 << 1) + 0] = ((((cop2d.sw[(27)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 22), -32768) : ((((cop2d.sw[(27)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 22), 32767) : (((cop2d.sw[(27)])))));
+
+                        // cop2d.uh[(16 << 1) + 0]  = cop2d.uh[(17 << 1) + 0];
+                        // cop2d.uh[(17 << 1) + 0]  = cop2d.uh[(18 << 1) + 0];
+                        // cop2d.uh[(18 << 1) + 0]  = cop2d.uh[(19 << 1) + 0];
+                        // cop2d.uh[(19 << 1) + 0]  = ((((cop2d.sw[(27)])) < 0) ? (cop2c.uw[(31)] |= (1 << 18), 0) : ((((cop2d.sw[(27)])) > 65535) ? (cop2c.uw[(31)] |= (1 << 18), 65535) : (((cop2d.sw[(27)])))));
+
+                        // const quotient = (cop2c.sh[(26 << 1) + 0] * 4096.0) / cop2d.uh[(19 << 1) + 0];
+
+                        // cop2d.uw[(12)] = cop2d.uw[(13)];
+                        // cop2d.uw[(13)] = cop2d.uw[(14)];
+
+                        // cop2d.sh[(14 << 1) + 0]  = ((((((cop2d.sh[(9 << 1) + 0] * quotient) >> 12) + cop2c.sw[(24)])) < -1024) ? (cop2c.uw[(31)] |= (1 << 14), -1024) : ((((((cop2d.sh[(9 << 1) + 0] * quotient) >> 12) + cop2c.sw[(24)])) > 1023) ? (cop2c.uw[(31)] |= (1 << 14), 1023) : (((((cop2d.sh[(9 << 1) + 0] * quotient) >> 12) + cop2c.sw[(24)])))));
+                        // cop2d.sh[(14 << 1) + 1]  = ((((((cop2d.sh[(10 << 1) + 0] * quotient) >> 12) + cop2c.sw[(25)])) < -1024) ? (cop2c.uw[(31)] |= (1 << 13), -1024) : ((((((cop2d.sh[(10 << 1) + 0] * quotient) >> 12) + cop2c.sw[(25)])) > 1023) ? (cop2c.uw[(31)] |= (1 << 13), 1023) : (((((cop2d.sh[(10 << 1) + 0] * quotient) >> 12) + cop2c.sw[(25)])))));
+
+                        // cop2d.sw[(24)] = ((cop2c.sh[(27 << 1) + 0] * quotient) >> 12) + cop2c.sw[(28)];
+                        // cop2d.sh[(8 << 1) + 0]  = ((((cop2d.sw[(24)])) < 0) ? (cop2c.uw[(31)] |= (1 << 12), 0) : ((((cop2d.sw[(24)])) > 4096) ? (cop2c.uw[(31)] |= (1 << 12), 4096) : (((cop2d.sw[(24)])))));
+
+                        cop2c.uw[(31)] = 0;
+
+                        cop2d.sw[(25)] = ((cop2c.sw[(5)] << 12) + (cop2c.sh[(0 << 1) + 0] * cop2d.sh[(0 << 1) + 0]) + (cop2c.sh[(0 << 1) + 1] * cop2d.sh[(0 << 1) + 1]) + (cop2c.sh[(1 << 1) + 0] * cop2d.sh[(1 << 1) + 0])) >> 12;
+                        cop2d.sw[(26)] = ((cop2c.sw[(6)] << 12) + (cop2c.sh[(1 << 1) + 1] * cop2d.sh[(0 << 1) + 0]) + (cop2c.sh[(2 << 1) + 0] * cop2d.sh[(0 << 1) + 1]) + (cop2c.sh[(2 << 1) + 1] * cop2d.sh[(1 << 1) + 0])) >> 12;
+                        cop2d.sw[(27)] = ((cop2c.sw[(7)] << 12) + (cop2c.sh[(3 << 1) + 0] * cop2d.sh[(0 << 1) + 0]) + (cop2c.sh[(3 << 1) + 1] * cop2d.sh[(0 << 1) + 1]) + (cop2c.sh[(4 << 1) + 0] * cop2d.sh[(1 << 1) + 0])) >> 12;
+
+                        cop2d.sh[(9 << 1) + 0] = ((((cop2d.sw[(25)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 24), -32768) : ((((cop2d.sw[(25)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 24), 32767) : (((cop2d.sw[(25)])))));
+                        cop2d.sh[(10 << 1) + 0] = ((((cop2d.sw[(26)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 23), -32768) : ((((cop2d.sw[(26)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 23), 32767) : (((cop2d.sw[(26)])))));
+                        cop2d.sh[(11 << 1) + 0] = ((((cop2d.sw[(27)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 22), -32768) : ((((cop2d.sw[(27)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 22), 32767) : (((cop2d.sw[(27)])))));
+
+                        cop2d.uh[(16 << 1) + 0] = cop2d.uh[(17 << 1) + 0];
+                        cop2d.uh[(17 << 1) + 0] = cop2d.uh[(18 << 1) + 0];
+                        cop2d.uh[(18 << 1) + 0] = cop2d.uh[(19 << 1) + 0];
+                        cop2d.uh[(19 << 1) + 0] = ((((cop2d.sw[(27)])) < 0) ? (cop2c.uw[(31)] |= (1 << 18), 0) : ((((cop2d.sw[(27)])) > 65535) ? (cop2c.uw[(31)] |= (1 << 18), 65535) : (((cop2d.sw[(27)])))));
+
+                        const quotient = limE(divide(cop2c.sh[(26 << 1) + 0], cop2d.uh[(19 << 1) + 0]));
+
+                        cop2d.uw[(12)] = cop2d.uw[(13)];
+                        cop2d.uw[(13)] = cop2d.uw[(14)];
+                        cop2d.sh[(14 << 1) + 0]  = (((((cop2c.sw[(24)] + (cop2d.sh[(9 << 1) + 0] * quotient)) >> 16)) < -1024) ? (cop2c.uw[(31)] |= (1 << 14), -1024) : (((((cop2c.sw[(24)] + (cop2d.sh[(9 << 1) + 0] * quotient)) >> 16)) > 1023) ? (cop2c.uw[(31)] |= (1 << 14), 1023) : ((((cop2c.sw[(24)] + (cop2d.sh[(9 << 1) + 0] * quotient)) >> 16)))));
+                        cop2d.sh[(14 << 1) + 1]  = (((((cop2c.sw[(25)] + (cop2d.sh[(10 << 1) + 0] * quotient)) >> 16)) < -1024) ? (cop2c.uw[(31)] |= (1 << 13), -1024) : (((((cop2c.sw[(25)] + (cop2d.sh[(10 << 1) + 0] * quotient)) >> 16)) > 1023) ? (cop2c.uw[(31)] |= (1 << 13), 1023) : ((((cop2c.sw[(25)] + (cop2d.sh[(10 << 1) + 0] * quotient)) >> 16)))));
+
+                        cop2d.sw[(24)] = cop2c.sw[(28)] + (cop2c.sh[(27 << 1) + 0] * quotient);
+                        cop2d.sh[(8 << 1) + 0]  = ((((cop2d.sw[(24)] >> 12)) < 0) ? (cop2c.uw[(31)] |= (1 << 12), 0) : ((((cop2d.sw[(24)] >> 12)) > 4096) ? (cop2c.uw[(31)] |= (1 << 12), 4096) : (((cop2d.sw[(24)] >> 12)))));
+                    }
+                    return;
+
+                case 48: // RTPT
+                    {
+                        // var quotient;
+
+                        // cop2c.uw[(31)] = 0;
+                        // cop2d.uh[(16 << 1) + 0]  = cop2d.uh[(19 << 1) + 0];
+
+                        // for (var v = 0; v < 3; v++) {
+                        //     const v1 = cop2d.sh[((v << 1) + 0 << 1) + 0];
+                        //     const v2 = cop2d.sh[((v << 1) + 0 << 1) + 1];
+                        //     const v3 = cop2d.sh[((v << 1) + 1 << 1) + 0];
+
+                        //     cop2d.sw[(25)] = ((cop2c.sh[(0 << 1) + 0] * v1 + cop2c.sh[(0 << 1) + 1] * v2 + cop2c.sh[(1 << 1) + 0] * v3) >> 12) + cop2c.sw[(5)];
+                        //     cop2d.sw[(26)] = ((cop2c.sh[(1 << 1) + 1] * v1 + cop2c.sh[(2 << 1) + 0] * v2 + cop2c.sh[(2 << 1) + 1] * v3) >> 12) + cop2c.sw[(6)];
+                        //     cop2d.sw[(27)] = ((cop2c.sh[(3 << 1) + 0] * v1 + cop2c.sh[(3 << 1) + 1] * v2 + cop2c.sh[(4 << 1) + 0] * v3) >> 12) + cop2c.sw[(7)];
+
+                        //     cop2d.sh[(9 << 1) + 0] = ((((cop2d.sw[(25)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 24), -32768) : ((((cop2d.sw[(25)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 24), 32767) : (((cop2d.sw[(25)]))))); cop2d.sh[(10 << 1) + 0] = ((((cop2d.sw[(26)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 23), -32768) : ((((cop2d.sw[(26)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 23), 32767) : (((cop2d.sw[(26)]))))); cop2d.sh[(11 << 1) + 0] = ((((cop2d.sw[(27)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 22), -32768) : ((((cop2d.sw[(27)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 22), 32767) : (((cop2d.sw[(27)])))));
+
+                        //     cop2d.uh[(v + 17 << 1) + 0] = ((((cop2d.sw[(27)])) < 0) ? (cop2c.uw[(31)] |= (1 << 18), 0) : ((((cop2d.sw[(27)])) > 65535) ? (cop2c.uw[(31)] |= (1 << 18), 65535) : (((cop2d.sw[(27)])))));
+                        //     quotient = (cop2c.sh[(26 << 1) + 0] * 4096.0) / cop2d.uh[(v + 17 << 1) + 0];
+              
+                        //     cop2d.sh[(v + 12 << 1) + 0] = ((((((cop2d.sh[(9 << 1) + 0] * quotient) >> 12) + cop2c.sw[(24)])) < -1024) ? (cop2c.uw[(31)] |= (1 << 14), -1024) : ((((((cop2d.sh[(9 << 1) + 0] * quotient) >> 12) + cop2c.sw[(24)])) > 1023) ? (cop2c.uw[(31)] |= (1 << 14), 1023) : (((((cop2d.sh[(9 << 1) + 0] * quotient) >> 12) + cop2c.sw[(24)])))));
+                        //     cop2d.sh[(v + 12 << 1) + 1] = ((((((cop2d.sh[(10 << 1) + 0] * quotient) >> 12) + cop2c.sw[(25)])) < -1024) ? (cop2c.uw[(31)] |= (1 << 13), -1024) : ((((((cop2d.sh[(10 << 1) + 0] * quotient) >> 12) + cop2c.sw[(25)])) > 1023) ? (cop2c.uw[(31)] |= (1 << 13), 1023) : (((((cop2d.sh[(10 << 1) + 0] * quotient) >> 12) + cop2c.sw[(25)])))));
+                        // }
+
+                        // cop2d.sw[(24)] = ((cop2c.sh[(27 << 1) + 0] * quotient) >> 12) + cop2c.sw[(28)];
+                        // cop2d.sh[(8 << 1) + 0]  = ((((cop2d.sw[(24)])) < 0) ? (cop2c.uw[(31)] |= (1 << 12), 0) : ((((cop2d.sw[(24)])) > 4096) ? (cop2c.uw[(31)] |= (1 << 12), 4096) : (((cop2d.sw[(24)])))));
+
+                        var quotient;
+
+                        cop2c.uw[(31)] = 0;
+                        cop2d.uh[(16 << 1) + 0]  = cop2d.uh[(19 << 1) + 0];
+
+                        for (var v = 0; v < 3; v++) {
+                            const v1 = cop2d.sh[((v << 1) + 0 << 1) + 0];
+                            const v2 = cop2d.sh[((v << 1) + 0 << 1) + 1];
+                            const v3 = cop2d.sh[((v << 1) + 1 << 1) + 0];
+
+                            cop2d.sw[(25)] = ((cop2c.sw[(5)] << 12) + (cop2c.sh[(0 << 1) + 0] * v1) + (cop2c.sh[(0 << 1) + 1] * v2) + (cop2c.sh[(1 << 1) + 0] * v3)) >> 12;
+                            cop2d.sw[(26)] = ((cop2c.sw[(6)] << 12) + (cop2c.sh[(1 << 1) + 1] * v1) + (cop2c.sh[(2 << 1) + 0] * v2) + (cop2c.sh[(2 << 1) + 1] * v3)) >> 12;
+                            cop2d.sw[(27)] = ((cop2c.sw[(7)] << 12) + (cop2c.sh[(3 << 1) + 0] * v1) + (cop2c.sh[(3 << 1) + 1] * v2) + (cop2c.sh[(4 << 1) + 0] * v3)) >> 12;
+
+                            cop2d.sh[(9 << 1) + 0] = ((((cop2d.sw[(25)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 24), -32768) : ((((cop2d.sw[(25)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 24), 32767) : (((cop2d.sw[(25)])))));
+                            cop2d.sh[(10 << 1) + 0] = ((((cop2d.sw[(26)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 23), -32768) : ((((cop2d.sw[(26)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 23), 32767) : (((cop2d.sw[(26)])))));
+                            cop2d.sh[(11 << 1) + 0] = ((((cop2d.sw[(27)])) < -32768) ? (cop2c.uw[(31)] |= (1 << 22), -32768) : ((((cop2d.sw[(27)])) > 32767) ? (cop2c.uw[(31)] |= (1 << 22), 32767) : (((cop2d.sw[(27)])))));
+
+                            cop2d.uh[(v + 17 << 1) + 0] = ((((cop2d.sw[(27)])) < 0) ? (cop2c.uw[(31)] |= (1 << 18), 0) : ((((cop2d.sw[(27)])) > 65535) ? (cop2c.uw[(31)] |= (1 << 18), 65535) : (((cop2d.sw[(27)])))));
+                            quotient = limE(divide(cop2c.sh[(26 << 1) + 0], cop2d.uh[(v + 17 << 1) + 0]));
+
+                            cop2d.sh[(v + 12 << 1) + 0] = (((((cop2c.sw[(24)] + (cop2d.sh[(9 << 1) + 0] * quotient)) >> 16)) < -1024) ? (cop2c.uw[(31)] |= (1 << 14), -1024) : (((((cop2c.sw[(24)] + (cop2d.sh[(9 << 1) + 0] * quotient)) >> 16)) > 1023) ? (cop2c.uw[(31)] |= (1 << 14), 1023) : ((((cop2c.sw[(24)] + (cop2d.sh[(9 << 1) + 0] * quotient)) >> 16)))));
+                            cop2d.sh[(v + 12 << 1) + 1] = (((((cop2c.sw[(25)] + (cop2d.sh[(10 << 1) + 0] * quotient)) >> 16)) < -1024) ? (cop2c.uw[(31)] |= (1 << 13), -1024) : (((((cop2c.sw[(25)] + (cop2d.sh[(10 << 1) + 0] * quotient)) >> 16)) > 1023) ? (cop2c.uw[(31)] |= (1 << 13), 1023) : ((((cop2c.sw[(25)] + (cop2d.sh[(10 << 1) + 0] * quotient)) >> 16)))));
+                        }
+
+                        cop2d.sw[(24)] = cop2c.sw[(28)] + (cop2c.sh[(27 << 1) + 0] * quotient);
+                        cop2d.sh[(8 << 1) + 0] = ((((cop2d.sw[(24)] >> 12)) < 0) ? (cop2c.uw[(31)] |= (1 << 12), 0) : ((((cop2d.sw[(24)] >> 12)) > 4096) ? (cop2c.uw[(31)] |= (1 << 12), 4096) : (((cop2d.sw[(24)] >> 12)))));
+                    }
+                    return;
+            }
+
+            console.info('COP2 Execute ' + (code & 0x3f));
+        },
+
+        opcodeMFC2(addr) {
+            switch(addr) {
+                case  1:
+                case  3:
+                case  5:
+                case  8:
+                case  9:
+                case 10:
+                case 11:
+                    cop2d.sw[( addr)] = cop2d.sh[( addr << 1) +  0];
+                    break;
+
+                case  7:
+                case 16:
+                case 17:
+                case 18:
+                case 19:
+                    cop2d.uw[( addr)] = cop2d.uh[( addr << 1) +  0];
+                    break;
+
+                case 15:
+                    pseudo.CstrMain.error('opcodeMFC2 -> ' + addr);
+                    break;
+
+                case 28:
+                case 29:
+                    cop2d.uw[( addr)] = (((cop2d.sh[(9 << 1) + 0] >> 7) <  0) ? (cop2c.uw[(31)] |= (1 <<  0),  0) : (((cop2d.sh[(9 << 1) + 0] >> 7) >  0x1f) ? (cop2c.uw[(31)] |= (1 <<  0),  0x1f) : ((cop2d.sh[(9 << 1) + 0] >> 7)))) | ((((cop2d.sh[(10 << 1) + 0] >> 7) <  0) ? (cop2c.uw[(31)] |= (1 <<  0),  0) : (((cop2d.sh[(10 << 1) + 0] >> 7) >  0x1f) ? (cop2c.uw[(31)] |= (1 <<  0),  0x1f) : ((cop2d.sh[(10 << 1) + 0] >> 7)))) << 5) | ((((cop2d.sh[(11 << 1) + 0] >> 7) <  0) ? (cop2c.uw[(31)] |= (1 <<  0),  0) : (((cop2d.sh[(11 << 1) + 0] >> 7) >  0x1f) ? (cop2c.uw[(31)] |= (1 <<  0),  0x1f) : ((cop2d.sh[(11 << 1) + 0] >> 7)))) << 10);
+                    break;
+            }
+
+            return cop2d.uw[( addr)];
+        },
+
+        opcodeMTC2(addr, data) {
+            switch(addr) {
+                case 15:
+                    cop2d.uw[(12)] = cop2d.uw[(13)];
+                    cop2d.uw[(13)] = cop2d.uw[(14)];
+                    cop2d.uw[(14)] = data;
+                    cop2d.uw[(15)] = data;
+                    return;
+
+                case 28:
+                    cop2d.uw[(28)] = (data);
+                    cop2d.sh[(9 << 1) + 0]  = (data & 0x1f) << 7;
+                    cop2d.sh[(10 << 1) + 0]  = (data & 0x3e0) << 2;
+                    cop2d.sh[(11 << 1) + 0]  = (data & 0x7c00) >> 3;
+                    return;
+
+                case 30:
+                    {
+                        cop2d.uw[(30)] = data;
+                        cop2d.uw[(31)] = 0;
+                        var sbit = (cop2d.uw[(30)] & 0x80000000) ? cop2d.uw[(30)] : (~(cop2d.uw[(30)]));
+
+                        for ( ; sbit & 0x80000000; sbit <<= 1) {
+                            cop2d.uw[(31)]++;
+                        }
+                    }
+                    return;
+
+                case 31:
+                    return;
+            }
+
+            cop2d.uw[( addr)] = data;
+        },
+
+        opcodeCTC2(addr, data) {
+            switch(addr) {
+                case  4:
+                case 12:
+                case 20:
+                case 26:
+                case 27:
+                case 29:
+                case 30:
+                    data = ((data) << 16 >> 16); // ?
+                    break;
+
+                
+                case 31:
+                    pseudo.CstrMain.error('opcodeCTC2 -> ' + addr + ' <- ' + pseudo.CstrMain.hex(data));
+                    break;
+            }
+
+            cop2c.uw[( addr)] = data;
+        }
+    };
 })();
 
 
@@ -2102,7 +2170,7 @@ pseudo.CstrMips = (function() {
             return;
 
           case 3: // SRA
-            r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)])<<0>>0) >> ((code>>>6)&0x1f);
+            r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)]) << 0 >> 0) >> ((code>>>6)&0x1f);
             return;
 
           case 4: // SLLV
@@ -2114,7 +2182,7 @@ pseudo.CstrMips = (function() {
             return;
 
           case 7: // SRAV
-            r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)])<<0>>0) >> (r[((code>>>21)&0x1f)]&0x1f);
+            r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)]) << 0 >> 0) >> (r[((code>>>21)&0x1f)]&0x1f);
             return;
 
           case 8: // JR
@@ -2152,7 +2220,7 @@ pseudo.CstrMips = (function() {
             return;
 
           case 24: // MULT
-            temp = ((r[((code>>>21)&0x1f)])<<0>>0) *  ((r[((code>>>16)&0x1f)])<<0>>0); r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
+            temp = ((r[((code>>>21)&0x1f)]) << 0 >> 0) *  ((r[((code>>>16)&0x1f)]) << 0 >> 0); r[33] = temp&0xffffffff; r[34] = Math.floor(temp/power32);
             return;
 
           case 25: // MULTU
@@ -2160,7 +2228,7 @@ pseudo.CstrMips = (function() {
             return;
 
           case 26: // DIV
-            if ( ((r[((code>>>16)&0x1f)])<<0>>0)) { r[33] = ((r[((code>>>21)&0x1f)])<<0>>0) /  ((r[((code>>>16)&0x1f)])<<0>>0); r[34] = ((r[((code>>>21)&0x1f)])<<0>>0) %  ((r[((code>>>16)&0x1f)])<<0>>0); };
+            if ( ((r[((code>>>16)&0x1f)]) << 0 >> 0)) { r[33] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) /  ((r[((code>>>16)&0x1f)]) << 0 >> 0); r[34] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) %  ((r[((code>>>16)&0x1f)]) << 0 >> 0); };
             return;
 
           case 27: // DIVU
@@ -2194,7 +2262,7 @@ pseudo.CstrMips = (function() {
             return;
 
           case 42: // SLT
-            r[((code>>>11)&0x1f)] = ((r[((code>>>21)&0x1f)])<<0>>0) < ((r[((code>>>16)&0x1f)])<<0>>0);
+            r[((code>>>11)&0x1f)] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) < ((r[((code>>>16)&0x1f)]) << 0 >> 0);
             return;
 
           case 43: // SLTU
@@ -2207,28 +2275,28 @@ pseudo.CstrMips = (function() {
       case 1: // REGIMM
         switch(((code>>>16)&0x1f)) {
           case 0: // BLTZ
-            if (((r[((code>>>21)&0x1f)])<<0>>0) <  0) {
-              branch((r[32]+((((code)<<16>>16))<<2)));
+            if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <  0) {
+              branch((r[32]+((((code) << 16 >> 16))<<2)));
             }
             return;
 
           case 1: // BGEZ
-            if (((r[((code>>>21)&0x1f)])<<0>>0) >= 0) {
-              branch((r[32]+((((code)<<16>>16))<<2)));
+            if (((r[((code>>>21)&0x1f)]) << 0 >> 0) >= 0) {
+              branch((r[32]+((((code) << 16 >> 16))<<2)));
             }
             return;
 
           case 16: // BLTZAL
             r[31] = r[32]+4;
-            if (((r[((code>>>21)&0x1f)])<<0>>0) <  0) {
-              branch((r[32]+((((code)<<16>>16))<<2)));
+            if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <  0) {
+              branch((r[32]+((((code) << 16 >> 16))<<2)));
             }
             return;
 
           case 17: // BGEZAL
             r[31] = r[32]+4;
-            if (((r[((code>>>21)&0x1f)])<<0>>0) >= 0) {
-              branch((r[32]+((((code)<<16>>16))<<2)));
+            if (((r[((code>>>21)&0x1f)]) << 0 >> 0) >= 0) {
+              branch((r[32]+((((code) << 16 >> 16))<<2)));
             }
             return;
         }
@@ -2246,35 +2314,35 @@ pseudo.CstrMips = (function() {
 
       case 4: // BEQ
         if (r[((code>>>21)&0x1f)] === r[((code>>>16)&0x1f)]) {
-          branch((r[32]+((((code)<<16>>16))<<2)));
+          branch((r[32]+((((code) << 16 >> 16))<<2)));
         }
         return;
 
       case 5: // BNE
         if (r[((code>>>21)&0x1f)] !== r[((code>>>16)&0x1f)]) {
-          branch((r[32]+((((code)<<16>>16))<<2)));
+          branch((r[32]+((((code) << 16 >> 16))<<2)));
         }
         return;
 
       case 6: // BLEZ
-        if (((r[((code>>>21)&0x1f)])<<0>>0) <= 0) {
-          branch((r[32]+((((code)<<16>>16))<<2)));
+        if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <= 0) {
+          branch((r[32]+((((code) << 16 >> 16))<<2)));
         }
         return;
 
       case 7: // BGTZ
-        if (((r[((code>>>21)&0x1f)])<<0>>0) > 0) {
-          branch((r[32]+((((code)<<16>>16))<<2)));
+        if (((r[((code>>>21)&0x1f)]) << 0 >> 0) > 0) {
+          branch((r[32]+((((code) << 16 >> 16))<<2)));
         }
         return;
 
       case 8: // ADDI
       case 9: // ADDIU
-        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code)<<16>>16));
+        r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code) << 16 >> 16));
         return;
 
       case 10: // SLTI
-        r[((code>>>16)&0x1f)] = ((r[((code>>>21)&0x1f)])<<0>>0) < (((code)<<16>>16));
+        r[((code>>>16)&0x1f)] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
         return;
 
       case 11: // SLTIU
@@ -2319,59 +2387,59 @@ pseudo.CstrMips = (function() {
         return;
 
       case 32: // LB
-        r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))))<<24>>24);
+        r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))))) << 24 >> 24);
         return;
 
       case 33: // LH
-        r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))))<<16>>16);
+        r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))))) << 16 >> 16);
         return;
 
       case 34: // LWL
-        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 0][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3) << shift[ 0][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]);
+        temp = (r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 0][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3) << shift[ 0][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3]);
         return;
 
       case 35: // LW
-        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
+        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))));
         return;
 
       case 36: // LBU
-        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
+        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))));
         return;
 
       case 37: // LHU
-        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16))));
+        r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))));
         return;
 
       case 38: // LWR
-        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 1][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3) >>> shift[ 1][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]);
+        temp = (r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))); r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)]&mask[ 1][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3) >>> shift[ 1][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3]);
         return;
 
       case 40: // SB
-        pseudo.CstrMem.write.b((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>16)&0x1f)]);
+        pseudo.CstrMem.write.b((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
         return;
 
       case 41: // SH
-        pseudo.CstrMem.write.h((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>16)&0x1f)]);
+        pseudo.CstrMem.write.h((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
         return;
 
       case 42: // SWL
-        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3, (r[((code>>>16)&0x1f)] >>> shift[ 2][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3)&mask[ 2][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]));
+        temp = (r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3, (r[((code>>>16)&0x1f)] >>> shift[ 2][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3)&mask[ 2][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3]));
         return;
 
       case 43: // SW
-        pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), r[((code>>>16)&0x1f)]);
+        pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
         return;
 
       case 46: // SWR
-        temp = (r[((code>>>21)&0x1f)]+(((code)<<16>>16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3, (r[((code>>>16)&0x1f)] << shift[ 3][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&~3)&mask[ 3][(r[((code>>>21)&0x1f)]+(((code)<<16>>16)))&3]));
+        temp = (r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))); pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3, (r[((code>>>16)&0x1f)] << shift[ 3][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3])|(pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&~3)&mask[ 3][(r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))&3]));
         return;
 
       case 50: // LWC2
-        pseudo.CstrCop2.opcodeMTC2(((code>>>16)&0x1f), pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16)))));
+        pseudo.CstrCop2.opcodeMTC2(((code>>>16)&0x1f), pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16)))));
         return;
 
       case 58: // SWC2
-        pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code)<<16>>16))), pseudo.CstrCop2.opcodeMFC2(((code>>>16)&0x1f)));
+        pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)]+(((code) << 16 >> 16))), pseudo.CstrCop2.opcodeMFC2(((code>>>16)&0x1f)));
         return;
     }
     pseudo.CstrMain.error('Basic CPU instruction '+((code>>>26)&0x3f));
@@ -2964,7 +3032,7 @@ pseudo.CstrRender = (function() {
           { var k = { cr: [ { a: (data[0]>>> 0)&0xff, b: (data[0]>>> 8)&0xff, c: (data[0]>>>16)&0xff, n: (data[0]>>>24)&0xff,} ], vx: [ { h: (data[1]>> 0)&0xffff, v: (data[1]>>16)&0xffff,}, { h: (data[2]>> 0)&0xffff, v: (data[2]>>16)&0xffff,}, { h: (data[3]>> 0)&0xffff, v: (data[3]>>16)&0xffff,}, { h: (data[4]>> 0)&0xffff, v: (data[4]>>16)&0xffff,}, ]}; var cr = []; var vx = []; var b = [ k.cr[0].n&2 ? blend : 0, k.cr[0].n&2 ? bit[blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (var i=0; i<4; i++) { cr.push(k.cr[0].a, k.cr[0].b, k.cr[0].c, b[1]); vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.uniform1i(attrib._e, false); ctx.disableVertexAttribArray(attrib._t); ctx.enable(ctx.SCISSOR_TEST); ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v); ctx.drawArrays( ctx.LINE_STRIP, 0, 4); ctx.disable(ctx.SCISSOR_TEST);};
           return;
 
-        case 0x50: // LINE cop2d.ub[(22<<2)+1]
+        case 0x50: // LINE cop2d.ub[(22 << 2) + 1]
           { var k = { cr: [ { a: (data[0]>>> 0)&0xff, b: (data[0]>>> 8)&0xff, c: (data[0]>>>16)&0xff, n: (data[0]>>>24)&0xff,}, { a: (data[2]>>> 0)&0xff, b: (data[2]>>> 8)&0xff, c: (data[2]>>>16)&0xff, n: (data[2]>>>24)&0xff,}, { a: (data[4]>>> 0)&0xff, b: (data[4]>>> 8)&0xff, c: (data[4]>>>16)&0xff, n: (data[4]>>>24)&0xff,}, { a: (data[6]>>> 0)&0xff, b: (data[6]>>> 8)&0xff, c: (data[6]>>>16)&0xff, n: (data[6]>>>24)&0xff,}, ], vx: [ { h: (data[1]>> 0)&0xffff, v: (data[1]>>16)&0xffff,}, { h: (data[3]>> 0)&0xffff, v: (data[3]>>16)&0xffff,}, { h: (data[5]>> 0)&0xffff, v: (data[5]>>16)&0xffff,}, { h: (data[7]>> 0)&0xffff, v: (data[7]>>16)&0xffff,}, ]}; var cr = []; var vx = []; var b = [ k.cr[0].n&2 ? blend : 0, k.cr[0].n&2 ? bit[blend].opaque : 255 ]; ctx.blendFunc(bit[b[0]].src, bit[b[0]].target); for (var i=0; i<2; i++) { cr.push(k.cr[i].a, k.cr[i].b, k.cr[i].c, b[1]); vx.push(k.vx[i].h+ofs.h, k.vx[i].v+ofs.v); } ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c); ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(cr), ctx.DYNAMIC_DRAW); ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v); ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0); ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vx), ctx.DYNAMIC_DRAW); ctx.uniform1i(attrib._e, false); ctx.disableVertexAttribArray(attrib._t); ctx.enable(ctx.SCISSOR_TEST); ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v); ctx.drawArrays( ctx.LINE_STRIP, 0, 2); ctx.disable(ctx.SCISSOR_TEST);};
           return;
 
@@ -3075,8 +3143,8 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe5: // DRAW OFFSET
-          ofs.h = (((data[0])<<0>>0)<<21)>>21;
-          ofs.v = (((data[0])<<0>>0)<<10)>>21;
+          ofs.h = (((data[0]) << 0 >> 0)<<21)>>21;
+          ofs.v = (((data[0]) << 0 >> 0)<<10)>>21;
           return;
 
         case 0xe6: // STP
@@ -3276,7 +3344,7 @@ pseudo.CstrSerial = (function() {
           if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_UP)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_UP)); };
       }
       
-      if (code == 39) { // cop2d.ub[(6<<2)+0]
+      if (code == 39) { // cop2d.ub[(6 << 2) + 0]
           if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_RIGHT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_RIGHT)); };
       }
       

@@ -1,14 +1,14 @@
 // 32-bit accessor
-#define oooo(base, index)\
-  base[(index)]
+#define oooo(base, index) \
+    base[(index)]
 
 // 16-bit accessor
-#define __oo(base, index, offset)\
-  base[(index<<1)+offset]
+#define __oo(base, index, offset) \
+    base[(index << 1) + offset]
 
 // 08-bit accessor
-#define ___o(base, index, offset)\
-  base[(index<<2)+offset]
+#define ___o(base, index, offset) \
+    base[(index << 2) + offset]
 
 // Cop2c
 #define R11R12 oooo(cop2c.sw,  0)    /* Rotation matrix */
@@ -122,220 +122,297 @@
 #define LZCS   oooo(cop2d.uw, 30)    /* Lead zero/one count source data */
 #define LZCR   oooo(cop2d.uw, 31)    /* Lead zero/one count process result */
 
-#define VX(n)  __oo(cop2d.sh, (n<<1)+0, 0)
-#define VY(n)  __oo(cop2d.sh, (n<<1)+0, 1)
-#define VZ(n)  __oo(cop2d.sh, (n<<1)+1, 0)
+#define VX(n)  __oo(cop2d.sh, (n << 1) + 0, 0)
+#define VY(n)  __oo(cop2d.sh, (n << 1) + 0, 1)
+#define VZ(n)  __oo(cop2d.sh, (n << 1) + 1, 0)
 
-#define SX(n)  __oo(cop2d.sh, n+12, 0)
-#define SY(n)  __oo(cop2d.sh, n+12, 1)
-#define SZ(n)  __oo(cop2d.uh, n+17, 0)
+#define SX(n)  __oo(cop2d.sh, n + 12, 0)
+#define SY(n)  __oo(cop2d.sh, n + 12, 1)
+#define SZ(n)  __oo(cop2d.uh, n + 17, 0)
 
 // General
 #define FIX(a) \
-  ((a)>>12)
+    ((a) >> 12)
 
 #define LIM(a, min, max, bit) \
-  (((a) < min) ? (FLAG |= (1<<bit), min) : \
-  (((a) > max) ? (FLAG |= (1<<bit), max) : ((a))))
+  (((a) < min) ? (FLAG |= (1 << bit), min) : \
+  (((a) > max) ? (FLAG |= (1 << bit), max) : ((a))))
 
-#define limB1(a) LIM(a, -32768.0, 32767.0, 24)
-#define limB2(a) LIM(a, -32768.0, 32767.0, 23)
-#define limB3(a) LIM(a, -32768.0, 32767.0, 22)
-#define limD(a)  LIM(a,      0.0, 65535.0, 18)
-#define limG1(a) LIM(a,  -1024.0,  1023.0, 14)
-#define limG2(a) LIM(a,  -1024.0,  1023.0, 13)
-#define limH(a)  LIM(a,      0.0,  4096.0, 12)
+#define limB1(a) LIM((a), -32768, 32767, 24)
+#define limB2(a) LIM((a), -32768, 32767, 23)
+#define limB3(a) LIM((a), -32768, 32767, 22)
+#define limC1(a) LIM((a),      0,   255, 21)
+#define limC2(a) LIM((a),      0,   255, 20)
+#define limC3(a) LIM((a),      0,   255, 19)
+#define limD( a) LIM((a),      0, 65535, 18)
+#define limG1(a) LIM((a),  -1024,  1023, 14)
+#define limG2(a) LIM((a),  -1024,  1023, 13)
+#define limH( a) LIM((a),      0,  4096, 12)
 
-#define MAC2IR()\
-  IR1 = limB1(MAC1);\
-  IR2 = limB2(MAC2);\
-  IR3 = limB3(MAC3)
+// #define limB1(a) LIM(a, -32768.0, 32767.0, 24)
+// #define limB2(a) LIM(a, -32768.0, 32767.0, 23)
+// #define limB3(a) LIM(a, -32768.0, 32767.0, 22)
+// #define limD( a) LIM(a,      0.0, 65535.0, 18)
+// #define limG1(a) LIM(a,  -1024.0,  1023.0, 14)
+// #define limG2(a) LIM(a,  -1024.0,  1023.0, 13)
+// #define limH( a) LIM(a,      0.0,  4096.0, 12)
+
+#define MAC2IR() \
+    IR1 = limB1(MAC1); \
+    IR2 = limB2(MAC2); \
+    IR3 = limB3(MAC3)
 
 pseudo.CstrCop2 = (function() {
-  var cop2c = union(32*4);
-  var cop2d = union(32*4);
+    const cop2c = union(32 * 4);
+    const cop2d = union(32 * 4);
 
-  return {
-    reset() {
-      ioZero(cop2c.ub);
-      ioZero(cop2d.ub);
-    },
-
-    execute(code) {
-      switch(code&0x3f) {
-        case 0: // BASIC
-          switch(rs&7) {
-            case 0: // MFC2
-              cpu.setbase(rt, cop2.opcodeMFC2(rd));
-              return;
-
-            case 2: // CFC2
-              cpu.setbase(rt, oooo(cop2c.uw, rd));
-              return;
-
-            case 4: // MTC2
-              cop2.opcodeMTC2(rd, cpu.readbase(rt));
-              return;
-
-            case 6: // CTC2
-              cop2.opcodeCTC2(rd, cpu.readbase(rt));
-              return;
-          }
-          psx.error('COP2 Basic '+(rs&7));
-          return;
-
-        case 1: // RTPS
-          {
-            FLAG = 0;
-
-            MAC1 = FIX(R11*VX0+R12*VY0+R13*VZ0)+TRX;
-            MAC2 = FIX(R21*VX0+R22*VY0+R23*VZ0)+TRY;
-            MAC3 = FIX(R31*VX0+R32*VY0+R33*VZ0)+TRZ;
-
-            MAC2IR();
-
-            SZ0  = SZ1;
-            SZ1  = SZ2;
-            SZ2  = SZ3;
-            SZ3  = limD(MAC3);
-
-            var quotient = H*4096.0/SZ3;
-
-            SXY0 = SXY1;
-            SXY1 = SXY2;
-
-            SX2  = limG1(FIX(IR1*quotient)+OFX);
-            SY2  = limG2(FIX(IR2*quotient)+OFY);
-
-            MAC0 = FIX(DQA*quotient)+DQB;
-            IR0  = limH(MAC0);
-          }
-          return;
-
-        case 48: // RTPT
-          {
-            var quotient;
-
-            FLAG = 0;
-            SZ0  = SZ3;
-
-            for (var v=0; v<3; v++) {
-              var v1 = VX(v);
-              var v2 = VY(v);
-              var v3 = VZ(v);
-
-              MAC1 = FIX(R11*v1+R12*v2+R13*v3)+TRX;
-              MAC2 = FIX(R21*v1+R22*v2+R23*v3)+TRY;
-              MAC3 = FIX(R31*v1+R32*v2+R33*v3)+TRZ;
-
-              MAC2IR();
-
-              SZ(v) = limD(MAC3);
-              quotient = H*4096.0/SZ(v);
-              
-              SX(v) = limG1(FIX(IR1*quotient)+OFX);
-              SY(v) = limG2(FIX(IR2*quotient)+OFY);
-            }
-            MAC0 = FIX(DQA*quotient)+DQB;
-            IR0  = limH(MAC0);
-          }
-          return;
-      }
-      //cpu.consoleWrite(MSG_ERROR, 'COP2 Execute '+(code&0x3f));
-    },
-
-    opcodeMFC2(addr) {
-      switch(addr) {
-        case  1:
-        case  3:
-        case  5:
-        case  8:
-        case  9:
-        case 10:
-        case 11:
-          oooo(cop2d.sw, addr) = __oo(cop2d.sh, addr, 0);
-          break;
-
-        case  7:
-        case 16:
-        case 17:
-        case 18:
-        case 19:
-          oooo(cop2d.uw, addr) = __oo(cop2d.uh, addr, 0);
-          break;
-
-        case 15:
-          psx.error('opcodeMFC2 -> '+addr);
-          break;
-
-        case 28:
-        case 29:
-          oooo(cop2d.uw, addr) = LIM(IR1>>7, 0x1f, 0, 0) | (LIM(IR2>>7, 0x1f, 0, 0)<<5) | (LIM(IR3>>7, 0x1f, 0, 0)<<10);
-          break;
-
-        case 30:
-          return 0;
-      }
-
-      return oooo(cop2d.uw, addr);
-    },
-
-    opcodeMTC2(addr, data) {
-      switch(addr) {
-        case 15:
-          SXY0 = SXY1;
-          SXY1 = SXY2;
-          SXY2 = data;
-          SXYP = data;
-          return;
-
-        case 28:
-          IRGB = data;
-          IR1  =(data&0x001f)<<7;
-          IR2  =(data&0x03e0)<<2;
-          IR3  =(data&0x7c00)>>3;
-          return;
-
-        case 30:
-          {
-            LZCS = data;
-            LZCR = 0;
-            var sbit = (LZCS&0x80000000) ? LZCS : ~LZCS;
-
-            for ( ; sbit&0x80000000; sbit<<=1) {
-              LZCR++;
-            }
-          }
-          return;
-
-        case  7:
-        case 29:
-        case 31:
-          return;
-      }
-
-      oooo(cop2d.uw, addr) = data;
-    },
-
-    opcodeCTC2(addr, data) {
-      switch(addr) {
-        case  4:
-        case 12:
-        case 20:
-        case 26:
-        case 27:
-        case 29:
-        case 30:
-          data = SIGN_EXT_16(data); // ?
-          break;
-
-        /* unused */
-        case 31:
-          psx.error('opcodeCTC2 -> '+addr+' <- '+psx.hex(data));
-          break;
-      }
-
-      oooo(cop2c.uw, addr) = data;
+    function limE(result) {
+        if (result > 0x1ffff) {
+            FLAG |= (1 << 17);
+            return 0x1ffff;
+        }
+        return result;
     }
-  };
+
+    function divide(n, d) {
+        if (n >= 0 && n < d * 2) {
+            return ((SIGN_EXT_32(n) << 16) + d / 2) / d;
+        }
+        return 0xffffffff;
+    }
+
+    return {
+        reset() {
+            cop2c.ub.fill(0);
+            cop2d.ub.fill(0);
+        },
+
+        execute(code) {
+            switch(code & 0x3f) {
+                case 0: // BASIC
+                    switch(rs & 7) {
+                        case 0: // MFC2
+                            cpu.setbase(rt, cop2.opcodeMFC2(rd));
+                            return;
+
+                        case 2: // CFC2
+                            cpu.setbase(rt, oooo(cop2c.uw, rd));
+                            return;
+
+                        case 4: // MTC2
+                            cop2.opcodeMTC2(rd, cpu.readbase(rt));
+                            return;
+
+                        case 6: // CTC2
+                            cop2.opcodeCTC2(rd, cpu.readbase(rt));
+                            return;
+                    }
+
+                    psx.error('COP2 Basic ' + (rs & 7));
+                    return;
+
+                case 1: // RTPS
+                    {
+                        // FLAG = 0;
+
+                        // MAC1 = FIX(R11 * VX0 + R12 * VY0 + R13 * VZ0) + TRX;
+                        // MAC2 = FIX(R21 * VX0 + R22 * VY0 + R23 * VZ0) + TRY;
+                        // MAC3 = FIX(R31 * VX0 + R32 * VY0 + R33 * VZ0) + TRZ;
+
+                        // MAC2IR();
+
+                        // SZ0  = SZ1;
+                        // SZ1  = SZ2;
+                        // SZ2  = SZ3;
+                        // SZ3  = limD(MAC3);
+
+                        // const quotient = (H * 4096.0) / SZ3;
+
+                        // SXY0 = SXY1;
+                        // SXY1 = SXY2;
+
+                        // SX2  = limG1(FIX(IR1 * quotient) + OFX);
+                        // SY2  = limG2(FIX(IR2 * quotient) + OFY);
+
+                        // MAC0 = FIX(DQA * quotient) + DQB;
+                        // IR0  = limH(MAC0);
+
+                        FLAG = 0;
+
+                        MAC1 = ((TRX << 12) + (R11 * VX0) + (R12 * VY0) + (R13 * VZ0)) >> 12;
+                        MAC2 = ((TRY << 12) + (R21 * VX0) + (R22 * VY0) + (R23 * VZ0)) >> 12;
+                        MAC3 = ((TRZ << 12) + (R31 * VX0) + (R32 * VY0) + (R33 * VZ0)) >> 12;
+
+                        IR1 = limB1(MAC1);
+                        IR2 = limB2(MAC2);
+                        IR3 = limB3(MAC3);
+
+                        SZ0 = SZ1;
+                        SZ1 = SZ2;
+                        SZ2 = SZ3;
+                        SZ3 = limD(MAC3);
+
+                        const quotient = limE(divide(H, SZ3));
+
+                        SXY0 = SXY1;
+                        SXY1 = SXY2;
+                        SX2  = limG1((OFX + (IR1 * quotient)) >> 16);
+                        SY2  = limG2((OFY + (IR2 * quotient)) >> 16);
+
+                        MAC0 = DQB + (DQA * quotient);
+                        IR0  = limH(MAC0 >> 12);
+                    }
+                    return;
+
+                case 48: // RTPT
+                    {
+                        // var quotient;
+
+                        // FLAG = 0;
+                        // SZ0  = SZ3;
+
+                        // for (var v = 0; v < 3; v++) {
+                        //     const v1 = VX(v);
+                        //     const v2 = VY(v);
+                        //     const v3 = VZ(v);
+
+                        //     MAC1 = FIX(R11 * v1 + R12 * v2 + R13 * v3) + TRX;
+                        //     MAC2 = FIX(R21 * v1 + R22 * v2 + R23 * v3) + TRY;
+                        //     MAC3 = FIX(R31 * v1 + R32 * v2 + R33 * v3) + TRZ;
+
+                        //     MAC2IR();
+
+                        //     SZ(v) = limD(MAC3);
+                        //     quotient = (H * 4096.0) / SZ(v);
+              
+                        //     SX(v) = limG1(FIX(IR1 * quotient) + OFX);
+                        //     SY(v) = limG2(FIX(IR2 * quotient) + OFY);
+                        // }
+
+                        // MAC0 = FIX(DQA * quotient) + DQB;
+                        // IR0  = limH(MAC0);
+
+                        var quotient;
+
+                        FLAG = 0;
+                        SZ0  = SZ3;
+
+                        for (var v = 0; v < 3; v++) {
+                            const v1 = VX(v);
+                            const v2 = VY(v);
+                            const v3 = VZ(v);
+
+                            MAC1 = ((TRX << 12) + (R11 * v1) + (R12 * v2) + (R13 * v3)) >> 12;
+                            MAC2 = ((TRY << 12) + (R21 * v1) + (R22 * v2) + (R23 * v3)) >> 12;
+                            MAC3 = ((TRZ << 12) + (R31 * v1) + (R32 * v2) + (R33 * v3)) >> 12;
+
+                            IR1 = limB1(MAC1);
+                            IR2 = limB2(MAC2);
+                            IR3 = limB3(MAC3);
+
+                            SZ(v) = limD(MAC3);
+                            quotient = limE(divide(H, SZ(v)));
+
+                            SX(v) = limG1((OFX + (IR1 * quotient)) >> 16);
+                            SY(v) = limG2((OFY + (IR2 * quotient)) >> 16);
+                        }
+
+                        MAC0 = DQB + (DQA * quotient);
+                        IR0 = limH(MAC0 >> 12);
+                    }
+                    return;
+            }
+
+            console.info('COP2 Execute ' + (code & 0x3f));
+        },
+
+        opcodeMFC2(addr) {
+            switch(addr) {
+                case  1:
+                case  3:
+                case  5:
+                case  8:
+                case  9:
+                case 10:
+                case 11:
+                    oooo(cop2d.sw, addr) = __oo(cop2d.sh, addr, 0);
+                    break;
+
+                case  7:
+                case 16:
+                case 17:
+                case 18:
+                case 19:
+                    oooo(cop2d.uw, addr) = __oo(cop2d.uh, addr, 0);
+                    break;
+
+                case 15:
+                    psx.error('opcodeMFC2 -> ' + addr);
+                    break;
+
+                case 28:
+                case 29:
+                    oooo(cop2d.uw, addr) = LIM(IR1 >> 7, 0, 0x1f, 0) | (LIM(IR2 >> 7, 0, 0x1f, 0) << 5) | (LIM(IR3 >> 7, 0, 0x1f, 0) << 10);
+                    break;
+            }
+
+            return oooo(cop2d.uw, addr);
+        },
+
+        opcodeMTC2(addr, data) {
+            switch(addr) {
+                case 15:
+                    SXY0 = SXY1;
+                    SXY1 = SXY2;
+                    SXY2 = data;
+                    SXYP = data;
+                    return;
+
+                case 28:
+                    IRGB = (data);
+                    IR1  = (data & 0x1f) << 7;
+                    IR2  = (data & 0x3e0) << 2;
+                    IR3  = (data & 0x7c00) >> 3;
+                    return;
+
+                case 30:
+                    {
+                        LZCS = data;
+                        LZCR = 0;
+                        var sbit = (LZCS & 0x80000000) ? LZCS : (~(LZCS));
+
+                        for ( ; sbit & 0x80000000; sbit <<= 1) {
+                            LZCR++;
+                        }
+                    }
+                    return;
+
+                case 31:
+                    return;
+            }
+
+            oooo(cop2d.uw, addr) = data;
+        },
+
+        opcodeCTC2(addr, data) {
+            switch(addr) {
+                case  4:
+                case 12:
+                case 20:
+                case 26:
+                case 27:
+                case 29:
+                case 30:
+                    data = SIGN_EXT_16(data); // ?
+                    break;
+
+                /* unused */
+                case 31:
+                    psx.error('opcodeCTC2 -> ' + addr + ' <- ' + psx.hex(data));
+                    break;
+            }
+
+            oooo(cop2c.uw, addr) = data;
+        }
+    };
 })();

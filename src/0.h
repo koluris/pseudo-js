@@ -139,6 +139,16 @@ function union(size) {
 #define FRAME_W 1024
 #define FRAME_H 512
 
+// Arithmetic operations
+#define SIGN_EXT_32(n) \
+  ((n) << 0 >> 0)
+
+#define SIGN_EXT_16(n) \
+  ((n) << 16 >> 16)
+
+#define SIGN_EXT_8(n) \
+  ((n) << 24 >> 24)
+
 // Declare our namespace
 'use strict';
 var pseudo = window.pseudo || {};
