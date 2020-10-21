@@ -2665,172 +2665,165 @@ pseudo.CstrMips = (function() {
 
 
 pseudo.CstrMain = (function() {
-  var divDropzone;
-  var iso;
+    var divDropzone;
+    var iso;
 
-  // AJAX function
-  function request(path, fn) {
-    var xhr = new XMLHttpRequest();
-    xhr.onload = function() {
-      if (xhr.status === 404) {
-        pseudo.CstrMips.consoleWrite('error', 'Unable to read file "' + path + '"');
-      }
-      else {
-        fn(xhr.response);
-      }
-    };
-    xhr.responseType = 'arraybuffer';
-    xhr.open('GET', path);
-    xhr.send();
-  }
-
-  // Chunk reader function
-  function chunkReader(file, start, size, kind, fn) {
-    var end = start+size;
-
-    // Check boundaries
-    if (file.size > end) {
-      var reader = new FileReader();
-      reader.onload = function(e) { // Callback
-        fn(e.target.result);
-      };
-      // Read sliced area
-      var slice = file.slice(start, end);
-
-      if (kind === 'text') {
-        reader.readAsText(slice);
-      }
-      else {
-        reader.readAsArrayBuffer(slice);
-      }
+    // AJAX function
+    function request(path, fn) {
+        var xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+            if (xhr.status === 404) {
+                pseudo.CstrMips.consoleWrite('error', 'Unable to read file "' + path + '"');
+            }
+            else {
+                fn(xhr.response);
+            }
+        };
+        xhr.responseType = 'arraybuffer';
+        xhr.open('GET', path);
+        xhr.send();
     }
-  }
 
-  function reset() {
-    // Reset all emulator components
-     pseudo.CstrRender.reset();
-         pseudo.CstrGraphics.reset();
-       pseudo.CstrMdec.reset();
-        pseudo.CstrMem.reset();
-      pseudo.CstrAudio.reset();
-    pseudo.CstrCounters.reset();
-      pseudo.CstrCdrom.reset();
-        pseudo.CstrBus.reset();
-        pseudo.CstrSerial.reset();
-       pseudo.CstrCop2.reset();
-        pseudo.CstrMips.reset();
-  }
+    // Chunk reader function
+    function chunkReader(file, start, size, kind, fn) {
+        var end = start + size;
 
-  function executable(resp) {
-    // Set pseudo.CstrMem & processor
-    pseudo.CstrMips.parseExeHeader(
-        pseudo.CstrMem.writeExecutable(resp)
-    );
-    pseudo.CstrMips.consoleWrite('info', 'PSX-EXE has been transferred to RAM');
-  }
+        // Check boundaries
+        if (file.size > end) {
+            var reader = new FileReader();
+            reader.onload = function(e) { // Callback
+                fn(e.target.result);
+            };
+            // Read sliced area
+            var slice = file.slice(start, end);
 
-  // Exposed class functions/variables
-  return {
-    awake(screen, blink, kb, res, output, dropzone) {
-      divDropzone = dropzone;
-         unusable = false;
-      
-      pseudo.CstrRender.awake(screen, res);
-       pseudo.CstrAudio.awake();
-       pseudo.CstrCdrom.awake(blink, kb);
-         pseudo.CstrMips.awake(output);
-
-      request('bios/scph1001.bin', function(resp) {
-        // Completed
-        pseudo.CstrMem.writeROM(resp);
-      });
-    },
-
-    drop: {
-      file(e) {
-        e.preventDefault();
-        pseudo.CstrMain.drop.exit();
-        
-        var dt = e.dataTransfer;
-
-        if (dt.files) {
-          var file = dt.files[0];
-          
-          // PS-X EXE
-          chunkReader(file, 0, 8, 'text', function(id) {
-            if (id === 'PS-X EXE') {
-              var reader = new FileReader();
-              reader.onload = function(e) { // Callback
-                reset();
-                executable(e.target.result);
-                pseudo.CstrMips.run();
-              };
-              // Read file
-              reader.readAsArrayBuffer(file);
+            if (kind === 'text') {
+                reader.readAsText(slice);
             }
-          });
-
-          // ISO 9660
-          chunkReader(file, 0x9319, 5, 'text', function(id) {
-            if (id === 'CD001') {
-              chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
-                iso = file;
-                reset();
-                pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
-                pseudo.CstrMips.setpc(pseudo.CstrMips.readbase(32));
-                pseudo.CstrMips.run();
-              });
+            else {
+                reader.readAsArrayBuffer(slice);
             }
-          });
         }
-      },
-
-      over(e) {
-        e.preventDefault();
-      },
-
-      enter() {
-        divDropzone.addClass('dropzone-active');
-      },
-
-      exit() {
-        divDropzone.removeClass('dropzone-active');
-      }
-    },
-
-    hex(number) {
-      return '0x' + (number >>> 0).toString(16);
-    },
-
-    error(out) {
-      throw new Error('PSeudo / '+out);
-    },
-
-    trackRead(time) {
-      if (!iso) {
-        return;
-      }
-
-      var minute = (parseInt((time[0])/16) * 10 + (time[0])%16);
-      var sec    = (parseInt((time[1])/16) * 10 + (time[1])%16);
-      var frame  = (parseInt((time[2])/16) * 10 + (time[2])%16);
-
-      // var minute = (parseInt((time.minute)/16) * 10 + (time.minute)%16);
-      // var sec    = (parseInt((time.sec)/16) * 10 + (time.sec)%16);
-      // var frame  = (parseInt((time.frame)/16) * 10 + (time.frame)%16);
-
-      // console.dir(minute+' '+sec+' '+frame);
-
-      var offset = (((minute) * 60 + ( sec) - 2) * 75 + ( frame)) * 2352 + 12;
-      var size   = (2352 - 12);
-
-      chunkReader(iso, offset, size, 'raw', function(data) {
-        // pseudo.CstrCdrom.cdromRead2(new Uint8Array(data));
-        pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
-        // slice(0, DATASIZE)
-      });
     }
-  };
+
+    function reset() {
+        // Reset all emulator components
+         pseudo.CstrRender.reset();
+             pseudo.CstrGraphics.reset();
+           pseudo.CstrMdec.reset();
+            pseudo.CstrMem.reset();
+          pseudo.CstrAudio.reset();
+        pseudo.CstrCounters.reset();
+          pseudo.CstrCdrom.reset();
+            pseudo.CstrBus.reset();
+            pseudo.CstrSerial.reset();
+           pseudo.CstrCop2.reset();
+            pseudo.CstrMips.reset();
+    }
+
+    function executable(resp) {
+        // Set pseudo.CstrMem & processor
+        pseudo.CstrMips.parseExeHeader(
+            pseudo.CstrMem.writeExecutable(resp)
+        );
+        pseudo.CstrMips.consoleWrite('info', 'PSX-EXE has been transferred to RAM');
+    }
+
+    // Exposed class functions/variables
+    return {
+        awake(screen, blink, kb, res, output, dropzone) {
+            divDropzone = dropzone;
+            unusable = false;
+      
+            pseudo.CstrRender.awake(screen, res);
+             pseudo.CstrAudio.awake();
+             pseudo.CstrCdrom.awake(blink, kb);
+               pseudo.CstrMips.awake(output);
+
+            request('bios/scph1001.bin', function(resp) {
+                // Completed
+                pseudo.CstrMem.writeROM(resp);
+            });
+        },
+
+        drop: {
+            file(e) {
+                e.preventDefault();
+                pseudo.CstrMain.drop.exit();
+        
+                var dt = e.dataTransfer;
+
+                if (dt.files) {
+                    var file = dt.files[0];
+          
+                    // PS-X EXE
+                    chunkReader(file, 0, 8, 'text', function(id) {
+                        if (id === 'PS-X EXE') {
+                            var reader = new FileReader();
+                            reader.onload = function(e) { // Callback
+                                reset();
+                                executable(e.target.result);
+                                pseudo.CstrMips.run();
+                            };
+                            // Read file
+                            reader.readAsArrayBuffer(file);
+                        }
+                    });
+
+                    // ISO 9660
+                    chunkReader(file, 0x9319, 5, 'text', function(id) {
+                        if (id === 'CD001') {
+                            chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
+                                iso = file;
+                                reset();
+                                pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
+                                pseudo.CstrMips.setpc(pseudo.CstrMips.readbase(32));
+                                pseudo.CstrMips.run();
+                            });
+                        }
+                    });
+                }
+            },
+
+            over(e) {
+                e.preventDefault();
+            },
+
+            enter() {
+                divDropzone.addClass('dropzone-active');
+            },
+
+            exit() {
+                divDropzone.removeClass('dropzone-active');
+            }
+        },
+
+        hex(number) {
+            return '0x' + (number >>> 0).toString(16);
+        },
+
+        error(out) {
+            throw new Error('PSeudo / '+out);
+        },
+
+        trackRead(time) {
+            if (!iso) {
+                return;
+            }
+
+            const minute = (parseInt((time[0])/16) * 10 + (time[0])%16);
+            const sec    = (parseInt((time[1])/16) * 10 + (time[1])%16);
+            const frame  = (parseInt((time[2])/16) * 10 + (time[2])%16);
+
+            const offset = (((minute) * 60 + ( sec) - 2) * 75 + ( frame)) * 2352 + 12;
+            const size   = (2352 - 12);
+
+            chunkReader(iso, offset, size, 'raw', function(data) {
+                pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
+                // slice(0, DATASIZE)
+            });
+        }
+    };
 })();
 
 
