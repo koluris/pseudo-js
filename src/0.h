@@ -87,10 +87,13 @@ function union(size) {
 
 #define audio   pseudo.CstrAudio
 #define bus     pseudo.CstrBus
+#define cdrom   pseudo.CstrCdrom
 #define cop2    pseudo.CstrCop2
+#define cpu     pseudo.CstrMips
 #define io      pseudo.CstrHardware
 #define mdec    pseudo.CstrMdec
 #define mem     pseudo.CstrMem
+#define psx     pseudo.CstrMain
 #define render  pseudo.CstrRender
 #define rootcnt pseudo.CstrCounters
 #define sio     pseudo.CstrSerial
@@ -148,6 +151,31 @@ function union(size) {
 
 #define SIGN_EXT_8(n) \
   ((n) << 24 >> 24)
+
+#define rs \
+  ((code >>> 21) & 0x1f)
+
+#define rt \
+  ((code >>> 16) & 0x1f)
+
+#define rd \
+  ((code >>> 11) & 0x1f)
+
+// Console output
+#define MSG_INFO  'info'
+#define MSG_ERROR 'error'
+
+#define UDF_FRAMESIZERAW\
+  2352
+
+#define UDF_DATASIZE\
+  (UDF_FRAMESIZERAW - 12)
+
+#define BCD2INT(n)\
+  (parseInt((n)/16) * 10 + (n)%16)
+
+#define INT2BCD(n)\
+  (parseInt((n)/10) * 16 + (n)%10)
 
 // Declare our namespace
 'use strict';

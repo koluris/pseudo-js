@@ -80,28 +80,6 @@ function union(size) {
 
 
 
-// Declare our namespace
-'use strict';
-var pseudo = window.pseudo || {};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -114,6 +92,22 @@ var pseudo = window.pseudo || {};
 // Console output
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Declare our namespace
+'use strict';
+var pseudo = window.pseudo || {};
 
 
 
@@ -1389,25 +1383,25 @@ pseudo.CstrCop2 = (function() {
         execute(code) {
             switch(code & 0x3f) {
                 case 0: // BASIC
-                    switch(((code>>>21)&0x1f) & 7) {
+                    switch(((code >>> 21) & 0x1f) & 7) {
                         case 0: // MFC2
-                            pseudo.CstrMips.setbase(((code>>>16)&0x1f), pseudo.CstrCop2.opcodeMFC2(((code>>>11)&0x1f)));
+                            pseudo.CstrMips.setbase(((code >>> 16) & 0x1f), pseudo.CstrCop2.opcodeMFC2(((code >>> 11) & 0x1f)));
                             return;
 
                         case 2: // CFC2
-                            pseudo.CstrMips.setbase(((code>>>16)&0x1f), cop2c.uw[( ((code>>>11)&0x1f))]);
+                            pseudo.CstrMips.setbase(((code >>> 16) & 0x1f), cop2c.uw[( ((code >>> 11) & 0x1f))]);
                             return;
 
                         case 4: // MTC2
-                            pseudo.CstrCop2.opcodeMTC2(((code>>>11)&0x1f), pseudo.CstrMips.readbase(((code>>>16)&0x1f)));
+                            pseudo.CstrCop2.opcodeMTC2(((code >>> 11) & 0x1f), pseudo.CstrMips.readbase(((code >>> 16) & 0x1f)));
                             return;
 
                         case 6: // CTC2
-                            pseudo.CstrCop2.opcodeCTC2(((code>>>11)&0x1f), pseudo.CstrMips.readbase(((code>>>16)&0x1f)));
+                            pseudo.CstrCop2.opcodeCTC2(((code >>> 11) & 0x1f), pseudo.CstrMips.readbase(((code >>> 16) & 0x1f)));
                             return;
                     }
 
-                    pseudo.CstrMain.error('COP2 Basic ' + (((code>>>21)&0x1f) & 7));
+                    pseudo.CstrMain.error('COP2 Basic ' + (((code >>> 21) & 0x1f) & 7));
                     return;
 
                 
@@ -2076,82 +2070,82 @@ pseudo.CstrMdec = (function() {
 
 
 pseudo.CstrMem = (function() {
-  // This mask unifies the RAM mirrors (0, 8, A) into one unique case
-  const MEM_MASK = 0x00ffffff;
+    // This mask unifies the RAM mirrors (0, 8, A) into one unique case
+    const MEM_MASK = 0x00ffffff;
     
-  const MEM_BOUNDS_RAM = 0xf0800000 & MEM_MASK;
-  const MEM_BOUNDS_SCR = 0x1f800400 & MEM_MASK;
-  const MEM_BOUNDS_HWR = 0x1f804000 & MEM_MASK;
-  const MEM_BOUNDS_ROM = 0xbfc80000 & MEM_MASK;
+    const MEM_BOUNDS_RAM = 0xf0800000 & MEM_MASK;
+    const MEM_BOUNDS_SCR = 0x1f800400 & MEM_MASK;
+    const MEM_BOUNDS_HWR = 0x1f804000 & MEM_MASK;
+    const MEM_BOUNDS_ROM = 0xbfc80000 & MEM_MASK;
 
-  const PSX_EXE_HEADER_SIZE = 0x800;
+    const PSX_EXE_HEADER_SIZE = 0x800;
 
-  return {
-    __ram: union(0x200000),
-    __rom: union(0x80000),
-    __hwr: union(0x4000),
+    return {
+        __ram: union(0x200000),
+        __rom: union(0x80000),
+        __hwr: union(0x4000),
 
-    reset() {
-      // Reset all, except for BIOS
-      pseudo.CstrMem.__ram.ub.fill(0);
-      pseudo.CstrMem.__hwr.ub.fill(0);
-    },
+        reset() {
+            // Reset all, except for BIOS
+            pseudo.CstrMem.__ram.ub.fill(0);
+            pseudo.CstrMem.__hwr.ub.fill(0);
+        },
 
-    writeROM(data) {
-      pseudo.CstrMem.__rom.ub.set(new Uint8Array(data));
-    },
+        writeROM(data) {
+            pseudo.CstrMem.__rom.ub.set(new Uint8Array(data));
+        },
 
-    writeExecutable(data) {
-      const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
-      const offset = header[2 + 4] & (pseudo.CstrMem.__ram.ub.byteLength - 1); // Offset needs boundaries... huh?
-      const size   = header[2 + 5];
+        writeExecutable(data) {
+            const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
+            const offset = header[2 + 4] & (pseudo.CstrMem.__ram.ub.byteLength - 1); // Offset needs boundaries... huh?
+            const size   = header[2 + 5];
 
-      pseudo.CstrMem.__ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE, size), offset);
+            pseudo.CstrMem.__ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE, size), offset);
 
-      return header;
-    },
+            return header;
+        },
 
-    write: {
-      w(addr, data) {
-        if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (pseudo.CstrMips.writeOK()) { pseudo.CstrMem.__ram. uw[((addr)&(pseudo.CstrMem.__ram. uw.byteLength-1))>>>2] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { pseudo.CstrMem.__hwr. uw[((addr)&(pseudo.CstrMem.__hwr. uw.byteLength-1))>>>2] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { pseudo.CstrHardware.write. w(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } pseudo.CstrMain.error('Mem W ' +  32 + ' ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
-      },
+        write: {
+            w(addr, data) {
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (pseudo.CstrMips.writeOK()) { pseudo.CstrMem.__ram. uw[((addr)&(pseudo.CstrMem.__ram. uw.byteLength-1))>>>2] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { pseudo.CstrMem.__hwr. uw[((addr)&(pseudo.CstrMem.__hwr. uw.byteLength-1))>>>2] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { pseudo.CstrHardware.write. w(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } pseudo.CstrMain.error('Mem W ' +  32 + ' ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+            },
 
-      h(addr, data) {
-        if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (pseudo.CstrMips.writeOK()) { pseudo.CstrMem.__ram. uh[((addr)&(pseudo.CstrMem.__ram. uh.byteLength-1))>>>1] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { pseudo.CstrMem.__hwr. uh[((addr)&(pseudo.CstrMem.__hwr. uh.byteLength-1))>>>1] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { pseudo.CstrHardware.write. h(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } pseudo.CstrMain.error('Mem W ' +  16 + ' ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
-      },
+            h(addr, data) {
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (pseudo.CstrMips.writeOK()) { pseudo.CstrMem.__ram. uh[((addr)&(pseudo.CstrMem.__ram. uh.byteLength-1))>>>1] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { pseudo.CstrMem.__hwr. uh[((addr)&(pseudo.CstrMem.__hwr. uh.byteLength-1))>>>1] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { pseudo.CstrHardware.write. h(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } pseudo.CstrMain.error('Mem W ' +  16 + ' ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+            },
 
-      b(addr, data) {
-        if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (pseudo.CstrMips.writeOK()) { pseudo.CstrMem.__ram. ub[((addr)&(pseudo.CstrMem.__ram. ub.byteLength-1))>>>0] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { pseudo.CstrMem.__hwr. ub[((addr)&(pseudo.CstrMem.__hwr. ub.byteLength-1))>>>0] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { pseudo.CstrHardware.write. b(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } pseudo.CstrMain.error('Mem W ' +  08 + ' ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
-      }
-    },
+            b(addr, data) {
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (pseudo.CstrMips.writeOK()) { pseudo.CstrMem.__ram. ub[((addr)&(pseudo.CstrMem.__ram. ub.byteLength-1))>>>0] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { pseudo.CstrMem.__hwr. ub[((addr)&(pseudo.CstrMem.__hwr. ub.byteLength-1))>>>0] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { pseudo.CstrHardware.write. b(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } pseudo.CstrMain.error('Mem W ' +  08 + ' ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+            }
+        },
 
-    read: {
-      w(addr) {
-        if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return pseudo.CstrMem.__ram. uw[((addr)&(pseudo.CstrMem.__ram. uw.byteLength-1))>>>2]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return pseudo.CstrMem.__hwr. uw[((addr)&(pseudo.CstrMem.__hwr. uw.byteLength-1))>>>2]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return pseudo.CstrHardware.read. w(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return pseudo.CstrMem.__rom. uw[((addr)&(pseudo.CstrMem.__rom. uw.byteLength-1))>>>2]; } if ((addr) == 0xfffe0130) { return 0; } pseudo.CstrMain.error('Mem R ' +  32 + ' ' + pseudo.CstrMain.hex(addr)); return 0;
-      },
+        read: {
+            w(addr) {
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return pseudo.CstrMem.__ram. uw[((addr)&(pseudo.CstrMem.__ram. uw.byteLength-1))>>>2]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return pseudo.CstrMem.__hwr. uw[((addr)&(pseudo.CstrMem.__hwr. uw.byteLength-1))>>>2]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return pseudo.CstrHardware.read. w(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return pseudo.CstrMem.__rom. uw[((addr)&(pseudo.CstrMem.__rom. uw.byteLength-1))>>>2]; } if ((addr) == 0xfffe0130) { return 0; } pseudo.CstrMain.error('Mem R ' +  32 + ' ' + pseudo.CstrMain.hex(addr)); return 0;
+            },
 
-      h(addr) {
-        if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return pseudo.CstrMem.__ram. uh[((addr)&(pseudo.CstrMem.__ram. uh.byteLength-1))>>>1]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return pseudo.CstrMem.__hwr. uh[((addr)&(pseudo.CstrMem.__hwr. uh.byteLength-1))>>>1]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return pseudo.CstrHardware.read. h(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return pseudo.CstrMem.__rom. uh[((addr)&(pseudo.CstrMem.__rom. uh.byteLength-1))>>>1]; } if ((addr) == 0xfffe0130) { return 0; } pseudo.CstrMain.error('Mem R ' +  16 + ' ' + pseudo.CstrMain.hex(addr)); return 0;
-      },
+            h(addr) {
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return pseudo.CstrMem.__ram. uh[((addr)&(pseudo.CstrMem.__ram. uh.byteLength-1))>>>1]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return pseudo.CstrMem.__hwr. uh[((addr)&(pseudo.CstrMem.__hwr. uh.byteLength-1))>>>1]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return pseudo.CstrHardware.read. h(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return pseudo.CstrMem.__rom. uh[((addr)&(pseudo.CstrMem.__rom. uh.byteLength-1))>>>1]; } if ((addr) == 0xfffe0130) { return 0; } pseudo.CstrMain.error('Mem R ' +  16 + ' ' + pseudo.CstrMain.hex(addr)); return 0;
+            },
 
-      b(addr) {
-        if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return pseudo.CstrMem.__ram. ub[((addr)&(pseudo.CstrMem.__ram. ub.byteLength-1))>>>0]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return pseudo.CstrMem.__hwr. ub[((addr)&(pseudo.CstrMem.__hwr. ub.byteLength-1))>>>0]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return pseudo.CstrHardware.read. b(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return pseudo.CstrMem.__rom. ub[((addr)&(pseudo.CstrMem.__rom. ub.byteLength-1))>>>0]; } if ((addr) == 0xfffe0130) { return 0; } pseudo.CstrMain.error('Mem R ' +  08 + ' ' + pseudo.CstrMain.hex(addr)); return 0;
-      }
-    },
+            b(addr) {
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return pseudo.CstrMem.__ram. ub[((addr)&(pseudo.CstrMem.__ram. ub.byteLength-1))>>>0]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return pseudo.CstrMem.__hwr. ub[((addr)&(pseudo.CstrMem.__hwr. ub.byteLength-1))>>>0]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return pseudo.CstrHardware.read. b(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return pseudo.CstrMem.__rom. ub[((addr)&(pseudo.CstrMem.__rom. ub.byteLength-1))>>>0]; } if ((addr) == 0xfffe0130) { return 0; } pseudo.CstrMain.error('Mem R ' +  08 + ' ' + pseudo.CstrMain.hex(addr)); return 0;
+            }
+        },
 
-    executeDMA(addr) {
-      if (!pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] || pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0x11000002) {
-        return;
-      }
-      pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] &= 0xffffff;
+        executeDMA(addr) {
+            if (!pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] || pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0x11000002) {
+                return;
+            }
+            pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] &= 0xffffff;
 
-      while(--pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
-        pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] - 4) & 0xffffff;
-        pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] -= 4;
-      }
-      pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] = 0xffffff;
-    }
-  };
+            while(--pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+                pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] - 4) & 0xffffff;
+                pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] -= 4;
+            }
+            pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] = 0xffffff;
+        }
+    };
 })();
 
 
@@ -2260,37 +2254,37 @@ pseudo.CstrMips = (function() {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
                     case 0: // SLL
-                        r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] << ((code >>> 6) & 0x1f);
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)] << ((code >>> 6) & 0x1f);
                         return;
 
                     case 2: // SRL
-                        r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] >>> ((code >>> 6) & 0x1f);
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)] >>> ((code >>> 6) & 0x1f);
                         return;
 
                     case 3: // SRA
-                        r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)]) << 0 >> 0) >> ((code >>> 6) & 0x1f);
+                        r[((code >>> 11) & 0x1f)] = ((r[((code >>> 16) & 0x1f)]) << 0 >> 0) >> ((code >>> 6) & 0x1f);
                         return;
 
                     case 4: // SLLV
-                        r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] << (r[((code>>>21)&0x1f)] & 0x1f);
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)] << (r[((code >>> 21) & 0x1f)] & 0x1f);
                         return;
 
                     case 6: // SRLV
-                        r[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)] >>> (r[((code>>>21)&0x1f)] & 0x1f);
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)] >>> (r[((code >>> 21) & 0x1f)] & 0x1f);
                         return;
 
                     case 7: // SRAV
-                        r[((code>>>11)&0x1f)] = ((r[((code>>>16)&0x1f)]) << 0 >> 0) >> (r[((code>>>21)&0x1f)] & 0x1f);
+                        r[((code >>> 11) & 0x1f)] = ((r[((code >>> 16) & 0x1f)]) << 0 >> 0) >> (r[((code >>> 21) & 0x1f)] & 0x1f);
                         return;
 
                     case 8: // JR
-                        branch(r[((code>>>21)&0x1f)]);
+                        branch(r[((code >>> 21) & 0x1f)]);
                         if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { var char = String.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); divOutput.append(char.toUpperCase()); } };
                         return;
 
                     case 9: // JALR
-                        r[((code>>>11)&0x1f)] = r[32] + 4;
-                        branch(r[((code>>>21)&0x1f)]);
+                        r[((code >>> 11) & 0x1f)] = r[32] + 4;
+                        branch(r[((code >>> 21) & 0x1f)]);
                         return;
 
                     case 12: // SYSCALL
@@ -2302,69 +2296,69 @@ pseudo.CstrMips = (function() {
                         return;
 
                     case 16: // MFHI
-                        r[((code>>>11)&0x1f)] = r[34];
+                        r[((code >>> 11) & 0x1f)] = r[34];
                         return;
 
                     case 17: // MTHI
-                        r[34] = r[((code>>>21)&0x1f)];
+                        r[34] = r[((code >>> 21) & 0x1f)];
                         return;
 
                     case 18: // MFLO
-                        r[((code>>>11)&0x1f)] = r[33];
+                        r[((code >>> 11) & 0x1f)] = r[33];
                         return;
 
                     case 19: // MTLO
-                        r[33] = r[((code>>>21)&0x1f)];
+                        r[33] = r[((code >>> 21) & 0x1f)];
                         return;
 
                     case 24: // MULT
-                        { const temp = ((r[((code>>>21)&0x1f)]) << 0 >> 0) *  ((r[((code>>>16)&0x1f)]) << 0 >> 0); r[33] = temp & 0xffffffff; r[34] = Math.floor(temp / power32); };
+                        { const temp = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) *  ((r[((code >>> 16) & 0x1f)]) << 0 >> 0); r[33] = temp & 0xffffffff; r[34] = Math.floor(temp / power32); };
                         return;
 
                     case 25: // MULTU
-                        { const temp = r[((code>>>21)&0x1f)] *  r[((code>>>16)&0x1f)]; r[33] = temp & 0xffffffff; r[34] = Math.floor(temp / power32); };
+                        { const temp = r[((code >>> 21) & 0x1f)] *  r[((code >>> 16) & 0x1f)]; r[33] = temp & 0xffffffff; r[34] = Math.floor(temp / power32); };
                         return;
 
                     case 26: // DIV
-                        if ( ((r[((code>>>16)&0x1f)]) << 0 >> 0)) { r[33] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) /  ((r[((code>>>16)&0x1f)]) << 0 >> 0); r[34] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) %  ((r[((code>>>16)&0x1f)]) << 0 >> 0); };
+                        if ( ((r[((code >>> 16) & 0x1f)]) << 0 >> 0)) { r[33] = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) /  ((r[((code >>> 16) & 0x1f)]) << 0 >> 0); r[34] = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) %  ((r[((code >>> 16) & 0x1f)]) << 0 >> 0); };
                         return;
 
                     case 27: // DIVU
-                        if ( r[((code>>>16)&0x1f)]) { r[33] = r[((code>>>21)&0x1f)] /  r[((code>>>16)&0x1f)]; r[34] = r[((code>>>21)&0x1f)] %  r[((code>>>16)&0x1f)]; };
+                        if ( r[((code >>> 16) & 0x1f)]) { r[33] = r[((code >>> 21) & 0x1f)] /  r[((code >>> 16) & 0x1f)]; r[34] = r[((code >>> 21) & 0x1f)] %  r[((code >>> 16) & 0x1f)]; };
                         return;
 
                     case 32: // ADD
                     case 33: // ADDU
-                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] + r[((code>>>16)&0x1f)];
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] + r[((code >>> 16) & 0x1f)];
                         return;
 
                     case 34: // SUB
                     case 35: // SUBU
-                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] - r[((code>>>16)&0x1f)];
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] - r[((code >>> 16) & 0x1f)];
                         return;
 
                     case 36: // AND
-                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] & r[((code>>>16)&0x1f)];
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] & r[((code >>> 16) & 0x1f)];
                         return;
 
                     case 37: // OR
-                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)];
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] | r[((code >>> 16) & 0x1f)];
                         return;
 
                     case 38: // XOR
-                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] ^ r[((code>>>16)&0x1f)];
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] ^ r[((code >>> 16) & 0x1f)];
                         return;
 
                     case 39: // NOR
-                        r[((code>>>11)&0x1f)] = (~(r[((code>>>21)&0x1f)] | r[((code>>>16)&0x1f)]));
+                        r[((code >>> 11) & 0x1f)] = (~(r[((code >>> 21) & 0x1f)] | r[((code >>> 16) & 0x1f)]));
                         return;
 
                     case 42: // SLT
-                        r[((code>>>11)&0x1f)] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) < ((r[((code>>>16)&0x1f)]) << 0 >> 0);
+                        r[((code >>> 11) & 0x1f)] = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) < ((r[((code >>> 16) & 0x1f)]) << 0 >> 0);
                         return;
 
                     case 43: // SLTU
-                        r[((code>>>11)&0x1f)] = r[((code>>>21)&0x1f)] < r[((code>>>16)&0x1f)];
+                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] < r[((code >>> 16) & 0x1f)];
                         return;
                 }
 
@@ -2372,12 +2366,12 @@ pseudo.CstrMips = (function() {
                 return;
 
             case 1: // REGIMM
-                switch(((code>>>16)&0x1f)) {
+                switch(((code >>> 16) & 0x1f)) {
                     case 16: // BLTZAL
                         r[31] = r[32] + 4;
 
                     case 0: // BLTZ
-                        if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <  0) {
+                        if (((r[((code >>> 21) & 0x1f)]) << 0 >> 0) <  0) {
                             branch((r[32] + ((((code) << 16 >> 16)) << 2)));
                         }
                         return;
@@ -2386,13 +2380,13 @@ pseudo.CstrMips = (function() {
                         r[31] = r[32] + 4;
 
                     case 1: // BGEZ
-                        if (((r[((code>>>21)&0x1f)]) << 0 >> 0) >= 0) {
+                        if (((r[((code >>> 21) & 0x1f)]) << 0 >> 0) >= 0) {
                             branch((r[32] + ((((code) << 16 >> 16)) << 2)));
                         }
                         return;
                 }
 
-                pseudo.CstrMain.error('Bcond CPU instruction ' + ((code>>>16)&0x1f));
+                pseudo.CstrMain.error('Bcond CPU instruction ' + ((code >>> 16) & 0x1f));
                 return;
 
             case 2: // J
@@ -2405,66 +2399,66 @@ pseudo.CstrMips = (function() {
                 return;
 
             case 4: // BEQ
-                if (r[((code>>>21)&0x1f)] === r[((code>>>16)&0x1f)]) {
+                if (r[((code >>> 21) & 0x1f)] === r[((code >>> 16) & 0x1f)]) {
                     branch((r[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
 
             case 5: // BNE
-                if (r[((code>>>21)&0x1f)] !== r[((code>>>16)&0x1f)]) {
+                if (r[((code >>> 21) & 0x1f)] !== r[((code >>> 16) & 0x1f)]) {
                     branch((r[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
 
             case 6: // BLEZ
-                if (((r[((code>>>21)&0x1f)]) << 0 >> 0) <= 0) {
+                if (((r[((code >>> 21) & 0x1f)]) << 0 >> 0) <= 0) {
                     branch((r[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
 
             case 7: // BGTZ
-                if (((r[((code>>>21)&0x1f)]) << 0 >> 0) > 0) {
+                if (((r[((code >>> 21) & 0x1f)]) << 0 >> 0) > 0) {
                     branch((r[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
 
             case 8: // ADDI
             case 9: // ADDIU
-                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] + (((code) << 16 >> 16));
+                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16));
                 return;
 
             case 10: // SLTI
-                r[((code>>>16)&0x1f)] = ((r[((code>>>21)&0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
+                r[((code >>> 16) & 0x1f)] = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
                 return;
 
             case 11: // SLTIU
-                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] < (code & 0xffff);
+                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] < (code & 0xffff);
                 return;
 
             case 12: // ANDI
-                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] & (code & 0xffff);
+                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] & (code & 0xffff);
                 return;
 
             case 13: // ORI
-                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] | (code & 0xffff);
+                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] | (code & 0xffff);
                 return;
 
             case 14: // XORI
-                r[((code>>>16)&0x1f)] = r[((code>>>21)&0x1f)] ^ (code & 0xffff);
+                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] ^ (code & 0xffff);
                 return;
 
             case 15: // LUI
-                r[((code>>>16)&0x1f)] = code << 16;
+                r[((code >>> 16) & 0x1f)] = code << 16;
                 return;
 
             case 16: // COP0
-                switch(((code>>>21)&0x1f)) {
+                switch(((code >>> 21) & 0x1f)) {
                     case 0: // MFC0
-                        r[((code>>>16)&0x1f)] = copr[((code>>>11)&0x1f)];
+                        r[((code >>> 16) & 0x1f)] = copr[((code >>> 11) & 0x1f)];
                         return;
 
                     case 4: // MTC0
-                        copr[((code>>>11)&0x1f)] = r[((code>>>16)&0x1f)];
+                        copr[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)];
                         return;
 
                     case 16: // RFE
@@ -2472,7 +2466,7 @@ pseudo.CstrMips = (function() {
                         return;
                 }
 
-                pseudo.CstrMain.error('Coprocessor 0 instruction ' + ((code>>>21)&0x1f));
+                pseudo.CstrMain.error('Coprocessor 0 instruction ' + ((code >>> 21) & 0x1f));
                 return;
 
             case 18: // COP2
@@ -2480,59 +2474,59 @@ pseudo.CstrMips = (function() {
                 return;
 
             case 32: // LB
-                r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
+                r[((code >>> 16) & 0x1f)] = ((pseudo.CstrMem.read.b((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
                 return;
 
             case 33: // LH
-                r[((code>>>16)&0x1f)] = ((pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
+                r[((code >>> 16) & 0x1f)] = ((pseudo.CstrMem.read.h((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
                 return;
 
             case 34: // LWL
-                r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)] & mask[ 0][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3))) << shift[ 0][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]);
+                r[((code >>> 16) & 0x1f)] = (r[((code >>> 16) & 0x1f)] & mask[ 0][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) << shift[ 0][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
                 return;
 
             case 35: // LW
-                r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))));
+                r[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
 
             case 36: // LBU
-                r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.b((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))));
+                r[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.b((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
 
             case 37: // LHU
-                r[((code>>>16)&0x1f)] = pseudo.CstrMem.read.h((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))));
+                r[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.h((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
 
             case 38: // LWR
-                r[((code>>>16)&0x1f)] = (r[((code>>>16)&0x1f)] & mask[ 1][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3))) >>> shift[ 1][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]);
+                r[((code >>> 16) & 0x1f)] = (r[((code >>> 16) & 0x1f)] & mask[ 1][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) >>> shift[ 1][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
                 return;
 
             case 40: // SB
-                pseudo.CstrMem.write.b((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
+                pseudo.CstrMem.write.b((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), r[((code >>> 16) & 0x1f)]);
                 return;
 
             case 41: // SH
-                pseudo.CstrMem.write.h((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
+                pseudo.CstrMem.write.h((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), r[((code >>> 16) & 0x1f)]);
                 return;
 
             case 42: // SWL
-                pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3)), (r[((code>>>16)&0x1f)] >>> shift[ 2][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]));
+                pseudo.CstrMem.write.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (r[((code >>> 16) & 0x1f)] >>> shift[ 2][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
                 return;
 
             case 43: // SW
-                pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))), r[((code>>>16)&0x1f)]);
+                pseudo.CstrMem.write.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), r[((code >>> 16) & 0x1f)]);
                 return;
 
             case 46: // SWR
-                pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3)), (r[((code>>>16)&0x1f)] << shift[ 3][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][(r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))) & 3]));
+                pseudo.CstrMem.write.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (r[((code >>> 16) & 0x1f)] << shift[ 3][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
                 return;
 
             case 50: // LWC2
-                pseudo.CstrCop2.opcodeMTC2(((code>>>16)&0x1f), pseudo.CstrMem.read.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16)))));
+                pseudo.CstrCop2.opcodeMTC2(((code >>> 16) & 0x1f), pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
                 return;
 
             case 58: // SWC2
-                pseudo.CstrMem.write.w((r[((code>>>21)&0x1f)] + (((code) << 16 >> 16))), pseudo.CstrCop2.opcodeMFC2(((code>>>16)&0x1f)));
+                pseudo.CstrMem.write.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), pseudo.CstrCop2.opcodeMFC2(((code >>> 16) & 0x1f)));
                 return;
         }
 
