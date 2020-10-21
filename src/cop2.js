@@ -122,31 +122,31 @@
 #define LZCS   oooo(cop2d.uw, 30)    /* Lead zero/one count source data */
 #define LZCR   oooo(cop2d.uw, 31)    /* Lead zero/one count process result */
 
-#define VX(n)  (n < 3 ? __oo(cop2d.sh, (n << 1) + 0, 0) : __oo(cop2d.sh,  9, 0))
-#define VY(n)  (n < 3 ? __oo(cop2d.sh, (n << 1) + 0, 1) : __oo(cop2d.sh, 10, 0))
-#define VZ(n)  (n < 3 ? __oo(cop2d.sh, (n << 1) + 1, 0) : __oo(cop2d.sh, 11, 0))
+#define VX(n)  (n < 3 ? __oo(cop2d.sh, ((n << 1) + 0), 0) : __oo(cop2d.sh,  9, 0))
+#define VY(n)  (n < 3 ? __oo(cop2d.sh, ((n << 1) + 0), 1) : __oo(cop2d.sh, 10, 0))
+#define VZ(n)  (n < 3 ? __oo(cop2d.sh, ((n << 1) + 1), 0) : __oo(cop2d.sh, 11, 0))
 
-#define SX(n)  __oo(cop2d.sh, n + 12, 0)
-#define SY(n)  __oo(cop2d.sh, n + 12, 1)
-#define SZ(n)  __oo(cop2d.uh, n + 17, 0)
+#define SX(n)  __oo(cop2d.sh, (n + 12), 0)
+#define SY(n)  __oo(cop2d.sh, (n + 12), 1)
+#define SZ(n)  __oo(cop2d.uh, (n + 17), 0)
 
-#define CV1(n) (n < 3 ? oooo(cop2c.sw, (n << 3) + 5) : 0)
-#define CV2(n) (n < 3 ? oooo(cop2c.sw, (n << 3) + 6) : 0)
-#define CV3(n) (n < 3 ? oooo(cop2c.sw, (n << 3) + 7) : 0)
+#define CV1(n) (n < 3 ? oooo(cop2c.sw, ((n << 3) + 5)) : 0)
+#define CV2(n) (n < 3 ? oooo(cop2c.sw, ((n << 3) + 6)) : 0)
+#define CV3(n) (n < 3 ? oooo(cop2c.sw, ((n << 3) + 7)) : 0)
 
-#define MX11(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 0, 0) : 0)
-#define MX12(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 0, 1) : 0)
-#define MX13(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 1, 0) : 0)
-#define MX21(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 1, 1) : 0)
-#define MX22(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 2, 0) : 0)
-#define MX23(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 2, 1) : 0)
-#define MX31(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 3, 0) : 0)
-#define MX32(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 3, 1) : 0)
-#define MX33(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 4, 0) : 0)
+#define MX11(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 0), 0) : 0)
+#define MX12(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 0), 1) : 0)
+#define MX13(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 1), 0) : 0)
+#define MX21(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 1), 1) : 0)
+#define MX22(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 2), 0) : 0)
+#define MX23(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 2), 1) : 0)
+#define MX31(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 3), 0) : 0)
+#define MX32(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 3), 1) : 0)
+#define MX33(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 4), 0) : 0)
 
 #define LIM(a, min, max, bit) \
-  (((a) < min) ? (FLAG |= (1 << bit), min) : \
-  (((a) > max) ? (FLAG |= (1 << bit), max) : ((a))))
+    (((a) < min) ? (FLAG |= (1 << bit), min) : \
+    (((a) > max) ? (FLAG |= (1 << bit), max) : ((a))))
 
 #define limB1(a) LIM((a), -32768, 32767, 24)
 #define limB2(a) LIM((a), -32768, 32767, 23)
