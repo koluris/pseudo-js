@@ -113,19 +113,19 @@ function union(size) {
   mem[((addr)&(mem.bLen-1))>>>0]
 
 #define dpcr \
-  directMemW(hwr.uw, 0x10f0)
+  directMemW(mem.__hwr.uw, 0x10f0)
 
 #define dicr \
-  directMemW(hwr.uw, 0x10f4)
+  directMemW(mem.__hwr.uw, 0x10f4)
 
 #define madr \
-  directMemW(hwr.uw, (addr&0xfff0)|0)
+  directMemW(mem.__hwr.uw, (addr&0xfff0)|0)
 
 #define bcr \
-  directMemW(hwr.uw, (addr&0xfff0)|4)
+  directMemW(mem.__hwr.uw, (addr&0xfff0)|4)
 
 #define chcr \
-  directMemW(hwr.uw, (addr&0xfff0)|8)
+  directMemW(mem.__hwr.uw, (addr&0xfff0)|8)
 
 #define data32\
   directMemW(mem.__hwr.uw, 0x1070)

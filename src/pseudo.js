@@ -1,6 +1,3 @@
-#define ram  mem.__ram
-#define rom  mem.__rom
-
 #define EXE_HEADER_SIZE \
     0x800
 
@@ -168,6 +165,3 @@ pseudo.CstrMain = (function() {
         }
     };
 })();
-
-#undef ram
-#undef rom

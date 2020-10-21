@@ -1,5 +1,3 @@
-#define hwr  mem.__hwr
-
 pseudo.CstrBus = (function() {
     // Interrupts
     const IRQ_ENABLED  = 1;
@@ -105,5 +103,3 @@ pseudo.CstrBus = (function() {
         }
     };
 })();
-
-#undef hwr
