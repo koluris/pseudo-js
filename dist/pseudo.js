@@ -3419,7 +3419,7 @@ pseudo.CstrTexCache = (function() {
                     break;
 
                 default:
-                    pseudo.CstrMain.error('Texture Cache Unknown ' + ((tp >>> 7) & 3));
+                    console.info('Texture Cache Unknown ' + ((tp >>> 7) & 3));
                     break;
             }
 

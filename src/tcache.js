@@ -116,7 +116,7 @@ pseudo.CstrTexCache = (function() {
                     break;
 
                 default:
-                    psx.error('Texture Cache Unknown ' + ((tp >>> 7) & 3));
+                    console.info('Texture Cache Unknown ' + ((tp >>> 7) & 3));
                     break;
             }
 
