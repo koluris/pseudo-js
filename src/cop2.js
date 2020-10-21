@@ -122,17 +122,27 @@
 #define LZCS   oooo(cop2d.uw, 30)    /* Lead zero/one count source data */
 #define LZCR   oooo(cop2d.uw, 31)    /* Lead zero/one count process result */
 
-#define VX(n)  __oo(cop2d.sh, (n << 1) + 0, 0)
-#define VY(n)  __oo(cop2d.sh, (n << 1) + 0, 1)
-#define VZ(n)  __oo(cop2d.sh, (n << 1) + 1, 0)
+#define VX(n)  (n < 3 ? __oo(cop2d.sh, (n << 1) + 0, 0) : __oo(cop2d.sh,  9, 0))
+#define VY(n)  (n < 3 ? __oo(cop2d.sh, (n << 1) + 0, 1) : __oo(cop2d.sh, 10, 0))
+#define VZ(n)  (n < 3 ? __oo(cop2d.sh, (n << 1) + 1, 0) : __oo(cop2d.sh, 11, 0))
 
 #define SX(n)  __oo(cop2d.sh, n + 12, 0)
 #define SY(n)  __oo(cop2d.sh, n + 12, 1)
 #define SZ(n)  __oo(cop2d.uh, n + 17, 0)
 
-// General
-#define FIX(a) \
-    ((a) >> 12)
+#define CV1(n) (n < 3 ? oooo(cop2c.sw, (n << 3) + 5) : 0)
+#define CV2(n) (n < 3 ? oooo(cop2c.sw, (n << 3) + 6) : 0)
+#define CV3(n) (n < 3 ? oooo(cop2c.sw, (n << 3) + 7) : 0)
+
+#define MX11(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 0, 0) : 0)
+#define MX12(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 0, 1) : 0)
+#define MX13(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 1, 0) : 0)
+#define MX21(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 1, 1) : 0)
+#define MX22(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 2, 0) : 0)
+#define MX23(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 2, 1) : 0)
+#define MX31(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 3, 0) : 0)
+#define MX32(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 3, 1) : 0)
+#define MX33(n) (n < 3 ? __oo(cop2c.sh, (n << 3) + 4, 0) : 0)
 
 #define LIM(a, min, max, bit) \
   (((a) < min) ? (FLAG |= (1 << bit), min) : \
@@ -149,18 +159,10 @@
 #define limG2(a) LIM((a),  -1024,  1023, 13)
 #define limH( a) LIM((a),      0,  4096, 12)
 
-// #define limB1(a) LIM(a, -32768.0, 32767.0, 24)
-// #define limB2(a) LIM(a, -32768.0, 32767.0, 23)
-// #define limB3(a) LIM(a, -32768.0, 32767.0, 22)
-// #define limD( a) LIM(a,      0.0, 65535.0, 18)
-// #define limG1(a) LIM(a,  -1024.0,  1023.0, 14)
-// #define limG2(a) LIM(a,  -1024.0,  1023.0, 13)
-// #define limH( a) LIM(a,      0.0,  4096.0, 12)
-
-#define MAC2IR() \
-    IR1 = limB1(MAC1); \
-    IR2 = limB2(MAC2); \
-    IR3 = limB3(MAC3)
+#define GTE_SF(op) ((op >>> 19) & 1)
+#define GTE_MX(op) ((op >>> 17) & 3)
+#define GTE_V( op) ((op >>> 15) & 3)
+#define GTE_CV(op) ((op >>> 13) & 3)
 
 pseudo.CstrCop2 = (function() {
     const cop2c = union(32 * 4);
@@ -211,32 +213,9 @@ pseudo.CstrCop2 = (function() {
                     psx.error('COP2 Basic ' + (rs & 7));
                     return;
 
+                /* pdx-068, ff9, va */
                 case 1: // RTPS
                     {
-                        // FLAG = 0;
-
-                        // MAC1 = FIX(R11 * VX0 + R12 * VY0 + R13 * VZ0) + TRX;
-                        // MAC2 = FIX(R21 * VX0 + R22 * VY0 + R23 * VZ0) + TRY;
-                        // MAC3 = FIX(R31 * VX0 + R32 * VY0 + R33 * VZ0) + TRZ;
-
-                        // MAC2IR();
-
-                        // SZ0  = SZ1;
-                        // SZ1  = SZ2;
-                        // SZ2  = SZ3;
-                        // SZ3  = limD(MAC3);
-
-                        // const quotient = (H * 4096.0) / SZ3;
-
-                        // SXY0 = SXY1;
-                        // SXY1 = SXY2;
-
-                        // SX2  = limG1(FIX(IR1 * quotient) + OFX);
-                        // SY2  = limG2(FIX(IR2 * quotient) + OFY);
-
-                        // MAC0 = FIX(DQA * quotient) + DQB;
-                        // IR0  = limH(MAC0);
-
                         FLAG = 0;
 
                         MAC1 = ((TRX << 12) + (R11 * VX0) + (R12 * VY0) + (R13 * VZ0)) >> 12;
@@ -264,34 +243,9 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
+                /* pdx-068, ff9, va */
                 case 48: // RTPT
                     {
-                        // var quotient;
-
-                        // FLAG = 0;
-                        // SZ0  = SZ3;
-
-                        // for (var v = 0; v < 3; v++) {
-                        //     const v1 = VX(v);
-                        //     const v2 = VY(v);
-                        //     const v3 = VZ(v);
-
-                        //     MAC1 = FIX(R11 * v1 + R12 * v2 + R13 * v3) + TRX;
-                        //     MAC2 = FIX(R21 * v1 + R22 * v2 + R23 * v3) + TRY;
-                        //     MAC3 = FIX(R31 * v1 + R32 * v2 + R33 * v3) + TRZ;
-
-                        //     MAC2IR();
-
-                        //     SZ(v) = limD(MAC3);
-                        //     quotient = (H * 4096.0) / SZ(v);
-              
-                        //     SX(v) = limG1(FIX(IR1 * quotient) + OFX);
-                        //     SY(v) = limG2(FIX(IR2 * quotient) + OFY);
-                        // }
-
-                        // MAC0 = FIX(DQA * quotient) + DQB;
-                        // IR0  = limH(MAC0);
-
                         var quotient;
 
                         FLAG = 0;
@@ -319,6 +273,120 @@ pseudo.CstrCop2 = (function() {
 
                         MAC0 = DQB + (DQA * quotient);
                         IR0 = limH(MAC0 >> 12);
+                    }
+                    return;
+
+                /* pdx-068, anelic */
+                case 6: // NCLIP
+                    {
+                        FLAG = 0;
+
+                        MAC0 = SX0 * (SY1 - SY2) + SX1 * (SY2 - SY0) + SX2 * (SY0 - SY1);
+                    }
+                    return;
+
+                /* anelic */
+                case 18: // MVMVA
+                    {
+                        const shift = 12 * GTE_SF(code & 0x1ffffff);
+                        
+                        const cv = GTE_CV(code & 0x1ffffff);
+                        const mx = GTE_MX(code & 0x1ffffff);
+                        
+                        const v = GTE_V(code & 0x1ffffff);
+                        const v1 = VX(v);
+                        const v2 = VY(v);
+                        const v3 = VZ(v);
+
+                        FLAG = 0;
+
+                        MAC1 = ((CV1(cv) << 12) + (MX11(mx) * v1) + (MX12(mx) * v2) + (MX13(mx) * v3)) >> shift;
+                        MAC2 = ((CV2(cv) << 12) + (MX21(mx) * v1) + (MX22(mx) * v2) + (MX23(mx) * v3)) >> shift;
+                        MAC3 = ((CV3(cv) << 12) + (MX31(mx) * v1) + (MX32(mx) * v2) + (MX33(mx) * v3)) >> shift;
+
+                        IR1 = limB1(MAC1);
+                        IR2 = limB2(MAC2);
+                        IR3 = limB3(MAC3);
+                    }
+                    return;
+
+                /* pdx-068, trancetro */
+                case 45: // AVSZ3
+                    {
+                        FLAG = 0;
+
+	                    MAC0 = (ZSF3 * SZ1) + (ZSF3 * SZ2) + (ZSF3 * SZ3);
+	                    OTZ  = limD(MAC0 >> 12);
+                    }
+                    return;
+
+                /* t-rex */
+                case 61: // GPF
+                    {
+                        const shift = 12 * GTE_SF(code & 0x1ffffff);
+
+                        FLAG = 0;
+
+                        MAC1 = (IR0 * IR1) >> shift;
+                        MAC2 = (IR0 * IR2) >> shift;
+                        MAC3 = (IR0 * IR3) >> shift;
+
+                        IR1 = limB1(MAC1);
+                        IR2 = limB2(MAC2);
+                        IR3 = limB3(MAC3);
+
+                        RGB0  = RGB1;
+                        RGB1  = RGB2;
+                        CODE2 = CODE;
+
+                        R2 = limC1(MAC1 >> 4);
+                        G2 = limC2(MAC2 >> 4);
+                        B2 = limC3(MAC3 >> 4);
+                    }
+                    return;
+
+                /* t-rex */
+                case 22: // NCDT
+                    {
+                        FLAG = 0;
+
+                        for (var v = 0; v < 3; v++) {
+                            const v1 = VX(v);
+                            const v2 = VY(v);
+                            const v3 = VZ(v);
+
+                            MAC1 = ((L11 * v1) + (L12 * v2) + (L13 * v3)) >> 12;
+                            MAC2 = ((L21 * v1) + (L22 * v2) + (L23 * v3)) >> 12;
+                            MAC3 = ((L31 * v1) + (L32 * v2) + (L33 * v3)) >> 12;
+
+                            IR1 = limB1(MAC1);
+                            IR2 = limB2(MAC2);
+                            IR3 = limB3(MAC3);
+
+                            MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
+                            MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
+                            MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
+
+                            IR1 = limB1(MAC1);
+                            IR2 = limB2(MAC2);
+                            IR3 = limB3(MAC3);
+
+                            MAC1 = (((R << 4) * IR1) + (IR0 * limB1(RFC - ((R * IR1) >> 8)))) >> 12;
+                            MAC2 = (((G << 4) * IR2) + (IR0 * limB2(GFC - ((G * IR2) >> 8)))) >> 12;
+                            MAC3 = (((B << 4) * IR3) + (IR0 * limB3(BFC - ((B * IR3) >> 8)))) >> 12;
+
+                            RGB0  = RGB1;
+                            RGB1  = RGB2;
+                            CODE2 = CODE;
+
+                            R2 = limC1(MAC1 >> 4);
+                            G2 = limC2(MAC2 >> 4);
+                            B2 = limC3(MAC3 >> 4);
+                        }
+
+                        IR1 = limB1(MAC1);
+                        IR2 = limB2(MAC2);
+                        IR3 = limB3(MAC3);
                     }
                     return;
             }
