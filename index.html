@@ -291,14 +291,12 @@
       var blink    = $('#blink');
       var kb       = $('#kb');
       var res      = $('#resolution');
-      var double   = $('#double');
       var output   = $('#output');
       var dropzone = $('#dropzone');
-      var footer   = $('#footer');
 
       // Startup
       setTimeout(function(){
-        pseudo.CstrMain.awake(screen, blink, kb, res, double, output, dropzone, footer);
+        pseudo.CstrMain.awake(screen, blink, kb, res, output, dropzone);
       }, 1000);
     });
   </script>

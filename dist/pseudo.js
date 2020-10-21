@@ -2569,11 +2569,11 @@ pseudo.CstrMain = (function() {
 
   // Exposed class functions/variables
   return {
-    awake(screen, blink, kb, res, double, output, dropzone, footer) {
+    awake(screen, blink, kb, res, output, dropzone) {
       divDropzone = dropzone;
          unusable = false;
       
-      pseudo.CstrRender.awake(screen, res, double, footer);
+      pseudo.CstrRender.awake(screen, res);
        pseudo.CstrAudio.awake();
        pseudo.CstrCdrom.awake(blink, kb);
          pseudo.CstrMips.awake(output);
@@ -2798,17 +2798,15 @@ pseudo.CstrMain = (function() {
 
 
 pseudo.CstrRender = (function() {
-  var divScreen, divRes, divDouble, divFooter;
-  
+  var divScreen, divRes;
   var ctx, attrib, bfr; // 'webgl', { preserveDrawingBuffer: true } Context
   var blend, bit, ofs;
   var drawArea, spriteTP;
 
   // Resolution
   var res = {
-        native: { w:   0, h:   0 },
-      override: { w: 320, h: 240 },
-    multiplier: 1
+    w: 0,
+    h: 0,
   };
 
   // Generic function for shaders
@@ -2822,17 +2820,15 @@ pseudo.CstrRender = (function() {
   }
 
   function drawAreaCalc(n) {
-    return Math.round((n * (res.native.w * res.multiplier)) / 100);
+    return Math.round((n * res.w) / 100);
   }
 
   // Exposed class functions/variables
   return {
-    awake(screen, resolution, double, footer) {
+    awake(screen, resolution) {
       // Get HTML elements
       divScreen = screen[0];
       divRes    = resolution[0];
-      divDouble = double;
-      divFooter = footer;
 
       // 'webgl', { preserveDrawingBuffer: true } Canvas
       ctx = divScreen.getContext('webgl', { preserveDrawingBuffer: true });
@@ -2898,28 +2894,26 @@ pseudo.CstrRender = (function() {
 
       // Texture Cache
       pseudo.CstrTexCache.reset(ctx);
-      pseudo.CstrRender.resize({ w: 320, h: 240 });
+      pseudo.CstrRender.resize({ w: 640, h: 480 });
     },
 
     resize(data) {
         // Same resolution? Ciao!
-        if (data.w === res.native.w && data.h === res.native.h) {
+        if (data.w === res.w && data.h === res.h) {
             return;
         }
 
         // Check if we have a valid resolution
         if (data.w > 0 && data.h > 0) {
             // Store valid resolution
-            res.native.w = data.w;
-            res.native.h = data.h;
+            res.w = data.w;
+            res.h = data.h;
           
-            divRes.innerText = data.w + ' x ' + data.h;
-            divScreen.width  = 640;
-            divScreen.height    = 480;
-
-            ctx.uniform2f(attrib._r, data.w / 2, data.h / 2);
-            ctx.viewport((640 - data.w) / 2, (480 - data.h) / 2, data.w, data.h);
+            ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
+            ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
             ctx.clear(ctx.COLOR_BUFFER_BIT);
+
+            divRes.innerText = res.w + ' x ' + res.h;
         }
     },
 

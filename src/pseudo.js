@@ -74,11 +74,11 @@ pseudo.CstrMain = (function() {
 
   // Exposed class functions/variables
   return {
-    awake(screen, blink, kb, res, double, output, dropzone, footer) {
+    awake(screen, blink, kb, res, output, dropzone) {
       divDropzone = dropzone;
          unusable = false;
       
-      render.awake(screen, res, double, footer);
+      render.awake(screen, res);
        audio.awake();
        cdrom.awake(blink, kb);
          cpu.awake(output);
