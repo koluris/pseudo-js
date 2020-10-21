@@ -178,7 +178,7 @@ pseudo.CstrCop2 = (function() {
 
     function divide(n, d) {
         if (n >= 0 && n < d * 2) {
-            return ((SIGN_EXT_32(n) << 16) + d / 2) / d;
+            return Math.floor(((SIGN_EXT_32(n) << 16) + d / 2) / d);
         }
         return 0xffffffff;
     }
@@ -387,6 +387,44 @@ pseudo.CstrCop2 = (function() {
                         IR1 = limB1(MAC1);
                         IR2 = limB2(MAC2);
                         IR3 = limB3(MAC3);
+                    }
+                    return;
+
+                case 27: // NCCS
+                    {
+                        FLAG = 0;
+
+                        MAC1 = ((L11 * VX0) + (L12 * VY0) + (L13 * VZ0)) >> 12;
+                        MAC2 = ((L21 * VX0) + (L22 * VY0) + (L23 * VZ0)) >> 12;
+                        MAC3 = ((L31 * VX0) + (L32 * VY0) + (L33 * VZ0)) >> 12;
+
+                        IR1 = limB1(MAC1);
+                        IR2 = limB2(MAC2);
+                        IR3 = limB3(MAC3);
+
+                        MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
+                        MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
+                        MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
+
+                        IR1 = limB1(MAC1);
+                        IR2 = limB2(MAC2);
+                        IR3 = limB3(MAC3);
+
+                        MAC1 = (R * IR1) >> 8;
+                        MAC2 = (G * IR2) >> 8;
+                        MAC3 = (B * IR3) >> 8;
+
+                        IR1 = limB1(MAC1);
+                        IR2 = limB2(MAC2);
+                        IR3 = limB3(MAC3);
+
+                        RGB0  = RGB1;
+                        RGB1  = RGB2;
+                        CODE2 = CODE;
+                        
+                        R2 = limC1(MAC1 >> 4);
+                        G2 = limC2(MAC2 >> 4);
+                        B2 = limC3(MAC3 >> 4);
                     }
                     return;
             }
