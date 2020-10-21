@@ -321,16 +321,26 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
+                case 46: // AVSZ4
+                    {
+                        FLAG = 0;
+
+                        MAC0 = ZSF4 * (SZ0 + SZ1 + SZ2 + SZ3);
+                        OTZ = limD(MAC0 >> 12);
+                    }
+                    return;
+
                 /* t-rex */
                 case 61: // GPF
                     {
-                        const shift = 12 * GTE_SF(code & 0x1ffffff);
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
 
                         FLAG = 0;
 
-                        MAC1 = (IR0 * IR1) >> shift;
-                        MAC2 = (IR0 * IR2) >> shift;
-                        MAC3 = (IR0 * IR3) >> shift;
+                        MAC1 = (IR0 * IR1) >> sh;
+                        MAC2 = (IR0 * IR2) >> sh;
+                        MAC3 = (IR0 * IR3) >> sh;
 
                         IR1 = limB1(MAC1, 0);
                         IR2 = limB2(MAC2, 0);
@@ -430,6 +440,30 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
+                case 42: // DPCT
+                    {
+                        FLAG = 0;
+
+                        for (var v = 0; v < 3; v++) {
+                            MAC1 = ((R0 << 16) + (IR0 * (limB1(RFC - (R0 << 4), 0)))) >> 12;
+                            MAC2 = ((G0 << 16) + (IR0 * (limB1(GFC - (G0 << 4), 0)))) >> 12;
+                            MAC3 = ((B0 << 16) + (IR0 * (limB1(BFC - (B0 << 4), 0)))) >> 12;
+
+                            RGB0  = RGB1;
+                            RGB1  = RGB2;
+                            CODE2 = CODE;
+
+                            R2 = limC1(MAC1 >> 4);
+                            G2 = limC2(MAC2 >> 4);
+                            B2 = limC3(MAC3 >> 4);
+                        }
+
+                        IR1 = limB1(MAC1, 0);
+                        IR2 = limB2(MAC2, 0);
+                        IR3 = limB3(MAC3, 0);
+                    }
+                    return;
+
                 /* deadline */
                 case 63: // NCCT
                     {
@@ -472,6 +506,251 @@ pseudo.CstrCop2 = (function() {
                         IR1 = limB1(MAC1, 1);
                         IR2 = limB2(MAC2, 1);
                         IR3 = limB3(MAC3, 1);
+                    }
+                    return;
+
+                case 62: // GPL
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+
+                        FLAG = 0;
+
+                        MAC1 = ((MAC1 << sh) + (IR0 * IR1)) >> sh;
+                        MAC2 = ((MAC2 << sh) + (IR0 * IR2)) >> sh;
+                        MAC3 = ((MAC3 << sh) + (IR0 * IR3)) >> sh;
+
+                        IR1 = limB1(MAC1, 0);
+                        IR2 = limB2(MAC2, 0);
+                        IR3 = limB3(MAC3, 0);
+
+                        RGB0  = RGB1;
+                        RGB1  = RGB2;
+                        CODE2 = CODE;
+
+                        R2 = limC1(MAC1 >> 4);
+                        G2 = limC2(MAC2 >> 4);
+                        B2 = limC3(MAC3 >> 4);
+                    }
+                    return;
+
+                case 40: // SQR
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+                        const lm = GTE_LM(op);
+
+                        FLAG = 0;
+
+                        MAC1 = (IR1 * IR1) >> sh;
+                        MAC2 = (IR2 * IR2) >> sh;
+                        MAC3 = (IR3 * IR3) >> sh;
+
+                        IR1 = limB1(MAC1, lm);
+                        IR2 = limB2(MAC2, lm);
+                        IR3 = limB3(MAC3, lm);
+                    }
+                    return;
+
+                case 12: // OP
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+                        const lm = GTE_LM(op);
+
+                        FLAG = 0;
+
+                        MAC1 = ((R22 * IR3) - (R33 * IR2)) >> sh;
+                        MAC2 = ((R33 * IR1) - (R11 * IR3)) >> sh;
+                        MAC3 = ((R11 * IR2) - (R22 * IR1)) >> sh;
+
+                        IR1 = limB1(MAC1, lm);
+                        IR2 = limB2(MAC2, lm);
+                        IR3 = limB3(MAC3, lm);
+                    }
+                    return;
+
+                case 16: // DPCS
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+
+                        FLAG = 0;
+
+                        MAC1 = ((R << 16) + (IR0 * limB1((RFC - (R << 4)) << (12 - sh), 0))) >> 12;
+                        MAC2 = ((G << 16) + (IR0 * limB2((GFC - (G << 4)) << (12 - sh), 0))) >> 12;
+                        MAC3 = ((B << 16) + (IR0 * limB3((BFC - (B << 4)) << (12 - sh), 0))) >> 12;
+
+                        IR1 = limB1(MAC1, 0);
+                        IR2 = limB2(MAC2, 0);
+                        IR3 = limB3(MAC3, 0);
+
+                        RGB0  = RGB1;
+                        RGB1  = RGB2;
+                        CODE2 = CODE;
+
+                        R2 = limC1(MAC1 >> 4);
+                        G2 = limC2(MAC2 >> 4);
+                        B2 = limC3(MAC3 >> 4);
+                    }
+                    return;
+
+                case 17: // INTPL
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+                        const lm = GTE_LM(op);
+
+                        FLAG = 0;
+
+                        MAC1 = ((IR1 << 12) + (IR0 * limB1((RFC - IR1), 0))) >> sh;
+                        MAC2 = ((IR2 << 12) + (IR0 * limB2((GFC - IR2), 0))) >> sh;
+                        MAC3 = ((IR3 << 12) + (IR0 * limB3((BFC - IR3), 0))) >> sh;
+
+                        IR1 = limB1(MAC1, lm);
+                        IR2 = limB2(MAC2, lm);
+                        IR3 = limB3(MAC3, lm);
+
+                        RGB0  = RGB1;
+                        RGB1  = RGB2;
+                        CODE2 = CODE;
+
+                        R2 = limC1(MAC1 >> 4);
+                        G2 = limC2(MAC2 >> 4);
+                        B2 = limC3(MAC3 >> 4);
+                    }
+                    return;
+
+                case 30: // NCS
+                    {
+                        FLAG = 0;
+
+                        MAC1 = ((L11 * VX0) + (L12 * VY0) + (L13 * VZ0)) >> 12;
+                        MAC2 = ((L21 * VX0) + (L22 * VY0) + (L23 * VZ0)) >> 12;
+                        MAC3 = ((L31 * VX0) + (L32 * VY0) + (L33 * VZ0)) >> 12;
+
+                        IR1 = limB1(MAC1, 1);
+                        IR2 = limB2(MAC2, 1);
+                        IR3 = limB3(MAC3, 1);
+
+                        MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
+                        MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
+                        MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
+
+                        IR1 = limB1(MAC1, 1);
+                        IR2 = limB2(MAC2, 1);
+                        IR3 = limB3(MAC3, 1);
+
+                        RGB0  = RGB1;
+                        RGB1  = RGB2;
+                        CODE2 = CODE;
+
+                        R2 = limC1(MAC1 >> 4);
+                        G2 = limC2(MAC2 >> 4);
+                        B2 = limC3(MAC3 >> 4);
+                    }
+                    return;
+
+                case 32: // NCT
+                    {
+                        FLAG = 0;
+
+                        for (var v = 0; v < 3; v++) {
+                            const v1 = VX(v);
+                            const v2 = VY(v);
+                            const v3 = VZ(v);
+
+                            MAC1 = ((L11 * v1) + (L12 * v2) + (L13 * v3)) >> 12;
+                            MAC2 = ((L21 * v1) + (L22 * v2) + (L23 * v3)) >> 12;
+                            MAC3 = ((L31 * v1) + (L32 * v2) + (L33 * v3)) >> 12;
+
+                            IR1 = limB1(MAC1, 1);
+                            IR2 = limB2(MAC2, 1);
+                            IR3 = limB3(MAC3, 1);
+
+                            MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
+                            MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
+                            MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
+
+                            RGB0  = RGB1;
+                            RGB1  = RGB2;
+                            CODE2 = CODE;
+
+                            R2 = limC1(MAC1 >> 4);
+                            G2 = limC2(MAC2 >> 4);
+                            B2 = limC3(MAC3 >> 4);
+                        }
+
+                        IR1 = limB1(MAC1, 1);
+                        IR2 = limB2(MAC2, 1);
+                        IR3 = limB3(MAC3, 1);
+                    }
+                    return;
+
+                case 41: // DCPL
+                    {
+                        const op = code & 0x1ffffff;
+                        const lm = GTE_LM(op);
+
+                        const RIR1 = (R * IR1) >> 8;
+                        const GIR2 = (G * IR2) >> 8;
+                        const BIR3 = (B * IR3) >> 8;
+
+                        FLAG = 0;
+
+                        MAC1 = RIR1 + ((IR0 * limB1(RFC - RIR1, 0)) >> 12);
+                        MAC2 = GIR2 + ((IR0 * limB1(GFC - GIR2, 0)) >> 12);
+                        MAC3 = BIR3 + ((IR0 * limB1(BFC - BIR3, 0)) >> 12);
+
+                        IR1 = limB1(MAC1, lm);
+                        IR2 = limB2(MAC2, lm);
+                        IR3 = limB3(MAC3, lm);
+
+                        RGB0  = RGB1;
+                        RGB1  = RGB2;
+                        CODE2 = CODE;
+
+                        R2 = limC1(MAC1 >> 4);
+                        G2 = limC2(MAC2 >> 4);
+                        B2 = limC3(MAC3 >> 4);
+                    }
+                    return;
+
+                case 19: // NCDS
+                    {
+                        FLAG = 0;
+
+                        MAC1 = ((L11 * VX0) + (L12 * VY0) + (L13 * VZ0)) >> 12;
+                        MAC2 = ((L21 * VX0) + (L22 * VY0) + (L23 * VZ0)) >> 12;
+                        MAC3 = ((L31 * VX0) + (L32 * VY0) + (L33 * VZ0)) >> 12;
+
+                        IR1 = limB1(MAC1, 1);
+                        IR2 = limB2(MAC2, 1);
+                        IR3 = limB3(MAC3, 1);
+
+                        MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
+                        MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
+                        MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
+
+                        IR1 = limB1(MAC1, 1);
+                        IR2 = limB2(MAC2, 1);
+                        IR3 = limB3(MAC3, 1);
+
+                        MAC1 = (((R << 4) * IR1) + (IR0 * limB1(RFC - ((R * IR1) >> 8), 0))) >> 12;
+                        MAC2 = (((G << 4) * IR2) + (IR0 * limB2(GFC - ((G * IR2) >> 8), 0))) >> 12;
+                        MAC3 = (((B << 4) * IR3) + (IR0 * limB3(BFC - ((B * IR3) >> 8), 0))) >> 12;
+
+                        IR1 = limB1(MAC1, 1);
+                        IR2 = limB2(MAC2, 1);
+                        IR3 = limB3(MAC3, 1);
+
+                        RGB0  = RGB1;
+                        RGB1  = RGB2;
+                        CODE2 = CODE;
+
+                        R2 = limC1(MAC1 >> 4);
+                        G2 = limC2(MAC2 >> 4);
+                        B2 = limC3(MAC3 >> 4);
                     }
                     return;
             }

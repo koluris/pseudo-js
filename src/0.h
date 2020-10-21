@@ -26,7 +26,7 @@
 #define UintHcap                Uint16Array
 #define UintWcap                Uint32Array
 #define useFunction             useProgram
-#define WebGL                   'webgl', { preserveDrawingBuffer: true }
+#define WebGL                   'webgl', { preserveDrawingBuffer: true, depth: false }
 
 #define SHADER_VERTEX '\
   attribute vec2 a_position;\
@@ -51,7 +51,7 @@
   \
   void main() {\
     if (u_enabled) {\
-      gl_FragColor = texture2D(u_texture, v_texCoord) * (v_color * vec4(2.1, 2.1, 2.1, 1));\
+      gl_FragColor = texture2D(u_texture, v_texCoord) * (v_color * vec4(2.0, 2.0, 2.0, 1));\
     }\
     else {\
       gl_FragColor = v_color;\
