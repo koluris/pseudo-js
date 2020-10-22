@@ -26,7 +26,7 @@
 #define UintHcap                Uint16Array
 #define UintWcap                Uint32Array
 #define useFunction             useProgram
-#define WebGL                   'webgl', { preserveDrawingBuffer: true, depth: false }
+#define WebGL                   'webgl', { preserveDrawingBuffer: true }
 
 #define SHADER_VERTEX '\
   attribute vec2 a_position;\
