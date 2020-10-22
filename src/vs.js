@@ -80,7 +80,7 @@ pseudo.CstrGraphics = (function() {
   ];
 
   function pipeReset() {
-    ioZero(pipe.data);
+    pipe.data.fill(0);
     pipe.prim = 0;
     pipe.size = 0;
     pipe.row  = 0;
@@ -200,7 +200,7 @@ pseudo.CstrGraphics = (function() {
     __vram: union(FRAME_W * FRAME_H * 2),
 
     reset() {
-      ioZero(vram.uh);
+      vram.uh.fill(0);
       ret.data     = 0x400;
       ret.status   = GPU_STAT_READYFORCOMMANDS | GPU_STAT_IDLE | GPU_STAT_DISPLAYDISABLED | 0x2000;
       modeDMA      = GPU_DMA_NONE;

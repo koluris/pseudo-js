@@ -122,18 +122,6 @@
 #define LZCS   oooo(cop2d.uw, 30)    /* Lead zero/one count source data */
 #define LZCR   oooo(cop2d.uw, 31)    /* Lead zero/one count process result */
 
-#define VX(n)  (n < 3 ? __oo(cop2d.sh, ((n << 1) + 0), 0) : __oo(cop2d.sh,  9, 0))
-#define VY(n)  (n < 3 ? __oo(cop2d.sh, ((n << 1) + 0), 1) : __oo(cop2d.sh, 10, 0))
-#define VZ(n)  (n < 3 ? __oo(cop2d.sh, ((n << 1) + 1), 0) : __oo(cop2d.sh, 11, 0))
-
-#define SX(n)  __oo(cop2d.sh, (n + 12), 0)
-#define SY(n)  __oo(cop2d.sh, (n + 12), 1)
-#define SZ(n)  __oo(cop2d.uh, (n + 17), 0)
-
-#define CV1(n) (n < 3 ? oooo(cop2c.sw, ((n << 3) + 5)) : 0)
-#define CV2(n) (n < 3 ? oooo(cop2c.sw, ((n << 3) + 6)) : 0)
-#define CV3(n) (n < 3 ? oooo(cop2c.sw, ((n << 3) + 7)) : 0)
-
 #define MX11(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 0), 0) : 0)
 #define MX12(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 0), 1) : 0)
 #define MX13(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 1), 0) : 0)
@@ -144,6 +132,18 @@
 #define MX32(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 3), 1) : 0)
 #define MX33(n) (n < 3 ? __oo(cop2c.sh, ((n << 3) + 4), 0) : 0)
 
+#define CV1( n) (n < 3 ? oooo(cop2c.sw, ((n << 3) + 5)) : 0)
+#define CV2( n) (n < 3 ? oooo(cop2c.sw, ((n << 3) + 6)) : 0)
+#define CV3( n) (n < 3 ? oooo(cop2c.sw, ((n << 3) + 7)) : 0)
+
+#define VX(  n) (n < 3 ? __oo(cop2d.sh, ((n << 1) + 0), 0) : __oo(cop2d.sh,  9, 0))
+#define VY(  n) (n < 3 ? __oo(cop2d.sh, ((n << 1) + 0), 1) : __oo(cop2d.sh, 10, 0))
+#define VZ(  n) (n < 3 ? __oo(cop2d.sh, ((n << 1) + 1), 0) : __oo(cop2d.sh, 11, 0))
+
+#define SX(n) __oo(cop2d.sh, (n + 12), 0)
+#define SY(n) __oo(cop2d.sh, (n + 12), 1)
+#define SZ(n) __oo(cop2d.uh, (n + 17), 0)
+
 #define LIM(a, min, max, bit) \
     (((a) < min) ? (FLAG |= (1 << bit), min) : \
     (((a) > max) ? (FLAG |= (1 << bit), max) : ((a))))
@@ -151,13 +151,14 @@
 #define limB1(a, l) LIM((a), !l * -32768, 32767, 24)
 #define limB2(a, l) LIM((a), !l * -32768, 32767, 23)
 #define limB3(a, l) LIM((a), !l * -32768, 32767, 22)
-#define limC1(a) LIM((a),     0,   255, 21)
-#define limC2(a) LIM((a),     0,   255, 20)
-#define limC3(a) LIM((a),     0,   255, 19)
-#define limD( a) LIM((a),     0, 65535, 18)
-#define limG1(a) LIM((a), -1024,  1023, 14)
-#define limG2(a) LIM((a), -1024,  1023, 13)
-#define limH( a) LIM((a),     0,  4096, 12)
+#define limC1(a) LIM((a),       0,    255, 21)
+#define limC2(a) LIM((a),       0,    255, 20)
+#define limC3(a) LIM((a),       0,    255, 19)
+#define limD( a) LIM((a),       0,  65535, 18)
+#define limE( a) LIM((a), -131072, 131071, 17)
+#define limG1(a) LIM((a),   -1024,   1023, 14)
+#define limG2(a) LIM((a),   -1024,   1023, 13)
+#define limH( a) LIM((a),       0,   4096, 12)
 
 #define GTE_SF(op) ((op >> 19) & 1)
 #define GTE_MX(op) ((op >> 17) & 3)
@@ -168,14 +169,6 @@
 pseudo.CstrCop2 = (function() {
     const cop2c = union(32 * 4);
     const cop2d = union(32 * 4);
-
-    function limE(result) {
-        if (result > 0x1ffff) {
-            FLAG |= (1 << 17);
-            return 0x1ffff;
-        }
-        return result;
-    }
 
     function divide(n, d) {
         if (n >= 0 && n < d * 2) {

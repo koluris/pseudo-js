@@ -1,9 +1,3 @@
-#define EXE_HEADER_SIZE \
-    0x800
-
-#define MSF2SECTOR(m, s, f) \
-    (((m) * 60 + (s) - 2) * 75 + (f))
-
 pseudo.CstrMain = (function() {
     var divDropzone;
     var iso;
@@ -46,6 +40,14 @@ pseudo.CstrMain = (function() {
         }
     }
 
+    function executable(resp) {
+        // Set mem & processor
+        cpu.parseExeHeader(
+            mem.writeExecutable(resp)
+        );
+        cpu.consoleWrite(MSG_INFO, 'PSX-EXE has been transferred to RAM');
+    }
+
     function reset() {
         // Reset all emulator components
          render.reset();
@@ -59,14 +61,6 @@ pseudo.CstrMain = (function() {
             sio.reset();
            cop2.reset();
             cpu.reset();
-    }
-
-    function executable(resp) {
-        // Set mem & processor
-        cpu.parseExeHeader(
-            mem.writeExecutable(resp)
-        );
-        cpu.consoleWrite(MSG_INFO, 'PSX-EXE has been transferred to RAM');
     }
 
     // Exposed class functions/variables
@@ -139,7 +133,7 @@ pseudo.CstrMain = (function() {
         },
 
         hex(number) {
-            return '0x' + (number >>> 0).toString(16);
+            return '0x' + (number >>> 0).toText(16);
         },
 
         error(out) {

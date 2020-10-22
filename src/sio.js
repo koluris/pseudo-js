@@ -48,7 +48,7 @@ pseudo.CstrSerial = (function() {
 
   return {
     reset() {
-      ioZero(bfr);
+      bfr.fill(0);
       btnState = 0xffff;
       baud     = 0;
       control  = 0;

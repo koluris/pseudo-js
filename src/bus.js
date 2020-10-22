@@ -3,15 +3,6 @@ pseudo.CstrBus = (function() {
     const IRQ_ENABLED  = 1;
     const IRQ_DISABLED = 0;
 
-    // DMA channel
-    const DMA_MDEC_IN  = 0;
-    const DMA_MDEC_OUT = 1;
-    const DMA_GPU      = 2;
-    const DMA_CD       = 3;
-    const DMA_SPU      = 4;
-    const DMA_PARALLEL = 5;
-    const DMA_CLEAR_OT = 6;
-
     // Definition and threshold of interrupts
     const interrupts = [{
         code: IRQ_VBLANK,
@@ -79,14 +70,12 @@ pseudo.CstrBus = (function() {
                 chcr = data;
 
                 switch(chan) {
-                    case 0: // MDEC in
-                    case 1: // MDEC out
-                        break;
-
-                    case 2: vs   .executeDMA(addr); break; // Graphics
+                    case 0: break; // MDEC in
+                    case 1: break; // MDEC out
+                    case 2:    vs.executeDMA(addr); break; // Graphics
                     case 3: cdrom.executeDMA(addr); break; // CD-ROM
                     case 4: audio.executeDMA(addr); break; // Audio
-                    case 6: mem  .executeDMA(addr); break; // Clear OT
+                    case 6:   mem.executeDMA(addr); break; // Clear OT
 
                     default:
                         psx.error('DMA Channel '+chan);

@@ -150,7 +150,7 @@ pseudo.CstrAudio = (function() {
     }
 
     // Clear
-    ioZero(sbuf.temp);
+    sbuf.temp.fill(0);
     return sbuf.final;
   }
 
@@ -163,7 +163,7 @@ pseudo.CstrAudio = (function() {
         spuVoices[n].raddr = 0;
         spuVoices[n].size  = 0;
 
-        //ioZero(spuVoices[n].buffer.sh);
+        //spuVoices[n].buffer.sh.fill(0);
         depackVAG(spuVoices[n]);
       }
     }
@@ -252,9 +252,9 @@ pseudo.CstrAudio = (function() {
     },
 
     reset: function() {
-      ioZero(spuMem.uh);
-      ioZero(sbuf.temp);
-      ioZero(sbuf.final);
+      spuMem.uh.fill(0);
+      sbuf.temp.fill(0);
+      sbuf.final.fill(0);
 
       // Variables
       spuAddr = ~0;
@@ -277,7 +277,7 @@ pseudo.CstrAudio = (function() {
           }
         };
 
-        ioZero(spuVoices[n].buffer.sh);
+        spuVoices[n].buffer.sh.fill(0);
       }
 
       // Connect

@@ -65,23 +65,23 @@ pseudo.CstrCdrom = (function() {
   };
 
   function resetParam(prm) {
-    ioZero(prm.data);
+    prm.data.fill(0);
     prm.p = 0;
     prm.c = 0;
   }
 
   function resetRes(rrs) {
-    ioZero(rrs.data);
-    ioZero(rrs.tn);
-    ioZero(rrs.td);
+    rrs.data.fill(0);
+    rrs.tn.fill(0);
+    rrs.td.fill(0);
     rrs.p = 0;
     rrs.c = 0;
     rrs.ok = 0;
   }
 
   function resetSect(sect) {
-    ioZero(sect.data);
-    ioZero(sect.prev);
+    sect.data.fill(0);
+    sect.prev.fill(0);
   }
 
   function trackRead() {
@@ -363,7 +363,7 @@ pseudo.CstrCdrom = (function() {
       resetParam(param);
       resetRes(res);
       resetSect(sector);
-      ioZero(transfer.data);
+      transfer.data.fill(0);
       transfer.p = 0;
 
       ctrl = stat = statP = re2 = 0;
