@@ -1,5 +1,5 @@
 // Preprocessor
-#define bLen                    byteLength
+#define bSize                   byteLength
 #define createFunction          createProgram
 #define Chars                   String
 #define dataBin                 'arraybuffer'
@@ -62,32 +62,17 @@ function union(size) {
     Mem banks
 ***/
 #define directMemW(mem, addr)\
-    mem[((addr) & (mem.bLen - 1)) >>> 2]
+    mem[((addr) & (mem.bSize - 1)) >>> 2]
 
 #define directMemH(mem, addr)\
-    mem[((addr) & (mem.bLen - 1)) >>> 1]
+    mem[((addr) & (mem.bSize - 1)) >>> 1]
 
 #define directMemB(mem, addr)\
-    mem[((addr) & (mem.bLen - 1)) >>> 0]
+    mem[((addr) & (mem.bSize - 1)) >>> 0]
 
 /***
     Hardware IO
 ***/
-#define dpcr \
-    directMemW(mem.__hwr.uw, 0x10f0)
-
-#define dicr \
-    directMemW(mem.__hwr.uw, 0x10f4)
-
-#define madr \
-    directMemW(mem.__hwr.uw, (addr & 0xfff0) | 0)
-
-#define bcr \
-    directMemW(mem.__hwr.uw, (addr & 0xfff0) | 4)
-
-#define chcr \
-    directMemW(mem.__hwr.uw, (addr & 0xfff0) | 8)
-
 #define data32 \
     directMemW(mem.__hwr.uw, 0x1070)
 
@@ -99,6 +84,24 @@ function union(size) {
 
 #define mask16 \
     directMemH(mem.__hwr.uh, 0x1074)
+
+#define dpcr \
+    directMemW(mem.__hwr.uw, 0x10f0)
+
+#define dicr \
+    directMemW(mem.__hwr.uw, 0x10f4)
+
+/***
+    DMA
+***/
+#define madr \
+    directMemW(mem.__hwr.uw, (addr & 0xfff0) | 0)
+
+#define bcr \
+    directMemW(mem.__hwr.uw, (addr & 0xfff0) | 4)
+
+#define chcr \
+    directMemW(mem.__hwr.uw, (addr & 0xfff0) | 8)
 
 /***
     Mips processor

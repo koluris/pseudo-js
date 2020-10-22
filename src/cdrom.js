@@ -323,7 +323,7 @@ pseudo.CstrCdrom = (function() {
 
   return {
     interruptRead2(buf) {
-      kbRead += buf.bLen;
+      kbRead += buf.bSize;
       transfer.data.set(buf);
       stat = CD_STAT_DATA_READY;
 

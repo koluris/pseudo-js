@@ -80,7 +80,7 @@ pseudo.CstrMem = (function() {
 
         writeExecutable(data) {
             const header = new UintWcap(data, 0, PSX_EXE_HEADER_SIZE);
-            const offset = header[2 + 4] & (ram.ub.bLen - 1); // Offset needs boundaries... huh?
+            const offset = header[2 + 4] & (ram.ub.bSize - 1); // Offset needs boundaries... huh?
             const size   = header[2 + 5];
 
             ram.ub.set(new UintBcap(data, PSX_EXE_HEADER_SIZE, size), offset);

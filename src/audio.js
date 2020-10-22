@@ -42,9 +42,9 @@ pseudo.CstrAudio = (function() {
   var spuVolumeL, spuVolumeR;
 
   function int16ToFloat32(input) {
-    var output = new F32cap(input.bLen/2);
+    var output = new F32cap(input.bSize/2);
     
-    for (var i=0; i<input.bLen/2; i++) {
+    for (var i=0; i<input.bSize/2; i++) {
       var int = input[i];
       output[i] = int >= 0x8000 ? -(0x10000-int)/0x8000 : int/0x7fff;
     }

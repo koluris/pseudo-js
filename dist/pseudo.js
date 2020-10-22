@@ -121,6 +121,9 @@ function union(size) {
 
 
 
+
+
+
 // Console output
 
 
@@ -128,6 +131,8 @@ function union(size) {
 // Declare our namespace
 'use strict';
 var pseudo = window.pseudo || {};
+
+
 
 
 
@@ -603,6 +608,8 @@ pseudo.CstrAudio = (function() {
     }
   };
 })();
+
+
 
 
 
@@ -2053,6 +2060,8 @@ pseudo.CstrCop2 = (function() {
 
 
 
+
+
 pseudo.CstrCounters = (function() {
     // PSX root clock
     const PSX_CLOCK      = 33868800;
@@ -2160,191 +2169,182 @@ pseudo.CstrCounters = (function() {
 
 
 
+
+
 pseudo.CstrHardware = (function() {
-  // Exposed class functions/variables
   return {
-    write: {
-      w(addr, data) {
-        if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
-          if (addr&8) {
-            pseudo.CstrBus.checkDMA(addr, data);
-            return;
+      write: {
+          w(addr, data) {
+              switch(true) {
+                  case (addr == 0x1070): // IRQ Status
+                      pseudo.CstrMem.__hwr.uw[((0x1070) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] &= data & pseudo.CstrMem.__hwr.uw[((0x1074) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
+                      return;
+
+                  case (addr >= 0x1080 && addr <= 0x10e8): // DMA
+                      if (addr & 8) {
+                          pseudo.CstrBus.checkDMA(addr, data);
+                          return;
+                      }
+
+                      pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data;
+                      return;
+
+                  case (addr == 0x10f4): // DICR, thanks Calb, Galtor :)
+                      pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = (pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
+                      return;
+
+                  case (addr >= 0x1104 && addr <= 0x1124): // Rootcounters
+                      pseudo.CstrCounters.scopeW(addr, data);
+                      return;
+
+                  case (addr >= 0x1810 && addr <= 0x1814): // Graphics
+                      pseudo.CstrGraphics.scopeW(addr, data);
+                      return;
+
+                  case (addr >= 0x1820 && addr <= 0x1824): // Motion Decoder
+                      pseudo.CstrMdec.scopeW(addr, data);
+                      return;
+
+                  
+                  case (addr == 0x1000): // ?
+                  case (addr == 0x1004): // ?
+                  case (addr == 0x1008): // ?
+                  case (addr == 0x100c): // ?
+                  case (addr == 0x1010): // ?
+                  case (addr == 0x1014): // SPU
+                  case (addr == 0x1018): // DV5
+                  case (addr == 0x101c): // ?
+                  case (addr == 0x1020): // COM
+                  case (addr == 0x1060): // RAM Size
+                  case (addr == 0x1074): // IRQ Mask
+                  case (addr == 0x10f0): // DPCR
+                  case (addr == 0x1d80): // SPU in 32 bits?
+                  case (addr == 0x1d84): // SPU in 32 bits?
+                  case (addr == 0x1d8c): // SPU in 32 bits?
+                      pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data;
+                      return;
+              }
+
+              pseudo.CstrMain.error('Hardware Write w ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+          },
+
+          h(addr, data) {
+              switch(true) {
+                  case (addr >= 0x1048 && addr <= 0x104e): // SIO
+                      pseudo.CstrSerial.write.h(addr, data);
+                      return;
+
+                  case (addr == 0x1070): // IRQ Status
+                      pseudo.CstrMem.__hwr.uh[((0x1070) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] &= data & pseudo.CstrMem.__hwr.uh[((0x1074) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+                      return;
+
+                  case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
+                      pseudo.CstrCounters.scopeW(addr, data);
+                      return;
+
+                  case (addr >= 0x1c00 && addr <= 0x1dfe): // SPU
+                      pseudo.CstrAudio.scopeW(addr, data);
+                      return;
+
+                  
+                  case (addr == 0x1014): // ?
+                  case (addr == 0x1074): // IRQ Mask
+                      pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = data;
+                      return;
+              }
+
+              pseudo.CstrMain.error('Hardware Write h ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+          },
+
+          b(addr, data) {
+              switch(true) {
+                  case (addr == 0x1040): // SIO Data
+                      pseudo.CstrSerial.write.b(addr, data);
+                      return;
+
+                  case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
+                      pseudo.CstrCdrom.scopeW(addr, data);
+                      return;
+
+                  
+                  case (addr == 0x10f6): // ?
+                  case (addr == 0x2041): // DIP Switch?
+                      pseudo.CstrMem.__hwr.ub[(( addr) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0] = data;
+                      return;
+              }
+
+              pseudo.CstrMain.error('Hardware Write b '+pseudo.CstrMain.hex(addr)+' <- '+pseudo.CstrMain.hex(data));
           }
-          pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data;
-          return;
-        }
-
-        if (addr >= 0x1104 && addr <= 0x1124) { // Rootcounters
-          pseudo.CstrCounters.scopeW(addr, data);
-          return;
-        }
-
-        if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
-          pseudo.CstrGraphics.scopeW(addr, data);
-          return;
-        }
-
-        if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
-          pseudo.CstrMdec.scopeW(addr, data);
-          return;
-        }
-
-        switch(addr) {
-          case 0x1070:
-            pseudo.CstrMem.__hwr.uw[((0x1070) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] &= data&pseudo.CstrMem.__hwr.uw[((0x1074) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
-            return;
-
-          case 0x10f4: // Thanks Calb, Galtor :)
-            pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = (pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
-            return;
-
-          
-          case 0x1000:
-          case 0x1004:
-          case 0x1008:
-          case 0x100c:
-          case 0x1010:
-          case 0x1014: // SPU
-          case 0x1018: // DV5
-          case 0x101c:
-          case 0x1020: // COM
-          case 0x1060: // RAM Size
-          case 0x1074:
-          case 0x10f0:
-
-          case 0x1d80:
-          case 0x1d84:
-          case 0x1d8c: // SPU in 32 bits?
-            pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data;
-            return;
-        }
-        pseudo.CstrMain.error('Hardware Write w ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
       },
 
-      h(addr, data) {
-        if (addr >= 0x1048 && addr <= 0x104e) { // Controls
-          pseudo.CstrSerial.write.h(addr, data);
-          return;
-        }
+      read: {
+          w(addr) {
+              switch(true) {
+                  case (addr >= 0x1080 && addr <= 0x10e8): // DMA
+                      return pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
 
-        if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
-          pseudo.CstrCounters.scopeW(addr, data);
-          return;
-        }
-        
-        if (addr >= 0x1c00 && addr <= 0x1dfe) { // Audio
-          pseudo.CstrAudio.scopeW(addr, data);
-          return;
-        }
+                  case (addr >= 0x1100 && addr <= 0x1110): // Rootcounters
+                      return pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
 
-        switch(addr) {
-          case 0x1070:
-            pseudo.CstrMem.__hwr.uh[((0x1070) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] &= data & pseudo.CstrMem.__hwr.uh[((0x1074) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
-            return;
-          
-          
-          case 0x1014:
-          case 0x1074:
-            pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = data;
-            return;
-        }
-        pseudo.CstrMain.error('Hardware Write h ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
-      },
+                  case (addr >= 0x1810 && addr <= 0x1814): // Graphics
+                      return pseudo.CstrGraphics.scopeR(addr);
 
-      b(addr, data) {
-        if (addr >= 0x1800 && addr <= 0x1803) { // CD-ROM
-          pseudo.CstrCdrom.scopeW(addr, data);
-          return;
-        }
+                  case (addr >= 0x1820 && addr <= 0x1824): // Motion Decoder
+                      return pseudo.CstrMdec.scopeR(addr);
 
-        switch(addr) {
-          case 0x1040:
-            pseudo.CstrSerial.write.b(addr, data);
-            return;
+                  
+                  case (addr == 0x1014): // ?
+                  case (addr == 0x1060): // ?
+                  case (addr == 0x1070): // IRQ Status
+                  case (addr == 0x1074): // IRQ Mask
+                  case (addr == 0x10f0): // DPCR
+                  case (addr == 0x10f4): // DICR
+                      return pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
+              }
 
-          
-          case 0x10f6:
-          case 0x2041: // DIP Switch?
-            pseudo.CstrMem.__hwr.ub[(( addr) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0] = data;
-            return;
-        }
-        pseudo.CstrMain.error('Hardware Write b '+pseudo.CstrMain.hex(addr)+' <- '+pseudo.CstrMain.hex(data));
+              pseudo.CstrMain.error('Hardware Read w '+pseudo.CstrMain.hex(addr));
+          },
+
+          h(addr) {
+              switch(true) {
+                  case (addr >= 0x1044 && addr <= 0x104e): // SIO
+                      return pseudo.CstrSerial.read.h(addr);
+
+                  case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
+                      return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+
+                  case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
+                      return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+
+                  
+                  case (addr == 0x1014): // ?
+                  case (addr == 0x1070): // IRQ Status
+                  case (addr == 0x1074): // IRQ Mask
+                  case (addr == 0x1130): // ?
+                      return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+              }
+
+              pseudo.CstrMain.error('Hardware Read h '+pseudo.CstrMain.hex(addr));
+          },
+
+          b(addr) {
+              switch(true) {
+                  case (addr == 0x1040): // SIO Data
+                      return pseudo.CstrSerial.read.b(addr);
+
+                  case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
+                      return pseudo.CstrCdrom.scopeR(addr);
+
+                    
+                  case (addr == 0x10f6): // ?
+                  case (addr == 0x1d68): // ?
+                  case (addr == 0x1d78): // ?
+                      return pseudo.CstrMem.__hwr.ub[(( addr) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0];
+              }
+
+              pseudo.CstrMain.error('Hardware Read b '+pseudo.CstrMain.hex(addr));
+          }
       }
-    },
-
-    read: {
-      w(addr) {
-        if (addr >= 0x1080 && addr <= 0x10e8) { // DMA
-          return pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
-        }
-
-        if (addr >= 0x1100 && addr <= 0x1110) { // Rootcounters
-          return pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
-        }
-
-        if (addr >= 0x1810 && addr <= 0x1814) { // Graphics
-          return pseudo.CstrGraphics.scopeR(addr);
-        }
-
-        if (addr >= 0x1820 && addr <= 0x1824) { // Motion Decoder
-          return pseudo.CstrMdec.scopeR(addr);
-        }
-
-        switch(addr) {
-          
-          case 0x1014:
-          case 0x1060:
-          case 0x1070:
-          case 0x1074:
-          case 0x10f0:
-          case 0x10f4:
-            return pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
-        }
-        pseudo.CstrMain.error('Hardware Read w '+pseudo.CstrMain.hex(addr));
-      },
-
-      h(addr) {
-        if (addr >= 0x1044 && addr <= 0x104e) { // Controls
-          return pseudo.CstrSerial.read.h(addr);
-        }
-
-        if (addr >= 0x1100 && addr <= 0x1128) { // Rootcounters
-          return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
-        }
-
-        if (addr >= 0x1c00 && addr <= 0x1e0e) { // Audio
-          return pseudo.CstrAudio.scopeR(addr);
-        }
-
-        switch(addr) {
-          
-          case 0x1014:
-          case 0x1070:
-          case 0x1074:
-          case 0x1130:
-            return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
-        }
-        pseudo.CstrMain.error('Hardware Read h '+pseudo.CstrMain.hex(addr));
-      },
-
-      b(addr) {
-        if (addr >= 0x1800 && addr <= 0x1803) { // CD-ROM
-          return pseudo.CstrCdrom.scopeR(addr);
-        }
-
-        switch(addr) {
-          case 0x1040: // Controls
-            return pseudo.CstrSerial.read.b(addr);
-
-          
-          case 0x10f6: // ?
-          case 0x1d68: // ?
-          case 0x1d78: // ?
-            return pseudo.CstrMem.__hwr.ub[(( addr) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0];
-        }
-        pseudo.CstrMain.error('Hardware Read b '+pseudo.CstrMain.hex(addr));
-      }
-    }
   };
 })();
 
@@ -2384,6 +2384,8 @@ pseudo.CstrMdec = (function() {
     }
   };
 })();
+
+
 
 
 
@@ -2470,6 +2472,8 @@ pseudo.CstrMem = (function() {
         }
     };
 })();
+
+
 
 
 
@@ -2972,6 +2976,8 @@ pseudo.CstrMips = (function() {
 
 
 
+
+
 pseudo.CstrMain = (function() {
     var divDropzone;
     var iso;
@@ -3133,6 +3139,8 @@ pseudo.CstrMain = (function() {
         }
     };
 })();
+
+
 
 
 
@@ -3766,6 +3774,8 @@ pseudo.CstrSerial = (function() {
 
 
 
+
+
 pseudo.CstrTexCache = (function() {
     const TEX_04BIT   = 0;
     const TEX_08BIT   = 1;
@@ -3907,6 +3917,8 @@ pseudo.CstrTexCache = (function() {
         }
     };
 })();
+
+
 
 
 
