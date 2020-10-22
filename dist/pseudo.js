@@ -2350,39 +2350,39 @@ pseudo.CstrHardware = (function() {
 
 
 pseudo.CstrMdec = (function() {
-  var cmd, status;
+    var cmd, status;
 
-  // Exposed class functions/variables
-  return {
-    reset() {
-      cmd    = 0;
-      status = 0;
-    },
+    // Exposed class functions/variables
+    return {
+        reset() {
+            cmd    = 0;
+            status = 0;
+        },
 
-    scopeW(addr, data) {
-      switch(addr&0xf) {
-        case 0:
-          cmd = data;
-          return;
+        scopeW(addr, data) {
+            switch(addr & 0xf) {
+                case 0:
+                    cmd = data;
+                    return;
 
-        case 4:
-          if (data&0x80000000) {
-            pseudo.CstrMdec.reset();
-          }
-          return;
-      }
-    },
+                case 4:
+                    if (data & 0x80000000) {
+                        pseudo.CstrMdec.reset();
+                    }
+                    return;
+            }
+        },
 
-    scopeR(addr) {
-      switch(addr&0xf) {
-        case 0:
-          return cmd;
+        scopeR(addr) {
+            switch(addr & 0xf) {
+                case 0:
+                    return cmd;
 
-        case 4:
-          return status;
-      }
-    }
-  };
+                case 4:
+                    return status;
+            }
+        }
+    };
 })();
 
 
@@ -3377,8 +3377,9 @@ pseudo.CstrRender = (function() {
             res.w = data.w;
             res.h = data.h;
           
-            ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-            ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
+            ctx.uniform2f(attrib._r, res.w / 4, res.h / 4);
+            //ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
+            ctx.viewport(0, 0, 320, 240);
             ctx.clear(ctx.COLOR_BUFFER_BIT);
 
             divRes.innerText = res.w + ' x ' + res.h;
