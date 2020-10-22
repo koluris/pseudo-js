@@ -1,3 +1,5 @@
+/* Base structure taken from FPSE open source emulator, and improved upon (Credits: BERO, LDChen) */
+
 #define vram vs.__vram
 
 #define COLOR_32BIT(a, b, c, r) \

@@ -1,3 +1,5 @@
+/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
+
 #define ram  mem.__ram
 #define rom  mem.__rom
 #define hwr  mem.__hwr

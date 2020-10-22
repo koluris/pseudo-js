@@ -1,3 +1,5 @@
+/* Base structure taken from SOPE open source emulator, and improved upon (Credits: SaD, Linuzappz) */
+
 #define ram  mem.__ram
 #define hwr  mem.__hwr
 

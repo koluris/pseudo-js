@@ -1,3 +1,5 @@
+/* Base structure taken from PCSX-df open source emulator, and improved upon (Credits: Stephen Chao) */
+
 #define ram  mem.__ram
 #define hwr  mem.__hwr
 #define vram  vs.__vram

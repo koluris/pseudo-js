@@ -1,3 +1,5 @@
+/* Base structure taken from FPSE open source emulator, and improved upon (Credits: BERO, LDChen) */
+
 #define hwr  mem.__hwr
 
 #define count(n) \

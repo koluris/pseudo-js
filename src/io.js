@@ -1,3 +1,5 @@
+/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
+
 #define hwr  mem.__hwr
 
 pseudo.CstrHardware = (function() {

@@ -1,3 +1,5 @@
+/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
+
 #define GPU_INFO_TEXTUREWINDOW 2
 #define GPU_INFO_DRAWAREASTART 3
 #define GPU_INFO_DRAWAREAEND   4
