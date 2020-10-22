@@ -4,9 +4,10 @@
     (((a) & 0xff) << 24) | (((b) & 0xff) << 16) | (((c) & 0xff) << 8) | ((r) & 0xff)
 
 pseudo.CstrTexCache = (function() {
-    const TEX_04BIT  = 0;
-    const TEX_08BIT  = 1;
-    const TEX_15BIT  = 2;
+    const TEX_04BIT   = 0;
+    const TEX_08BIT   = 1;
+    const TEX_15BIT   = 2;
+    const TEX_15BIT_2 = 3;
 
     // Maximum texture cache
     const TCACHE_MAX = 384;
@@ -106,7 +107,8 @@ pseudo.CstrTexCache = (function() {
                     }
                     break;
 
-                case TEX_15BIT: // No color palette
+                case TEX_15BIT:   // No color palette
+                case TEX_15BIT_2: // Seen on some rare cases
                     for (var h = 0, idx = 0; h < 256; h++) {
                         for (var w = 0; w < 256; w++) {
                             const p = vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
