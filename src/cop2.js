@@ -308,16 +308,16 @@ pseudo.CstrCop2 = (function() {
                 case 45: // AVSZ3
                     {
                         FLAG = 0;
-
-	                    MAC0 = (ZSF3 * SZ1) + (ZSF3 * SZ2) + (ZSF3 * SZ3);
-	                    OTZ  = limD(MAC0 >> 12);
+                        
+                        MAC0 = (ZSF3 * SZ1) + (ZSF3 * SZ2) + (ZSF3 * SZ3);
+                        OTZ  = limD(MAC0 >> 12);
                     }
                     return;
 
                 case 46: // AVSZ4
                     {
                         FLAG = 0;
-
+                        
                         MAC0 = ZSF4 * (SZ0 + SZ1 + SZ2 + SZ3);
                         OTZ = limD(MAC0 >> 12);
                     }
