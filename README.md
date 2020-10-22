@@ -3,6 +3,9 @@
 
 ![Commercial](https://raw.githubusercontent.com/dkoliris/pseudo/master/res/commercial.jpg)
 
+## Live Build
+http://naden.co/pseudo
+
 ## Completion
 Here's a list with the overall progress of the emulator, broken down in distinct parts. Components with 0% progress are not listed.
 * `99% -> BIOS Bootstrap`
