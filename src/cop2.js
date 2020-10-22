@@ -166,6 +166,20 @@
 #define GTE_CV(op) ((op >> 13) & 3)
 #define GTE_LM(op) ((op >> 10) & 1)
 
+#define MAC2IR(n) \
+    IR1 = limB1(MAC1, n); \
+    IR2 = limB2(MAC2, n); \
+    IR3 = limB3(MAC3, n)
+
+#define MAC2RGB4() \
+    RGB0  = RGB1; \
+    RGB1  = RGB2; \
+    CODE2 = CODE; \
+    \
+    R2 = limC1(MAC1 >> 4); \
+    G2 = limC2(MAC2 >> 4); \
+    B2 = limC3(MAC3 >> 4)
+
 pseudo.CstrCop2 = (function() {
     const cop2c = union(32 * 4);
     const cop2d = union(32 * 4);
@@ -216,9 +230,7 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = ((TRY << 12) + (R21 * VX0) + (R22 * VY0) + (R23 * VZ0)) >> 12;
                         MAC3 = ((TRZ << 12) + (R31 * VX0) + (R32 * VY0) + (R33 * VZ0)) >> 12;
 
-                        IR1 = limB1(MAC1, 0);
-                        IR2 = limB2(MAC2, 0);
-                        IR3 = limB3(MAC3, 0);
+                        MAC2IR(0);
 
                         SZ0 = SZ1;
                         SZ1 = SZ2;
@@ -254,9 +266,7 @@ pseudo.CstrCop2 = (function() {
                             MAC2 = ((TRY << 12) + (R21 * v1) + (R22 * v2) + (R23 * v3)) >> 12;
                             MAC3 = ((TRZ << 12) + (R31 * v1) + (R32 * v2) + (R33 * v3)) >> 12;
 
-                            IR1 = limB1(MAC1, 0);
-                            IR2 = limB2(MAC2, 0);
-                            IR3 = limB3(MAC3, 0);
+                            MAC2IR(0);
 
                             SZ(v) = limD(MAC3);
                             quotient = limE(divide(H, SZ(v)));
@@ -298,9 +308,7 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = ((CV2(cv) << 12) + (MX21(mx) * v1) + (MX22(mx) * v2) + (MX23(mx) * v3)) >> sh;
                         MAC3 = ((CV3(cv) << 12) + (MX31(mx) * v1) + (MX32(mx) * v2) + (MX33(mx) * v3)) >> sh;
 
-                        IR1 = limB1(MAC1, lm);
-                        IR2 = limB2(MAC2, lm);
-                        IR3 = limB3(MAC3, lm);
+                        MAC2IR(lm);
                     }
                     return;
 
@@ -335,17 +343,9 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = (IR0 * IR2) >> sh;
                         MAC3 = (IR0 * IR3) >> sh;
 
-                        IR1 = limB1(MAC1, 0);
-                        IR2 = limB2(MAC2, 0);
-                        IR3 = limB3(MAC3, 0);
+                        MAC2IR(0);
 
-                        RGB0  = RGB1;
-                        RGB1  = RGB2;
-                        CODE2 = CODE;
-
-                        R2 = limC1(MAC1 >> 4);
-                        G2 = limC2(MAC2 >> 4);
-                        B2 = limC3(MAC3 >> 4);
+                        MAC2RGB4();
                     }
                     return;
 
@@ -363,34 +363,22 @@ pseudo.CstrCop2 = (function() {
                             MAC2 = ((L21 * v1) + (L22 * v2) + (L23 * v3)) >> 12;
                             MAC3 = ((L31 * v1) + (L32 * v2) + (L33 * v3)) >> 12;
 
-                            IR1 = limB1(MAC1, 1);
-                            IR2 = limB2(MAC2, 1);
-                            IR3 = limB3(MAC3, 1);
+                            MAC2IR(1);
 
                             MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
                             MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
                             MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
 
-                            IR1 = limB1(MAC1, 1);
-                            IR2 = limB2(MAC2, 1);
-                            IR3 = limB3(MAC3, 1);
+                            MAC2IR(1);
 
                             MAC1 = (((R << 4) * IR1) + (IR0 * limB1(RFC - ((R * IR1) >> 8), 0))) >> 12;
                             MAC2 = (((G << 4) * IR2) + (IR0 * limB2(GFC - ((G * IR2) >> 8), 0))) >> 12;
                             MAC3 = (((B << 4) * IR3) + (IR0 * limB3(BFC - ((B * IR3) >> 8), 0))) >> 12;
 
-                            RGB0  = RGB1;
-                            RGB1  = RGB2;
-                            CODE2 = CODE;
-
-                            R2 = limC1(MAC1 >> 4);
-                            G2 = limC2(MAC2 >> 4);
-                            B2 = limC3(MAC3 >> 4);
+                            MAC2RGB4();
                         }
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
                     }
                     return;
 
@@ -403,33 +391,21 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = ((L21 * VX0) + (L22 * VY0) + (L23 * VZ0)) >> 12;
                         MAC3 = ((L31 * VX0) + (L32 * VY0) + (L33 * VZ0)) >> 12;
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
 
                         MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
                         MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
                         MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
 
                         MAC1 = (R * IR1) >> 8;
                         MAC2 = (G * IR2) >> 8;
                         MAC3 = (B * IR3) >> 8;
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
 
-                        RGB0  = RGB1;
-                        RGB1  = RGB2;
-                        CODE2 = CODE;
-                        
-                        R2 = limC1(MAC1 >> 4);
-                        G2 = limC2(MAC2 >> 4);
-                        B2 = limC3(MAC3 >> 4);
+                        MAC2RGB4();
                     }
                     return;
 
@@ -442,18 +418,10 @@ pseudo.CstrCop2 = (function() {
                             MAC2 = ((G0 << 16) + (IR0 * (limB1(GFC - (G0 << 4), 0)))) >> 12;
                             MAC3 = ((B0 << 16) + (IR0 * (limB1(BFC - (B0 << 4), 0)))) >> 12;
 
-                            RGB0  = RGB1;
-                            RGB1  = RGB2;
-                            CODE2 = CODE;
-
-                            R2 = limC1(MAC1 >> 4);
-                            G2 = limC2(MAC2 >> 4);
-                            B2 = limC3(MAC3 >> 4);
+                            MAC2RGB4();
                         }
 
-                        IR1 = limB1(MAC1, 0);
-                        IR2 = limB2(MAC2, 0);
-                        IR3 = limB3(MAC3, 0);
+                        MAC2IR(0);
                     }
                     return;
 
@@ -471,34 +439,22 @@ pseudo.CstrCop2 = (function() {
                             MAC2 = ((L21 * v1) + (L22 * v2) + (L23 * v3)) >> 12;
                             MAC3 = ((L31 * v1) + (L32 * v2) + (L33 * v3)) >> 12;
 
-                            IR1 = limB1(MAC1, 1);
-                            IR2 = limB2(MAC2, 1);
-                            IR3 = limB3(MAC3, 1);
+                            MAC2IR(1);
 
                             MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
                             MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
                             MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
 
-                            IR1 = limB1(MAC1, 1);
-                            IR2 = limB2(MAC2, 1);
-                            IR3 = limB3(MAC3, 1);
+                            MAC2IR(1);
 
                             MAC1 = (R * IR1) >> 8;
                             MAC2 = (G * IR2) >> 8;
                             MAC3 = (B * IR3) >> 8;
 
-                            RGB0  = RGB1;
-                            RGB1  = RGB2;
-                            CODE2 = CODE;
-
-                            R2 = limC1(MAC1 >> 4);
-                            G2 = limC2(MAC2 >> 4);
-                            B2 = limC3(MAC3 >> 4);
+                            MAC2RGB4();
                         }
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
                     }
                     return;
 
@@ -513,17 +469,9 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = ((MAC2 << sh) + (IR0 * IR2)) >> sh;
                         MAC3 = ((MAC3 << sh) + (IR0 * IR3)) >> sh;
 
-                        IR1 = limB1(MAC1, 0);
-                        IR2 = limB2(MAC2, 0);
-                        IR3 = limB3(MAC3, 0);
+                        MAC2IR(0);
 
-                        RGB0  = RGB1;
-                        RGB1  = RGB2;
-                        CODE2 = CODE;
-
-                        R2 = limC1(MAC1 >> 4);
-                        G2 = limC2(MAC2 >> 4);
-                        B2 = limC3(MAC3 >> 4);
+                        MAC2RGB4();
                     }
                     return;
 
@@ -539,9 +487,7 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = (IR2 * IR2) >> sh;
                         MAC3 = (IR3 * IR3) >> sh;
 
-                        IR1 = limB1(MAC1, lm);
-                        IR2 = limB2(MAC2, lm);
-                        IR3 = limB3(MAC3, lm);
+                        MAC2IR(lm);
                     }
                     return;
 
@@ -557,9 +503,7 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = ((R33 * IR1) - (R11 * IR3)) >> sh;
                         MAC3 = ((R11 * IR2) - (R22 * IR1)) >> sh;
 
-                        IR1 = limB1(MAC1, lm);
-                        IR2 = limB2(MAC2, lm);
-                        IR3 = limB3(MAC3, lm);
+                        MAC2IR(lm);
                     }
                     return;
 
@@ -574,17 +518,9 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = ((G << 16) + (IR0 * limB2((GFC - (G << 4)) << (12 - sh), 0))) >> 12;
                         MAC3 = ((B << 16) + (IR0 * limB3((BFC - (B << 4)) << (12 - sh), 0))) >> 12;
 
-                        IR1 = limB1(MAC1, 0);
-                        IR2 = limB2(MAC2, 0);
-                        IR3 = limB3(MAC3, 0);
+                        MAC2IR(0);
 
-                        RGB0  = RGB1;
-                        RGB1  = RGB2;
-                        CODE2 = CODE;
-
-                        R2 = limC1(MAC1 >> 4);
-                        G2 = limC2(MAC2 >> 4);
-                        B2 = limC3(MAC3 >> 4);
+                        MAC2RGB4();
                     }
                     return;
 
@@ -600,17 +536,9 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = ((IR2 << 12) + (IR0 * limB2((GFC - IR2), 0))) >> sh;
                         MAC3 = ((IR3 << 12) + (IR0 * limB3((BFC - IR3), 0))) >> sh;
 
-                        IR1 = limB1(MAC1, lm);
-                        IR2 = limB2(MAC2, lm);
-                        IR3 = limB3(MAC3, lm);
+                        MAC2IR(lm);
 
-                        RGB0  = RGB1;
-                        RGB1  = RGB2;
-                        CODE2 = CODE;
-
-                        R2 = limC1(MAC1 >> 4);
-                        G2 = limC2(MAC2 >> 4);
-                        B2 = limC3(MAC3 >> 4);
+                        MAC2RGB4();
                     }
                     return;
 
@@ -622,25 +550,15 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = ((L21 * VX0) + (L22 * VY0) + (L23 * VZ0)) >> 12;
                         MAC3 = ((L31 * VX0) + (L32 * VY0) + (L33 * VZ0)) >> 12;
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
 
                         MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
                         MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
                         MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
 
-                        RGB0  = RGB1;
-                        RGB1  = RGB2;
-                        CODE2 = CODE;
-
-                        R2 = limC1(MAC1 >> 4);
-                        G2 = limC2(MAC2 >> 4);
-                        B2 = limC3(MAC3 >> 4);
+                        MAC2RGB4();
                     }
                     return;
 
@@ -657,26 +575,16 @@ pseudo.CstrCop2 = (function() {
                             MAC2 = ((L21 * v1) + (L22 * v2) + (L23 * v3)) >> 12;
                             MAC3 = ((L31 * v1) + (L32 * v2) + (L33 * v3)) >> 12;
 
-                            IR1 = limB1(MAC1, 1);
-                            IR2 = limB2(MAC2, 1);
-                            IR3 = limB3(MAC3, 1);
+                            MAC2IR(1);
 
                             MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
                             MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
                             MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
 
-                            RGB0  = RGB1;
-                            RGB1  = RGB2;
-                            CODE2 = CODE;
-
-                            R2 = limC1(MAC1 >> 4);
-                            G2 = limC2(MAC2 >> 4);
-                            B2 = limC3(MAC3 >> 4);
+                            MAC2RGB4();
                         }
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
                     }
                     return;
 
@@ -695,17 +603,9 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = GIR2 + ((IR0 * limB1(GFC - GIR2, 0)) >> 12);
                         MAC3 = BIR3 + ((IR0 * limB1(BFC - BIR3, 0)) >> 12);
 
-                        IR1 = limB1(MAC1, lm);
-                        IR2 = limB2(MAC2, lm);
-                        IR3 = limB3(MAC3, lm);
+                        MAC2IR(lm);
 
-                        RGB0  = RGB1;
-                        RGB1  = RGB2;
-                        CODE2 = CODE;
-
-                        R2 = limC1(MAC1 >> 4);
-                        G2 = limC2(MAC2 >> 4);
-                        B2 = limC3(MAC3 >> 4);
+                        MAC2RGB4();
                     }
                     return;
 
@@ -717,33 +617,21 @@ pseudo.CstrCop2 = (function() {
                         MAC2 = ((L21 * VX0) + (L22 * VY0) + (L23 * VZ0)) >> 12;
                         MAC3 = ((L31 * VX0) + (L32 * VY0) + (L33 * VZ0)) >> 12;
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
 
                         MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
                         MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
                         MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
 
                         MAC1 = (((R << 4) * IR1) + (IR0 * limB1(RFC - ((R * IR1) >> 8), 0))) >> 12;
                         MAC2 = (((G << 4) * IR2) + (IR0 * limB2(GFC - ((G * IR2) >> 8), 0))) >> 12;
                         MAC3 = (((B << 4) * IR3) + (IR0 * limB3(BFC - ((B * IR3) >> 8), 0))) >> 12;
 
-                        IR1 = limB1(MAC1, 1);
-                        IR2 = limB2(MAC2, 1);
-                        IR3 = limB3(MAC3, 1);
+                        MAC2IR(1);
 
-                        RGB0  = RGB1;
-                        RGB1  = RGB2;
-                        CODE2 = CODE;
-
-                        R2 = limC1(MAC1 >> 4);
-                        G2 = limC2(MAC2 >> 4);
-                        B2 = limC3(MAC3 >> 4);
+                        MAC2RGB4();
                     }
                     return;
             }
@@ -751,32 +639,32 @@ pseudo.CstrCop2 = (function() {
             console.info('COP2 Execute ' + (code & 0x3f));
         },
 
-        opcodeMFC2(addr) {
+        opcodeMFC2(addr) { // Cop2d read
             switch(addr) {
-                case  1:
-                case  3:
-                case  5:
-                case  8:
-                case  9:
-                case 10:
-                case 11:
+                case  1: // V0(z)
+                case  3: // V1(z)
+                case  5: // V2(z)
+                case  8: // IR0
+                case  9: // IR1
+                case 10: // IR2
+                case 11: // IR3
                     oooo(cop2d.sw, addr) = __oo(cop2d.sh, addr, 0);
                     break;
 
-                case  7:
-                case 16:
-                case 17:
-                case 18:
-                case 19:
+                case  7: // OTZ
+                case 16: // SZ0
+                case 17: // SZ1
+                case 18: // SZ2
+                case 19: // SZ3
                     oooo(cop2d.uw, addr) = __oo(cop2d.uh, addr, 0);
                     break;
 
-                case 15:
+                case 15: // SXY3
                     psx.error('opcodeMFC2 -> ' + addr);
                     break;
 
-                case 28:
-                case 29:
+                case 28: // IRGB
+                case 29: // ORGB
                     oooo(cop2d.uw, addr) = LIM(IR1 >> 7, 0, 0x1f, 0) | (LIM(IR2 >> 7, 0, 0x1f, 0) << 5) | (LIM(IR3 >> 7, 0, 0x1f, 0) << 10);
                     break;
             }
@@ -784,23 +672,23 @@ pseudo.CstrCop2 = (function() {
             return oooo(cop2d.uw, addr);
         },
 
-        opcodeMTC2(addr, data) {
+        opcodeMTC2(addr, data) { // Cop2d write
             switch(addr) {
-                case 15:
+                case 15: // SXY3
                     SXY0 = SXY1;
                     SXY1 = SXY2;
                     SXY2 = data;
                     SXYP = data;
                     return;
 
-                case 28:
+                case 28: // IRGB
                     IRGB = (data);
                     IR1  = (data & 0x1f) << 7;
                     IR2  = (data & 0x3e0) << 2;
                     IR3  = (data & 0x7c00) >> 3;
                     return;
 
-                case 30:
+                case 30: // LZCS
                     {
                         LZCS = data;
                         LZCR = 0;
@@ -812,27 +700,28 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
-                case 31:
+                case 29: // ORGB
+                case 31: // LZCR
                     return;
             }
 
             oooo(cop2d.uw, addr) = data;
         },
 
-        opcodeCTC2(addr, data) {
+        opcodeCTC2(addr, data) { // Cop2c write
             switch(addr) {
-                case  4:
-                case 12:
-                case 20:
-                case 26:
-                case 27:
-                case 29:
-                case 30:
+                case  4: // RT33
+                case 12: // L33
+                case 20: // LR33
+                case 26: // H
+                case 27: // DQA
+                case 29: // ZSF3
+                case 30: // ZSF4
                     data = SIGN_EXT_16(data); // ?
                     break;
 
                 /* unused */
-                case 31:
+                case 31: // FLAG
                     psx.error('opcodeCTC2 -> ' + addr + ' <- ' + psx.hex(data));
                     break;
             }
