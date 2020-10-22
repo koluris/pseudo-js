@@ -1,7 +1,6 @@
 // Preprocessor
 #define bSize                   byteLength
 #define createFunction          createProgram
-#define Chars                   String
 #define dataBin                 'arraybuffer'
 #define dest                    target
 #define disableVertexAttrib     disableVertexAttribArray
@@ -14,17 +13,18 @@
 #define fetchFunctionParameter  getProgramParameter
 #define fetchShaderParameter    getShaderParameter
 #define fetchUniform            getUniformLocation
-#define hei                     height
 #define linkFunction            linkProgram
 #define readAsBuffer            readAsArrayBuffer
 #define responseSort            responseType
-#define SintHcap                Int16Array
 #define SintWcap                Int32Array
+#define SintHcap                Int16Array
+#define SintBcap                Int8Array
 #define texPhoto2D              texImage2D
+#define Text                    String
 #define toText                  toString
-#define UintBcap                Uint8Array
-#define UintHcap                Uint16Array
 #define UintWcap                Uint32Array
+#define UintHcap                Uint16Array
+#define UintBcap                Uint8Array
 #define useFunction             useProgram
 #define WebGL                   'webgl', { preserveDrawingBuffer: true }
 
@@ -33,13 +33,13 @@ function union(size) {
     const bfr = new ArrayBuffer(size);
 
     return {
-        uw: new Uint32Array(bfr),
-        uh: new Uint16Array(bfr),
-        ub: new Uint8Array (bfr),
+        uw: new UintWcap(bfr),
+        uh: new UintHcap(bfr),
+        ub: new UintBcap(bfr),
 
-        sw: new Int32Array(bfr),
-        sh: new Int16Array(bfr),
-        sb: new Int8Array (bfr),
+        sw: new SintWcap(bfr),
+        sh: new SintHcap(bfr),
+        sb: new SintBcap(bfr),
     };
 }
 
@@ -61,13 +61,13 @@ function union(size) {
 /***
     Mem banks
 ***/
-#define directMemW(mem, addr)\
+#define directMemW(mem, addr) \
     mem[((addr) & (mem.bSize - 1)) >>> 2]
 
-#define directMemH(mem, addr)\
+#define directMemH(mem, addr) \
     mem[((addr) & (mem.bSize - 1)) >>> 1]
 
-#define directMemB(mem, addr)\
+#define directMemB(mem, addr) \
     mem[((addr) & (mem.bSize - 1)) >>> 0]
 
 /***

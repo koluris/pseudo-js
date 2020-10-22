@@ -63,7 +63,7 @@
 #define print() \
     if (pc === 0xb0) { \
         if (r[9] === 59 || r[9] === 61) { \
-            var char = Chars.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); \
+            var char = Text.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); \
             divOutput.append(char.toUpperCase()); \
         } \
     }
@@ -460,7 +460,7 @@ pseudo.CstrMips = (function() {
         },
 
         consoleWrite(kind, str) {
-            divOutput.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
+            divOutput.append('<div class="' + kind + '"><span>PSeudo:: </span>' + str + '</div>');
         },
 
         setbp() {

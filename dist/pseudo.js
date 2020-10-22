@@ -12,11 +12,11 @@ function union(size) {
     return {
         uw: new Uint32Array(bfr),
         uh: new Uint16Array(bfr),
-        ub: new Uint8Array (bfr),
+        ub: new Uint8Array(bfr),
 
         sw: new Int32Array(bfr),
         sh: new Int16Array(bfr),
-        sb: new Int8Array (bfr),
+        sb: new Int8Array(bfr),
     };
 }
 
@@ -2938,7 +2938,7 @@ pseudo.CstrMips = (function() {
         },
 
         consoleWrite(kind, str) {
-            divOutput.append('<div class="'+kind+'"><span>PSeudo:: </span>'+str+'</div>');
+            divOutput.append('<div class="' + kind + '"><span>PSeudo:: </span>' + str + '</div>');
         },
 
         setbp() {
