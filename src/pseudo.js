@@ -1,3 +1,5 @@
+/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
+
 pseudo.CstrMain = (function() {
     var divDropzone;
     var iso;
