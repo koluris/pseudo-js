@@ -11,17 +11,17 @@
 
 // A kind of helper for various data manipulation
 function union(size) {
-  var bfr = new ArrayBuffer(size);
+    const bfr = new ArrayBuffer(size);
 
-  return {
-    uw: new Uint32Array(bfr),
-    uh: new Uint16Array(bfr),
-    ub: new Uint8Array (bfr),
+    return {
+        uw: new Uint32Array(bfr),
+        uh: new Uint16Array(bfr),
+        ub: new Uint8Array (bfr),
 
-    sw: new Int32Array(bfr),
-    sh: new Int16Array(bfr),
-    sb: new Int8Array (bfr),
-  };
+        sw: new Int32Array(bfr),
+        sh: new Int16Array(bfr),
+        sb: new Int8Array (bfr),
+    };
 }
 
 
@@ -70,7 +70,33 @@ function union(size) {
 
 
 
-// Arithmetic operations
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -90,18 +116,6 @@ function union(size) {
 
 
 // Console output
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -568,18 +582,18 @@ pseudo.CstrAudio = (function() {
     },
 
     executeDMA: function(addr) {
-      var size = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff)*2;
+      var size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]&0xffff)*2;
 
-      switch(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+      switch(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
         case 0x01000201: // Write DMA Mem
-          dataMem.write(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
+          dataMem.write(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
           return;
 
         case 0x01000200:
-          dataMem.read(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
+          dataMem.read(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
           return;
       }
-      pseudo.CstrMain.error('SPU DMA case '+pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]));
+      pseudo.CstrMain.error('SPU DMA case '+pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]));
     }
   };
 })();
@@ -664,7 +678,7 @@ pseudo.CstrBus = (function() {
             const chan = ((addr >>> 4) & 0xf) - 8;
 
             if (pseudo.CstrMem.__hwr.uw[((0x10f0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & (8 << (chan * 4))) {
-                pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
+                pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data;
 
                 switch(chan) {
                     case 0: // MDEC in
@@ -681,7 +695,7 @@ pseudo.CstrBus = (function() {
                         break;
                 }
 
-                pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data & (~(0x01000000));
+                pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = data & (~(0x01000000));
                 
                 if (pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & (1 << (16 + chan))) {
                     pseudo.CstrMem.__hwr.uw[((0x10f4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] |= 1 << (24 + chan);
@@ -778,9 +792,9 @@ pseudo.CstrCdrom = (function() {
   }
 
   function trackRead() {
-    sector.prev[0] = (parseInt((sector.data[0])/10) * 16 + (sector.data[0])%10);
-    sector.prev[1] = (parseInt((sector.data[1])/10) * 16 + (sector.data[1])%10);
-    sector.prev[2] = (parseInt((sector.data[2])/10) * 16 + (sector.data[2])%10);
+    sector.prev[0] = (parseInt((sector.data[0]) / 10) * 16 + (sector.data[0]) % 10);
+    sector.prev[1] = (parseInt((sector.data[1]) / 10) * 16 + (sector.data[1]) % 10);
+    sector.prev[2] = (parseInt((sector.data[2]) / 10) * 16 + (sector.data[2]) % 10);
 
     pseudo.CstrMain.trackRead(sector.prev);
   }
@@ -917,7 +931,7 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = 1;
         res.data[1] = 1;
         res.data[2] = sector.prev[0];
-        res.data[3] = (parseInt(((parseInt((sector.prev[1])/16) * 10 + (sector.prev[1])%16) - 2)/10) * 16 + ((parseInt((sector.prev[1])/16) * 10 + (sector.prev[1])%16) - 2)%10);
+        res.data[3] = (parseInt(((parseInt((sector.prev[1]) / 16) * 10 + (sector.prev[1]) % 16) - 2) / 10) * 16 + ((parseInt((sector.prev[1]) / 16) * 10 + (sector.prev[1]) % 16) - 2) % 10);
         res.data[4] = sector.prev[2];
         res.data[5] = sector.prev[0];
         res.data[6] = sector.prev[1];
@@ -931,8 +945,8 @@ pseudo.CstrCdrom = (function() {
         res.data[0] = statP;
         res.tn[0] = 1;
         res.tn[1] = 1;
-        res.data[1] = (parseInt((res.tn[0])/10) * 16 + (res.tn[0])%10);
-        res.data[2] = (parseInt((res.tn[1])/10) * 16 + (res.tn[1])%10);
+        res.data[1] = (parseInt((res.tn[0]) / 10) * 16 + (res.tn[0]) % 10);
+        res.data[2] = (parseInt((res.tn[1]) / 10) * 16 + (res.tn[1]) % 10);
         break;
 
       case 20: // CdlGetTD
@@ -943,9 +957,9 @@ pseudo.CstrCdrom = (function() {
         res.td[0] = 0;
         res.td[1] = 2;
         res.td[2] = 0;
-        res.data[1] = (parseInt((res.td[2])/10) * 16 + (res.td[2])%10);
-        res.data[2] = (parseInt((res.td[1])/10) * 16 + (res.td[1])%10);
-        res.data[3] = (parseInt((res.td[0])/10) * 16 + (res.td[0])%10);
+        res.data[1] = (parseInt((res.td[2]) / 10) * 16 + (res.td[2]) % 10);
+        res.data[2] = (parseInt((res.td[1]) / 10) * 16 + (res.td[1]) % 10);
+        res.data[3] = (parseInt((res.td[0]) / 10) * 16 + (res.td[0]) % 10);
         break;
 
       case 21: // CdlSeekL
@@ -1127,7 +1141,7 @@ pseudo.CstrCdrom = (function() {
               ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
               seeked = 0;
               for (var i = 0; i < 3; i++) {
-                sector.data[i] = (parseInt((param.data[i])/16) * 10 + (param.data[i])%16);
+                sector.data[i] = (parseInt((param.data[i]) / 16) * 10 + (param.data[i]) % 16);
               }
               sector.data[3] = 0;
               break;
@@ -1279,9 +1293,9 @@ pseudo.CstrCdrom = (function() {
     },
 
     executeDMA(addr) {
-      const size = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0xffff) * 4;
+      const size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0xffff) * 4;
 
-      switch(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+      switch(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
         case 0x11000000:
         case 0x11400100: // ?
           if (!readed) {
@@ -1289,7 +1303,7 @@ pseudo.CstrCdrom = (function() {
           }
           
           for (var i=0; i<size; i++) {
-            pseudo.CstrMem.__ram.ub[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] + i)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = transfer.data[transfer.p + i];
+            pseudo.CstrMem.__ram.ub[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] + i)&(pseudo.CstrMem.__ram.ub.byteLength-1))>>>0] = transfer.data[transfer.p + i];
           }
 
           transfer.p += size;
@@ -1299,7 +1313,7 @@ pseudo.CstrCdrom = (function() {
         return;
 
         default:
-          pseudo.CstrMain.error('CD DMA -> '+pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]));
+          pseudo.CstrMain.error('CD DMA -> '+pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]));
           return;
       }
     }
@@ -2456,16 +2470,16 @@ pseudo.CstrMem = (function() {
         },
 
         executeDMA(addr) {
-            if (!pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] || pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0x11000002) {
+            if (!pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] || pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0x11000002) {
                 return;
             }
-            pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] &= 0xffffff;
+            pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] &= 0xffffff;
 
-            while(--pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
-                pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] - 4) & 0xffffff;
-                pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] -= 4;
+            while(--pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+                pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] - 4) & 0xffffff;
+                pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] -= 4;
             }
-            pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] = 0xffffff;
+            pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2] = 0xffffff;
         }
     };
 })();
@@ -3124,9 +3138,9 @@ pseudo.CstrMain = (function() {
                 return;
             }
 
-            const minute = (parseInt((time[0])/16) * 10 + (time[0])%16);
-            const sec    = (parseInt((time[1])/16) * 10 + (time[1])%16);
-            const frame  = (parseInt((time[2])/16) * 10 + (time[2])%16);
+            const minute = (parseInt((time[0]) / 16) * 10 + (time[0]) % 16);
+            const sec    = (parseInt((time[1]) / 16) * 10 + (time[1]) % 16);
+            const frame  = (parseInt((time[2]) / 16) * 10 + (time[2]) % 16);
 
             const offset = (((minute) * 60 + ( sec) - 2) * 75 + ( frame)) * 2352 + 12;
             const size   = (2352 - 12);
@@ -3304,8 +3318,8 @@ pseudo.CstrRender = (function() {
 
       // Shaders
       var func = ctx.createProgram();
-      ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '  attribute vec2 a_position;  attribute vec4 a_color;  attribute vec2 a_texCoord;  uniform vec2 u_resolution;  varying vec4 v_color;  varying vec2 v_texCoord;    void main() {    gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);    v_color = a_color;    v_texCoord = a_texCoord;  }'));
-      ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '  precision mediump float;  uniform sampler2D u_texture;  uniform bool u_enabled;  varying vec4 v_color;  varying vec2 v_texCoord;    void main() {    if (u_enabled) {      gl_FragColor = texture2D(u_texture, v_texCoord) * (v_color * vec4(2.0, 2.0, 2.0, 1));    }    else {      gl_FragColor = v_color;    }  }'));
+      ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '     attribute vec2 a_position;     attribute vec4 a_color;     attribute vec2 a_texCoord;     uniform vec2 u_resolution;     varying vec4 v_color;     varying vec2 v_texCoord;         void main() {         gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);         v_color = a_color;         v_texCoord = a_texCoord;     }'));
+      ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '     precision mediump float;     uniform sampler2D u_texture;     uniform bool u_enabled;     varying vec4 v_color;     varying vec2 v_texCoord;         void main() {         if (u_enabled) {             gl_FragColor = texture2D(u_texture, v_texCoord) * (v_color * vec4(2.0, 2.0, 2.0, 1));         }         else {             gl_FragColor = v_color;         }     }'));
       ctx.linkProgram(func);
       ctx.getProgramParameter(func, ctx.LINK_STATUS);
       ctx.useProgram (func);
@@ -4227,9 +4241,9 @@ pseudo.CstrGraphics = (function() {
     },
 
     executeDMA(addr) {
-      const size = (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] >>> 16) * (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0xffff);
+      const size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] >>> 16) * (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] & 0xffff);
 
-      switch(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
+      switch(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]) {
         case 0x00000401: // Disable DMA?
           return;
 
@@ -4237,18 +4251,18 @@ pseudo.CstrGraphics = (function() {
           return;
 
         case 0x01000201:
-          dataMem.write(true, pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
+          dataMem.write(true, pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2], size);
           return;
 
         case 0x01000401:
-          while(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0xffffff) {
-            const count = pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
-            dataMem.write(true, (pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]+4)&0x1ffffc, count>>>24);
-            pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = count&0xffffff;
+          while(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] !== 0xffffff) {
+            const count = pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2])&(pseudo.CstrMem.__ram.uw.byteLength-1))>>>2];
+            dataMem.write(true, (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]+4)&0x1ffffc, count>>>24);
+            pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2] = count&0xffffff;
           }
           return;
       }
-      pseudo.CstrMain.error('GPU DMA ' + pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr&0xfff0)|8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]));
+      pseudo.CstrMain.error('GPU DMA ' + pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8)&(pseudo.CstrMem.__hwr.uw.byteLength-1))>>>2]));
     },
 
     inread(data) {
