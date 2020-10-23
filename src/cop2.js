@@ -145,20 +145,23 @@
 #define SZ(n) __oo(cop2d.uh, (n + 17), 0)
 
 #define LIM(a, min, max, bit) \
-    (((a) < min) ? (FLAG |= (1 << bit), min) : \
-    (((a) > max) ? (FLAG |= (1 << bit), max) : ((a))))
+    (((a) < min) ? (FLAG |= (bit), min) : \
+    (((a) > max) ? (FLAG |= (bit), max) : ((a))))
 
-#define limB1(a, l) LIM((a), !l * -32768, 32767, 24)
-#define limB2(a, l) LIM((a), !l * -32768, 32767, 23)
-#define limB3(a, l) LIM((a), !l * -32768, 32767, 22)
-#define limC1(a) LIM((a),       0,    255, 21)
-#define limC2(a) LIM((a),       0,    255, 20)
-#define limC3(a) LIM((a),       0,    255, 19)
-#define limD( a) LIM((a),       0,  65535, 18)
-#define limE( a) LIM((a), -131072, 131071, 17)
-#define limG1(a) LIM((a),   -1024,   1023, 14)
-#define limG2(a) LIM((a),   -1024,   1023, 13)
-#define limH( a) LIM((a),       0,   4096, 12)
+#define SETF(n) \
+    (1 << n)
+
+#define limB1(a, l) LIM((a), !l * -32768, 32767, SETF(24) | SETF(31))
+#define limB2(a, l) LIM((a), !l * -32768, 32767, SETF(23) | SETF(31))
+#define limB3(a, l) LIM((a), !l * -32768, 32767, SETF(22))
+#define limC1(a) LIM((a),       0,    255, SETF(21))
+#define limC2(a) LIM((a),       0,    255, SETF(20))
+#define limC3(a) LIM((a),       0,    255, SETF(19))
+#define limD( a) LIM((a),       0,  65535, SETF(18) | SETF(31))
+#define limE( a) LIM((a), -131072, 131071, SETF(17) | SETF(31))
+#define limG1(a) LIM((a),   -1024,   1023, SETF(14) | SETF(31))
+#define limG2(a) LIM((a),   -1024,   1023, SETF(13) | SETF(31))
+#define limH( a) LIM((a),       0,   4096, SETF(12))
 
 #define GTE_SF(op) ((op >> 19) & 1)
 #define GTE_MX(op) ((op >> 17) & 3)
@@ -289,6 +292,73 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
+                case 12: // OP
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+                        const lm = GTE_LM(op);
+
+                        FLAG = 0;
+
+                        MAC1 = ((R22 * IR3) - (R33 * IR2)) >> sh;
+                        MAC2 = ((R33 * IR1) - (R11 * IR3)) >> sh;
+                        MAC3 = ((R11 * IR2) - (R22 * IR1)) >> sh;
+
+                        MAC2IR(lm);
+                    }
+                    return;
+
+                case 16: // DPCS
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+
+                        FLAG = 0;
+
+                        MAC1 = ((R << 16) + (IR0 * limB1((RFC - (R << 4)) << (12 - sh), 0))) >> 12;
+                        MAC2 = ((G << 16) + (IR0 * limB2((GFC - (G << 4)) << (12 - sh), 0))) >> 12;
+                        MAC3 = ((B << 16) + (IR0 * limB3((BFC - (B << 4)) << (12 - sh), 0))) >> 12;
+
+                        MAC2IR(0);
+
+                        MAC2RGB4();
+                    }
+                    return;
+
+                case 42: // DPCT
+                    {
+                        FLAG = 0;
+
+                        for (var v = 0; v < 3; v++) {
+                            MAC1 = ((R0 << 16) + (IR0 * (limB1(RFC - (R0 << 4), 0)))) >> 12;
+                            MAC2 = ((G0 << 16) + (IR0 * (limB1(GFC - (G0 << 4), 0)))) >> 12;
+                            MAC3 = ((B0 << 16) + (IR0 * (limB1(BFC - (B0 << 4), 0)))) >> 12;
+
+                            MAC2RGB4();
+                        }
+
+                        MAC2IR(0);
+                    }
+                    return;
+
+                case 17: // INTPL
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+                        const lm = GTE_LM(op);
+
+                        FLAG = 0;
+
+                        MAC1 = ((IR1 << 12) + (IR0 * limB1((RFC - IR1), 0))) >> sh;
+                        MAC2 = ((IR2 << 12) + (IR0 * limB2((GFC - IR2), 0))) >> sh;
+                        MAC3 = ((IR3 << 12) + (IR0 * limB3((BFC - IR3), 0))) >> sh;
+
+                        MAC2IR(lm);
+
+                        MAC2RGB4();
+                    }
+                    return;
+
                 /* anelic */
                 case 18: // MVMVA
                     {
@@ -312,38 +382,27 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
-                /* pdx-068, trancetro */
-                case 45: // AVSZ3
+                case 19: // NCDS
                     {
                         FLAG = 0;
-                        
-                        MAC0 = (ZSF3 * SZ1) + (ZSF3 * SZ2) + (ZSF3 * SZ3);
-                        OTZ  = limD(MAC0 >> 12);
-                    }
-                    return;
 
-                case 46: // AVSZ4
-                    {
-                        FLAG = 0;
-                        
-                        MAC0 = ZSF4 * (SZ0 + SZ1 + SZ2 + SZ3);
-                        OTZ = limD(MAC0 >> 12);
-                    }
-                    return;
+                        MAC1 = ((L11 * VX0) + (L12 * VY0) + (L13 * VZ0)) >> 12;
+                        MAC2 = ((L21 * VX0) + (L22 * VY0) + (L23 * VZ0)) >> 12;
+                        MAC3 = ((L31 * VX0) + (L32 * VY0) + (L33 * VZ0)) >> 12;
 
-                /* t-rex */
-                case 61: // GPF
-                    {
-                        const op = code & 0x1ffffff;
-                        const sh = GTE_SF(op) * 12;
+                        MAC2IR(1);
 
-                        FLAG = 0;
+                        MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
+                        MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
+                        MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
 
-                        MAC1 = (IR0 * IR1) >> sh;
-                        MAC2 = (IR0 * IR2) >> sh;
-                        MAC3 = (IR0 * IR3) >> sh;
+                        MAC2IR(1);
 
-                        MAC2IR(0);
+                        MAC1 = (((R << 4) * IR1) + (IR0 * limB1(RFC - ((R * IR1) >> 8), 0))) >> 12;
+                        MAC2 = (((G << 4) * IR2) + (IR0 * limB2(GFC - ((G * IR2) >> 8), 0))) >> 12;
+                        MAC3 = (((B << 4) * IR3) + (IR0 * limB3(BFC - ((B * IR3) >> 8), 0))) >> 12;
+
+                        MAC2IR(1);
 
                         MAC2RGB4();
                     }
@@ -382,6 +441,26 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
+                case 20: // CDP
+                    {
+                        FLAG = 0;
+                        
+                        MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
+                        MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
+                        MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
+                        
+                        MAC2IR(1);
+                        
+                        MAC1 = (((R << 4) * IR1) + (IR0 * limB1(RFC - ((R * IR1) >> 8), 0))) >> 12;
+                        MAC2 = (((G << 4) * IR2) + (IR0 * limB2(GFC - ((G * IR2) >> 8), 0))) >> 12;
+                        MAC3 = (((B << 4) * IR3) + (IR0 * limB3(BFC - ((B * IR3) >> 8), 0))) >> 12;
+                        
+                        MAC2IR(1);
+                        
+                        MAC2RGB4();
+                    }
+                    return;
+
                 /* mario-3d */
                 case 27: // NCCS
                     {
@@ -406,22 +485,6 @@ pseudo.CstrCop2 = (function() {
                         MAC2IR(1);
 
                         MAC2RGB4();
-                    }
-                    return;
-
-                case 42: // DPCT
-                    {
-                        FLAG = 0;
-
-                        for (var v = 0; v < 3; v++) {
-                            MAC1 = ((R0 << 16) + (IR0 * (limB1(RFC - (R0 << 4), 0)))) >> 12;
-                            MAC2 = ((G0 << 16) + (IR0 * (limB1(GFC - (G0 << 4), 0)))) >> 12;
-                            MAC3 = ((B0 << 16) + (IR0 * (limB1(BFC - (B0 << 4), 0)))) >> 12;
-
-                            MAC2RGB4();
-                        }
-
-                        MAC2IR(0);
                     }
                     return;
 
@@ -458,86 +521,22 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
-                case 62: // GPL
+                case 28: // CC
                     {
-                        const op = code & 0x1ffffff;
-                        const sh = GTE_SF(op) * 12;
-
                         FLAG = 0;
-
-                        MAC1 = ((MAC1 << sh) + (IR0 * IR1)) >> sh;
-                        MAC2 = ((MAC2 << sh) + (IR0 * IR2)) >> sh;
-                        MAC3 = ((MAC3 << sh) + (IR0 * IR3)) >> sh;
-
-                        MAC2IR(0);
-
-                        MAC2RGB4();
-                    }
-                    return;
-
-                case 40: // SQR
-                    {
-                        const op = code & 0x1ffffff;
-                        const sh = GTE_SF(op) * 12;
-                        const lm = GTE_LM(op);
-
-                        FLAG = 0;
-
-                        MAC1 = (IR1 * IR1) >> sh;
-                        MAC2 = (IR2 * IR2) >> sh;
-                        MAC3 = (IR3 * IR3) >> sh;
-
-                        MAC2IR(lm);
-                    }
-                    return;
-
-                case 12: // OP
-                    {
-                        const op = code & 0x1ffffff;
-                        const sh = GTE_SF(op) * 12;
-                        const lm = GTE_LM(op);
-
-                        FLAG = 0;
-
-                        MAC1 = ((R22 * IR3) - (R33 * IR2)) >> sh;
-                        MAC2 = ((R33 * IR1) - (R11 * IR3)) >> sh;
-                        MAC3 = ((R11 * IR2) - (R22 * IR1)) >> sh;
-
-                        MAC2IR(lm);
-                    }
-                    return;
-
-                case 16: // DPCS
-                    {
-                        const op = code & 0x1ffffff;
-                        const sh = GTE_SF(op) * 12;
-
-                        FLAG = 0;
-
-                        MAC1 = ((R << 16) + (IR0 * limB1((RFC - (R << 4)) << (12 - sh), 0))) >> 12;
-                        MAC2 = ((G << 16) + (IR0 * limB2((GFC - (G << 4)) << (12 - sh), 0))) >> 12;
-                        MAC3 = ((B << 16) + (IR0 * limB3((BFC - (B << 4)) << (12 - sh), 0))) >> 12;
-
-                        MAC2IR(0);
-
-                        MAC2RGB4();
-                    }
-                    return;
-
-                case 17: // INTPL
-                    {
-                        const op = code & 0x1ffffff;
-                        const sh = GTE_SF(op) * 12;
-                        const lm = GTE_LM(op);
-
-                        FLAG = 0;
-
-                        MAC1 = ((IR1 << 12) + (IR0 * limB1((RFC - IR1), 0))) >> sh;
-                        MAC2 = ((IR2 << 12) + (IR0 * limB2((GFC - IR2), 0))) >> sh;
-                        MAC3 = ((IR3 << 12) + (IR0 * limB3((BFC - IR3), 0))) >> sh;
-
-                        MAC2IR(lm);
-
+                        
+                        MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
+                        MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
+                        MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
+                        
+                        MAC2IR(1);
+                        
+                        MAC1 = (R * IR1) >> 8;
+                        MAC2 = (G * IR2) >> 8;
+                        MAC3 = (B * IR3) >> 8;
+                        
+                        MAC2IR(1);
+                        
                         MAC2RGB4();
                     }
                     return;
@@ -588,6 +587,22 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
+                case 40: // SQR
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+                        const lm = GTE_LM(op);
+
+                        FLAG = 0;
+
+                        MAC1 = (IR1 * IR1) >> sh;
+                        MAC2 = (IR2 * IR2) >> sh;
+                        MAC3 = (IR3 * IR3) >> sh;
+
+                        MAC2IR(lm);
+                    }
+                    return;
+
                 case 41: // DCPL
                     {
                         const op = code & 0x1ffffff;
@@ -609,27 +624,55 @@ pseudo.CstrCop2 = (function() {
                     }
                     return;
 
-                case 19: // NCDS
+                /* pdx-068, trancetro */
+                case 45: // AVSZ3
                     {
                         FLAG = 0;
+                        
+                        MAC0 = (ZSF3 * SZ1) + (ZSF3 * SZ2) + (ZSF3 * SZ3);
+                        OTZ  = limD(MAC0 >> 12);
+                    }
+                    return;
 
-                        MAC1 = ((L11 * VX0) + (L12 * VY0) + (L13 * VZ0)) >> 12;
-                        MAC2 = ((L21 * VX0) + (L22 * VY0) + (L23 * VZ0)) >> 12;
-                        MAC3 = ((L31 * VX0) + (L32 * VY0) + (L33 * VZ0)) >> 12;
+                case 46: // AVSZ4
+                    {
+                        FLAG = 0;
+                        
+                        MAC0 = ZSF4 * (SZ0 + SZ1 + SZ2 + SZ3);
+                        OTZ = limD(MAC0 >> 12);
+                    }
+                    return;
 
-                        MAC2IR(1);
+                /* t-rex */
+                case 61: // GPF
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
 
-                        MAC1 = ((RBK << 12) + (LR1 * IR1) + (LR2 * IR2) + (LR3 * IR3)) >> 12;
-                        MAC2 = ((GBK << 12) + (LG1 * IR1) + (LG2 * IR2) + (LG3 * IR3)) >> 12;
-                        MAC3 = ((BBK << 12) + (LB1 * IR1) + (LB2 * IR2) + (LB3 * IR3)) >> 12;
+                        FLAG = 0;
 
-                        MAC2IR(1);
+                        MAC1 = (IR0 * IR1) >> sh;
+                        MAC2 = (IR0 * IR2) >> sh;
+                        MAC3 = (IR0 * IR3) >> sh;
 
-                        MAC1 = (((R << 4) * IR1) + (IR0 * limB1(RFC - ((R * IR1) >> 8), 0))) >> 12;
-                        MAC2 = (((G << 4) * IR2) + (IR0 * limB2(GFC - ((G * IR2) >> 8), 0))) >> 12;
-                        MAC3 = (((B << 4) * IR3) + (IR0 * limB3(BFC - ((B * IR3) >> 8), 0))) >> 12;
+                        MAC2IR(0);
 
-                        MAC2IR(1);
+                        MAC2RGB4();
+                    }
+                    return;
+
+                case 62: // GPL
+                    {
+                        const op = code & 0x1ffffff;
+                        const sh = GTE_SF(op) * 12;
+
+                        FLAG = 0;
+
+                        MAC1 = ((MAC1 << sh) + (IR0 * IR1)) >> sh;
+                        MAC2 = ((MAC2 << sh) + (IR0 * IR2)) >> sh;
+                        MAC3 = ((MAC3 << sh) + (IR0 * IR3)) >> sh;
+
+                        MAC2IR(0);
 
                         MAC2RGB4();
                     }

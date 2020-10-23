@@ -426,7 +426,7 @@ pseudo.CstrMips = (function() {
 
         run() {
             bp = false;
-            requestAF = setTimeout(cpu.run, 1); //requestAnimationFrame(cpu.run);
+            requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
 
             while (!bp) { // And u don`t stop!
                 step(false);
