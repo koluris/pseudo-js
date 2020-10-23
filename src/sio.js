@@ -138,7 +138,14 @@ pseudo.CstrSerial = (function() {
               parp  = 0;
 
               if (control & SIO_CTRL_DTR) {
-                bus.interruptSet(IRQ_SIO0);
+                switch (control) {
+                  case 0x1003:
+                    bus.interruptSet(IRQ_SIO0);
+                    break;
+                      
+                  default:
+                    break;
+                }
               }
             }
             return;

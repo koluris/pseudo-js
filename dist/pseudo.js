@@ -3620,7 +3620,14 @@ pseudo.CstrSerial = (function() {
               parp  = 0;
 
               if (control & 0x002) {
-                pseudo.CstrBus.interruptSet(7);
+                switch (control) {
+                  case 0x1003:
+                    pseudo.CstrBus.interruptSet(7);
+                    break;
+                      
+                  default:
+                    break;
+                }
               }
             }
             return;
