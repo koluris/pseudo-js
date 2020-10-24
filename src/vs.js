@@ -390,7 +390,7 @@ pseudo.CstrGraphics = (function() {
             vrop.h.end   = vrop.h.p + p.n4;
             vrop.v.end   = vrop.v.p + p.n5;
 
-            vrop.pvram = vrop.v.p * FRAME_W;
+            vrop.pvram = p.n3 * FRAME_W;
             modeDMA = GPU_DMA_VRAM2MEM;
 
             ret.status |= GPU_STAT_READYFORVRAM;

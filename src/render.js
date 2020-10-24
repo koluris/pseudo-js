@@ -614,6 +614,7 @@ pseudo.CstrRender = (function() {
             // Operations
             switch(addr) {
                 case 0x01: // FLUSH
+                    vs.scopeW(0x1f801814, 0x01000000);
                     return;
 
                 case 0x02: // BLOCK FILL

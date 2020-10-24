@@ -142,6 +142,9 @@ pseudo.CstrSerial = (function() {
                   case 0x1003:
                     bus.interruptSet(IRQ_SIO0);
                     break;
+
+                  case 0x3003:
+                    break;
                       
                   default:
                     break;
@@ -214,11 +217,11 @@ pseudo.CstrSerial = (function() {
       }
       
       if (code == 90) { // X
-          btnCheck(PAD_BTN_CROSS);
+          btnCheck(PAD_BTN_CIRCLE);
       }
       
       if (code == 88) { // Z
-          btnCheck(PAD_BTN_CIRCLE);
+          btnCheck(PAD_BTN_CROSS);
       }
 
       bfr[3] = (btnState >>> 0) & 0xff;

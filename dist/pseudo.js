@@ -3599,6 +3599,7 @@ pseudo.CstrRender = (function() {
             // Operations
             switch(addr) {
                 case 0x01: // FLUSH
+                    pseudo.CstrGraphics.scopeW(0x1f801814, 0x01000000);
                     return;
 
                 case 0x02: // BLOCK FILL
@@ -3820,6 +3821,9 @@ pseudo.CstrSerial = (function() {
                   case 0x1003:
                     pseudo.CstrBus.interruptSet(7);
                     break;
+
+                  case 0x3003:
+                    break;
                       
                   default:
                     break;
@@ -3892,11 +3896,11 @@ pseudo.CstrSerial = (function() {
       }
       
       if (code == 90) { // X
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CROSS)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CROSS)); };
+          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CIRCLE)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CIRCLE)); };
       }
       
       if (code == 88) { // Z
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CIRCLE)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CIRCLE)); };
+          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CROSS)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CROSS)); };
       }
 
       bfr[3] = (btnState >>> 0) & 0xff;
@@ -4446,7 +4450,7 @@ pseudo.CstrGraphics = (function() {
             vrop.h.end   = vrop.h.p + p.n4;
             vrop.v.end   = vrop.v.p + p.n5;
 
-            vrop.pvram = vrop.v.p * 1024;
+            vrop.pvram = p.n3 * 1024;
             modeDMA = GPU_DMA_VRAM2MEM;
 
             ret.status |= GPU_STAT_READYFORVRAM;
