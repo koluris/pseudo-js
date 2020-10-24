@@ -401,13 +401,12 @@ pseudo.CstrRender = (function() {
         // Compose Color
         ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
         ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new UintBcap(color), ctx.DYNAMIC_DRAW);
+        ctx.bufferData(ctx.ARRAY_BUFFER, new UintBcap(color), ctx.STATIC_DRAW);
 
         // Compose Vertex
         ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);
         ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new SintHcap(vertex), ctx.DYNAMIC_DRAW);
-
+        ctx.bufferData(ctx.ARRAY_BUFFER, new SintHcap(vertex), ctx.STATIC_DRAW);
         
         if (texture) {
             // Compose Texture
@@ -419,7 +418,7 @@ pseudo.CstrRender = (function() {
             ctx.enableVertexAttrib(attrib._t);
             ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._t);
             ctx.vertexAttribPointer(attrib._t, 2, ctx.FLOAT, false, 0, 0);
-            ctx.bufferData(ctx.ARRAY_BUFFER, new F32cap(texture), ctx.DYNAMIC_DRAW);
+            ctx.bufferData(ctx.ARRAY_BUFFER, new F32cap(texture), ctx.STATIC_DRAW);
         }
         else {
             // Disable Texture
@@ -428,10 +427,10 @@ pseudo.CstrRender = (function() {
         }
 
         // Draw!
-        ctx.enable(ctx.SCISSOR_TEST);
-        ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);
+        //ctx.enable(ctx.SCISSOR_TEST);
+        //ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);
         ctx.drawVertices(mode, 0, size);
-        ctx.disable(ctx.SCISSOR_TEST);
+        //ctx.disable(ctx.SCISSOR_TEST);
     }
 
     // Exposed class functions/variables
@@ -638,7 +637,7 @@ pseudo.CstrRender = (function() {
                             p.vx[0].h,             p.vx[0].v + p.vx[1].v,
                             p.vx[0].h + p.vx[1].h, p.vx[0].v + p.vx[1].v,
                         ];
-
+                        
                         drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
                     }
                     return;
