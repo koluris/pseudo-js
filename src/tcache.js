@@ -138,10 +138,10 @@ pseudo.CstrTexCache = (function() {
 
         invalidate(iX, iY, iW, iH) {
             for (const tc of cache) {
-                if (((tc.pos.w + 255) >= iX) && ((tc.pos.h + 255) >= iY) && ((tc.pos.w) <= iW) && ((tc.pos.h) <= iH)) {
+                //if (((tc.pos.w + 255) >= iX) && ((tc.pos.h + 255) >= iY) && ((tc.pos.w) <= iW) && ((tc.pos.h) <= iH)) {
                     tc.uid = -1;
-                    continue;
-                }
+                    //continue;
+                //}
             }
         }
     };

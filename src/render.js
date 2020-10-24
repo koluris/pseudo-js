@@ -594,10 +594,11 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xa0: // LOAD IMAGE
-          vs.inread(data);
+          vs.photoRead(data);
           return;
 
         case 0xc0: // STORE IMAGE
+          vs.photoWrite(data);
           return;
 
         case 0xe1: // TEXTURE PAGE
@@ -611,8 +612,8 @@ pseudo.CstrRender = (function() {
 
         case 0xe3: // DRAW AREA START
           {
-            var pane = {
-              h: data[0]&0x3ff, v: (data[0]>>10)&0x1ff
+            const pane = {
+              h: data[0] & 0x3ff, v: (data[0] >> 10) & 0x1ff
             };
 
             drawArea.start.h = drawAreaCalc(pane.h);
@@ -622,8 +623,8 @@ pseudo.CstrRender = (function() {
 
         case 0xe4: // DRAW AREA END
           {
-            var pane = {
-              h: data[0]&0x3ff, v: (data[0]>>10)&0x1ff
+            const pane = {
+              h: data[0] & 0x3ff, v: (data[0] >> 10) & 0x1ff
             };
 
             drawArea.end.h = drawAreaCalc(pane.h);
@@ -632,8 +633,8 @@ pseudo.CstrRender = (function() {
           return;
 
         case 0xe5: // DRAW OFFSET
-          ofs.h = (SIGN_EXT_32(data[0])<<21)>>21;
-          ofs.v = (SIGN_EXT_32(data[0])<<10)>>21;
+          ofs.h = (SIGN_EXT_32(data[0]) << 21) >> 21;
+          ofs.v = (SIGN_EXT_32(data[0]) << 10) >> 21;
           return;
 
         case 0xe6: // STP

@@ -10,11 +10,11 @@
 #define GPU_COMMAND(x)\
   (x>>>24)&0xff
 
-#define READIMG(data) {\
-  n2: (data[1]>>> 0)&0xffff,\
-  n3: (data[1]>>>16)&0xffff,\
-  n4: (data[2]>>> 0)&0xffff,\
-  n5: (data[2]>>>16)&0xffff,\
+#define READ_IMG(data) { \
+  n2: (data[1]) & 0xffff, \
+  n3: (data[1] >>> 16) & 0xffff, \
+  n4: (data[2]) & 0xffff, \
+  n5: (data[2] >>> 16) & 0xffff, \
 }
 
 pseudo.CstrGraphics = (function() {
@@ -139,6 +139,37 @@ pseudo.CstrGraphics = (function() {
           render.draw(pipe.prim, pipe.data);
         }
       }
+    },
+
+    read(stream, addr, size) {
+      if (modeDMA == GPU_DMA_VRAM2MEM) {
+        ret.status &= (~(0x14000000));
+
+        do {
+          const vramData = vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
+
+          if (stream) {
+            directMemW(ram.uw, addr) = vramData;
+          }
+          else {
+            ret.data = vramData;
+          }
+          addr += 4;
+
+          if ((vrop.h.p += 2) >= vrop.h.end) {
+            vrop.h.p = vrop.h.start;
+            vrop.pvram += FRAME_W;
+
+            if (++vrop.v.p >= vrop.v.end) {
+              modeDMA = GPU_DMA_NONE;
+              ret.status &= (~(GPU_STAT_READYFORVRAM));
+              break;
+            }
+          }
+        } while (--size);
+        
+        ret.status = (ret.status | 0x14000000) & (~(GPU_STAT_DMABITS));
+      }
     }
   }
 
@@ -193,7 +224,7 @@ pseudo.CstrGraphics = (function() {
   function fetchEnd(count) {
     if (vrop.v.p >= vrop.v.end) {
       render.outputVRAM(vrop.raw, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
-      
+
       vrop.raw.fill(0);
       vrop.enabled = false;
 
@@ -223,6 +254,7 @@ pseudo.CstrGraphics = (function() {
       // VRAM Operations
       vrop.enabled = false;
       vrop.raw     = 0;
+      vrop.pvram   = 0;
       vrop.h.p     = 0;
       vrop.h.start = 0;
       vrop.h.end   = 0;
@@ -314,6 +346,7 @@ pseudo.CstrGraphics = (function() {
     scopeR(addr) {
       switch(addr & 0xf) {
         case GPU_DATA:
+          dataMem.read(false, 0, 1);
           return ret.data;
 
         case GPU_STATUS:
@@ -325,10 +358,8 @@ pseudo.CstrGraphics = (function() {
       const size = (bcr >>> 16) * (bcr & 0xffff);
 
       switch(chcr) {
-        case 0x00000401: // Disable DMA?
-          return;
-
-        case 0x01000200: // Read
+        case 0x01000200:
+          dataMem.read(true, madr, size);
           return;
 
         case 0x01000201:
@@ -338,25 +369,42 @@ pseudo.CstrGraphics = (function() {
         case 0x01000401:
           while(madr !== 0xffffff) {
             const count = directMemW(ram.uw, madr);
-            dataMem.write(true, (madr+4)&0x1ffffc, count>>>24);
-            madr = count&0xffffff;
+            dataMem.write(true, (madr + 4) & 0x1ffffc, count >>> 24);
+            madr = count & 0xffffff;
           }
+          return;
+
+        /* unused */
+        case 0x00000401: // Disable DMA?
           return;
       }
       psx.error('GPU DMA ' + psx.hex(chcr));
     },
 
-    inread(data) {
-      const p = READIMG(data);
-
-      vrop.enabled = true;
-      vrop.raw     = new UintWcap(p.n4 * p.n5);
+    photoWrite(data) {
+      const p = READ_IMG(data);
 
       vrop.h.start = vrop.h.p = p.n2;
       vrop.v.start = vrop.v.p = p.n3;
       vrop.h.end   = vrop.h.p + p.n4;
       vrop.v.end   = vrop.v.p + p.n5;
 
+      vrop.pvram = vrop.v.p * FRAME_W;
+      modeDMA = GPU_DMA_VRAM2MEM;
+
+      ret.status |= GPU_STAT_READYFORVRAM;
+    },
+
+    photoRead(data) {
+      const p = READ_IMG(data);
+
+      vrop.h.start = vrop.h.p = p.n2;
+      vrop.v.start = vrop.v.p = p.n3;
+      vrop.h.end   = vrop.h.p + p.n4;
+      vrop.v.end   = vrop.v.p + p.n5;
+
+      vrop.enabled = true;
+      vrop.raw = new UintWcap(p.n4 * p.n5);
       modeDMA = GPU_DMA_MEM2VRAM;
 
       // Cache invalidation
