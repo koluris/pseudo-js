@@ -2987,6 +2987,35 @@ pseudo.CstrMain = (function() {
             });
         },
 
+        openFile(file) {
+            // PS-X EXE
+            chunkReader(file, 0, 8, 'text', function(id) {
+                if (id === 'PS-X EXE') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) { // Callback
+                        reset();
+                        executable(e.target.result);
+                        pseudo.CstrMips.run();
+                    };
+                    // Read file
+                    reader.readAsArrayBuffer(file);
+                }
+            });
+
+            // ISO 9660
+            chunkReader(file, 0x9319, 5, 'text', function(id) {
+                if (id === 'CD001') {
+                    chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
+                        reset();
+                        iso = file;
+                        pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
+                        pseudo.CstrMips.setpc(pseudo.CstrMips.readbase(32));
+                        pseudo.CstrMips.run();
+                    });
+                }
+            });
+        },
+
         drop: {
             file(e) {
                 e.preventDefault();
@@ -2995,34 +3024,7 @@ pseudo.CstrMain = (function() {
                 const dt = e.dataTransfer;
 
                 if (dt.files) {
-                    const file = dt.files[0];
-          
-                    // PS-X EXE
-                    chunkReader(file, 0, 8, 'text', function(id) {
-                        if (id === 'PS-X EXE') {
-                            const reader = new FileReader();
-                            reader.onload = function(e) { // Callback
-                                reset();
-                                executable(e.target.result);
-                                pseudo.CstrMips.run();
-                            };
-                            // Read file
-                            reader.readAsArrayBuffer(file);
-                        }
-                    });
-
-                    // ISO 9660
-                    chunkReader(file, 0x9319, 5, 'text', function(id) {
-                        if (id === 'CD001') {
-                            chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
-                                reset();
-                                iso = file;
-                                pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
-                                pseudo.CstrMips.setpc(pseudo.CstrMips.readbase(32));
-                                pseudo.CstrMips.run();
-                            });
-                        }
-                    });
+                    pseudo.CstrMain.openFile(dt.files[0]);
                 }
             },
 

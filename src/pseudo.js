@@ -85,6 +85,35 @@ pseudo.CstrMain = (function() {
             });
         },
 
+        openFile(file) {
+            // PS-X EXE
+            chunkReader(file, 0, 8, 'text', function(id) {
+                if (id === 'PS-X EXE') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) { // Callback
+                        reset();
+                        executable(e.dest.result);
+                        cpu.run();
+                    };
+                    // Read file
+                    reader.readAsBuffer(file);
+                }
+            });
+
+            // ISO 9660
+            chunkReader(file, 0x9319, 5, 'text', function(id) {
+                if (id === 'CD001') {
+                    chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
+                        reset();
+                        iso = file;
+                        cpu.setbase(32, cpu.readbase(31));
+                        cpu.setpc(cpu.readbase(32));
+                        cpu.run();
+                    });
+                }
+            });
+        },
+
         drop: {
             file(e) {
                 e.preventDefault();
@@ -93,34 +122,7 @@ pseudo.CstrMain = (function() {
                 const dt = e.dataTransfer;
 
                 if (dt.files) {
-                    const file = dt.files[0];
-          
-                    // PS-X EXE
-                    chunkReader(file, 0, 8, 'text', function(id) {
-                        if (id === 'PS-X EXE') {
-                            const reader = new FileReader();
-                            reader.onload = function(e) { // Callback
-                                reset();
-                                executable(e.dest.result);
-                                cpu.run();
-                            };
-                            // Read file
-                            reader.readAsBuffer(file);
-                        }
-                    });
-
-                    // ISO 9660
-                    chunkReader(file, 0x9319, 5, 'text', function(id) {
-                        if (id === 'CD001') {
-                            chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
-                                reset();
-                                iso = file;
-                                cpu.setbase(32, cpu.readbase(31));
-                                cpu.setpc(cpu.readbase(32));
-                                cpu.run();
-                            });
-                        }
-                    });
+                    psx.openFile(dt.files[0]);
                 }
             },
 

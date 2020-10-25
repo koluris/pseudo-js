@@ -263,7 +263,7 @@
           <div id="output"></div>
         </div>
         <div class="panel-r">
-          <div id="dropzone" ondrop="pseudo.CstrMain.drop.file(event)" ONDRAGENTER="pseudo.CstrMain.drop.enter()" ONDRAGLEAVE="pseudo.CstrMain.drop.exit()" ONDRAGOVER="pseudo.CstrMain.drop.over(event)">
+          <div id="dropzone" ondrop="pseudo.CstrMain.drop.file(event)" ONDRAGENTER="pseudo.CstrMain.drop.enter()" ONDRAGLEAVE="pseudo.CstrMain.drop.exit()" ONDRAGOVER="pseudo.CstrMain.drop.over(event)" onclick="chooseFile()">
             <IMG src="res/drop.png"/>
             <div>DRAG & DROP PSX FILES</div>
             <div>iso bin psx exe</div>
@@ -280,6 +280,12 @@
   <script src="dist/pseudo.js"></script>
 
   <script>
+    function chooseFile() {
+      $('<input type="file">').on('change', function () {
+        pseudo.CstrMain.openFile(this.files[0]);
+      }).click();
+    }
+
     $(function() {
       var screen   = $('#screen');
       var blink    = $('#blink');
