@@ -2056,7 +2056,7 @@ pseudo.CstrCounters = (function() {
             }
 
             // Graphics
-            vbk += threshold * 2;
+            vbk += threshold * 3;
 
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
                 pseudo.CstrBus.interruptSet(0);
@@ -2828,7 +2828,7 @@ pseudo.CstrMips = (function() {
 
         run() {
             bp = false;
-            requestAF = setTimeout(pseudo.CstrMips.run, 0); //requestAnimationFrame(pseudo.CstrMips.run);
+            requestAF = setImmediate(pseudo.CstrMips.run); //requestAnimationFrame(pseudo.CstrMips.run);
 
             while (!bp) { // And u don`t stop!
                 step(false);
@@ -2880,7 +2880,7 @@ pseudo.CstrMips = (function() {
         pause() {
             //cancelAnimationFrame(requestAF);
             //requestAF = undefined;
-            clearTimeout(requestAF);
+            clearImmediate(requestAF);
             bp = true;
         },
 
