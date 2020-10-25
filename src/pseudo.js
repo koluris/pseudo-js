@@ -52,17 +52,20 @@ pseudo.CstrMain = (function() {
 
     function reset() {
         // Reset all emulator components
-         render.reset();
-             vs.reset();
-           mdec.reset();
-            mem.reset();
           audio.reset();
-        rootcnt.reset();
-          cdrom.reset();
             bus.reset();
-            sio.reset();
+          cdrom.reset();
            cop2.reset();
             cpu.reset();
+           mdec.reset();
+            mem.reset();
+         render.reset();
+        rootcnt.reset();
+            sio.reset();
+             vs.reset();
+
+        // CPU Bootstrap
+        cpu.bootstrap();
     }
 
     // Exposed class functions/variables
@@ -110,8 +113,8 @@ pseudo.CstrMain = (function() {
                     chunkReader(file, 0x9319, 5, 'text', function(id) {
                         if (id === 'CD001') {
                             chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
-                                iso = file;
                                 reset();
+                                iso = file;
                                 cpu.setbase(32, cpu.readbase(31));
                                 cpu.setpc(cpu.readbase(32));
                                 cpu.run();

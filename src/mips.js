@@ -412,8 +412,9 @@ pseudo.CstrMips = (function() {
 
             // Clear console out
             divOutput.text(' ');
+        },
 
-            // BIOS bootstrap
+        bootstrap() {
             cpu.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM');
             const start = performance.now();
 

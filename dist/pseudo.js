@@ -2822,8 +2822,9 @@ pseudo.CstrMips = (function() {
 
             // Clear console out
             divOutput.text(' ');
+        },
 
-            // BIOS bootstrap
+        bootstrap() {
             pseudo.CstrMips.consoleWrite('info', 'BIOS file has been written to ROM');
             const start = performance.now();
 
@@ -2962,17 +2963,20 @@ pseudo.CstrMain = (function() {
 
     function reset() {
         // Reset all emulator components
-         pseudo.CstrRender.reset();
-             pseudo.CstrGraphics.reset();
-           pseudo.CstrMdec.reset();
-            pseudo.CstrMem.reset();
           pseudo.CstrAudio.reset();
-        pseudo.CstrCounters.reset();
-          pseudo.CstrCdrom.reset();
             pseudo.CstrBus.reset();
-            pseudo.CstrSerial.reset();
+          pseudo.CstrCdrom.reset();
            pseudo.CstrCop2.reset();
             pseudo.CstrMips.reset();
+           pseudo.CstrMdec.reset();
+            pseudo.CstrMem.reset();
+         pseudo.CstrRender.reset();
+        pseudo.CstrCounters.reset();
+            pseudo.CstrSerial.reset();
+             pseudo.CstrGraphics.reset();
+
+        // CPU Bootstrap
+        pseudo.CstrMips.bootstrap();
     }
 
     // Exposed class functions/variables
@@ -3020,8 +3024,8 @@ pseudo.CstrMain = (function() {
                     chunkReader(file, 0x9319, 5, 'text', function(id) {
                         if (id === 'CD001') {
                             chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
-                                iso = file;
                                 reset();
+                                iso = file;
                                 pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
                                 pseudo.CstrMips.setpc(pseudo.CstrMips.readbase(32));
                                 pseudo.CstrMips.run();
@@ -3432,7 +3436,7 @@ pseudo.CstrRender = (function() {
             // 'webgl', { preserveDrawingBuffer: true } Canvas
             ctx = canvas[0].getContext('webgl', { preserveDrawingBuffer: true });
             ctx.enable(ctx.BLEND);
-            ctx.clearColor(0.0, 0.0, 0.0, 1.0);
+            ctx.clearColor(21 / 255.0, 21 / 255.0, 21 / 255.0, 1.0);
 
             // Shaders
             const func = ctx.createProgram();

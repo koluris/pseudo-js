@@ -447,7 +447,7 @@ pseudo.CstrRender = (function() {
             // WebGL Canvas
             ctx = canvas[0].fetchContext(WebGL);
             ctx.enable(ctx.BLEND);
-            ctx.clearColor(0.0, 0.0, 0.0, 1.0);
+            ctx.clearColor(21 / 255.0, 21 / 255.0, 21 / 255.0, 1.0);
 
             // Shaders
             const func = ctx.createFunction();
