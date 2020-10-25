@@ -3155,6 +3155,48 @@ pseudo.CstrRender = (function() {
         return b[1];
     }
 
+    function createColor(color) {
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
+        ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
+        ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(color), ctx.STATIC_DRAW);
+    }
+
+    function createVertex(vertex) {
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);
+        ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
+        ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vertex), ctx.STATIC_DRAW);
+    }
+
+    function createTexture(texture) {
+        ctx.uniform1i(attrib._e, true);
+        ctx.enableVertexAttribArray(attrib._t);
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._t);
+        ctx.vertexAttribPointer(attrib._t, 2, ctx.FLOAT, false, 0, 0);
+        ctx.bufferData(ctx.ARRAY_BUFFER, new Float32Array(texture), ctx.STATIC_DRAW);
+    }
+
+    function disableTexture() {
+        ctx.uniform1i(attrib._e, false);
+        ctx.disableVertexAttribArray(attrib._t);
+    }
+
+    function drawScene(color, vertex, texture, mode, size) {
+        createColor   (color);
+        createVertex (vertex);
+
+        if (texture) {
+            createTexture(texture.map(n => n / 256.0));
+        }
+        else {
+            disableTexture();
+        }
+
+        //ctx.enable(ctx.SCISSOR_TEST);
+        //ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);
+        ctx.drawArrays(mode, 0, size);
+        //ctx.disable(ctx.SCISSOR_TEST);
+    }
+
     
 
 
@@ -3380,42 +3422,6 @@ pseudo.CstrRender = (function() {
 
         pseudo.CstrTexCache.fetchTexture(ctx, spriteTP, p.tp[0]);
         drawScene(color, vertex, texture, ctx.TRIANGLE_STRIP, 4);
-    }
-
-    function drawScene(color, vertex, texture, mode, size) {
-        // Compose Color
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
-        ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(color), ctx.STATIC_DRAW);
-
-        // Compose Vertex
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);
-        ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vertex), ctx.STATIC_DRAW);
-        
-        if (texture) {
-            // Compose Texture
-            for (const i in texture) {
-                texture[i] /= 256.0;
-            }
-
-            ctx.uniform1i(attrib._e, true);
-            ctx.enableVertexAttribArray(attrib._t);
-            ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._t);
-            ctx.vertexAttribPointer(attrib._t, 2, ctx.FLOAT, false, 0, 0);
-            ctx.bufferData(ctx.ARRAY_BUFFER, new Float32Array(texture), ctx.STATIC_DRAW);
-        }
-        else {
-            // Disable Texture
-            ctx.uniform1i(attrib._e, false);
-            ctx.disableVertexAttribArray(attrib._t);
-        }
-
-        // Draw!
-        //ctx.enable(ctx.SCISSOR_TEST);
-        //ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);
-        ctx.drawArrays(mode, 0, size);
-        //ctx.disable(ctx.SCISSOR_TEST);
     }
 
     // Exposed class functions/variables
@@ -3686,52 +3692,26 @@ pseudo.CstrRender = (function() {
             // Disable state
             ctx.disable(ctx.BLEND);
 
-            const color = [
+            createColor([
                 255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
                 255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
                 255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
                 255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
-            ];
+            ]);
 
-            // Compose Color
-            ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
-            ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
-            ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(color), ctx.STATIC_DRAW);
-
-            const vertex = [
+            createVertex([
                 iX,      iY,
                 iX + iW, iY,
                 iX,      iY + iH,
                 iX + iW, iY + iH,
-            ];
+            ]);
 
-            // Compose Vertex
-            ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);
-            ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
-            ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vertex), ctx.STATIC_DRAW);
-
-            var texture = [
-                 0,  0,
-                iW,  0,
-                 0, iH,
-                iW, iH,
-            ];
-
-            for (const i in texture) {
-                if (!(i % 2)) {
-                    texture[i] /= 1024.0 / 2;
-                }
-                else {
-                    texture[i] /=  512.0 / 2;
-                }
-            }
-
-            // Compose Texture
-            ctx.uniform1i(attrib._e, true);
-            ctx.enableVertexAttribArray(attrib._t);
-            ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._t);
-            ctx.vertexAttribPointer(attrib._t, 2, ctx.FLOAT, false, 0, 0);
-            ctx.bufferData(ctx.ARRAY_BUFFER, new Float32Array(texture), ctx.STATIC_DRAW);
+            createTexture([
+                0, 0,
+                1, 0,
+                0, 1,
+                1, 1,
+            ]);
 
             if (bit24) {
             }
@@ -3742,17 +3722,12 @@ pseudo.CstrRender = (function() {
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
-                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
+                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, new Uint8Array(raw.buffer));
             }
 
             ctx.drawArrays(ctx.TRIANGLE_STRIP, 0, 4);
-
-            // Disable Texture
-            ctx.uniform1i(attrib._e, false);
-            ctx.disableVertexAttribArray(attrib._t);
-
-            // Enable state
             ctx.enable(ctx.BLEND);
+            disableTexture();
         }
     };
 })();
@@ -4321,7 +4296,7 @@ pseudo.CstrGraphics = (function() {
                 if (isVideo24Bit) {
                 }
                 else {
-                    vrop.raw.uw[count] = pseudo.CstrTexCache.pixel2texel(pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1]);
+                    vrop.raw[count] = pseudo.CstrTexCache.pixel2texel(pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1]);
                 }
 
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
@@ -4355,7 +4330,7 @@ pseudo.CstrGraphics = (function() {
         if (vrop.v.p >= vrop.v.end) {
             pseudo.CstrRender.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
 
-            vrop.raw.ub.fill(0);
+            vrop.raw.fill(0);
             vrop.enabled = false;
 
             modeDMA = GPU_DMA_NONE;
@@ -4536,7 +4511,7 @@ pseudo.CstrGraphics = (function() {
             vrop.v.end   = vrop.v.p + p.n5;
 
             vrop.enabled = true;
-            vrop.raw = new union((p.n4 * p.n5) * 4);
+            vrop.raw = new Uint32Array(p.n4 * p.n5);
             modeDMA = GPU_DMA_MEM2VRAM;
 
             // Cache invalidation
