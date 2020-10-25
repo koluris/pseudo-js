@@ -2843,7 +2843,7 @@ pseudo.CstrMips = (function() {
 
                 if (opcodeCount >= 100) {
                     // Rootcounters, interrupts
-                    pseudo.CstrCounters.update(100);
+                    pseudo.CstrCounters.update(64);
                       pseudo.CstrCdrom.update();
                     pseudo.CstrBus.interruptsUpdate();
     
@@ -3494,6 +3494,12 @@ pseudo.CstrRender = (function() {
             pseudo.CstrRender.resize({ w: 640, h: 480 });
         },
 
+        swapBuffers(clear) {
+            if (clear) {
+                ctx.clear(ctx.COLOR_BUFFER_BIT);
+            }
+        },
+
         resize(data) {
             // Same resolution? Ciao!
             if (data.w === res.w && data.h === res.h) {
@@ -3508,7 +3514,7 @@ pseudo.CstrRender = (function() {
               
                 ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
                 ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
-                ctx.clear(ctx.COLOR_BUFFER_BIT);
+                pseudo.CstrRender.swapBuffers(true);
     
                 divRes.innerText = res.w + ' x ' + res.h;
             }
@@ -4119,10 +4125,8 @@ pseudo.CstrTexCache = (function() {
 
 
 
-
-
-
 pseudo.CstrGraphics = (function() {
+    // Constants
     const GPU_STAT_ODDLINES         = 0x80000000;
     const GPU_STAT_DMABITS          = 0x60000000;
     const GPU_STAT_READYFORCOMMANDS = 0x10000000;
@@ -4140,51 +4144,52 @@ pseudo.CstrGraphics = (function() {
     const GPU_STAT_DITHER           = 0x00000200;
 
     const GPU_DMA_NONE     = 0;
+    const GPU_DMA_FIFO     = 1;
     const GPU_DMA_MEM2VRAM = 2;
     const GPU_DMA_VRAM2MEM = 3;
 
+    // Primitive Size
+    const pSize = [
+        0x00,0x01,0x03,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x04,0x04,0x04,0x04,0x07,0x07,0x07,0x07, 0x05,0x05,0x05,0x05,0x09,0x09,0x09,0x09,
+        0x06,0x06,0x06,0x06,0x09,0x09,0x09,0x09, 0x08,0x08,0x08,0x08,0x0c,0x0c,0x0c,0x0c,
+        0x03,0x03,0x03,0x03,0x00,0x00,0x00,0x00, 0xfe,0xfe,0xfe,0xfe,0xfe,0xfe,0xfe,0xfe,
+        0x04,0x04,0x04,0x04,0x00,0x00,0x00,0x00, 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+        0x03,0x03,0x03,0x03,0x04,0x04,0x04,0x04, 0x02,0x02,0x02,0x02,0x03,0x03,0x03,0x03,
+        0x02,0x02,0x02,0x02,0x03,0x03,0x03,0x03, 0x02,0x02,0x02,0x02,0x03,0x03,0x03,0x03,
+        0x04,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x01,0x01,0x01,0x01,0x01,0x01,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    ];
+
     const ret = {
-        status: 0,
           data: 0,
+        status: 0,
     };
 
-    var modeDMA, vpos, vdiff, isVideoPAL, isVideo24Bit;
-
-    // VRAM Operations
-    var vrop = {
-        h: {},
-        v: {},
-    };
-
-    // Command Pipe
-    var pipe = {
+    // Command Pipeline
+    const pipe = {
         data: new Uint32Array(256)
     };
 
-    // Primitive Size
-    const pSize = [
-        0,1,3,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-        4,4,4,4,7,7,7,7, 5,5,5,5,9,9,9,9,
-        6,6,6,6,9,9,9,9, 8,8,8,8,12,12,12,12,
-        3,3,3,3,0,0,0,0, 254,254,254,254,254,254,254,254,
-        4,4,4,4,0,0,0,0, 255,255,255,255,255,255,255,255,
-        3,3,3,3,4,4,4,4, 2,2,2,2,3,3,3,3,
-        2,2,2,2,3,3,3,3, 2,2,2,2,3,3,3,3,
-        4,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-        3,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-        3,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-        0,1,1,1,1,1,1,0, 0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-    ];
+    // VRAM Operations
+    const vrop = {
+        h: {},
+        v: {},
+    };
 
     // Resolution Mode
     const resMode = [
         256, 320, 512, 640, 368, 384, 512, 640
     ];
+
+    var modeDMA, vpos, vdiff, isVideoPAL, isVideo24Bit, disabled;
 
     function pipeReset() {
         pipe.data.fill(0);
@@ -4199,7 +4204,7 @@ pseudo.CstrGraphics = (function() {
       
             while (i < size) {
                 if (modeDMA === GPU_DMA_MEM2VRAM) {
-                    if ((i += fetchFromRAM(stream, addr, size-i)) >= size) {
+                    if ((i += fetchFromRAM(stream, addr, size - i)) >= size) {
                         continue;
                     }
                     addr += i;
@@ -4281,7 +4286,6 @@ pseudo.CstrGraphics = (function() {
     function fetchFromRAM(stream, addr, size) {
         var count = 0;
 
-        // False alarm!
         if (!vrop.enabled) {
             modeDMA = GPU_DMA_NONE;
             return 0;
@@ -4355,6 +4359,7 @@ pseudo.CstrGraphics = (function() {
             vdiff        = 0;
             isVideoPAL   = false;
             isVideo24Bit = false;
+            disabled     = true;
 
             // VRAM Operations
             vrop.enabled = false;
@@ -4373,24 +4378,30 @@ pseudo.CstrGraphics = (function() {
 
         redraw() {
             ret.status ^= GPU_STAT_ODDLINES;
+            pseudo.CstrRender.swapBuffers(disabled);
         },
 
         scopeW(addr, data) {
             switch(addr & 0xf) {
-                case 0:
+                case 0: // Data
                     dataMem.write(false, data, 1);
                     return;
 
-                case 4:
+                case 4: // Status
                     switch((data >>> 24) & 0xff) {
                         case 0x00:
                             ret.status   = 0x14802000;
+                            disabled     = true;
                             isVideoPAL   = false;
                             isVideo24Bit = false;
                             return;
 
                         case 0x01:
                             pipeReset();
+                            return;
+
+                        case 0x03:
+                            disabled = data & 1 ? true : false;
                             return;
 
                         case 0x04:
@@ -4439,7 +4450,6 @@ pseudo.CstrGraphics = (function() {
 
                         
                         case 0x02:
-                        case 0x03:
                         case 0x06:
                             return;
                     }
@@ -4451,11 +4461,11 @@ pseudo.CstrGraphics = (function() {
 
         scopeR(addr) {
             switch(addr & 0xf) {
-                case 0:
+                case 0: // Data
                     dataMem.read(false, 0, 1);
                     return ret.data;
 
-                case 4:
+                case 4: // Status
                     return ret.status | GPU_STAT_READYFORVRAM;
             }
         },

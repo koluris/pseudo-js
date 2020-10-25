@@ -433,7 +433,7 @@ pseudo.CstrMips = (function() {
 
                 if (opcodeCount >= 100) {
                     // Rootcounters, interrupts
-                    rootcnt.update(100);
+                    rootcnt.update(64);
                       cdrom.update();
                     bus.interruptsUpdate();
     

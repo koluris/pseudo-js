@@ -509,6 +509,12 @@ pseudo.CstrRender = (function() {
             render.resize({ w: 640, h: 480 });
         },
 
+        swapBuffers(clear) {
+            if (clear) {
+                ctx.clear(ctx.COLOR_BUFFER_BIT);
+            }
+        },
+
         resize(data) {
             // Same resolution? Ciao!
             if (data.w === res.w && data.h === res.h) {
@@ -523,7 +529,7 @@ pseudo.CstrRender = (function() {
               
                 ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
                 ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
-                ctx.clear(ctx.COLOR_BUFFER_BIT);
+                render.swapBuffers(true);
     
                 divRes.innerText = res.w + ' x ' + res.h;
             }
