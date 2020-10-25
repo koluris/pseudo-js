@@ -32,50 +32,50 @@
 
 pseudo.CstrAudio = (function() {
   // Web Audio
-  var ctxAudio, ctxScript;
-  var sbuf, stereo = true;
+  let ctxAudio, ctxScript;
+  let sbuf, stereo = true;
 
   // SPU specific
-  var spuMem;
-  var spuAddr;
-  var spuVoices = [];
-  var spuVolumeL, spuVolumeR;
+  let spuMem;
+  let spuAddr;
+  let spuVoices = [];
+  let spuVolumeL, spuVolumeR;
 
   function int16ToFloat32(input) {
-    var output = new F32cap(input.bSize/2);
+    let output = new F32cap(input.bSize/2);
     
-    for (var i=0; i<input.bSize/2; i++) {
-      var int = input[i];
+    for (let i=0; i<input.bSize/2; i++) {
+      const int = input[i];
       output[i] = int >= 0x8000 ? -(0x10000-int)/0x8000 : int/0x7fff;
     }
     return output;
   }
 
-  var f = [
+  const f = [
     [0, 0], [60, 0], [115, -52], [98, -55], [122, -60]
   ];
 
   function depackVAG(chn) {
-    var p = chn.saddr;
-    var s_1  = 0;
-    var s_2  = 0;
-    var temp = [];
+    let p = chn.saddr;
+    let s_1  = 0;
+    let s_2  = 0;
+    let temp = [];
 
     while (1) {
-      var shift  = spuMem.ub[p]&15;
-      var filter = spuMem.ub[p]>>4;
+      const shift  = spuMem.ub[p]&15;
+      const filter = spuMem.ub[p]>>4;
 
-      for (var i=2; i<16; i++) {
-        var a = ((spuMem.ub[p+i]&0x0f)<<12);
-        var b = ((spuMem.ub[p+i]&0xf0)<< 8);
+      for (let i=2; i<16; i++) {
+        let a = ((spuMem.ub[p+i]&0x0f)<<12);
+        let b = ((spuMem.ub[p+i]&0xf0)<< 8);
         if (a&0x8000) a |= 0xffff0000;
         if (b&0x8000) b |= 0xffff0000;
         temp[i*2-4] = a>>shift;
         temp[i*2-3] = b>>shift;
       }
 
-      for (var i=0; i<28; i++) {
-        var res = temp[i] + ((s_1*f[filter][0] + s_2*f[filter][1] + 32)>>6);
+      for (let i=0; i<28; i++) {
+        let res = temp[i] + ((s_1*f[filter][0] + s_2*f[filter][1] + 32)>>6);
         s_2 = s_1;
         s_1 = res;
         res = Math.min(Math.max(res, SHRT_MIN), SHRT_MAX);
@@ -89,7 +89,7 @@ pseudo.CstrAudio = (function() {
       }
 
       // Fin
-      var operator = spuMem.ub[p+1];
+      const operator = spuMem.ub[p+1];
 
       if (operator === 3 || operator === 7) { // Termination
         return;
@@ -104,15 +104,15 @@ pseudo.CstrAudio = (function() {
   }
 
   function decodeStream() {
-    for (var n=0; n<MAX_CHANNELS; n++) {
-      var chn = spuVoices[n];
+    for (let n=0; n<MAX_CHANNELS; n++) {
+      const chn = spuVoices[n];
       
       // Channel on?
       if (chn.on === false) {
         continue;
       }
 
-      for (var i=0; i<SBUF_SIZE; i++) {
+      for (let i=0; i<SBUF_SIZE; i++) {
         chn.count += chn.freq;
         if (chn.count >= SAMPLE_RATE) {
           chn.pos += (chn.count/SAMPLE_RATE) | 0;
@@ -141,7 +141,7 @@ pseudo.CstrAudio = (function() {
       }
     }
     // Volume Mix
-    for (var i=0; i<SBUF_SIZE; i++) {
+    for (let i=0; i<SBUF_SIZE; i++) {
       if (stereo) {
         sbuf.final[i] = (sbuf.temp[i]/4) * (spuVolumeL/MAX_VOLUME);
         sbuf.final[i+SBUF_SIZE] = -(sbuf.temp[i+SBUF_SIZE]/4) * (spuVolumeR/MAX_VOLUME);
@@ -157,7 +157,7 @@ pseudo.CstrAudio = (function() {
   }
 
   function voiceOn(data) {
-    for (var n=0; n<MAX_CHANNELS; n++) {
+    for (let n=0; n<MAX_CHANNELS; n++) {
       if (data&(1<<n)) {
         spuVoices[n].on    = true;
         spuVoices[n].count = 0;
@@ -172,7 +172,7 @@ pseudo.CstrAudio = (function() {
   }
 
   function voiceOff(data) {
-    for (var n=0; n<MAX_CHANNELS; n++) {
+    for (let n=0; n<MAX_CHANNELS; n++) {
       if (data&(1<<n)) {
         spuVoices[n].on = false;
       }
@@ -180,7 +180,7 @@ pseudo.CstrAudio = (function() {
   }
 
   function setVolume(data) {
-    var ret = data;
+    let ret = data;
 
     if (data&0x8000) {
       if (data&0x1000) {
@@ -198,7 +198,7 @@ pseudo.CstrAudio = (function() {
     return ret&0x3fff;
   }
 
-  var dataMem = {
+  const dataMem = {
     write(addr, size) {
       while (size-- > 0) {
         spuMem.uh[spuAddr>>>1] = directMemH(ram.uh, addr); addr+=2;
@@ -231,8 +231,8 @@ pseudo.CstrAudio = (function() {
 
       // Callback
       ctxScript.onaudioprocess = function(e) {
-        var output = e.outputBuffer;
-        var float  = int16ToFloat32(decodeStream());
+        const output = e.outputBuffer;
+        const float  = int16ToFloat32(decodeStream());
 
         if (stereo) {
           output.fetchChannelData(0).set(float.slice(0, SBUF_SIZE));
@@ -242,15 +242,6 @@ pseudo.CstrAudio = (function() {
           output.fetchChannelData(0).set(float.slice(0, SBUF_SIZE));
         }
       };
-
-      // Touch Devices
-      // window.addEventListener('touchstart', function() {
-      //   var buffer = ctxAudio.createBuffer(1, 1, 22050);
-      //   var source = ctxAudio.createBufferSource();
-      //   source.buffer = buffer;
-      //   source.connect(ctxAudio.destination);
-      //   source.noteOn(0);
-      // }, false);
     },
 
     reset: function() {
@@ -264,7 +255,7 @@ pseudo.CstrAudio = (function() {
       spuVolumeR = MAX_VOLUME;
 
       // Channels
-      for (var n=0; n<MAX_CHANNELS; n++) {
+      for (let n=0; n<MAX_CHANNELS; n++) {
         spuVoices[n] = {
           buffer : union(USHRT_MAX*2),
           count  : 0,
@@ -292,7 +283,7 @@ pseudo.CstrAudio = (function() {
 
       // Channels
       if (addr >= 0x1c00 && addr <= 0x1d7e) {
-        var n = spuChannel(addr);
+        const n = spuChannel(addr);
 
         switch(addr&0xf) {
           case 0x0: // Volume L
@@ -460,7 +451,7 @@ pseudo.CstrAudio = (function() {
     },
 
     executeDMA: function(addr) {
-      var size = (bcr>>16)*(bcr&0xffff)*2;
+      const size = (bcr>>16)*(bcr&0xffff)*2;
 
       switch(chcr) {
         case 0x01000201: // Write DMA Mem

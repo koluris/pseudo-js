@@ -130,7 +130,7 @@ function union(size) {
 
 // Declare our namespace
 'use strict';
-var pseudo = window.pseudo || {};
+const pseudo = window.pseudo || {};
 
 
 
@@ -165,50 +165,50 @@ var pseudo = window.pseudo || {};
 
 pseudo.CstrAudio = (function() {
   // Web Audio
-  var ctxAudio, ctxScript;
-  var sbuf, stereo = true;
+  let ctxAudio, ctxScript;
+  let sbuf, stereo = true;
 
   // SPU specific
-  var spuMem;
-  var spuAddr;
-  var spuVoices = [];
-  var spuVolumeL, spuVolumeR;
+  let spuMem;
+  let spuAddr;
+  let spuVoices = [];
+  let spuVolumeL, spuVolumeR;
 
   function int16ToFloat32(input) {
-    var output = new Float32Array(input.byteLength/2);
+    let output = new Float32Array(input.byteLength/2);
     
-    for (var i=0; i<input.byteLength/2; i++) {
-      var int = input[i];
+    for (let i=0; i<input.byteLength/2; i++) {
+      const int = input[i];
       output[i] = int >= 0x8000 ? -(0x10000-int)/0x8000 : int/0x7fff;
     }
     return output;
   }
 
-  var f = [
+  const f = [
     [0, 0], [60, 0], [115, -52], [98, -55], [122, -60]
   ];
 
   function depackVAG(chn) {
-    var p = chn.saddr;
-    var s_1  = 0;
-    var s_2  = 0;
-    var temp = [];
+    let p = chn.saddr;
+    let s_1  = 0;
+    let s_2  = 0;
+    let temp = [];
 
     while (1) {
-      var shift  = spuMem.ub[p]&15;
-      var filter = spuMem.ub[p]>>4;
+      const shift  = spuMem.ub[p]&15;
+      const filter = spuMem.ub[p]>>4;
 
-      for (var i=2; i<16; i++) {
-        var a = ((spuMem.ub[p+i]&0x0f)<<12);
-        var b = ((spuMem.ub[p+i]&0xf0)<< 8);
+      for (let i=2; i<16; i++) {
+        let a = ((spuMem.ub[p+i]&0x0f)<<12);
+        let b = ((spuMem.ub[p+i]&0xf0)<< 8);
         if (a&0x8000) a |= 0xffff0000;
         if (b&0x8000) b |= 0xffff0000;
         temp[i*2-4] = a>>shift;
         temp[i*2-3] = b>>shift;
       }
 
-      for (var i=0; i<28; i++) {
-        var res = temp[i] + ((s_1*f[filter][0] + s_2*f[filter][1] + 32)>>6);
+      for (let i=0; i<28; i++) {
+        let res = temp[i] + ((s_1*f[filter][0] + s_2*f[filter][1] + 32)>>6);
         s_2 = s_1;
         s_1 = res;
         res = Math.min(Math.max(res, -32768), 32767);
@@ -222,7 +222,7 @@ pseudo.CstrAudio = (function() {
       }
 
       // Fin
-      var operator = spuMem.ub[p+1];
+      const operator = spuMem.ub[p+1];
 
       if (operator === 3 || operator === 7) { // Termination
         return;
@@ -237,15 +237,15 @@ pseudo.CstrAudio = (function() {
   }
 
   function decodeStream() {
-    for (var n=0; n<24; n++) {
-      var chn = spuVoices[n];
+    for (let n=0; n<24; n++) {
+      const chn = spuVoices[n];
       
       // Channel on?
       if (chn.on === false) {
         continue;
       }
 
-      for (var i=0; i<1024; i++) {
+      for (let i=0; i<1024; i++) {
         chn.count += chn.freq;
         if (chn.count >= 44100) {
           chn.pos += (chn.count/44100) | 0;
@@ -274,7 +274,7 @@ pseudo.CstrAudio = (function() {
       }
     }
     // Volume Mix
-    for (var i=0; i<1024; i++) {
+    for (let i=0; i<1024; i++) {
       if (stereo) {
         sbuf.final[i] = (sbuf.temp[i]/4) * (spuVolumeL/0x3fff);
         sbuf.final[i+1024] = -(sbuf.temp[i+1024]/4) * (spuVolumeR/0x3fff);
@@ -290,7 +290,7 @@ pseudo.CstrAudio = (function() {
   }
 
   function voiceOn(data) {
-    for (var n=0; n<24; n++) {
+    for (let n=0; n<24; n++) {
       if (data&(1<<n)) {
         spuVoices[n].on    = true;
         spuVoices[n].count = 0;
@@ -305,7 +305,7 @@ pseudo.CstrAudio = (function() {
   }
 
   function voiceOff(data) {
-    for (var n=0; n<24; n++) {
+    for (let n=0; n<24; n++) {
       if (data&(1<<n)) {
         spuVoices[n].on = false;
       }
@@ -313,7 +313,7 @@ pseudo.CstrAudio = (function() {
   }
 
   function setVolume(data) {
-    var ret = data;
+    let ret = data;
 
     if (data&0x8000) {
       if (data&0x1000) {
@@ -331,7 +331,7 @@ pseudo.CstrAudio = (function() {
     return ret&0x3fff;
   }
 
-  var dataMem = {
+  const dataMem = {
     write(addr, size) {
       while (size-- > 0) {
         spuMem.uh[spuAddr>>>1] = pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1]; addr+=2;
@@ -364,8 +364,8 @@ pseudo.CstrAudio = (function() {
 
       // Callback
       ctxScript.onaudioprocess = function(e) {
-        var output = e.outputBuffer;
-        var float  = int16ToFloat32(decodeStream());
+        const output = e.outputBuffer;
+        const float  = int16ToFloat32(decodeStream());
 
         if (stereo) {
           output.getChannelData(0).set(float.slice(0, 1024));
@@ -375,15 +375,6 @@ pseudo.CstrAudio = (function() {
           output.getChannelData(0).set(float.slice(0, 1024));
         }
       };
-
-      // Touch Devices
-      // window.addEventListener('touchstart', function() {
-      //   var buffer = ctxAudio.createBuffer(1, 1, 22050);
-      //   var source = ctxAudio.createBufferSource();
-      //   source.buffer = buffer;
-      //   source.connect(ctxAudio.destination);
-      //   source.noteOn(0);
-      // }, false);
     },
 
     reset: function() {
@@ -397,7 +388,7 @@ pseudo.CstrAudio = (function() {
       spuVolumeR = 0x3fff;
 
       // Channels
-      for (var n=0; n<24; n++) {
+      for (let n=0; n<24; n++) {
         spuVoices[n] = {
           buffer : union(65536*2),
           count  : 0,
@@ -425,7 +416,7 @@ pseudo.CstrAudio = (function() {
 
       // Channels
       if (addr >= 0x1c00 && addr <= 0x1d7e) {
-        var n = (addr>>>4)&0x1f;
+        const n = (addr>>>4)&0x1f;
 
         switch(addr&0xf) {
           case 0x0: // Volume L
@@ -593,7 +584,7 @@ pseudo.CstrAudio = (function() {
     },
 
     executeDMA: function(addr) {
-      var size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]&0xffff)*2;
+      const size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]>>16)*(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]&0xffff)*2;
 
       switch(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) {
         case 0x01000201: // Write DMA Mem
@@ -741,20 +732,20 @@ pseudo.CstrCdrom = (function() {
   const CD_STAT_DISK_ERROR  = 5;
 
   // HTML elements
-  var divBlink, divKb;
+  let divBlink, divKb;
 
-  var ctrl, mode, stat, statP, re2;
-  var occupied, reads, seeked, readed;
-  var irq, cdint, cdreadint;
-  var kbRead;
+  let ctrl, mode, stat, statP, re2;
+  let occupied, reads, seeked, readed;
+  let irq, cdint, cdreadint;
+  let kbRead;
 
-  var param = {
+  const param = {
     data: new Uint8Array(8),
     p: undefined,
     c: undefined
   };
 
-  var res = {
+  const res = {
     data: new Uint8Array(8),
     tn: new Uint8Array(6),
     td: new Uint8Array(4),
@@ -763,12 +754,12 @@ pseudo.CstrCdrom = (function() {
     ok: undefined
   };
 
-  var sector = {
+  const sector = {
     data: new Uint8Array(4),
     prev: new Uint8Array(4)
   };
 
-  var transfer = {
+  const transfer = {
     data: new Uint8Array(2352),
     p: 0
   };
@@ -810,7 +801,7 @@ pseudo.CstrCdrom = (function() {
   }
 
   function interrupt() {
-    var prevIrq = irq;
+    const prevIrq = irq;
 
     if (stat) {
       cdint = 1
@@ -922,7 +913,7 @@ pseudo.CstrCdrom = (function() {
       case 16: // CdlGetlocL
         res.p = 0; res.c = 8; res.ok = 1;
         stat = CD_STAT_ACKNOWLEDGE;
-        for (var i = 0; i < 8; i++) {
+        for (let i = 0; i < 8; i++) {
           res.data[i] = transfer.data[i];
         }
         break;
@@ -1142,7 +1133,7 @@ pseudo.CstrCdrom = (function() {
               if (reads) { reads = 0; };
               ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
               seeked = 0;
-              for (var i = 0; i < 3; i++) {
+              for (let i = 0; i < 3; i++) {
                 sector.data[i] = (parseInt((param.data[i]) / 16) * 10 + (param.data[i]) % 16);
               }
               sector.data[3] = 0;
@@ -1304,7 +1295,7 @@ pseudo.CstrCdrom = (function() {
             return;
           }
           
-          for (var i=0; i<size; i++) {
+          for (let i=0; i<size; i++) {
             pseudo.CstrMem.__ram.ub[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] + i) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = transfer.data[transfer.p + i];
           }
 
@@ -1457,12 +1448,12 @@ pseudo.CstrCop2 = (function() {
                 
                 case 48: // RTPT
                     {
-                        var quotient;
+                        let quotient;
 
                         cop2c.uw[(31)] = 0;
                         cop2d.uh[(16 << 1) + 0]  = cop2d.uh[(19 << 1) + 0];
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             const v1 = (v < 3 ? cop2d.sh[(((v << 1) + 0) << 1) + 0] : cop2d.sh[(9 << 1) + 0]);
                             const v2 = (v < 3 ? cop2d.sh[(((v << 1) + 0) << 1) + 1] : cop2d.sh[(10 << 1) + 0]);
                             const v3 = (v < 3 ? cop2d.sh[(((v << 1) + 1) << 1) + 0] : cop2d.sh[(11 << 1) + 0]);
@@ -1531,7 +1522,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         cop2c.uw[(31)] = 0;
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             cop2d.sw[(25)] = ((cop2d.ub[(20 << 2) + 0] << 16) + (cop2d.sh[(8 << 1) + 0] * (((((cop2c.sw[(21)] - (cop2d.ub[(20 << 2) + 0] << 4))) < ! 0 * -32768) ? (cop2c.uw[(31)] |= ((1 << 24) | (1 << 31)), ! 0 * -32768) : ((((cop2c.sw[(21)] - (cop2d.ub[(20 << 2) + 0] << 4))) > 32767) ? (cop2c.uw[(31)] |= ((1 << 24) | (1 << 31)), 32767) : (((cop2c.sw[(21)] - (cop2d.ub[(20 << 2) + 0] << 4))))))))) >> 12;
                             cop2d.sw[(26)] = ((cop2d.ub[(20 << 2) + 1] << 16) + (cop2d.sh[(8 << 1) + 0] * (((((cop2c.sw[(22)] - (cop2d.ub[(20 << 2) + 1] << 4))) < ! 0 * -32768) ? (cop2c.uw[(31)] |= ((1 << 24) | (1 << 31)), ! 0 * -32768) : ((((cop2c.sw[(22)] - (cop2d.ub[(20 << 2) + 1] << 4))) > 32767) ? (cop2c.uw[(31)] |= ((1 << 24) | (1 << 31)), 32767) : (((cop2c.sw[(22)] - (cop2d.ub[(20 << 2) + 1] << 4))))))))) >> 12;
                             cop2d.sw[(27)] = ((cop2d.ub[(20 << 2) + 2] << 16) + (cop2d.sh[(8 << 1) + 0] * (((((cop2c.sw[(23)] - (cop2d.ub[(20 << 2) + 2] << 4))) < ! 0 * -32768) ? (cop2c.uw[(31)] |= ((1 << 24) | (1 << 31)), ! 0 * -32768) : ((((cop2c.sw[(23)] - (cop2d.ub[(20 << 2) + 2] << 4))) > 32767) ? (cop2c.uw[(31)] |= ((1 << 24) | (1 << 31)), 32767) : (((cop2c.sw[(23)] - (cop2d.ub[(20 << 2) + 2] << 4))))))))) >> 12;
@@ -1615,7 +1606,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         cop2c.uw[(31)] = 0;
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             const v1 = (v < 3 ? cop2d.sh[(((v << 1) + 0) << 1) + 0] : cop2d.sh[(9 << 1) + 0]);
                             const v2 = (v < 3 ? cop2d.sh[(((v << 1) + 0) << 1) + 1] : cop2d.sh[(10 << 1) + 0]);
                             const v3 = (v < 3 ? cop2d.sh[(((v << 1) + 1) << 1) + 0] : cop2d.sh[(11 << 1) + 0]);
@@ -1695,7 +1686,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         cop2c.uw[(31)] = 0;
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             const v1 = (v < 3 ? cop2d.sh[(((v << 1) + 0) << 1) + 0] : cop2d.sh[(9 << 1) + 0]);
                             const v2 = (v < 3 ? cop2d.sh[(((v << 1) + 0) << 1) + 1] : cop2d.sh[(10 << 1) + 0]);
                             const v3 = (v < 3 ? cop2d.sh[(((v << 1) + 1) << 1) + 0] : cop2d.sh[(11 << 1) + 0]);
@@ -1767,7 +1758,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         cop2c.uw[(31)] = 0;
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             const v1 = (v < 3 ? cop2d.sh[(((v << 1) + 0) << 1) + 0] : cop2d.sh[(9 << 1) + 0]);
                             const v2 = (v < 3 ? cop2d.sh[(((v << 1) + 0) << 1) + 1] : cop2d.sh[(10 << 1) + 0]);
                             const v3 = (v < 3 ? cop2d.sh[(((v << 1) + 1) << 1) + 0] : cop2d.sh[(11 << 1) + 0]);
@@ -1937,7 +1928,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         cop2d.uw[(30)] = data;
                         cop2d.uw[(31)] = 0;
-                        var sbit = (cop2d.uw[(30)] & 0x80000000) ? cop2d.uw[(30)] : (~(cop2d.uw[(30)]));
+                        let sbit = (cop2d.uw[(30)] & 0x80000000) ? cop2d.uw[(30)] : (~(cop2d.uw[(30)]));
 
                         for ( ; sbit & 0x80000000; sbit <<= 1) {
                             cop2d.uw[(31)]++;
@@ -2006,12 +1997,12 @@ pseudo.CstrCounters = (function() {
     const RTC_TARGET = 8;
     const RTC_BOUND  = 0xffff;
 
-    var bounds = [];
-    var vbk, hbk;
+    let bounds = [];
+    let vbk, hbk;
 
     return {
         reset() {
-            for (var i = 0; i < 3; i++) {
+            for (let i = 0; i < 3; i++) {
                 bounds[i] = RTC_BOUND;
             }
 
@@ -2020,7 +2011,7 @@ pseudo.CstrCounters = (function() {
         },
 
         update(threshold) {
-            var temp;
+            let temp;
 
             temp = pseudo.CstrMem.__hwr.uh[((0x1100 + (0 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] + ((pseudo.CstrMem.__hwr.uw[((0x1104 + (0 << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0x100) ? threshold : threshold / 8);
 
@@ -2282,7 +2273,7 @@ pseudo.CstrHardware = (function() {
 
 
 pseudo.CstrMdec = (function() {
-    var cmd, status;
+    let cmd, status;
 
     // Exposed class functions/variables
     return {
@@ -2479,8 +2470,8 @@ pseudo.CstrMem = (function() {
 
 
 pseudo.CstrMips = (function() {
-    var divOutput;
-    var bp, opcodeCount, requestAF, ptr;
+    let divOutput;
+    let bp, opcodeCount, requestAF, ptr;
 
     // Base + Coprocessor
     const    r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
@@ -2538,7 +2529,7 @@ pseudo.CstrMips = (function() {
 
                     case 8: // JR
                         branch(r[((code >>> 21) & 0x1f)]);
-                        if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { var char = String.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); divOutput.append(char.toUpperCase()); } };
+                        if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { const char = String.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); divOutput.append(char.toUpperCase()); } };
                         return;
 
                     case 9: // JALR
@@ -2912,12 +2903,12 @@ pseudo.CstrMips = (function() {
 
 
 pseudo.CstrMain = (function() {
-    var divDropzone;
-    var iso;
+    let divDropzone;
+    let iso;
 
     // AJAX function
     function request(path, fn) {
-        var xhr = new XMLHttpRequest();
+        const xhr = new XMLHttpRequest();
         xhr.onload = function() {
             if (xhr.status === 404) {
                 pseudo.CstrMips.consoleWrite('error', 'Unable to read file "' + path + '"');
@@ -2933,16 +2924,16 @@ pseudo.CstrMain = (function() {
 
     // Chunk reader function
     function chunkReader(file, start, size, kind, fn) {
-        var end = start + size;
+        const end = start + size;
 
         // Check boundaries
         if (file.size > end) {
-            var reader = new FileReader();
+            const reader = new FileReader();
             reader.onload = function(e) { // Callback
                 fn(e.target.result);
             };
             // Read sliced area
-            var slice = file.slice(start, end);
+            const slice = file.slice(start, end);
 
             if (kind === 'text') {
                 reader.readAsText(slice);
@@ -3001,15 +2992,15 @@ pseudo.CstrMain = (function() {
                 e.preventDefault();
                 pseudo.CstrMain.drop.exit();
         
-                var dt = e.dataTransfer;
+                const dt = e.dataTransfer;
 
                 if (dt.files) {
-                    var file = dt.files[0];
+                    const file = dt.files[0];
           
                     // PS-X EXE
                     chunkReader(file, 0, 8, 'text', function(id) {
                         if (id === 'PS-X EXE') {
-                            var reader = new FileReader();
+                            const reader = new FileReader();
                             reader.onload = function(e) { // Callback
                                 reset();
                                 executable(e.target.result);
@@ -3124,9 +3115,9 @@ pseudo.CstrMain = (function() {
 
 
 pseudo.CstrRender = (function() {
-    var ctx, attrib, bfr, divRes; // 'webgl', { preserveDrawingBuffer: true } Context
-    var blend, bit, ofs;
-    var drawArea, spriteTP;
+    let ctx, attrib, bfr, divRes; // 'webgl', { preserveDrawingBuffer: true } Context
+    let blend, bit, ofs;
+    let drawArea, spriteTP;
 
     // Resolution
     const res = {
@@ -3207,12 +3198,12 @@ pseudo.CstrRender = (function() {
 
     function drawF(data, size, mode) {
         const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[4] >> 0) & 0xffff, v: (data[4] >> 16) & 0xffff, }, ] };
-        var color  = [];
-        var vertex = [];
+        let color  = [];
+        let vertex = [];
         
         const opaque = composeBlend(p.cr[0].n);
         
-        for (var i = 0; i < size; i++) {
+        for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[0].a,
                 p.cr[0].b,
@@ -3235,12 +3226,12 @@ pseudo.CstrRender = (function() {
 
     function drawG(data, size, mode) {          const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }, { a: (data[2] >>> 0) & 0xff, b: (data[2] >>> 8) & 0xff, c: (data[2] >>> 16) & 0xff, n: (data[2] >>> 24) & 0xff, }, { a: (data[4] >>> 0) & 0xff, b: (data[4] >>> 8) & 0xff, c: (data[4] >>> 16) & 0xff, n: (data[4] >>> 24) & 0xff, }, { a: (data[6] >>> 0) & 0xff, b: (data[6] >>> 8) & 0xff, c: (data[6] >>> 16) & 0xff, n: (data[6] >>> 24) & 0xff, }, ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[5] >> 0) & 0xffff, v: (data[5] >> 16) & 0xffff, }, { h: (data[7] >> 0) & 0xffff, v: (data[7] >> 16) & 0xffff, }, ] };
         
-        var color  = [];
-        var vertex = [];
+        let color  = [];
+        let vertex = [];
         
         const opaque = composeBlend(p.cr[0].n);
         
-        for (var i = 0; i < size; i++) {
+        for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[i].a,
                 p.cr[i].b,
@@ -3263,14 +3254,14 @@ pseudo.CstrRender = (function() {
 
     function drawFT(data, size) {
         const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[5] >> 0) & 0xffff, v: (data[5] >> 16) & 0xffff, }, { h: (data[7] >> 0) & 0xffff, v: (data[7] >> 16) & 0xffff, }, ], tx: [ { u: (data[2] >>> 0) & 0xff, v: (data[2] >>> 8) & 0xff, }, { u: (data[4] >>> 0) & 0xff, v: (data[4] >>> 8) & 0xff, }, { u: (data[6] >>> 0) & 0xff, v: (data[6] >>> 8) & 0xff, }, { u: (data[8] >>> 0) & 0xff, v: (data[8] >>> 8) & 0xff, }, ], tp: [ (data[2] >>> 16) & 0xffff, (data[4] >>> 16) & 0xffff, ] };
-        var color   = [];
-        var vertex  = [];
-        var texture = [];
+        let color   = [];
+        let vertex  = [];
+        let texture = [];
         
         blend = (p.tp[1] >>> 5) & 3;
         const opaque = composeBlend(p.cr[0].n);
         
-        for (var i = 0; i < size; i++) {
+        for (let i = 0; i < size; i++) {
             if (p.cr.n & 1) {
                 color.push(
                     255 >>> 1,
@@ -3309,14 +3300,14 @@ pseudo.CstrRender = (function() {
 
     function drawGT(data, size) {
         const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }, { a: (data[3] >>> 0) & 0xff, b: (data[3] >>> 8) & 0xff, c: (data[3] >>> 16) & 0xff, n: (data[3] >>> 24) & 0xff, }, { a: (data[6] >>> 0) & 0xff, b: (data[6] >>> 8) & 0xff, c: (data[6] >>> 16) & 0xff, n: (data[6] >>> 24) & 0xff, }, { a: (data[9] >>> 0) & 0xff, b: (data[9] >>> 8) & 0xff, c: (data[9] >>> 16) & 0xff, n: (data[9] >>> 24) & 0xff, }, ], vx: [ { h: (data[ 1] >> 0) & 0xffff, v: (data[ 1] >> 16) & 0xffff, }, { h: (data[ 4] >> 0) & 0xffff, v: (data[ 4] >> 16) & 0xffff, }, { h: (data[ 7] >> 0) & 0xffff, v: (data[ 7] >> 16) & 0xffff, }, { h: (data[10] >> 0) & 0xffff, v: (data[10] >> 16) & 0xffff, }, ], tx: [ { u: (data[ 2] >>> 0) & 0xff, v: (data[ 2] >>> 8) & 0xff, }, { u: (data[ 5] >>> 0) & 0xff, v: (data[ 5] >>> 8) & 0xff, }, { u: (data[ 8] >>> 0) & 0xff, v: (data[ 8] >>> 8) & 0xff, }, { u: (data[11] >>> 0) & 0xff, v: (data[11] >>> 8) & 0xff, }, ], tp: [ (data[2] >>> 16) & 0xffff, (data[5] >>> 16) & 0xffff, ] };
-        var color   = [];
-        var vertex  = [];
-        var texture = [];
+        let color   = [];
+        let vertex  = [];
+        let texture = [];
         
         blend = (p.tp[1] >>> 5) & 3;
         const opaque = composeBlend(p.cr[0].n);
         
-        for (var i = 0; i < size; i++) {
+        for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[i].a,
                 p.cr[i].b,
@@ -3345,8 +3336,8 @@ pseudo.CstrRender = (function() {
 
     function drawTile(data, size) {
         const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, ] };
-        var color  = [];
-        var vertex = [];
+        let color  = [];
+        let vertex = [];
         
         const opaque = composeBlend(p.cr[0].n);
         
@@ -3355,7 +3346,7 @@ pseudo.CstrRender = (function() {
             p.vx[1].v = size;
         }
 
-        for (var i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
             color.push(
                 p.cr[0].a,
                 p.cr[0].b,
@@ -3380,9 +3371,9 @@ pseudo.CstrRender = (function() {
 
     function drawSprite(data, size) {
         const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, ], tx: [ { u: (data[2] >>> 0) & 0xff, v: (data[2] >>> 8) & 0xff, } ], tp: [ (data[2] >>> 16) & 0xffff ] };
-        var color   = [];
-        var vertex  = [];
-        var texture = [];
+        let color   = [];
+        let vertex  = [];
+        let texture = [];
         
         const opaque = composeBlend(p.cr[0].n);
         
@@ -3391,7 +3382,7 @@ pseudo.CstrRender = (function() {
             p.vx[1].v = size;
         }
 
-        for (var i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
             if (p.cr[0].n & 1) {
                 color.push(
                     255 >>> 1,
@@ -3621,10 +3612,10 @@ pseudo.CstrRender = (function() {
                 case 0x02: // BLOCK FILL
                     {
                         const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, ] };
-                        var color  = [];
-                        var vertex = [];
+                        let color  = [];
+                        let vertex = [];
 
-                        for (var i = 0; i < 4; i++) {
+                        for (let i = 0; i < 4; i++) {
                             color.push(
                                 p.cr[0].a,
                                 p.cr[0].b,
@@ -3777,8 +3768,8 @@ pseudo.CstrSerial = (function() {
   const PAD_BTN_CROSS    = 14;
   const PAD_BTN_SQUARE   = 15;
 
-  var baud, control, mode, status, padst, parp;
-  var bfr = new Uint8Array(256);
+  let baud, control, mode, status, padst, parp;
+  let bfr = new Uint8Array(256);
 
   return {
     reset() {
@@ -3980,13 +3971,13 @@ pseudo.CstrTexCache = (function() {
     const TCACHE_MAX = 384;
     const TEX_SIZE   = 256;
 
-    var cache = [];
-    var index;
-    var tex;
+    let cache = [];
+    let index;
+    let tex;
 
     return {
         init() {
-            for (var i = 0; i < TCACHE_MAX; i++) {
+            for (let i = 0; i < TCACHE_MAX; i++) {
                 cache[i] = {
                     pos: { // Mem position of texture and color lookup table
                     },
@@ -4043,13 +4034,13 @@ pseudo.CstrTexCache = (function() {
 
             switch((tp >>> 7) & 3) {
                 case TEX_04BIT: // 16 color palette
-                    for (var i = 0; i < 16; i++) {
+                    for (let i = 0; i < 16; i++) {
                         tex.cc[i] = pseudo.CstrTexCache.pixel2texel(pseudo.CstrGraphics.__vram.uh[tc.pos.cc]);
                         tc.pos.cc++;
                     }
 
-                    for (var h = 0, idx = 0; h < 256; h++) {
-                        for (var w = 0; w < (256 / 4); w++) {
+                    for (let h = 0, idx = 0; h < 256; h++) {
+                        for (let w = 0; w < (256 / 4); w++) {
                             const p = pseudo.CstrGraphics.__vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
                             tex.bfr.uw[idx++] = tex.cc[(p >>>  0) & 15];
                             tex.bfr.uw[idx++] = tex.cc[(p >>>  4) & 15];
@@ -4060,13 +4051,13 @@ pseudo.CstrTexCache = (function() {
                     break;
 
                 case TEX_08BIT: // 256 color palette
-                    for (var i = 0; i < 256; i++) {
+                    for (let i = 0; i < 256; i++) {
                         tex.cc[i] = pseudo.CstrTexCache.pixel2texel(pseudo.CstrGraphics.__vram.uh[tc.pos.cc]);
                         tc.pos.cc++;
                     }
 
-                    for (var h = 0, idx = 0; h < 256; h++) {
-                        for (var w = 0; w < (256 / 2); w++) {
+                    for (let h = 0, idx = 0; h < 256; h++) {
+                        for (let w = 0; w < (256 / 2); w++) {
                             const p = pseudo.CstrGraphics.__vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
                             tex.bfr.uw[idx++] = tex.cc[(p >>> 0) & 255];
                             tex.bfr.uw[idx++] = tex.cc[(p >>> 8) & 255];
@@ -4076,8 +4067,8 @@ pseudo.CstrTexCache = (function() {
 
                 case TEX_15BIT:   // No color palette
                 case TEX_15BIT_2: // Seen on some rare cases
-                    for (var h = 0, idx = 0; h < 256; h++) {
-                        for (var w = 0; w < 256; w++) {
+                    for (let h = 0, idx = 0; h < 256; h++) {
+                        for (let w = 0; w < 256; w++) {
                             const p = pseudo.CstrGraphics.__vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
                             tex.bfr.uw[idx++] = pseudo.CstrTexCache.pixel2texel(p);
                         }
@@ -4193,7 +4184,7 @@ pseudo.CstrGraphics = (function() {
         256, 320, 512, 640, 368, 384, 512, 640
     ];
 
-    var modeDMA, vpos, vdiff, isVideoPAL, isVideo24Bit, disabled;
+    let modeDMA, vpos, vdiff, isVideoPAL, isVideo24Bit, disabled;
 
     function pipeReset() {
         pipe.data.fill(0);
@@ -4204,7 +4195,7 @@ pseudo.CstrGraphics = (function() {
 
     const dataMem = {
         write(stream, addr, size) {
-            var i = 0;
+            let i = 0;
       
             while (i < size) {
                 if (modeDMA === GPU_DMA_MEM2VRAM) {
@@ -4288,7 +4279,7 @@ pseudo.CstrGraphics = (function() {
     };
 
     function fetchFromRAM(stream, addr, size) {
-        var count = 0;
+        let count = 0;
 
         if (!vrop.enabled) {
             modeDMA = GPU_DMA_NONE;

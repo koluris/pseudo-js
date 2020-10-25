@@ -63,14 +63,14 @@
 #define print() \
     if (pc === 0xb0) { \
         if (r[9] === 59 || r[9] === 61) { \
-            var char = Text.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); \
+            const char = Text.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); \
             divOutput.append(char.toUpperCase()); \
         } \
     }
 
 pseudo.CstrMips = (function() {
-    var divOutput;
-    var bp, opcodeCount, requestAF, ptr;
+    let divOutput;
+    let bp, opcodeCount, requestAF, ptr;
 
     // Base + Coprocessor
     const    r = new UintWcap(32 + 3); // + pc, lo, hi

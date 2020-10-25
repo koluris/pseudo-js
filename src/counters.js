@@ -29,12 +29,12 @@ pseudo.CstrCounters = (function() {
     const RTC_TARGET = 8;
     const RTC_BOUND  = 0xffff;
 
-    var bounds = [];
-    var vbk, hbk;
+    let bounds = [];
+    let vbk, hbk;
 
     return {
         reset() {
-            for (var i = 0; i < 3; i++) {
+            for (let i = 0; i < 3; i++) {
                 bounds[i] = RTC_BOUND;
             }
 
@@ -43,7 +43,7 @@ pseudo.CstrCounters = (function() {
         },
 
         update(threshold) {
-            var temp;
+            let temp;
 
             temp = count(0) + ((mode(0) & 0x100) ? threshold : threshold / 8);
 

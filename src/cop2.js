@@ -255,12 +255,12 @@ pseudo.CstrCop2 = (function() {
                 /* pdx-068, ff9, va */
                 case 48: // RTPT
                     {
-                        var quotient;
+                        let quotient;
 
                         FLAG = 0;
                         SZ0  = SZ3;
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             const v1 = VX(v);
                             const v2 = VY(v);
                             const v3 = VZ(v);
@@ -329,7 +329,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         FLAG = 0;
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             MAC1 = ((R0 << 16) + (IR0 * (limB1(RFC - (R0 << 4), 0)))) >> 12;
                             MAC2 = ((G0 << 16) + (IR0 * (limB1(GFC - (G0 << 4), 0)))) >> 12;
                             MAC3 = ((B0 << 16) + (IR0 * (limB1(BFC - (B0 << 4), 0)))) >> 12;
@@ -413,7 +413,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         FLAG = 0;
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             const v1 = VX(v);
                             const v2 = VY(v);
                             const v3 = VZ(v);
@@ -493,7 +493,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         FLAG = 0;
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             const v1 = VX(v);
                             const v2 = VY(v);
                             const v3 = VZ(v);
@@ -565,7 +565,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         FLAG = 0;
 
-                        for (var v = 0; v < 3; v++) {
+                        for (let v = 0; v < 3; v++) {
                             const v1 = VX(v);
                             const v2 = VY(v);
                             const v3 = VZ(v);
@@ -735,7 +735,7 @@ pseudo.CstrCop2 = (function() {
                     {
                         LZCS = data;
                         LZCR = 0;
-                        var sbit = (LZCS & 0x80000000) ? LZCS : (~(LZCS));
+                        let sbit = (LZCS & 0x80000000) ? LZCS : (~(LZCS));
 
                         for ( ; sbit & 0x80000000; sbit <<= 1) {
                             LZCR++;

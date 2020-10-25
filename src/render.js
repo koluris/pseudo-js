@@ -135,9 +135,9 @@
 }
 
 pseudo.CstrRender = (function() {
-    var ctx, attrib, bfr, divRes; // WebGL Context
-    var blend, bit, ofs;
-    var drawArea, spriteTP;
+    let ctx, attrib, bfr, divRes; // WebGL Context
+    let blend, bit, ofs;
+    let drawArea, spriteTP;
 
     // Resolution
     const res = {
@@ -218,12 +218,12 @@ pseudo.CstrRender = (function() {
 
     function drawF(data, size, mode) {
         const p = PFx(data);
-        var color  = [];
-        var vertex = [];
+        let color  = [];
+        let vertex = [];
         
         const opaque = composeBlend(p.cr[0].n);
         
-        for (var i = 0; i < size; i++) {
+        for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[0].a,
                 p.cr[0].b,
@@ -246,12 +246,12 @@ pseudo.CstrRender = (function() {
 
     function drawG(data, size, mode) { \
         const p = PGx(data);
-        var color  = [];
-        var vertex = [];
+        let color  = [];
+        let vertex = [];
         
         const opaque = composeBlend(p.cr[0].n);
         
-        for (var i = 0; i < size; i++) {
+        for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[i].a,
                 p.cr[i].b,
@@ -274,14 +274,14 @@ pseudo.CstrRender = (function() {
 
     function drawFT(data, size) {
         const p = PFTx(data);
-        var color   = [];
-        var vertex  = [];
-        var texture = [];
+        let color   = [];
+        let vertex  = [];
+        let texture = [];
         
         blend = (p.tp[1] >>> 5) & 3;
         const opaque = composeBlend(p.cr[0].n);
         
-        for (var i = 0; i < size; i++) {
+        for (let i = 0; i < size; i++) {
             if (p.cr.n & 1) {
                 color.push(
                     COLOR_HALF,
@@ -320,14 +320,14 @@ pseudo.CstrRender = (function() {
 
     function drawGT(data, size) {
         const p = PGTx(data);
-        var color   = [];
-        var vertex  = [];
-        var texture = [];
+        let color   = [];
+        let vertex  = [];
+        let texture = [];
         
         blend = (p.tp[1] >>> 5) & 3;
         const opaque = composeBlend(p.cr[0].n);
         
-        for (var i = 0; i < size; i++) {
+        for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[i].a,
                 p.cr[i].b,
@@ -356,8 +356,8 @@ pseudo.CstrRender = (function() {
 
     function drawTile(data, size) {
         const p = TILEx(data);
-        var color  = [];
-        var vertex = [];
+        let color  = [];
+        let vertex = [];
         
         const opaque = composeBlend(p.cr[0].n);
         
@@ -366,7 +366,7 @@ pseudo.CstrRender = (function() {
             p.vx[1].v = size;
         }
 
-        for (var i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
             color.push(
                 p.cr[0].a,
                 p.cr[0].b,
@@ -391,9 +391,9 @@ pseudo.CstrRender = (function() {
 
     function drawSprite(data, size) {
         const p = SPRTx(data);
-        var color   = [];
-        var vertex  = [];
-        var texture = [];
+        let color   = [];
+        let vertex  = [];
+        let texture = [];
         
         const opaque = composeBlend(p.cr[0].n);
         
@@ -402,7 +402,7 @@ pseudo.CstrRender = (function() {
             p.vx[1].v = size;
         }
 
-        for (var i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
             if (p.cr[0].n & 1) {
                 color.push(
                     COLOR_HALF,
@@ -632,10 +632,10 @@ pseudo.CstrRender = (function() {
                 case 0x02: // BLOCK FILL
                     {
                         const p = TILEx(data);
-                        var color  = [];
-                        var vertex = [];
+                        let color  = [];
+                        let vertex = [];
 
-                        for (var i = 0; i < 4; i++) {
+                        for (let i = 0; i < 4; i++) {
                             color.push(
                                 p.cr[0].a,
                                 p.cr[0].b,

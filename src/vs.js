@@ -78,7 +78,7 @@ pseudo.CstrGraphics = (function() {
         256, 320, 512, 640, 368, 384, 512, 640
     ];
 
-    var modeDMA, vpos, vdiff, isVideoPAL, isVideo24Bit, disabled;
+    let modeDMA, vpos, vdiff, isVideoPAL, isVideo24Bit, disabled;
 
     function pipeReset() {
         pipe.data.fill(0);
@@ -89,7 +89,7 @@ pseudo.CstrGraphics = (function() {
 
     const dataMem = {
         write(stream, addr, size) {
-            var i = 0;
+            let i = 0;
       
             while (i < size) {
                 if (modeDMA === GPU_DMA_MEM2VRAM) {
@@ -173,7 +173,7 @@ pseudo.CstrGraphics = (function() {
     };
 
     function fetchFromRAM(stream, addr, size) {
-        var count = 0;
+        let count = 0;
 
         if (!vrop.enabled) {
             modeDMA = GPU_DMA_NONE;

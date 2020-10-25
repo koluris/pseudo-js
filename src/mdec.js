@@ -1,5 +1,5 @@
 pseudo.CstrMdec = (function() {
-    var cmd, status;
+    let cmd, status;
 
     // Exposed class functions/variables
     return {

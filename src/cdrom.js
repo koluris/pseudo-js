@@ -32,20 +32,20 @@ pseudo.CstrCdrom = (function() {
   const CD_STAT_DISK_ERROR  = 5;
 
   // HTML elements
-  var divBlink, divKb;
+  let divBlink, divKb;
 
-  var ctrl, mode, stat, statP, re2;
-  var occupied, reads, seeked, readed;
-  var irq, cdint, cdreadint;
-  var kbRead;
+  let ctrl, mode, stat, statP, re2;
+  let occupied, reads, seeked, readed;
+  let irq, cdint, cdreadint;
+  let kbRead;
 
-  var param = {
+  const param = {
     data: new UintBcap(8),
     p: undefined,
     c: undefined
   };
 
-  var res = {
+  const res = {
     data: new UintBcap(8),
     tn: new UintBcap(6),
     td: new UintBcap(4),
@@ -54,12 +54,12 @@ pseudo.CstrCdrom = (function() {
     ok: undefined
   };
 
-  var sector = {
+  const sector = {
     data: new UintBcap(4),
     prev: new UintBcap(4)
   };
 
-  var transfer = {
+  const transfer = {
     data: new UintBcap(UDF_FRAMESIZERAW),
     p: 0
   };
@@ -101,7 +101,7 @@ pseudo.CstrCdrom = (function() {
   }
 
   function interrupt() {
-    var prevIrq = irq;
+    const prevIrq = irq;
 
     if (stat) {
       cdint = 1
@@ -213,7 +213,7 @@ pseudo.CstrCdrom = (function() {
       case 16: // CdlGetlocL
         setResultSize(8);
         stat = CD_STAT_ACKNOWLEDGE;
-        for (var i = 0; i < 8; i++) {
+        for (let i = 0; i < 8; i++) {
           res.data[i] = transfer.data[i];
         }
         break;
@@ -433,7 +433,7 @@ pseudo.CstrCdrom = (function() {
               stopRead();
               defaultCtrlAndStat();
               seeked = 0;
-              for (var i = 0; i < 3; i++) {
+              for (let i = 0; i < 3; i++) {
                 sector.data[i] = BCD2INT(param.data[i]);
               }
               sector.data[3] = 0;
@@ -595,7 +595,7 @@ pseudo.CstrCdrom = (function() {
             return;
           }
           
-          for (var i=0; i<size; i++) {
+          for (let i=0; i<size; i++) {
             directMemB(ram.ub, madr + i) = transfer.data[transfer.p + i];
           }
 

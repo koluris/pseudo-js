@@ -1,12 +1,12 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
 pseudo.CstrMain = (function() {
-    var divDropzone;
-    var iso;
+    let divDropzone;
+    let iso;
 
     // AJAX function
     function request(path, fn) {
-        var xhr = new XMLHttpRequest();
+        const xhr = new XMLHttpRequest();
         xhr.onload = function() {
             if (xhr.status === 404) {
                 cpu.consoleWrite(MSG_ERROR, 'Unable to read file "' + path + '"');
@@ -22,16 +22,16 @@ pseudo.CstrMain = (function() {
 
     // Chunk reader function
     function chunkReader(file, start, size, kind, fn) {
-        var end = start + size;
+        const end = start + size;
 
         // Check boundaries
         if (file.size > end) {
-            var reader = new FileReader();
+            const reader = new FileReader();
             reader.onload = function(e) { // Callback
                 fn(e.dest.result);
             };
             // Read sliced area
-            var slice = file.slice(start, end);
+            const slice = file.slice(start, end);
 
             if (kind === 'text') {
                 reader.readAsText(slice);
@@ -90,15 +90,15 @@ pseudo.CstrMain = (function() {
                 e.preventDefault();
                 psx.drop.exit();
         
-                var dt = e.dataTransfer;
+                const dt = e.dataTransfer;
 
                 if (dt.files) {
-                    var file = dt.files[0];
+                    const file = dt.files[0];
           
                     // PS-X EXE
                     chunkReader(file, 0, 8, 'text', function(id) {
                         if (id === 'PS-X EXE') {
-                            var reader = new FileReader();
+                            const reader = new FileReader();
                             reader.onload = function(e) { // Callback
                                 reset();
                                 executable(e.dest.result);

@@ -43,8 +43,8 @@ pseudo.CstrSerial = (function() {
   const PAD_BTN_CROSS    = 14;
   const PAD_BTN_SQUARE   = 15;
 
-  var baud, control, mode, status, padst, parp;
-  var bfr = new UintBcap(256);
+  let baud, control, mode, status, padst, parp;
+  let bfr = new UintBcap(256);
 
   return {
     reset() {
