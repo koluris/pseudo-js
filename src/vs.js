@@ -191,6 +191,7 @@ pseudo.CstrGraphics = (function() {
                 if (isVideo24Bit) {
                 }
                 else {
+                    vrop.raw.uw[count] = tcache.pixel2texel(directMemH(ram.uh, addr));
                 }
 
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
@@ -222,9 +223,9 @@ pseudo.CstrGraphics = (function() {
 
     function fetchEnd(count) {
         if (vrop.v.p >= vrop.v.end) {
-            render.outputVRAM(vrop.raw, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
+            render.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
 
-            vrop.raw.fill(0);
+            vrop.raw.ub.fill(0);
             vrop.enabled = false;
 
             modeDMA = GPU_DMA_NONE;
@@ -405,7 +406,7 @@ pseudo.CstrGraphics = (function() {
             vrop.v.end   = vrop.v.p + p.n5;
 
             vrop.enabled = true;
-            vrop.raw = new UintWcap(p.n4 * p.n5);
+            vrop.raw = new union((p.n4 * p.n5) * 4);
             modeDMA = GPU_DMA_MEM2VRAM;
 
             // Cache invalidation

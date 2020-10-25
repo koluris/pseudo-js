@@ -697,7 +697,77 @@ pseudo.CstrRender = (function() {
             psx.error('GPU Render Primitive ' + psx.hex(addr));
         },
 
-        outputVRAM(raw, iX, iY, iW, iH) {
+        outputVRAM(raw, bit24, iX, iY, iW, iH) {
+            // Disable state
+            ctx.disable(ctx.BLEND);
+
+            const color = [
+                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
+                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
+                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
+                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
+            ];
+
+            // Compose Color
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
+            ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
+            ctx.bufferData(ctx.ARRAY_BUFFER, new UintBcap(color), ctx.STATIC_DRAW);
+
+            const vertex = [
+                iX,      iY,
+                iX + iW, iY,
+                iX,      iY + iH,
+                iX + iW, iY + iH,
+            ];
+
+            // Compose Vertex
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);
+            ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
+            ctx.bufferData(ctx.ARRAY_BUFFER, new SintHcap(vertex), ctx.STATIC_DRAW);
+
+            var texture = [
+                 0,  0,
+                iW,  0,
+                 0, iH,
+                iW, iH,
+            ];
+
+            for (const i in texture) {
+                if (!(i % 2)) {
+                    texture[i] /= 1024.0 / 2;
+                }
+                else {
+                    texture[i] /=  512.0 / 2;
+                }
+            }
+
+            // Compose Texture
+            ctx.uniform1i(attrib._e, true);
+            ctx.enableVertexAttrib(attrib._t);
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._t);
+            ctx.vertexAttribPointer(attrib._t, 2, ctx.FLOAT, false, 0, 0);
+            ctx.bufferData(ctx.ARRAY_BUFFER, new F32cap(texture), ctx.STATIC_DRAW);
+
+            if (bit24) {
+            }
+            else {
+                const tex = ctx.createTexture();
+                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
+                ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
+            }
+
+            ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
+
+            // Disable Texture
+            ctx.uniform1i(attrib._e, false);
+            ctx.disableVertexAttrib(attrib._t);
+
+            // Enable state
+            ctx.enable(ctx.BLEND);
         }
     };
 })();
