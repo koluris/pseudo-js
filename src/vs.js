@@ -11,8 +11,8 @@
     (x >>> 24) & 0xff
 
 #define READ_IMG(data) { \
-    n2: (data[1] >>>  0) & 0x03ff, \
-    n3: (data[1] >>> 16) & 0x01ff, \
+    n2: (data[1] >>>  0) & 0xffff, \
+    n3: (data[1] >>> 16) & 0xffff, \
     n4: (data[2] >>>  0) & 0xffff, \
     n5: (data[2] >>> 16) & 0xffff, \
 }

@@ -4489,7 +4489,7 @@ pseudo.CstrGraphics = (function() {
         },
 
         photoWrite(data) {
-            const p = { n2: (data[1] >>> 0) & 0x03ff, n3: (data[1] >>> 16) & 0x01ff, n4: (data[2] >>> 0) & 0xffff, n5: (data[2] >>> 16) & 0xffff, };
+            const p = { n2: (data[1] >>> 0) & 0xffff, n3: (data[1] >>> 16) & 0xffff, n4: (data[2] >>> 0) & 0xffff, n5: (data[2] >>> 16) & 0xffff, };
 
             vrop.h.start = vrop.h.p = p.n2;
             vrop.v.start = vrop.v.p = p.n3;
@@ -4503,7 +4503,7 @@ pseudo.CstrGraphics = (function() {
         },
 
         photoRead(data) {
-            const p = { n2: (data[1] >>> 0) & 0x03ff, n3: (data[1] >>> 16) & 0x01ff, n4: (data[2] >>> 0) & 0xffff, n5: (data[2] >>> 16) & 0xffff, };
+            const p = { n2: (data[1] >>> 0) & 0xffff, n3: (data[1] >>> 16) & 0xffff, n4: (data[2] >>> 0) & 0xffff, n5: (data[2] >>> 16) & 0xffff, };
 
             vrop.h.start = vrop.h.p = p.n2;
             vrop.v.start = vrop.v.p = p.n3;
