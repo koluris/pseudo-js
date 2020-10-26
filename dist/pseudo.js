@@ -3264,7 +3264,7 @@ pseudo.CstrRender = (function() {
         const opaque = composeBlend(p.cr[0].n);
         
         for (let i = 0; i < size; i++) {
-            if (p.cr.n & 1) {
+            if (p.cr[0].n & 1) {
                 color.push(
                     255 >>> 1,
                     255 >>> 1,
