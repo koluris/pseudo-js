@@ -4303,19 +4303,20 @@ pseudo.CstrGraphics = (function() {
         while (vrop.v.p < vrop.v.end) {
             while (vrop.h.p < vrop.h.end) {
                 // Keep position of pseudo.CstrGraphics.__vram
-                const pos = (vrop.v.p << 10) + vrop.h.p;
-                const isEven = !(count % 2);
+                const ramValue = pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
+                const isEven   = !(count % 2);
 
                 if (isVideo24Bit) {
-                    vrop.raw.uh[count] = pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1]; // Nope
+                    vrop.raw.uh[count] = ramValue; // Nope
                 }
                 else {
-                    vrop.raw.uw[count] = pseudo.CstrTexCache.pixel2texel(pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1]);
+                    vrop.raw.uw[count] = pseudo.CstrTexCache.pixel2texel(ramValue);
                 }
 
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
+                const pos = (vrop.v.p << 10) + vrop.h.p;
                 if (stream) {
-                    pseudo.CstrGraphics.__vram.uh[pos] = pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
+                    pseudo.CstrGraphics.__vram.uh[pos] = ramValue;
                 }
                 else { // A dumb hack for now
                     pseudo.CstrGraphics.__vram.uh[pos] |= (addr >>> (isEven ? 0 : 16)) & 0xffff;

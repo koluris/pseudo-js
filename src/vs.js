@@ -184,19 +184,20 @@ pseudo.CstrGraphics = (function() {
         while (vrop.v.p < vrop.v.end) {
             while (vrop.h.p < vrop.h.end) {
                 // Keep position of vram
-                const pos = (vrop.v.p << 10) + vrop.h.p;
-                const isEven = !(count % 2);
+                const ramValue = directMemH(ram.uh, addr);
+                const isEven   = !(count % 2);
 
                 if (isVideo24Bit) {
-                    vrop.raw.uh[count] = directMemH(ram.uh, addr); // Nope
+                    vrop.raw.uh[count] = ramValue; // Nope
                 }
                 else {
-                    vrop.raw.uw[count] = tcache.pixel2texel(directMemH(ram.uh, addr));
+                    vrop.raw.uw[count] = tcache.pixel2texel(ramValue);
                 }
 
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
+                const pos = (vrop.v.p << 10) + vrop.h.p;
                 if (stream) {
-                    vram.uh[pos] = directMemH(ram.uh, addr);
+                    vram.uh[pos] = ramValue;
                 }
                 else { // A dumb hack for now
                     vram.uh[pos] |= (addr >>> (isEven ? 0 : 16)) & 0xffff;
