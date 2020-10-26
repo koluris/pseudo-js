@@ -185,11 +185,13 @@ pseudo.CstrGraphics = (function() {
             while (vrop.h.p < vrop.h.end) {
                 // Keep position of vram
                 const pos = (vrop.v.p << 10) + vrop.h.p;
+                const isEven = !(count % 2);
 
                 if (isVideo24Bit) {
+                    vrop.raw.uh[count] = directMemH(ram.uh, addr); // Nope
                 }
                 else {
-                    vrop.raw[count] = tcache.pixel2texel(directMemH(ram.uh, addr));
+                    vrop.raw.uw[count] = tcache.pixel2texel(directMemH(ram.uh, addr));
                 }
 
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
@@ -197,9 +199,7 @@ pseudo.CstrGraphics = (function() {
                     vram.uh[pos] = directMemH(ram.uh, addr);
                 }
                 else { // A dumb hack for now
-                    if (!(count % 2)) {
-                        vram.uw[pos >>> 1] = addr;
-                    }
+                    vram.uh[pos] |= (addr >>> (isEven ? 0 : 16)) & 0xffff;
                 }
                 addr += 2;
                 vrop.h.p++;
@@ -223,7 +223,7 @@ pseudo.CstrGraphics = (function() {
         if (vrop.v.p >= vrop.v.end) {
             render.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
 
-            vrop.raw.fill(0);
+            vrop.raw.ub.fill(0);
             vrop.enabled = false;
 
             modeDMA = GPU_DMA_NONE;
@@ -410,7 +410,7 @@ pseudo.CstrGraphics = (function() {
             vrop.v.end   = vrop.v.p + p.n5;
 
             vrop.enabled = true;
-            vrop.raw = new UintWcap(p.n4 * p.n5);
+            vrop.raw = new union((p.n4 * p.n5) * 4);
             modeDMA = GPU_DMA_MEM2VRAM;
 
             // Cache invalidation

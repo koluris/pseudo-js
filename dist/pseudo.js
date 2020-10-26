@@ -3116,6 +3116,8 @@ pseudo.CstrMain = (function() {
 
 
 
+
+
 pseudo.CstrRender = (function() {
     let ctx, attrib, bfr, divRes; // 'webgl', { preserveDrawingBuffer: true } Context
     let blend, bit, ofs;
@@ -3717,6 +3719,15 @@ pseudo.CstrRender = (function() {
             ]);
 
             if (bit24) {
+                iX = (iX * 2) / 3;
+                iW = (iW * 2) / 3;
+                const tex = ctx.createTexture();
+                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
+                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGB , iW, iH, 0, ctx.RGB , ctx.UNSIGNED_BYTE, raw.ub);
             }
             else {
                 const tex = ctx.createTexture();
@@ -3725,7 +3736,7 @@ pseudo.CstrRender = (function() {
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
-                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, new Uint8Array(raw.buffer));
+                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
             }
 
             ctx.drawArrays(ctx.TRIANGLE_STRIP, 0, 4);
@@ -4293,11 +4304,13 @@ pseudo.CstrGraphics = (function() {
             while (vrop.h.p < vrop.h.end) {
                 // Keep position of pseudo.CstrGraphics.__vram
                 const pos = (vrop.v.p << 10) + vrop.h.p;
+                const isEven = !(count % 2);
 
                 if (isVideo24Bit) {
+                    vrop.raw.uh[count] = pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1]; // Nope
                 }
                 else {
-                    vrop.raw[count] = pseudo.CstrTexCache.pixel2texel(pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1]);
+                    vrop.raw.uw[count] = pseudo.CstrTexCache.pixel2texel(pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1]);
                 }
 
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
@@ -4305,9 +4318,7 @@ pseudo.CstrGraphics = (function() {
                     pseudo.CstrGraphics.__vram.uh[pos] = pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
                 }
                 else { // A dumb hack for now
-                    if (!(count % 2)) {
-                        pseudo.CstrGraphics.__vram.uw[pos >>> 1] = addr;
-                    }
+                    pseudo.CstrGraphics.__vram.uh[pos] |= (addr >>> (isEven ? 0 : 16)) & 0xffff;
                 }
                 addr += 2;
                 vrop.h.p++;
@@ -4331,7 +4342,7 @@ pseudo.CstrGraphics = (function() {
         if (vrop.v.p >= vrop.v.end) {
             pseudo.CstrRender.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
 
-            vrop.raw.fill(0);
+            vrop.raw.ub.fill(0);
             vrop.enabled = false;
 
             modeDMA = GPU_DMA_NONE;
@@ -4518,7 +4529,7 @@ pseudo.CstrGraphics = (function() {
             vrop.v.end   = vrop.v.p + p.n5;
 
             vrop.enabled = true;
-            vrop.raw = new Uint32Array(p.n4 * p.n5);
+            vrop.raw = new union((p.n4 * p.n5) * 4);
             modeDMA = GPU_DMA_MEM2VRAM;
 
             // Cache invalidation

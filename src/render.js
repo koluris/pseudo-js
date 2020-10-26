@@ -1,5 +1,7 @@
 // /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
+#undef RGB
+
 #define COLOR_MAX \
     255
 
@@ -735,6 +737,15 @@ pseudo.CstrRender = (function() {
             ]);
 
             if (bit24) {
+                iX = (iX * 2) / 3;
+                iW = (iW * 2) / 3;
+                const tex = ctx.createTexture();
+                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
+                ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGB , iW, iH, 0, ctx.RGB , ctx.UNSIGNED_BYTE, raw.ub);
             }
             else {
                 const tex = ctx.createTexture();
@@ -743,7 +754,7 @@ pseudo.CstrRender = (function() {
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
-                ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, new UintBcap(raw.buffer));
+                ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
             }
 
             ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
