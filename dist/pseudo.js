@@ -2333,7 +2333,7 @@ pseudo.CstrMdec = (function() {
 
     const blk = {
         index: 0, raw: new Int32Array(MDEC_BLOCK_NUM * 6 * 4),
-    }
+    };
 
     let tableNormalize = new Uint8Array(MDEC_BLOCK_NUM * 6 * 2);
     let iq = new Int32Array(MDEC_BLOCK_NUM * 4);
@@ -2756,11 +2756,13 @@ pseudo.CstrMips = (function() {
                     case 8: // JR
                         branch(r[((code >>> 21) & 0x1f)]);
                         if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { const char = String.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); divOutput.append(char.toUpperCase()); } };
+                        ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
                         return;
 
                     case 9: // JALR
                         r[((code >>> 11) & 0x1f)] = r[32] + 4;
                         branch(r[((code >>> 21) & 0x1f)]);
+                        ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
                         return;
 
                     case 12: // SYSCALL
@@ -3012,8 +3014,7 @@ pseudo.CstrMips = (function() {
     function branch(addr) {
         // Execute instruction in slot
         step(true);
-        r[32] = addr
-        ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+        r[32] = addr;
     }
 
     // Exposed class functions/variables

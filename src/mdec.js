@@ -55,7 +55,7 @@ pseudo.CstrMdec = (function() {
 
     const blk = {
         index: 0, raw: new SintWcap(MDEC_BLOCK_NUM * 6 * 4),
-    }
+    };
 
     let tableNormalize = new UintBcap(MDEC_BLOCK_NUM * 6 * 2);
     let iq = new SintWcap(MDEC_BLOCK_NUM * 4);

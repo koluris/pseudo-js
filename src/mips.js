@@ -129,11 +129,13 @@ pseudo.CstrMips = (function() {
                     case 8: // JR
                         branch(r[rs]);
                         print();
+                        setptr(pc);
                         return;
 
                     case 9: // JALR
                         r[rd] = pc + 4;
                         branch(r[rs]);
+                        setptr(pc);
                         return;
 
                     case 12: // SYSCALL
@@ -385,8 +387,7 @@ pseudo.CstrMips = (function() {
     function branch(addr) {
         // Execute instruction in slot
         step(true);
-        pc = addr
-        setptr(pc);
+        pc = addr;
     }
 
     // Exposed class functions/variables
