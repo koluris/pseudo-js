@@ -3055,7 +3055,7 @@ pseudo.CstrMips = (function() {
 
         run() {
             bp = false;
-            requestAF = setImmediate(pseudo.CstrMips.run); //requestAnimationFrame(pseudo.CstrMips.run);
+            requestAF = requestAnimationFrame(pseudo.CstrMips.run); //setTimeout(pseudo.CstrMips.run, 0);
 
             while (!bp) { // And u don`t stop!
                 step(false);
@@ -3105,9 +3105,9 @@ pseudo.CstrMips = (function() {
         },
 
         pause() {
-            //cancelAnimationFrame(requestAF);
-            //requestAF = undefined;
-            clearImmediate(requestAF);
+            cancelAnimationFrame(requestAF);
+            requestAF = undefined;
+            //clearTimeout(requestAF);
             bp = true;
         },
 
