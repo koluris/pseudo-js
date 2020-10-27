@@ -173,7 +173,7 @@ pseudo.CstrMdec = (function() {
                         let blk = new SintWcap(384 * 4);
                         let im  = madr;
         
-                        for (; size > 0; size -= 384 / 2, im += 384) {
+                        for (; size > 0; size -= 384 / 2, im += 384 * 2) {
                             blk.fill(0);
                             let iqtab = iq.uv;
                             let blkindex = 0;
@@ -211,16 +211,12 @@ pseudo.CstrMdec = (function() {
                                     continue;
                                 }
 
-                                //console.log(blk[blkindex]);
-
                                 // Macro blocks
                                 macroBlock(blk, blkindex, 8, 0);
                                 macroBlock(blk, blkindex, 1, 5);
                                 
                                 blkindex += 64;
                             }
-
-                            //console.log(blk);
 
                             // YUV24
                             let immmm = im;

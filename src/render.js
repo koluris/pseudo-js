@@ -715,27 +715,6 @@ pseudo.CstrRender = (function() {
             // Disable state
             ctx.disable(ctx.BLEND);
 
-            createColor([
-                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
-                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
-                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
-                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
-            ]);
-
-            createVertex([
-                iX,      iY,
-                iX + iW, iY,
-                iX,      iY + iH,
-                iX + iW, iY + iH,
-            ]);
-
-            createTexture([
-                0, 0,
-                1, 0,
-                0, 1,
-                1, 1,
-            ]);
-
             if (bit24) {
                 iX = (iX * 2) / 3;
                 iW = (iW * 2) / 3;
@@ -756,6 +735,27 @@ pseudo.CstrRender = (function() {
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
                 ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
             }
+
+            createColor([
+                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
+                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
+                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
+                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
+            ]);
+
+            createVertex([
+                iX,      iY,
+                iX + iW, iY,
+                iX,      iY + iH,
+                iX + iW, iY + iH,
+            ]);
+
+            createTexture([
+                0, 0,
+                1, 0,
+                0, 1,
+                1, 1,
+            ]);
 
             ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
             ctx.enable(ctx.BLEND);

@@ -2388,7 +2388,7 @@ pseudo.CstrMdec = (function() {
                         let blk = new Int32Array(384 * 4);
                         let im  = pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
         
-                        for (; size > 0; size -= 384 / 2, im += 384) {
+                        for (; size > 0; size -= 384 / 2, im += 384 * 2) {
                             blk.fill(0);
                             let iqtab = iq.uv;
                             let blkindex = 0;
@@ -2426,16 +2426,12 @@ pseudo.CstrMdec = (function() {
                                     continue;
                                 }
 
-                                //console.log(blk[blkindex]);
-
                                 // Macro blocks
                                 { let index =  blkindex; for (let k = 0; k < 8; k++, index += ( 0) ? 8 : 1) { if((blk[index +  8 * 1] | blk[index +  8 * 2] | blk[index +  8 * 3] | blk[index +  8 * 4] | blk[index +  8 * 5] | blk[index +  8 * 6] | blk[index +  8 * 7]) == 0) { blk[index +  8 * 0] = blk[index +  8 * 1] = blk[index +  8 * 2] = blk[index +  8 * 3] = blk[index +  8 * 4] = blk[index +  8 * 5] = blk[index +  8 * 6] = blk[index +  8 * 7] = blk[index +  8 * 0] >>  0; continue; } let z10 = blk[index +  8 * 0] + blk[index +  8 * 4]; let z11 = blk[index +  8 * 0] - blk[index +  8 * 4]; let z13 = blk[index +  8 * 2] + blk[index +  8 * 6]; let z12 = blk[index +  8 * 2] - blk[index +  8 * 6]; z12 = ((z12 * 362) >> 8) - z13; let tmp0 = z10 + z13; let tmp3 = z10 - z13; let tmp1 = z11 + z12; let tmp2 = z11 - z12; z13 = blk[index +  8 * 3] + blk[index +  8 * 5]; z10 = blk[index +  8 * 3] - blk[index +  8 * 5]; z11 = blk[index +  8 * 1] + blk[index +  8 * 7]; z12 = blk[index +  8 * 1] - blk[index +  8 * 7]; let z5 = ((z12 - z10) * 473) >> 8; let tmp7 = z11 + z13; let tmp6 = ((z10 * 669) >> 8) + z5 - tmp7; let tmp5 = (((z11 - z13) * 362) >> 8) - tmp6; let tmp4 = ((z12 * 277) >> 8) - z5 + tmp5; blk[index +  8 * 0] = (tmp0 + tmp7) >>  0; blk[index +  8 * 7] = (tmp0 - tmp7) >>  0; blk[index +  8 * 1] = (tmp1 + tmp6) >>  0; blk[index +  8 * 6] = (tmp1 - tmp6) >>  0; blk[index +  8 * 2] = (tmp2 + tmp5) >>  0; blk[index +  8 * 5] = (tmp2 - tmp5) >>  0; blk[index +  8 * 4] = (tmp3 + tmp4) >>  0; blk[index +  8 * 3] = (tmp3 - tmp4) >>  0; } };
                                 { let index =  blkindex; for (let k = 0; k < 8; k++, index += ( 5) ? 8 : 1) { if((blk[index +  1 * 1] | blk[index +  1 * 2] | blk[index +  1 * 3] | blk[index +  1 * 4] | blk[index +  1 * 5] | blk[index +  1 * 6] | blk[index +  1 * 7]) == 0) { blk[index +  1 * 0] = blk[index +  1 * 1] = blk[index +  1 * 2] = blk[index +  1 * 3] = blk[index +  1 * 4] = blk[index +  1 * 5] = blk[index +  1 * 6] = blk[index +  1 * 7] = blk[index +  1 * 0] >>  5; continue; } let z10 = blk[index +  1 * 0] + blk[index +  1 * 4]; let z11 = blk[index +  1 * 0] - blk[index +  1 * 4]; let z13 = blk[index +  1 * 2] + blk[index +  1 * 6]; let z12 = blk[index +  1 * 2] - blk[index +  1 * 6]; z12 = ((z12 * 362) >> 8) - z13; let tmp0 = z10 + z13; let tmp3 = z10 - z13; let tmp1 = z11 + z12; let tmp2 = z11 - z12; z13 = blk[index +  1 * 3] + blk[index +  1 * 5]; z10 = blk[index +  1 * 3] - blk[index +  1 * 5]; z11 = blk[index +  1 * 1] + blk[index +  1 * 7]; z12 = blk[index +  1 * 1] - blk[index +  1 * 7]; let z5 = ((z12 - z10) * 473) >> 8; let tmp7 = z11 + z13; let tmp6 = ((z10 * 669) >> 8) + z5 - tmp7; let tmp5 = (((z11 - z13) * 362) >> 8) - tmp6; let tmp4 = ((z12 * 277) >> 8) - z5 + tmp5; blk[index +  1 * 0] = (tmp0 + tmp7) >>  5; blk[index +  1 * 7] = (tmp0 - tmp7) >>  5; blk[index +  1 * 1] = (tmp1 + tmp6) >>  5; blk[index +  1 * 6] = (tmp1 - tmp6) >>  5; blk[index +  1 * 2] = (tmp2 + tmp5) >>  5; blk[index +  1 * 5] = (tmp2 - tmp5) >>  5; blk[index +  1 * 4] = (tmp3 + tmp4) >>  5; blk[index +  1 * 3] = (tmp3 - tmp4) >>  5; } };
                                 
                                 blkindex += 64;
                             }
-
-                            //console.log(blk);
 
                             // YUV24
                             let immmm = im;
@@ -3904,6 +3900,27 @@ pseudo.CstrRender = (function() {
             // Disable state
             ctx.disable(ctx.BLEND);
 
+            if (bit24) {
+                iX = (iX * 2) / 3;
+                iW = (iW * 2) / 3;
+                const tex = ctx.createTexture();
+                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
+                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGB , iW, iH, 0, ctx.RGB , ctx.UNSIGNED_BYTE, raw.ub);
+            }
+            else {
+                const tex = ctx.createTexture();
+                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
+                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
+                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
+            }
+
             createColor([
                 255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
                 255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
@@ -3924,27 +3941,6 @@ pseudo.CstrRender = (function() {
                 0, 1,
                 1, 1,
             ]);
-
-            if (bit24) {
-                //iX = (iX * 2) / 3;
-                //iW = (iW * 2) / 3;
-                const tex = ctx.createTexture();
-                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
-                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGB , iW, iH, 0, ctx.RGB , ctx.UNSIGNED_BYTE, raw.ub);
-            }
-            else {
-                const tex = ctx.createTexture();
-                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
-                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
-            }
 
             ctx.drawArrays(ctx.TRIANGLE_STRIP, 0, 4);
             ctx.enable(ctx.BLEND);
@@ -4511,11 +4507,9 @@ pseudo.CstrGraphics = (function() {
             while (vrop.h.p < vrop.h.end) {
                 // Keep position of pseudo.CstrGraphics.__vram
                 const ramValue = pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
-                //const isEven   = !(count % 2);
 
                 if (isVideo24Bit) {
-                    vrop.raw.uh[count] = ramValue; // Nope
-                    //if (vrop.raw.uh[count] != 0) console.log(vrop.raw.uh[count]);
+                    vrop.raw.uh[count] = ramValue;
                 }
                 else {
                     vrop.raw.uw[count] = pseudo.CstrTexCache.pixel2texel(ramValue);
@@ -4704,7 +4698,7 @@ pseudo.CstrGraphics = (function() {
                 case 0x01000401:
                     while(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] !== 0xffffff) {
                         const count = pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) & (pseudo.CstrMem.__ram.uw.byteLength - 1)) >>> 2];
-                        dataMem.write(true, (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] + 4) & 0x1ffffc, count >>> 24);
+                        dataMem.write(true, pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] + 4, count >>> 24);
                         pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = count & 0xffffff;
                     }
                     return;
