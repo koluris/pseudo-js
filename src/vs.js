@@ -185,10 +185,11 @@ pseudo.CstrGraphics = (function() {
             while (vrop.h.p < vrop.h.end) {
                 // Keep position of vram
                 const ramValue = directMemH(ram.uh, addr);
-                const isEven   = !(count % 2);
+                //const isEven   = !(count % 2);
 
                 if (isVideo24Bit) {
                     vrop.raw.uh[count] = ramValue; // Nope
+                    //if (vrop.raw.uh[count] != 0) console.log(vrop.raw.uh[count]);
                 }
                 else {
                     vrop.raw.uw[count] = tcache.pixel2texel(ramValue);
@@ -200,7 +201,9 @@ pseudo.CstrGraphics = (function() {
                     vram.uh[pos] = ramValue;
                 }
                 else { // A dumb hack for now
-                    vram.uh[pos] |= (addr >>> (isEven ? 0 : 16)) & 0xffff;
+                    if (!(count % 2)) {
+                        vram.uw[pos >>> 1] = addr;
+                    }
                 }
                 addr += 2;
                 vrop.h.p++;
