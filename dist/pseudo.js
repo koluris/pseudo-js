@@ -2300,11 +2300,6 @@ pseudo.CstrHardware = (function() {
 
 
 
-
-
-
-
-
 pseudo.CstrMdec = (function() {
     const MDEC_BLOCK_NUM = 64;
 
@@ -2330,16 +2325,12 @@ pseudo.CstrMdec = (function() {
         0x11a8, 0x187e, 0x1712, 0x14c3, 0x11a8, 0x0de0, 0x098e, 0x04df,
     ];
 
-    const iq = {
-         y: new Int32Array(MDEC_BLOCK_NUM * 4),
-        uv: new Int32Array(MDEC_BLOCK_NUM * 4), 
-    };
-
     const blk = {
         index: 0, raw: new Int32Array(MDEC_BLOCK_NUM * 6 * 4),
     }
 
     let tableNormalize = new Uint8Array(MDEC_BLOCK_NUM * 6 * 2);
+    let iq = new Int32Array(MDEC_BLOCK_NUM * 4);
     let cmd, status, pMadr;
 
     function resetBlock() {
@@ -2356,15 +2347,20 @@ pseudo.CstrMdec = (function() {
     }
 
     function resetIqs() {
-        iq. y.fill(0);
-        iq.uv.fill(0);
+        iq.fill(0);
+    }
+
+    function initTable(addr) {
+        for (let i = 0; i < MDEC_BLOCK_NUM; i++) {
+            iq[i] = (pseudo.CstrMem.__ram.ub[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] + i) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] * aanscales[zscan[i]]) >> 12;
+        }
     }
 
     function processBlock() {
         let iqtab, rl;
 
         for (let i = 0; i < 6; i++, blk.index += MDEC_BLOCK_NUM) {
-            iqtab = i > 1 ? iq.y : iq.uv
+            iqtab = iq;
 
             rl = pseudo.CstrMem.__ram.uh[(( pMadr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
             pMadr += 2;
@@ -2462,17 +2458,17 @@ pseudo.CstrMdec = (function() {
                 data = blk.raw[indexY + 8]; pseudo.CstrMem.__ram.ub[(((photo + (0x10 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x10 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x10 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
                 data = blk.raw[indexY + 9]; pseudo.CstrMem.__ram.ub[(((photo + (0x11 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x11 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x11 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
                 
-                cb = blk.raw[indexCb + 4];
-                cr = blk.raw[indexCr + 4];
+                // cb = blk.raw[indexCb + 4];
+                // cr = blk.raw[indexCr + 4];
                 
-                iB = ((0x00000716 * (cb)) >> 10);
-                iG = ((0xfffffea1 * (cb)) >> 10) + ((0xfffffd25 * (cr)) >> 10);
-                iR = ((0x0000059b * (cr)) >> 10);
+                // iB = ((0x00000716 * (cb)) >> 10);
+                // iG = ((0xfffffea1 * (cb)) >> 10) + ((0xfffffd25 * (cr)) >> 10);
+                // iR = ((0x0000059b * (cr)) >> 10);
                 
-                data = blk.raw[indexY + MDEC_BLOCK_NUM + 0]; pseudo.CstrMem.__ram.ub[(((photo + (0x08 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x08 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x08 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
-                data = blk.raw[indexY + MDEC_BLOCK_NUM + 1]; pseudo.CstrMem.__ram.ub[(((photo + (0x09 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x09 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x09 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
-                data = blk.raw[indexY + MDEC_BLOCK_NUM + 8]; pseudo.CstrMem.__ram.ub[(((photo + (0x18 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x18 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x18 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
-                data = blk.raw[indexY + MDEC_BLOCK_NUM + 9]; pseudo.CstrMem.__ram.ub[(((photo + (0x19 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x19 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x19 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
+                // data = blk.raw[indexY + MDEC_BLOCK_NUM + 0]; pseudo.CstrMem.__ram.ub[(((photo + (0x08 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x08 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x08 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
+                // data = blk.raw[indexY + MDEC_BLOCK_NUM + 1]; pseudo.CstrMem.__ram.ub[(((photo + (0x09 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x09 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x09 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
+                // data = blk.raw[indexY + MDEC_BLOCK_NUM + 8]; pseudo.CstrMem.__ram.ub[(((photo + (0x18 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x18 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x18 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
+                // data = blk.raw[indexY + MDEC_BLOCK_NUM + 9]; pseudo.CstrMem.__ram.ub[(((photo + (0x19 * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x19 * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + (0x19 * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
                 
                 indexCb += 1;
                 indexCr += 1;
@@ -2546,8 +2542,7 @@ pseudo.CstrMdec = (function() {
 
                 case 0x1000201:
                     if (cmd === 0x40000001) {
-                        for (let i = 0; i < MDEC_BLOCK_NUM; i++) { iq. y[i] = (pseudo.CstrMem.__ram.ub[((pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] + i) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] * aanscales[zscan[i]]) >> 12; };
-                        for (let i = 0; i < MDEC_BLOCK_NUM; i++) { iq.uv[i] = (pseudo.CstrMem.__ram.ub[((pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] + i) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] * aanscales[zscan[i]]) >> 12; };
+                        initTable(addr);
                     }
 
                     if ((cmd & 0xf5ff0000) === 0x30000000) {

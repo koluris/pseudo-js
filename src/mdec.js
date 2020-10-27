@@ -26,11 +26,6 @@
 #define MB_INDEX(a) \
     (idx + (kh * a))
 
-#define initTable(iqp, addr) \
-    for (let i = 0; i < MDEC_BLOCK_NUM; i++) { \
-        iqp[i] = (directMemB(ram.ub, madr + i) * aanscales[zscan[i]]) >> 12; \
-    }
-
 pseudo.CstrMdec = (function() {
     const MDEC_BLOCK_NUM = 64;
 
@@ -56,16 +51,12 @@ pseudo.CstrMdec = (function() {
         0x11a8, 0x187e, 0x1712, 0x14c3, 0x11a8, 0x0de0, 0x098e, 0x04df,
     ];
 
-    const iq = {
-         y: new SintWcap(MDEC_BLOCK_NUM * 4),
-        uv: new SintWcap(MDEC_BLOCK_NUM * 4), 
-    };
-
     const blk = {
         index: 0, raw: new SintWcap(MDEC_BLOCK_NUM * 6 * 4),
     }
 
     let tableNormalize = new UintBcap(MDEC_BLOCK_NUM * 6 * 2);
+    let iq = new SintWcap(MDEC_BLOCK_NUM * 4);
     let cmd, status, pMadr;
 
     function resetBlock() {
@@ -82,15 +73,20 @@ pseudo.CstrMdec = (function() {
     }
 
     function resetIqs() {
-        iq. y.fill(0);
-        iq.uv.fill(0);
+        iq.fill(0);
+    }
+
+    function initTable(addr) {
+        for (let i = 0; i < MDEC_BLOCK_NUM; i++) {
+            iq[i] = (directMemB(ram.ub, madr + i) * aanscales[zscan[i]]) >> 12;
+        }
     }
 
     function processBlock() {
         let iqtab, rl;
 
         for (let i = 0; i < 6; i++, blk.index += MDEC_BLOCK_NUM) {
-            iqtab = i > 1 ? iq.y : iq.uv
+            iqtab = iq;
 
             rl = directMemH(ram.uh, pMadr);
             pMadr += 2;
@@ -272,8 +268,7 @@ pseudo.CstrMdec = (function() {
 
                 case 0x1000201:
                     if (cmd === 0x40000001) {
-                        initTable(iq. y, (addr));
-                        initTable(iq.uv, (addr + MDEC_BLOCK_NUM));
+                        initTable(addr);
                     }
 
                     if ((cmd & 0xf5ff0000) === 0x30000000) {
