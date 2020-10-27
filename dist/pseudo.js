@@ -3384,13 +3384,13 @@ pseudo.CstrRender = (function() {
     function createColor(color) {
         ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
         ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(color), ctx.STATIC_DRAW);
+        ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(color), ctx.DYNAMIC_DRAW);
     }
 
     function createVertex(vertex) {
         ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);
         ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vertex), ctx.STATIC_DRAW);
+        ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vertex), ctx.DYNAMIC_DRAW);
     }
 
     function createTexture(texture) {
@@ -3398,7 +3398,7 @@ pseudo.CstrRender = (function() {
         ctx.enableVertexAttribArray(attrib._t);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._t);
         ctx.vertexAttribPointer(attrib._t, 2, ctx.FLOAT, false, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new Float32Array(texture), ctx.STATIC_DRAW);
+        ctx.bufferData(ctx.ARRAY_BUFFER, new Float32Array(texture), ctx.DYNAMIC_DRAW);
     }
 
     function disableTexture() {
@@ -3417,10 +3417,10 @@ pseudo.CstrRender = (function() {
             disableTexture();
         }
 
-        //ctx.enable(ctx.SCISSOR_TEST);
-        //ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);
+        ctx.enable(ctx.SCISSOR_TEST);
+        ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);
         ctx.drawArrays(mode, 0, size);
-        //ctx.disable(ctx.SCISSOR_TEST);
+        ctx.disable(ctx.SCISSOR_TEST);
     }
 
     
