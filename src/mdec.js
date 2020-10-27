@@ -1,6 +1,6 @@
 #define ram  mem.__ram
 
-#define VALOF(a) \
+#define VALUE_OF(a) \
     (SIGN_EXT_32(((a) << 22) >> 22))
 
 #define BLK_MUL_B(a) \
@@ -59,41 +59,14 @@ pseudo.CstrMdec = (function() {
     let iq = new SintWcap(MDEC_BLOCK_NUM * 4);
     let cmd, status, pMadr;
 
-    function resetBlock() {
-        blk.raw.fill(0);
-        blk.index = 0;
-    }
-
-    function resetNormalsTable() {
-        for (let i = 0; i < 256; i++) {
-            tableNormalize[i + 0x000] = 0;
-            tableNormalize[i + 0x100] = i;
-            tableNormalize[i + 0x200] = 255;
-        }
-    }
-
-    function resetIqs() {
-        iq.fill(0);
-    }
-
-    function initTable(addr) {
-        for (let i = 0; i < MDEC_BLOCK_NUM; i++) {
-            iq[i] = (directMemB(ram.ub, madr + i) * aanscales[zscan[i]]) >> 12;
-        }
-    }
-
     function processBlock() {
-        let iqtab, rl;
-
         for (let i = 0; i < 6; i++, blk.index += MDEC_BLOCK_NUM) {
-            iqtab = iq;
-
-            rl = directMemH(ram.uh, pMadr);
+            let rl = directMemH(ram.uh, pMadr);
             pMadr += 2;
-            blk.raw[blk.index] = iqtab[0] * VALOF(rl);
+            blk.raw[blk.index] = iq[0] * VALUE_OF(rl);
 
             let k = 0;
-            const q_scale = rl >> 10;
+            const qScale = rl >> 10;
 
             while(true) {
                 rl = directMemH(ram.uh, pMadr);
@@ -106,7 +79,7 @@ pseudo.CstrMdec = (function() {
                 if ((k += (rl >> 10) + 1) > (MDEC_BLOCK_NUM - 1)) {
                     break;
                 }
-                blk.raw[blk.index + zscan[k]] = (iqtab[k] * q_scale * VALOF(rl)) >> 3;
+                blk.raw[blk.index + zscan[k]] = (iq[k] * qScale * VALUE_OF(rl)) >> 3;
             }
 
             if ((k + 1) == 0) {
@@ -162,39 +135,22 @@ pseudo.CstrMdec = (function() {
         let indexCr = MDEC_BLOCK_NUM;
         let indexY  = MDEC_BLOCK_NUM * 2;
         
-        for (let h = 0; h < 16; h += 2, photo += 24 * 3) {
-            if (h == 8) {
-                indexY += 64;
-            }
-            
+        for (let h = 0; h < 16; h += 2, photo += 24 * 3, indexY += (h == 8) ? 64 : 0) {
             for (let w = 0; w < 4; w++, photo += 2 * 3) {
-                let cb, cr;
-                let iB, iG, iR;
-                let data;
-                
-                cb = blk.raw[indexCb];
-                cr = blk.raw[indexCr];
-                
-                iB = BLK_MUL_B(cb);
-                iG = BLK_MUL_G(cb) + BLK_MUL_F(cr);
-                iR = BLK_MUL_R(cr);
-                
-                data = blk.raw[indexY + 0]; RGB24_CL(0x00 * 3);
-                data = blk.raw[indexY + 1]; RGB24_CL(0x01 * 3);
-                data = blk.raw[indexY + 8]; RGB24_CL(0x10 * 3);
-                data = blk.raw[indexY + 9]; RGB24_CL(0x11 * 3);
-                
-                cb = blk.raw[indexCb + 4];
-                cr = blk.raw[indexCr + 4];
-                
-                iB = BLK_MUL_B(cb);
-                iG = BLK_MUL_G(cb) + BLK_MUL_F(cr);
-                iR = BLK_MUL_R(cr);
-                
-                data = blk.raw[indexY + MDEC_BLOCK_NUM + 0]; RGB24_CL(0x08 * 3);
-                data = blk.raw[indexY + MDEC_BLOCK_NUM + 1]; RGB24_CL(0x09 * 3);
-                data = blk.raw[indexY + MDEC_BLOCK_NUM + 8]; RGB24_CL(0x18 * 3);
-                data = blk.raw[indexY + MDEC_BLOCK_NUM + 9]; RGB24_CL(0x19 * 3);
+                for (let i = 0; i <= 4; i += 4) {
+                    let cb = blk.raw[indexCb + i];
+                    let cr = blk.raw[indexCr + i];
+                    
+                    let iB = BLK_MUL_B(cb);
+                    let iG = BLK_MUL_G(cb) + BLK_MUL_F(cr);
+                    let iR = BLK_MUL_R(cr);
+                    
+                    const idxY = indexY + (i * 16); let data;
+                    data = blk.raw[idxY + 0]; RGB24_CL((0x00 + (i * 2)) * 3);
+                    data = blk.raw[idxY + 1]; RGB24_CL((0x01 + (i * 2)) * 3);
+                    data = blk.raw[idxY + 8]; RGB24_CL((0x10 + (i * 2)) * 3);
+                    data = blk.raw[idxY + 9]; RGB24_CL((0x11 + (i * 2)) * 3);
+                }
                 
                 indexCb += 1;
                 indexCr += 1;
@@ -210,10 +166,14 @@ pseudo.CstrMdec = (function() {
     // Exposed class functions/variables
     return {
         reset() {
-            resetBlock();
-            resetNormalsTable();
-            resetIqs();
+            // Round Table
+            for (let i = 0; i < 256; i++) {
+                tableNormalize[i + 0x000] = 0;
+                tableNormalize[i + 0x100] = i;
+                tableNormalize[i + 0x200] = 255;
+            }
 
+            iq.fill(0);
             cmd    = 0;
             status = 0;
             pMadr  = 0;
@@ -221,12 +181,12 @@ pseudo.CstrMdec = (function() {
 
         scopeW(addr, data) {
             switch(addr & 0xf) {
-                case 0:
+                case 0: // Data
                     cmd = data;
                     return;
 
-                case 4:
-                    if (data & 0x80000000) {
+                case 4: // Status
+                    if (data & 0x80000000) { // Reset
                         mdec.reset();
                     }
                     return;
@@ -237,10 +197,10 @@ pseudo.CstrMdec = (function() {
 
         scopeR(addr) {
             switch(addr & 0xf) {
-                case 0:
+                case 0: // Data
                     return cmd;
 
-                case 4:
+                case 4: // Status
                     return status;
             }
 
@@ -259,7 +219,11 @@ pseudo.CstrMdec = (function() {
                         let photo = madr;
         
                         for (; size > 0; size -= (MDEC_BLOCK_NUM * 6) / 2, photo += (MDEC_BLOCK_NUM * 6) * 2) {
-                            resetBlock();
+                            // Reset Block
+                            blk.raw.fill(0);
+                            blk.index = 0;
+
+                            // Generate
                             processBlock();
                             uv24(photo);
                         }
@@ -268,10 +232,12 @@ pseudo.CstrMdec = (function() {
 
                 case 0x1000201:
                     if (cmd === 0x40000001) {
-                        initTable(addr);
+                        for (let i = 0; i < MDEC_BLOCK_NUM; i++) {
+                            iq[i] = (directMemB(ram.ub, madr + i) * aanscales[zscan[i]]) >> 12;
+                        }
                     }
 
-                    if ((cmd & 0xf5ff0000) === 0x30000000) {
+                    if ((cmd & 0xf5ff0000) === 0x30000000) { // Pointer
                         pMadr = madr;
                     }
                     return;
