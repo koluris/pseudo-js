@@ -24,66 +24,13 @@
 #define ROUND(a) \
     rtbl[(a) + 128 + 256]
 
+#define MB_INDEX(a) \
+    (idx + (kh * a))
+
 #define RGB24CL(a) \
     directMemB(ram.ub, (immmm + a + 0)) = ROUND(data + iB); \
     directMemB(ram.ub, (immmm + a + 1)) = ROUND(data + iG); \
     directMemB(ram.ub, (immmm + a + 2)) = ROUND(data + iR); \
-
-#define macroBlock(block, idx, kh, sh) { \
-    let index = idx; \
-    for (let k = 0; k < 8; k++, index += (sh) ? 8 : 1) { \
-        if((block[index + kh * 1] | \
-            block[index + kh * 2] | \
-            block[index + kh * 3] | \
-            block[index + kh * 4] | \
-            block[index + kh * 5] | \
-            block[index + kh * 6] | \
-            block[index + kh * 7]) == 0) { \
-                block[index + kh * 0] = \
-                block[index + kh * 1] = \
-                block[index + kh * 2] = \
-                block[index + kh * 3] = \
-                block[index + kh * 4] = \
-                block[index + kh * 5] = \
-                block[index + kh * 6] = \
-                block[index + kh * 7] = \
-                block[index + kh * 0] >> sh; \
-                \
-                continue; \
-        } \
-        let z10 = block[index + kh * 0] + block[index + kh * 4]; \
-        let z11 = block[index + kh * 0] - block[index + kh * 4]; \
-        let z13 = block[index + kh * 2] + block[index + kh * 6]; \
-        let z12 = block[index + kh * 2] - block[index + kh * 6]; \
-        z12 = ((z12 * 362) >> 8) - z13; \
-        \
-        let tmp0 = z10 + z13; \
-        let tmp3 = z10 - z13; \
-        let tmp1 = z11 + z12; \
-        let tmp2 = z11 - z12; \
-        \
-        z13 = block[index + kh * 3] + block[index + kh * 5]; \
-        z10 = block[index + kh * 3] - block[index + kh * 5]; \
-        z11 = block[index + kh * 1] + block[index + kh * 7]; \
-        z12 = block[index + kh * 1] - block[index + kh * 7]; \
-        \
-        let z5 = ((z12 - z10) * 473) >> 8; \
-        \
-        let tmp7 = z11 + z13; \
-        let tmp6 = ((z10 * 669) >> 8) + z5 - tmp7; \
-        let tmp5 = (((z11 - z13) * 362) >> 8) - tmp6; \
-        let tmp4 = ((z12 * 277) >> 8) - z5 + tmp5; \
-        \
-        block[index + kh * 0] = (tmp0 + tmp7) >> sh; \
-        block[index + kh * 7] = (tmp0 - tmp7) >> sh; \
-        block[index + kh * 1] = (tmp1 + tmp6) >> sh; \
-        block[index + kh * 6] = (tmp1 - tmp6) >> sh; \
-        block[index + kh * 2] = (tmp2 + tmp5) >> sh; \
-        block[index + kh * 5] = (tmp2 - tmp5) >> sh; \
-        block[index + kh * 4] = (tmp3 + tmp4) >> sh; \
-        block[index + kh * 3] = (tmp3 - tmp4) >> sh; \
-    } \
-}
 
 pseudo.CstrMdec = (function() {
     const zscan = [
@@ -113,19 +60,80 @@ pseudo.CstrMdec = (function() {
         uv: new SintWcap(64 * 4), 
     };
 
-    let rtbl = new UintBcap(0x300)
+    const blk = {
+        raw: new SintWcap(384 * 4),
+        index: 0
+    }
+
+    let rtbl = new UintBcap(0x300);
     let cmd, status, maddr;
+
+    function macroBlock(kh, sh) {
+        let idx = blk.index;
+        for (let k = 0; k < 8; k++, idx += sh ? 8 : 1) {
+            if((blk.raw[MB_INDEX(1)] |
+                blk.raw[MB_INDEX(2)] |
+                blk.raw[MB_INDEX(3)] |
+                blk.raw[MB_INDEX(4)] |
+                blk.raw[MB_INDEX(5)] |
+                blk.raw[MB_INDEX(6)] |
+                blk.raw[MB_INDEX(7)]) == 0) {
+                    blk.raw[MB_INDEX(0)] =
+                    blk.raw[MB_INDEX(1)] =
+                    blk.raw[MB_INDEX(2)] =
+                    blk.raw[MB_INDEX(3)] =
+                    blk.raw[MB_INDEX(4)] =
+                    blk.raw[MB_INDEX(5)] =
+                    blk.raw[MB_INDEX(6)] =
+                    blk.raw[MB_INDEX(7)] = blk.raw[MB_INDEX(0)] >> sh;
+                    
+                    continue;
+            }
+            let z10 = blk.raw[MB_INDEX(0)] + blk.raw[MB_INDEX(4)];
+            let z11 = blk.raw[MB_INDEX(0)] - blk.raw[MB_INDEX(4)];
+            let z13 = blk.raw[MB_INDEX(2)] + blk.raw[MB_INDEX(6)];
+            let z12 = blk.raw[MB_INDEX(2)] - blk.raw[MB_INDEX(6)];
+            z12 = ((z12 * 362) >> 8) - z13;
+            
+            let tmp0 = z10 + z13;
+            let tmp3 = z10 - z13;
+            let tmp1 = z11 + z12;
+            let tmp2 = z11 - z12;
+            
+            z13 = blk.raw[MB_INDEX(3)] + blk.raw[MB_INDEX(5)];
+            z10 = blk.raw[MB_INDEX(3)] - blk.raw[MB_INDEX(5)];
+            z11 = blk.raw[MB_INDEX(1)] + blk.raw[MB_INDEX(7)];
+            z12 = blk.raw[MB_INDEX(1)] - blk.raw[MB_INDEX(7)];
+            
+            let z5 = ((z12 - z10) * 473) >> 8;
+            
+            let tmp7 = z11 + z13;
+            let tmp6 = ((z10 * 669) >> 8) + z5 - tmp7;
+            let tmp5 = (((z11 - z13) * 362) >> 8) - tmp6;
+            let tmp4 = ((z12 * 277) >> 8) - z5 + tmp5;
+            
+            blk.raw[MB_INDEX(0)] = (tmp0 + tmp7) >> sh;
+            blk.raw[MB_INDEX(7)] = (tmp0 - tmp7) >> sh;
+            blk.raw[MB_INDEX(1)] = (tmp1 + tmp6) >> sh;
+            blk.raw[MB_INDEX(6)] = (tmp1 - tmp6) >> sh;
+            blk.raw[MB_INDEX(2)] = (tmp2 + tmp5) >> sh;
+            blk.raw[MB_INDEX(5)] = (tmp2 - tmp5) >> sh;
+            blk.raw[MB_INDEX(4)] = (tmp3 + tmp4) >> sh;
+            blk.raw[MB_INDEX(3)] = (tmp3 - tmp4) >> sh;
+        }
+    }
 
     // Exposed class functions/variables
     return {
         reset() {
             iq. y.fill(0);
             iq.uv.fill(0);
+            blk.raw.fill(0);
 
-            for (let k = 0; k < 256; k++) {
-                rtbl[k + 0x000] = 0;
-                rtbl[k + 0x100] = k;
-                rtbl[k + 0x200] = 255;
+            for (let i = 0; i < 256; i++) {
+                rtbl[i + 0x000] = 0;
+                rtbl[i + 0x100] = i;
+                rtbl[i + 0x200] = 255;
             }
 
             cmd    = 0;
@@ -170,28 +178,27 @@ pseudo.CstrMdec = (function() {
                     if (cmd & 0x08000000) { // YUV15
                     }
                     else { // YUV24
-                        let blk = new SintWcap(384 * 4);
-                        let im  = madr;
+                        let im = madr;
         
                         for (; size > 0; size -= 384 / 2, im += 384 * 2) {
-                            blk.fill(0);
+                            blk.raw.fill(0);
                             let iqtab = iq.uv;
-                            let blkindex = 0;
+                            blk.index = 0;
 
                             for (let i = 0; i < 6; i++) {
                                 if (i > 1) {
                                     iqtab = iq.y;
                                 }
 
-                                let rl = directMemH(ram.uh, maddr); // *(uh *)&mem.ram.ptr[maddr & (mem.ram.size - 1)];
+                                let rl = directMemH(ram.uh, maddr);
                                 maddr += 2;
                                 
                                 const q_scale = rl >> 10;
-                                blk[blkindex] = iqtab[0] * VALOF(rl);
+                                blk.raw[blk.index] = iqtab[0] * VALOF(rl);
 
                                 let k = 0;
                                 for(;;) {
-                                    rl = directMemH(ram.uh, maddr); // *(uh *)&mem.ram.ptr[maddr & (mem.ram.size - 1)];
+                                    rl = directMemH(ram.uh, maddr);
                                     maddr += 2;
                                     
                                     if (rl == 0xfe00) {
@@ -201,21 +208,21 @@ pseudo.CstrMdec = (function() {
                                     if ((k += (rl >> 10) + 1) > 63) {
                                         break;
                                     }
-                                    blk[blkindex + zscan[k]] = (iqtab[k] * q_scale * VALOF(rl)) >> 3;
+                                    blk.raw[blk.index + zscan[k]] = (iqtab[k] * q_scale * VALOF(rl)) >> 3;
                                 }
 
                                 if ((k + 1) == 0) {
                                     for (let i = 0; i < 64; i++) {
-                                        blk[blkindex + i] = blk[blkindex] >> 5;
+                                        blk.raw[blk.index + i] = blk.raw[blk.index] >> 5;
                                     }
                                     continue;
                                 }
 
                                 // Macro blocks
-                                macroBlock(blk, blkindex, 8, 0);
-                                macroBlock(blk, blkindex, 1, 5);
+                                macroBlock(8, 0);
+                                macroBlock(1, 5);
                                 
-                                blkindex += 64;
+                                blk.index += 64;
                             }
 
                             // YUV24
@@ -234,29 +241,29 @@ pseudo.CstrMdec = (function() {
                                     //ub *tex = (ub *)&mem.ram.ptr[immmm & (mem.ram.size - 1)];
                                     let data;
                                     
-                                    let CB = blk[indexCb];
-                                    let CR = blk[indexCr];
+                                    let CB = blk.raw[indexCb];
+                                    let CR = blk.raw[indexCr];
                                     
                                     let iB = MULB(CB);
                                     let iG = MULG(CB) + MULF(CR);
                                     let iR = MULR(CR);
                                     
-                                    data = blk[indexY + 0]; RGB24CL(0x00 * 3);
-                                    data = blk[indexY + 1]; RGB24CL(0x01 * 3);
-                                    data = blk[indexY + 8]; RGB24CL(0x10 * 3);
-                                    data = blk[indexY + 9]; RGB24CL(0x11 * 3);
+                                    data = blk.raw[indexY + 0]; RGB24CL(0x00 * 3);
+                                    data = blk.raw[indexY + 1]; RGB24CL(0x01 * 3);
+                                    data = blk.raw[indexY + 8]; RGB24CL(0x10 * 3);
+                                    data = blk.raw[indexY + 9]; RGB24CL(0x11 * 3);
                                     
-                                    CB = blk[indexCb + 4];
-                                    CR = blk[indexCr + 4];
+                                    CB = blk.raw[indexCb + 4];
+                                    CR = blk.raw[indexCr + 4];
                                     
                                     iB = MULB(CB);
                                     iG = MULG(CB) + MULF(CR);
                                     iR = MULR(CR);
                                     
-                                    data = blk[indexY + 64 + 0]; RGB24CL(0x08 * 3);
-                                    data = blk[indexY + 64 + 1]; RGB24CL(0x09 * 3);
-                                    data = blk[indexY + 64 + 8]; RGB24CL(0x18 * 3);
-                                    data = blk[indexY + 64 + 9]; RGB24CL(0x19 * 3);
+                                    data = blk.raw[indexY + 64 + 0]; RGB24CL(0x08 * 3);
+                                    data = blk.raw[indexY + 64 + 1]; RGB24CL(0x09 * 3);
+                                    data = blk.raw[indexY + 64 + 8]; RGB24CL(0x18 * 3);
+                                    data = blk.raw[indexY + 64 + 9]; RGB24CL(0x19 * 3);
                                     
                                     indexCb += 1;
                                     indexCr += 1;
