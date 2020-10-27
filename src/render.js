@@ -1,4 +1,4 @@
-// /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
+/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
 #undef RGB
 

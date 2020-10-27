@@ -724,6 +724,8 @@ pseudo.CstrBus = (function() {
 
 
 
+
+
 pseudo.CstrCdrom = (function() {
   const CD_STAT_NO_INTR     = 0;
   const CD_STAT_DATA_READY  = 1;
@@ -1312,6 +1314,8 @@ pseudo.CstrCdrom = (function() {
     }
   };
 })();
+
+
 
 
 
@@ -2270,6 +2274,8 @@ pseudo.CstrHardware = (function() {
       }
   };
 })();
+
+
 
 
 
@@ -3288,7 +3294,7 @@ pseudo.CstrMain = (function() {
         }
     };
 })();
-// 
+
 
 
 
@@ -3965,7 +3971,7 @@ pseudo.CstrRender = (function() {
         }
     };
 })();
-// Based on PCSX 1.5
+
 
 
 

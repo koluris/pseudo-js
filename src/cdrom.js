@@ -1,3 +1,5 @@
+/* Base structure taken from PCSX open source emulator, and improved upon (Credits: linuzappz, Shadow) */
+
 #define hwr  mem.__hwr
 #define ram  mem.__ram
 

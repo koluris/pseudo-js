@@ -1,3 +1,5 @@
+/* Base structure taken from FPSE open source emulator, and improved upon (Credits: BERO, LDChen) */
+
 #define ram  mem.__ram
 
 #define VALUE_OF(a) \

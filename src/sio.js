@@ -1,4 +1,4 @@
-// Based on PCSX 1.5
+/* Base structure taken from PCSX open source emulator, and improved upon (Credits: linuzappz, Shadow) */
 
 #define SIO_STAT_TX_READY      0x001
 #define SIO_STAT_RX_READY      0x002

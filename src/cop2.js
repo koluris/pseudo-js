@@ -1,3 +1,5 @@
+/* Base structure taken from PCSX open source emulator, and improved upon (Credits: linuzappz, Shadow) */
+
 // 32-bit accessor
 #define oooo(base, index) \
     base[(index)]
