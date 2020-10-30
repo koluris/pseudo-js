@@ -5,14 +5,7 @@
 #define vram  vs.__vram
 
 #define GPU_COMMAND(x) \
-    (x >>> 24) & 0xff
-
-#define READ_IMG(data) { \
-    n2: (data[1] >>>  0) & 0xffff, \
-    n3: (data[1] >>> 16) & 0xffff, \
-    n4: (data[2] >>>  0) & 0xffff, \
-    n5: (data[2] >>> 16) & 0xffff, \
-}
+    ((x >>> 24) & 0xff)
 
 pseudo.CstrGraphics = (function() {
     // Constants
@@ -127,7 +120,6 @@ pseudo.CstrGraphics = (function() {
                             }
                         }
                     }
-          
                     pipe.row++;
                 }
 
@@ -145,13 +137,13 @@ pseudo.CstrGraphics = (function() {
                 ret.status &= (~(0x14000000));
 
                 do {
-                    const vramData = vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
+                    const vramValue = vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
 
                     if (stream) {
-                        directMemW(ram.uw, addr) = vramData;
+                        directMemW(ram.uw, addr) = vramValue;
                     }
                     else {
-                        ret.data = vramData;
+                        ret.data = vramValue;
                     }
                     addr += 4;
 
@@ -225,8 +217,8 @@ pseudo.CstrGraphics = (function() {
         if (vrop.v.p >= vrop.v.end) {
             render.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
 
-            vrop.raw.ub.fill(0);
             vrop.enabled = false;
+            vrop.raw.ub.fill(0);
 
             modeDMA = GPU_DMA_NONE;
         }
@@ -235,6 +227,22 @@ pseudo.CstrGraphics = (function() {
             count++;
         }
         return count >>> 1;
+    }
+
+    function photoData(data) {
+        const p = [
+            (data[1] >>>  0) & 0xffff,
+            (data[1] >>> 16) & 0xffff,
+            (data[2] >>>  0) & 0xffff,
+            (data[2] >>> 16) & 0xffff,
+        ];
+
+        vrop.h.start = vrop.h.p = p[0];
+        vrop.v.start = vrop.v.p = p[1];
+        vrop.h.end   = vrop.h.p + p[2];
+        vrop.v.end   = vrop.v.p + p[3];
+
+        return p;
     }
 
     // Exposed class functions/variables
@@ -316,17 +324,12 @@ pseudo.CstrGraphics = (function() {
                                 const w = resMode[(data & 3) | ((data & 0x40) >>> 4)];
                                 const h = (data & 4) ? 480 : 240;
                 
-                                if ((data >>> 5) & 1) { // No distinction for interlaced
+                                if (((data >>> 5) & 1) || h == vdiff) { // No distinction for interlaced & normal mode
                                     render.resize({ w: w, h: h });
                                 }
-                                else { // Normal modes
-                                    if (h == vdiff) {
-                                        render.resize({ w: w, h: h });
-                                    }
-                                    else {
-                                        vdiff = vdiff == 226 ? 240 : vdiff; // paradox-059
-                                        render.resize({ w: w, h: vpos ? vpos : vdiff });
-                                    }
+                                else { // Special cases
+                                    vdiff = vdiff == 226 ? 240 : vdiff; // pdx-059, wurst2k
+                                    render.resize({ w: w, h: vpos ? vpos : vdiff });
                                 }
                             }
                             return;
@@ -390,29 +393,19 @@ pseudo.CstrGraphics = (function() {
         },
 
         photoWrite(data) {
-            const p = READ_IMG(data);
+            const p = photoData(data);
 
-            vrop.h.start = vrop.h.p = p.n2;
-            vrop.v.start = vrop.v.p = p.n3;
-            vrop.h.end   = vrop.h.p + p.n4;
-            vrop.v.end   = vrop.v.p + p.n5;
-
-            vrop.pvram = p.n3 * FRAME_W;
+            vrop.pvram = p[1] * FRAME_W;
             modeDMA = GPU_DMA_VRAM2MEM;
 
             ret.status |= GPU_STAT_READYFORVRAM;
         },
 
         photoRead(data) {
-            const p = READ_IMG(data);
-
-            vrop.h.start = vrop.h.p = p.n2;
-            vrop.v.start = vrop.v.p = p.n3;
-            vrop.h.end   = vrop.h.p + p.n4;
-            vrop.v.end   = vrop.v.p + p.n5;
+            const p = photoData(data);
 
             vrop.enabled = true;
-            vrop.raw = new union((p.n4 * p.n5) * 4);
+            vrop.raw = new union((p[2] * p[3]) * 4);
             modeDMA = GPU_DMA_MEM2VRAM;
 
             // Cache invalidation

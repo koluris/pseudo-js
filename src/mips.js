@@ -3,9 +3,9 @@
 #define ram  mem.__ram
 #define rom  mem.__rom
 
-#define pc r[32]
-#define lo r[33]
-#define hi r[34]
+#define pc base[32]
+#define lo base[33]
+#define hi base[34]
 
 #define opcode \
     ((code >>> 26) & 0x3f)
@@ -20,7 +20,7 @@
     (SIGN_EXT_16(code))
 
 #define ob \
-    (r[rs] + imm_s)
+    (base[rs] + imm_s)
 
 #define b_addr \
     (pc + (imm_s << 2))
@@ -47,38 +47,13 @@
     }
 
 #define opcodeLWx(o, d) \
-    r[rt] = (r[rt] & mask[d][ob & 3]) | (mem.read.w(ob & (~(3))) o shift[d][ob & 3])
+    base[rt] = (base[rt] & mask[d][ob & 3]) | (mem.read.w(ob & (~(3))) o shift[d][ob & 3])
 
 #define opcodeSWx(o, d) \
-    mem.write.w(ob & (~(3)), (r[rt] o shift[d][ob & 3]) | (mem.read.w(ob & (~(3))) & mask[d][ob & 3]))
-
-#define exception(code, inslot) \
-    copr[12] = (copr[12] & 0xffffffc0) | ((copr[12] << 2) & 0x3f); \
-    copr[13] = code; \
-    copr[14] = pc; \
-    \
-    pc = 0x80; \
-    setptr(pc)
-
-#define print() \
-    if (pc === 0xb0) { \
-        if (r[9] === 59 || r[9] === 61) { \
-            const char = Text.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); \
-            divOutput.append(char.toUpperCase()); \
-        } \
-    }
+    mem.write.w(ob & (~(3)), (base[rt] o shift[d][ob & 3]) | (mem.read.w(ob & (~(3))) & mask[d][ob & 3]))
 
 pseudo.CstrMips = (function() {
-    let divOutput;
-    let bp, opcodeCount, requestAF, ptr;
-
-    // Base + Coprocessor
-    const    r = new UintWcap(32 + 3); // + pc, lo, hi
-    const copr = new UintWcap(16);
-
-    // Cache for expensive calculation
-    const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
-
+    // SW & LW tables
     const mask = [
         [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
         [0x00000000, 0xff000000, 0xffff0000, 0xffffff00],
@@ -93,49 +68,60 @@ pseudo.CstrMips = (function() {
         [0x00, 0x08, 0x10, 0x18],
     ];
 
+    // Base + Coprocessor
+    const base = new UintWcap(32 + 3); // + pc, lo, hi
+    const copr = new UintWcap(16);
+
+    // Cache for expensive calculation
+    const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
+
+    let divOutput;
+    let ptr, bp, opcodeCount, requestAF;
+
     // Base CPU stepper
     function step(inslot) {
-        const code = directMemW(ptr, pc); pc += 4;
+        base[0] = 0; // As weird as this seems, it is needed
+
+        const code = directMemW(ptr, pc);
         opcodeCount++;
-        r[0] = 0; // As weird as this seems, it is needed
+        pc += 4;
 
         switch(opcode) {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
                     case 0: // SLL
-                        r[rd] = r[rt] << shamt;
+                        if (code) { // No operation?
+                            base[rd] = base[rt] << shamt;
+                        }
                         return;
 
                     case 2: // SRL
-                        r[rd] = r[rt] >>> shamt;
+                        base[rd] = base[rt] >>> shamt;
                         return;
 
                     case 3: // SRA
-                        r[rd] = SIGN_EXT_32(r[rt]) >> shamt;
+                        base[rd] = SIGN_EXT_32(base[rt]) >> shamt;
                         return;
 
                     case 4: // SLLV
-                        r[rd] = r[rt] << (r[rs] & 0x1f);
+                        base[rd] = base[rt] << (base[rs] & 31);
                         return;
 
                     case 6: // SRLV
-                        r[rd] = r[rt] >>> (r[rs] & 0x1f);
+                        base[rd] = base[rt] >>> (base[rs] & 31);
                         return;
 
                     case 7: // SRAV
-                        r[rd] = SIGN_EXT_32(r[rt]) >> (r[rs] & 0x1f);
-                        return;
-
-                    case 8: // JR
-                        branch(r[rs]);
-                        print();
-                        setptr(pc);
+                        base[rd] = SIGN_EXT_32(base[rt]) >> (base[rs] & 31);
                         return;
 
                     case 9: // JALR
-                        r[rd] = pc + 4;
-                        branch(r[rs]);
+                        base[rd] = pc + 4;
+
+                    case 8: // JR
+                        branch(base[rs]);
                         setptr(pc);
+                        consoleOutput();
                         return;
 
                     case 12: // SYSCALL
@@ -147,69 +133,69 @@ pseudo.CstrMips = (function() {
                         return;
 
                     case 16: // MFHI
-                        r[rd] = hi;
+                        base[rd] = hi;
                         return;
 
                     case 17: // MTHI
-                        hi = r[rs];
+                        hi = base[rs];
                         return;
 
                     case 18: // MFLO
-                        r[rd] = lo;
+                        base[rd] = lo;
                         return;
 
                     case 19: // MTLO
-                        lo = r[rs];
+                        lo = base[rs];
                         return;
 
                     case 24: // MULT
-                        opcodeMult(SIGN_EXT_32(r[rs]), SIGN_EXT_32(r[rt]));
+                        opcodeMult(SIGN_EXT_32(base[rs]), SIGN_EXT_32(base[rt]));
                         return;
 
                     case 25: // MULTU
-                        opcodeMult(r[rs], r[rt]);
+                        opcodeMult(base[rs], base[rt]);
                         return;
 
                     case 26: // DIV
-                        opcodeDiv(SIGN_EXT_32(r[rs]), SIGN_EXT_32(r[rt]));
+                        opcodeDiv(SIGN_EXT_32(base[rs]), SIGN_EXT_32(base[rt]));
                         return;
 
                     case 27: // DIVU
-                        opcodeDiv(r[rs], r[rt]);
+                        opcodeDiv(base[rs], base[rt]);
                         return;
 
                     case 32: // ADD
                     case 33: // ADDU
-                        r[rd] = r[rs] + r[rt];
+                        base[rd] = base[rs] + base[rt];
                         return;
 
                     case 34: // SUB
                     case 35: // SUBU
-                        r[rd] = r[rs] - r[rt];
+                        base[rd] = base[rs] - base[rt];
                         return;
 
                     case 36: // AND
-                        r[rd] = r[rs] & r[rt];
+                        base[rd] = base[rs] & base[rt];
                         return;
 
                     case 37: // OR
-                        r[rd] = r[rs] | r[rt];
+                        base[rd] = base[rs] | base[rt];
                         return;
 
                     case 38: // XOR
-                        r[rd] = r[rs] ^ r[rt];
+                        base[rd] = base[rs] ^ base[rt];
                         return;
 
                     case 39: // NOR
-                        r[rd] = (~(r[rs] | r[rt]));
+                        base[rd] = (~(base[rs] | base[rt]));
                         return;
 
                     case 42: // SLT
-                        r[rd] = SIGN_EXT_32(r[rs]) < SIGN_EXT_32(r[rt]);
+                        base[rd] = SIGN_EXT_32(base[rs]) < SIGN_EXT_32(base[rt]);
                         return;
 
                     case 43: // SLTU
-                        r[rd] = r[rs] < r[rt];
+                        base[rd] = base[rs] < base[rt];
                         return;
                 }
 
@@ -219,19 +205,19 @@ pseudo.CstrMips = (function() {
             case 1: // REGIMM
                 switch(rt) {
                     case 16: // BLTZAL
-                        r[31] = pc + 4;
+                        base[31] = pc + 4;
 
                     case 0: // BLTZ
-                        if (SIGN_EXT_32(r[rs]) <  0) {
+                        if (SIGN_EXT_32(base[rs]) <  0) {
                             branch(b_addr);
                         }
                         return;
 
                     case 17: // BGEZAL
-                        r[31] = pc + 4;
+                        base[31] = pc + 4;
 
                     case 1: // BGEZ
-                        if (SIGN_EXT_32(r[rs]) >= 0) {
+                        if (SIGN_EXT_32(base[rs]) >= 0) {
                             branch(b_addr);
                         }
                         return;
@@ -240,76 +226,74 @@ pseudo.CstrMips = (function() {
                 psx.error('Bcond CPU instruction ' + rt);
                 return;
 
+            case 3: // JAL
+                base[31] = pc + 4;
+
             case 2: // J
                 branch(s_addr);
                 return;
 
-            case 3: // JAL
-                r[31] = pc + 4;
-                branch(s_addr);
-                return;
-
             case 4: // BEQ
-                if (r[rs] === r[rt]) {
+                if (base[rs] === base[rt]) {
                     branch(b_addr);
                 }
                 return;
 
             case 5: // BNE
-                if (r[rs] !== r[rt]) {
+                if (base[rs] !== base[rt]) {
                     branch(b_addr);
                 }
                 return;
 
             case 6: // BLEZ
-                if (SIGN_EXT_32(r[rs]) <= 0) {
+                if (SIGN_EXT_32(base[rs]) <= 0) {
                     branch(b_addr);
                 }
                 return;
 
             case 7: // BGTZ
-                if (SIGN_EXT_32(r[rs]) > 0) {
+                if (SIGN_EXT_32(base[rs]) > 0) {
                     branch(b_addr);
                 }
                 return;
 
             case 8: // ADDI
             case 9: // ADDIU
-                r[rt] = r[rs] + imm_s;
+                base[rt] = base[rs] + imm_s;
                 return;
 
             case 10: // SLTI
-                r[rt] = SIGN_EXT_32(r[rs]) < imm_s;
+                base[rt] = SIGN_EXT_32(base[rs]) < imm_s;
                 return;
 
             case 11: // SLTIU
-                r[rt] = r[rs] < imm_u;
+                base[rt] = base[rs] < imm_u;
                 return;
 
             case 12: // ANDI
-                r[rt] = r[rs] & imm_u;
+                base[rt] = base[rs] & imm_u;
                 return;
 
             case 13: // ORI
-                r[rt] = r[rs] | imm_u;
+                base[rt] = base[rs] | imm_u;
                 return;
 
             case 14: // XORI
-                r[rt] = r[rs] ^ imm_u;
+                base[rt] = base[rs] ^ imm_u;
                 return;
 
             case 15: // LUI
-                r[rt] = code << 16;
+                base[rt] = code << 16;
                 return;
 
             case 16: // COP0
                 switch(rs) {
                     case 0: // MFC0
-                        r[rt] = copr[rd];
+                        base[rt] = copr[rd];
                         return;
 
                     case 4: // MTC0
-                        copr[rd] = r[rt];
+                        copr[rd] = base[rt];
                         return;
 
                     case 16: // RFE
@@ -325,11 +309,11 @@ pseudo.CstrMips = (function() {
                 return;
 
             case 32: // LB
-                r[rt] = SIGN_EXT_8(mem.read.b(ob));
+                base[rt] = SIGN_EXT_8(mem.read.b(ob));
                 return;
 
             case 33: // LH
-                r[rt] = SIGN_EXT_16(mem.read.h(ob));
+                base[rt] = SIGN_EXT_16(mem.read.h(ob));
                 return;
 
             case 34: // LWL
@@ -337,15 +321,15 @@ pseudo.CstrMips = (function() {
                 return;
 
             case 35: // LW
-                r[rt] = mem.read.w(ob);
+                base[rt] = mem.read.w(ob);
                 return;
 
             case 36: // LBU
-                r[rt] = mem.read.b(ob);
+                base[rt] = mem.read.b(ob);
                 return;
 
             case 37: // LHU
-                r[rt] = mem.read.h(ob);
+                base[rt] = mem.read.h(ob);
                 return;
 
             case 38: // LWR
@@ -353,11 +337,11 @@ pseudo.CstrMips = (function() {
                 return;
 
             case 40: // SB
-                mem.write.b(ob, r[rt]);
+                mem.write.b(ob, base[rt]);
                 return;
 
             case 41: // SH
-                mem.write.h(ob, r[rt]);
+                mem.write.h(ob, base[rt]);
                 return;
 
             case 42: // SWL
@@ -365,7 +349,7 @@ pseudo.CstrMips = (function() {
                 return;
 
             case 43: // SW
-                mem.write.w(ob, r[rt]);
+                mem.write.w(ob, base[rt]);
                 return;
 
             case 46: // SWR
@@ -390,6 +374,24 @@ pseudo.CstrMips = (function() {
         pc = addr;
     }
 
+    function exception(code, inslot) {
+        copr[12] = (copr[12] & (~(0x3f))) | ((copr[12] << 2) & 0x3f);
+        copr[13] = code;
+        copr[14] = pc;
+
+        pc = 0x80;
+        setptr(pc);
+    }
+
+    function consoleOutput() {
+        if (pc === 0xb0) {
+            if (base[9] === 59 || base[9] === 61) {
+                const char = Text.fromCharCode(base[4] & 0xff).replace(/\n/, '<br/>');
+                divOutput.append(char.toUpperCase());
+            }
+        }
+    }
+
     // Exposed class functions/variables
     return {
         awake(output) {
@@ -399,9 +401,10 @@ pseudo.CstrMips = (function() {
         reset() {
             // Break emulation loop
             cpu.pause();
+            divOutput.text(' ');
 
             // Reset processors
-            r.fill(0);
+            base.fill(0);
             copr.fill(0);
 
             copr[12] = 0x10900000;
@@ -410,27 +413,24 @@ pseudo.CstrMips = (function() {
             opcodeCount = 0;
             pc = 0xbfc00000;
             setptr(pc);
-
-            // Clear console out
-            divOutput.text(' ');
         },
 
         bootstrap() {
             cpu.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM');
             const start = performance.now();
 
-            while (pc !== 0x80030000) {
+            while(pc !== 0x80030000) {
                 step(false);
             }
             const delta = parseFloat(performance.now() - start).toFixed(2);
-            cpu.consoleWrite(MSG_INFO, 'Bootstrap completed in '+delta+' ms');
+            cpu.consoleWrite(MSG_INFO, 'Bootstrap completed in ' + delta + ' ms');
         },
 
         run() {
             bp = false;
             requestAF = requestAnimationFrame(cpu.run); //setTimeout(cpu.run, 0);
 
-            while (!bp) { // And u don`t stop!
+            while(!bp) { // And u don`t stop!
                 step(false);
 
                 if (opcodeCount >= 100) {
@@ -451,8 +451,8 @@ pseudo.CstrMips = (function() {
         },
 
         parseExeHeader(header) {
-            r[28] = header[2 + 3];
-            r[29] = header[2 + 10];
+            base[28] = header[2 + 3];
+            base[29] = header[2 + 10];
             pc = header[2 + 2];
             setptr(pc);
         },
@@ -470,11 +470,11 @@ pseudo.CstrMips = (function() {
         },
 
         setbase(addr, data) {
-            r[addr] = data;
+            base[addr] = data;
         },
 
         readbase(addr) {
-            return r[addr];
+            return base[addr];
         },
 
         pause() {

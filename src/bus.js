@@ -80,12 +80,11 @@ pseudo.CstrBus = (function() {
                     case 6:   mem.executeDMA(addr); break; // Clear OT
 
                     default:
-                        psx.error('DMA Channel '+chan);
+                        psx.error('DMA Channel ' + chan);
                         break;
                 }
-
                 chcr = data & (~(0x01000000));
-                
+
                 if (dicr & (1 << (16 + chan))) {
                     dicr |= 1 << (24 + chan);
                     bus.interruptSet(IRQ_DMA);

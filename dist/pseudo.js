@@ -684,12 +684,11 @@ pseudo.CstrBus = (function() {
                     case 6:   pseudo.CstrMem.executeDMA(addr); break; // Clear OT
 
                     default:
-                        pseudo.CstrMain.error('DMA Channel '+chan);
+                        pseudo.CstrMain.error('DMA Channel ' + chan);
                         break;
                 }
-
                 pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
-                
+
                 if (pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & (1 << (16 + chan))) {
                     pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] |= 1 << (24 + chan);
                     pseudo.CstrBus.interruptSet(3);
@@ -2060,7 +2059,7 @@ pseudo.CstrCounters = (function() {
             }
 
             // Graphics
-            vbk += threshold * 2;
+            vbk += threshold;
 
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
                 pseudo.CstrBus.interruptSet(0);
@@ -2679,33 +2678,8 @@ pseudo.CstrMem = (function() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 pseudo.CstrMips = (function() {
-    let divOutput;
-    let bp, opcodeCount, requestAF, ptr;
-
-    // Base + Coprocessor
-    const    r = new Uint32Array(32 + 3); // + r[32], r[33], r[34]
-    const copr = new Uint32Array(16);
-
-    // Cache for expensive calculation
-    const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
-
+    // SW & LW tables
     const mask = [
         [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
         [0x00000000, 0xff000000, 0xffff0000, 0xffffff00],
@@ -2720,123 +2694,134 @@ pseudo.CstrMips = (function() {
         [0x00, 0x08, 0x10, 0x18],
     ];
 
+    // Base + Coprocessor
+    const base = new Uint32Array(32 + 3); // + base[32], base[33], base[34]
+    const copr = new Uint32Array(16);
+
+    // Cache for expensive calculation
+    const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
+
+    let divOutput;
+    let ptr, bp, opcodeCount, requestAF;
+
     // Base CPU stepper
     function step(inslot) {
-        const code = ptr[(( r[32]) & (ptr.byteLength - 1)) >>> 2]; r[32] += 4;
+        base[0] = 0; // As weird as this seems, it is needed
+
+        const code = ptr[(( base[32]) & (ptr.byteLength - 1)) >>> 2];
         opcodeCount++;
-        r[0] = 0; // As weird as this seems, it is needed
+        base[32] += 4;
 
         switch(((code >>> 26) & 0x3f)) {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
                     case 0: // SLL
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)] << ((code >>> 6) & 0x1f);
+                        if (code) { // No operation?
+                            base[((code >>> 11) & 0x1f)] = base[((code >>> 16) & 0x1f)] << ((code >>> 6) & 0x1f);
+                        }
                         return;
 
                     case 2: // SRL
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)] >>> ((code >>> 6) & 0x1f);
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 16) & 0x1f)] >>> ((code >>> 6) & 0x1f);
                         return;
 
                     case 3: // SRA
-                        r[((code >>> 11) & 0x1f)] = ((r[((code >>> 16) & 0x1f)]) << 0 >> 0) >> ((code >>> 6) & 0x1f);
+                        base[((code >>> 11) & 0x1f)] = ((base[((code >>> 16) & 0x1f)]) << 0 >> 0) >> ((code >>> 6) & 0x1f);
                         return;
 
                     case 4: // SLLV
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)] << (r[((code >>> 21) & 0x1f)] & 0x1f);
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 16) & 0x1f)] << (base[((code >>> 21) & 0x1f)] & 31);
                         return;
 
                     case 6: // SRLV
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)] >>> (r[((code >>> 21) & 0x1f)] & 0x1f);
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 16) & 0x1f)] >>> (base[((code >>> 21) & 0x1f)] & 31);
                         return;
 
                     case 7: // SRAV
-                        r[((code >>> 11) & 0x1f)] = ((r[((code >>> 16) & 0x1f)]) << 0 >> 0) >> (r[((code >>> 21) & 0x1f)] & 0x1f);
-                        return;
-
-                    case 8: // JR
-                        branch(r[((code >>> 21) & 0x1f)]);
-                        if (r[32] === 0xb0) { if (r[9] === 59 || r[9] === 61) { const char = String.fromCharCode(r[4] & 0xff).replace(/\n/, '<br/>'); divOutput.append(char.toUpperCase()); } };
-                        ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+                        base[((code >>> 11) & 0x1f)] = ((base[((code >>> 16) & 0x1f)]) << 0 >> 0) >> (base[((code >>> 21) & 0x1f)] & 31);
                         return;
 
                     case 9: // JALR
-                        r[((code >>> 11) & 0x1f)] = r[32] + 4;
-                        branch(r[((code >>> 21) & 0x1f)]);
-                        ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+                        base[((code >>> 11) & 0x1f)] = base[32] + 4;
+
+                    case 8: // JR
+                        branch(base[((code >>> 21) & 0x1f)]);
+                        ptr = base[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+                        consoleOutput();
                         return;
 
                     case 12: // SYSCALL
-                        r[32] -= 4;
-                        copr[12] = (copr[12] & 0xffffffc0) | ((copr[12] << 2) & 0x3f); copr[13] = 0x20; copr[14] = r[32]; r[32] = 0x80; ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+                        base[32] -= 4;
+                        exception(0x20, inslot);
                         return;
 
                     case 13: // BREAK
                         return;
 
                     case 16: // MFHI
-                        r[((code >>> 11) & 0x1f)] = r[34];
+                        base[((code >>> 11) & 0x1f)] = base[34];
                         return;
 
                     case 17: // MTHI
-                        r[34] = r[((code >>> 21) & 0x1f)];
+                        base[34] = base[((code >>> 21) & 0x1f)];
                         return;
 
                     case 18: // MFLO
-                        r[((code >>> 11) & 0x1f)] = r[33];
+                        base[((code >>> 11) & 0x1f)] = base[33];
                         return;
 
                     case 19: // MTLO
-                        r[33] = r[((code >>> 21) & 0x1f)];
+                        base[33] = base[((code >>> 21) & 0x1f)];
                         return;
 
                     case 24: // MULT
-                        { const temp = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) *  ((r[((code >>> 16) & 0x1f)]) << 0 >> 0); r[33] = temp & 0xffffffff; r[34] = Math.floor(temp / power32); };
+                        { const temp = ((base[((code >>> 21) & 0x1f)]) << 0 >> 0) *  ((base[((code >>> 16) & 0x1f)]) << 0 >> 0); base[33] = temp & 0xffffffff; base[34] = Math.floor(temp / power32); };
                         return;
 
                     case 25: // MULTU
-                        { const temp = r[((code >>> 21) & 0x1f)] *  r[((code >>> 16) & 0x1f)]; r[33] = temp & 0xffffffff; r[34] = Math.floor(temp / power32); };
+                        { const temp = base[((code >>> 21) & 0x1f)] *  base[((code >>> 16) & 0x1f)]; base[33] = temp & 0xffffffff; base[34] = Math.floor(temp / power32); };
                         return;
 
                     case 26: // DIV
-                        if ( ((r[((code >>> 16) & 0x1f)]) << 0 >> 0)) { r[33] = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) /  ((r[((code >>> 16) & 0x1f)]) << 0 >> 0); r[34] = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) %  ((r[((code >>> 16) & 0x1f)]) << 0 >> 0); };
+                        if ( ((base[((code >>> 16) & 0x1f)]) << 0 >> 0)) { base[33] = ((base[((code >>> 21) & 0x1f)]) << 0 >> 0) /  ((base[((code >>> 16) & 0x1f)]) << 0 >> 0); base[34] = ((base[((code >>> 21) & 0x1f)]) << 0 >> 0) %  ((base[((code >>> 16) & 0x1f)]) << 0 >> 0); };
                         return;
 
                     case 27: // DIVU
-                        if ( r[((code >>> 16) & 0x1f)]) { r[33] = r[((code >>> 21) & 0x1f)] /  r[((code >>> 16) & 0x1f)]; r[34] = r[((code >>> 21) & 0x1f)] %  r[((code >>> 16) & 0x1f)]; };
+                        if ( base[((code >>> 16) & 0x1f)]) { base[33] = base[((code >>> 21) & 0x1f)] /  base[((code >>> 16) & 0x1f)]; base[34] = base[((code >>> 21) & 0x1f)] %  base[((code >>> 16) & 0x1f)]; };
                         return;
 
                     case 32: // ADD
                     case 33: // ADDU
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] + r[((code >>> 16) & 0x1f)];
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] + base[((code >>> 16) & 0x1f)];
                         return;
 
                     case 34: // SUB
                     case 35: // SUBU
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] - r[((code >>> 16) & 0x1f)];
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] - base[((code >>> 16) & 0x1f)];
                         return;
 
                     case 36: // AND
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] & r[((code >>> 16) & 0x1f)];
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] & base[((code >>> 16) & 0x1f)];
                         return;
 
                     case 37: // OR
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] | r[((code >>> 16) & 0x1f)];
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] | base[((code >>> 16) & 0x1f)];
                         return;
 
                     case 38: // XOR
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] ^ r[((code >>> 16) & 0x1f)];
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] ^ base[((code >>> 16) & 0x1f)];
                         return;
 
                     case 39: // NOR
-                        r[((code >>> 11) & 0x1f)] = (~(r[((code >>> 21) & 0x1f)] | r[((code >>> 16) & 0x1f)]));
+                        base[((code >>> 11) & 0x1f)] = (~(base[((code >>> 21) & 0x1f)] | base[((code >>> 16) & 0x1f)]));
                         return;
 
                     case 42: // SLT
-                        r[((code >>> 11) & 0x1f)] = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) < ((r[((code >>> 16) & 0x1f)]) << 0 >> 0);
+                        base[((code >>> 11) & 0x1f)] = ((base[((code >>> 21) & 0x1f)]) << 0 >> 0) < ((base[((code >>> 16) & 0x1f)]) << 0 >> 0);
                         return;
 
                     case 43: // SLTU
-                        r[((code >>> 11) & 0x1f)] = r[((code >>> 21) & 0x1f)] < r[((code >>> 16) & 0x1f)];
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] < base[((code >>> 16) & 0x1f)];
                         return;
                 }
 
@@ -2846,20 +2831,20 @@ pseudo.CstrMips = (function() {
             case 1: // REGIMM
                 switch(((code >>> 16) & 0x1f)) {
                     case 16: // BLTZAL
-                        r[31] = r[32] + 4;
+                        base[31] = base[32] + 4;
 
                     case 0: // BLTZ
-                        if (((r[((code >>> 21) & 0x1f)]) << 0 >> 0) <  0) {
-                            branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                        if (((base[((code >>> 21) & 0x1f)]) << 0 >> 0) <  0) {
+                            branch((base[32] + ((((code) << 16 >> 16)) << 2)));
                         }
                         return;
 
                     case 17: // BGEZAL
-                        r[31] = r[32] + 4;
+                        base[31] = base[32] + 4;
 
                     case 1: // BGEZ
-                        if (((r[((code >>> 21) & 0x1f)]) << 0 >> 0) >= 0) {
-                            branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                        if (((base[((code >>> 21) & 0x1f)]) << 0 >> 0) >= 0) {
+                            branch((base[32] + ((((code) << 16 >> 16)) << 2)));
                         }
                         return;
                 }
@@ -2867,76 +2852,74 @@ pseudo.CstrMips = (function() {
                 pseudo.CstrMain.error('Bcond CPU instruction ' + ((code >>> 16) & 0x1f));
                 return;
 
-            case 2: // J
-                branch(((r[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
-                return;
-
             case 3: // JAL
-                r[31] = r[32] + 4;
-                branch(((r[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
+                base[31] = base[32] + 4;
+
+            case 2: // J
+                branch(((base[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
                 return;
 
             case 4: // BEQ
-                if (r[((code >>> 21) & 0x1f)] === r[((code >>> 16) & 0x1f)]) {
-                    branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                if (base[((code >>> 21) & 0x1f)] === base[((code >>> 16) & 0x1f)]) {
+                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
 
             case 5: // BNE
-                if (r[((code >>> 21) & 0x1f)] !== r[((code >>> 16) & 0x1f)]) {
-                    branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                if (base[((code >>> 21) & 0x1f)] !== base[((code >>> 16) & 0x1f)]) {
+                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
 
             case 6: // BLEZ
-                if (((r[((code >>> 21) & 0x1f)]) << 0 >> 0) <= 0) {
-                    branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                if (((base[((code >>> 21) & 0x1f)]) << 0 >> 0) <= 0) {
+                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
 
             case 7: // BGTZ
-                if (((r[((code >>> 21) & 0x1f)]) << 0 >> 0) > 0) {
-                    branch((r[32] + ((((code) << 16 >> 16)) << 2)));
+                if (((base[((code >>> 21) & 0x1f)]) << 0 >> 0) > 0) {
+                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
 
             case 8: // ADDI
             case 9: // ADDIU
-                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16));
+                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16));
                 return;
 
             case 10: // SLTI
-                r[((code >>> 16) & 0x1f)] = ((r[((code >>> 21) & 0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
+                base[((code >>> 16) & 0x1f)] = ((base[((code >>> 21) & 0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
                 return;
 
             case 11: // SLTIU
-                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] < (code & 0xffff);
+                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] < (code & 0xffff);
                 return;
 
             case 12: // ANDI
-                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] & (code & 0xffff);
+                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] & (code & 0xffff);
                 return;
 
             case 13: // ORI
-                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] | (code & 0xffff);
+                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] | (code & 0xffff);
                 return;
 
             case 14: // XORI
-                r[((code >>> 16) & 0x1f)] = r[((code >>> 21) & 0x1f)] ^ (code & 0xffff);
+                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] ^ (code & 0xffff);
                 return;
 
             case 15: // LUI
-                r[((code >>> 16) & 0x1f)] = code << 16;
+                base[((code >>> 16) & 0x1f)] = code << 16;
                 return;
 
             case 16: // COP0
                 switch(((code >>> 21) & 0x1f)) {
                     case 0: // MFC0
-                        r[((code >>> 16) & 0x1f)] = copr[((code >>> 11) & 0x1f)];
+                        base[((code >>> 16) & 0x1f)] = copr[((code >>> 11) & 0x1f)];
                         return;
 
                     case 4: // MTC0
-                        copr[((code >>> 11) & 0x1f)] = r[((code >>> 16) & 0x1f)];
+                        copr[((code >>> 11) & 0x1f)] = base[((code >>> 16) & 0x1f)];
                         return;
 
                     case 16: // RFE
@@ -2952,59 +2935,59 @@ pseudo.CstrMips = (function() {
                 return;
 
             case 32: // LB
-                r[((code >>> 16) & 0x1f)] = ((pseudo.CstrMem.read.b((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
+                base[((code >>> 16) & 0x1f)] = ((pseudo.CstrMem.read.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
                 return;
 
             case 33: // LH
-                r[((code >>> 16) & 0x1f)] = ((pseudo.CstrMem.read.h((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
+                base[((code >>> 16) & 0x1f)] = ((pseudo.CstrMem.read.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
                 return;
 
             case 34: // LWL
-                r[((code >>> 16) & 0x1f)] = (r[((code >>> 16) & 0x1f)] & mask[ 0][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) << shift[ 0][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
+                base[((code >>> 16) & 0x1f)] = (base[((code >>> 16) & 0x1f)] & mask[ 0][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) << shift[ 0][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
                 return;
 
             case 35: // LW
-                r[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
 
             case 36: // LBU
-                r[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.b((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
 
             case 37: // LHU
-                r[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.h((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
 
             case 38: // LWR
-                r[((code >>> 16) & 0x1f)] = (r[((code >>> 16) & 0x1f)] & mask[ 1][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) >>> shift[ 1][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
+                base[((code >>> 16) & 0x1f)] = (base[((code >>> 16) & 0x1f)] & mask[ 1][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) >>> shift[ 1][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
                 return;
 
             case 40: // SB
-                pseudo.CstrMem.write.b((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), r[((code >>> 16) & 0x1f)]);
+                pseudo.CstrMem.write.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
                 return;
 
             case 41: // SH
-                pseudo.CstrMem.write.h((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), r[((code >>> 16) & 0x1f)]);
+                pseudo.CstrMem.write.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
                 return;
 
             case 42: // SWL
-                pseudo.CstrMem.write.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (r[((code >>> 16) & 0x1f)] >>> shift[ 2][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
+                pseudo.CstrMem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (base[((code >>> 16) & 0x1f)] >>> shift[ 2][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
                 return;
 
             case 43: // SW
-                pseudo.CstrMem.write.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), r[((code >>> 16) & 0x1f)]);
+                pseudo.CstrMem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
                 return;
 
             case 46: // SWR
-                pseudo.CstrMem.write.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (r[((code >>> 16) & 0x1f)] << shift[ 3][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][(r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
+                pseudo.CstrMem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (base[((code >>> 16) & 0x1f)] << shift[ 3][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
                 return;
 
             case 50: // LWC2
-                pseudo.CstrCop2.opcodeMTC2(((code >>> 16) & 0x1f), pseudo.CstrMem.read.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
+                pseudo.CstrCop2.opcodeMTC2(((code >>> 16) & 0x1f), pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
                 return;
 
             case 58: // SWC2
-                pseudo.CstrMem.write.w((r[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), pseudo.CstrCop2.opcodeMFC2(((code >>> 16) & 0x1f)));
+                pseudo.CstrMem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), pseudo.CstrCop2.opcodeMFC2(((code >>> 16) & 0x1f)));
                 return;
         }
 
@@ -3014,7 +2997,25 @@ pseudo.CstrMips = (function() {
     function branch(addr) {
         // Execute instruction in slot
         step(true);
-        r[32] = addr;
+        base[32] = addr;
+    }
+
+    function exception(code, inslot) {
+        copr[12] = (copr[12] & (~(0x3f))) | ((copr[12] << 2) & 0x3f);
+        copr[13] = code;
+        copr[14] = base[32];
+
+        base[32] = 0x80;
+        ptr = base[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+    }
+
+    function consoleOutput() {
+        if (base[32] === 0xb0) {
+            if (base[9] === 59 || base[9] === 61) {
+                const char = String.fromCharCode(base[4] & 0xff).replace(/\n/, '<br/>');
+                divOutput.append(char.toUpperCase());
+            }
+        }
     }
 
     // Exposed class functions/variables
@@ -3026,38 +3027,36 @@ pseudo.CstrMips = (function() {
         reset() {
             // Break emulation loop
             pseudo.CstrMips.pause();
+            divOutput.text(' ');
 
             // Reset processors
-            r.fill(0);
+            base.fill(0);
             copr.fill(0);
 
             copr[12] = 0x10900000;
             copr[15] = 0x2;
 
             opcodeCount = 0;
-            r[32] = 0xbfc00000;
-            ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
-
-            // Clear console out
-            divOutput.text(' ');
+            base[32] = 0xbfc00000;
+            ptr = base[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
         },
 
         bootstrap() {
             pseudo.CstrMips.consoleWrite('info', 'BIOS file has been written to ROM');
             const start = performance.now();
 
-            while (r[32] !== 0x80030000) {
+            while(base[32] !== 0x80030000) {
                 step(false);
             }
             const delta = parseFloat(performance.now() - start).toFixed(2);
-            pseudo.CstrMips.consoleWrite('info', 'Bootstrap completed in '+delta+' ms');
+            pseudo.CstrMips.consoleWrite('info', 'Bootstrap completed in ' + delta + ' ms');
         },
 
         run() {
             bp = false;
             requestAF = requestAnimationFrame(pseudo.CstrMips.run); //setTimeout(pseudo.CstrMips.run, 0);
 
-            while (!bp) { // And u don`t stop!
+            while(!bp) { // And u don`t stop!
                 step(false);
 
                 if (opcodeCount >= 100) {
@@ -3069,7 +3068,7 @@ pseudo.CstrMips = (function() {
                     // Exceptions
                     if (pseudo.CstrMem.__hwr.uw[((0x1070) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & pseudo.CstrMem.__hwr.uw[((0x1074) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) {
                         if ((copr[12] & 0x401) === 0x401) {
-                            copr[12] = (copr[12] & 0xffffffc0) | ((copr[12] << 2) & 0x3f); copr[13] = 0x400; copr[14] = r[32]; r[32] = 0x80; ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+                            exception(0x400, false);
                         }
                     }
                     opcodeCount = 0;
@@ -3078,10 +3077,10 @@ pseudo.CstrMips = (function() {
         },
 
         parseExeHeader(header) {
-            r[28] = header[2 + 3];
-            r[29] = header[2 + 10];
-            r[32] = header[2 + 2];
-            ptr = r[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+            base[28] = header[2 + 3];
+            base[29] = header[2 + 10];
+            base[32] = header[2 + 2];
+            ptr = base[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
         },
 
         writeOK() {
@@ -3097,11 +3096,11 @@ pseudo.CstrMips = (function() {
         },
 
         setbase(addr, data) {
-            r[addr] = data;
+            base[addr] = data;
         },
 
         readbase(addr) {
-            return r[addr];
+            return base[addr];
         },
 
         pause() {
@@ -3444,7 +3443,7 @@ pseudo.CstrRender = (function() {
 
             vertex.push(
                 p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v
+                p.vx[i].v + ofs.v,
             );
         }
 
@@ -3472,7 +3471,7 @@ pseudo.CstrRender = (function() {
 
             vertex.push(
                 p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v
+                p.vx[i].v + ofs.v,
             );
         }
 
@@ -3512,7 +3511,7 @@ pseudo.CstrRender = (function() {
 
             vertex.push(
                 p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v
+                p.vx[i].v + ofs.v,
             );
 
             texture.push(
@@ -3548,12 +3547,12 @@ pseudo.CstrRender = (function() {
 
             vertex.push(
                 p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v
+                p.vx[i].v + ofs.v,
             );
 
             texture.push(
                 p.tx[i].u,
-                p.tx[i].v
+                p.tx[i].v,
             );
         }
 
@@ -4353,13 +4352,6 @@ pseudo.CstrTexCache = (function() {
 
 
 
-
-
-
-
-
-
-
 pseudo.CstrGraphics = (function() {
     // Constants
     const GPU_STAT_ODDLINES         = 0x80000000;
@@ -4450,7 +4442,7 @@ pseudo.CstrGraphics = (function() {
                 i++;
 
                 if (!pipe.size) {
-                    const prim  = (ret.data >>> 24) & 0xff;
+                    const prim  = ((ret.data >>> 24) & 0xff);
                     const count = pSize[prim];
 
                     if (count) {
@@ -4473,7 +4465,6 @@ pseudo.CstrGraphics = (function() {
                             }
                         }
                     }
-          
                     pipe.row++;
                 }
 
@@ -4491,13 +4482,13 @@ pseudo.CstrGraphics = (function() {
                 ret.status &= (~(0x14000000));
 
                 do {
-                    const vramData = pseudo.CstrGraphics.__vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
+                    const vramValue = pseudo.CstrGraphics.__vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
 
                     if (stream) {
-                        pseudo.CstrMem.__ram.uw[(( addr) & (pseudo.CstrMem.__ram.uw.byteLength - 1)) >>> 2] = vramData;
+                        pseudo.CstrMem.__ram.uw[(( addr) & (pseudo.CstrMem.__ram.uw.byteLength - 1)) >>> 2] = vramValue;
                     }
                     else {
-                        ret.data = vramData;
+                        ret.data = vramValue;
                     }
                     addr += 4;
 
@@ -4571,8 +4562,8 @@ pseudo.CstrGraphics = (function() {
         if (vrop.v.p >= vrop.v.end) {
             pseudo.CstrRender.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
 
-            vrop.raw.ub.fill(0);
             vrop.enabled = false;
+            vrop.raw.ub.fill(0);
 
             modeDMA = GPU_DMA_NONE;
         }
@@ -4581,6 +4572,22 @@ pseudo.CstrGraphics = (function() {
             count++;
         }
         return count >>> 1;
+    }
+
+    function photoData(data) {
+        const p = [
+            (data[1] >>>  0) & 0xffff,
+            (data[1] >>> 16) & 0xffff,
+            (data[2] >>>  0) & 0xffff,
+            (data[2] >>> 16) & 0xffff,
+        ];
+
+        vrop.h.start = vrop.h.p = p[0];
+        vrop.v.start = vrop.v.p = p[1];
+        vrop.h.end   = vrop.h.p + p[2];
+        vrop.v.end   = vrop.v.p + p[3];
+
+        return p;
     }
 
     // Exposed class functions/variables
@@ -4625,7 +4632,7 @@ pseudo.CstrGraphics = (function() {
                     return;
 
                 case 4: // Status
-                    switch((data >>> 24) & 0xff) {
+                    switch(((data >>> 24) & 0xff)) {
                         case 0x00:
                             ret.status   = 0x14802000;
                             disabled     = true;
@@ -4662,17 +4669,12 @@ pseudo.CstrGraphics = (function() {
                                 const w = resMode[(data & 3) | ((data & 0x40) >>> 4)];
                                 const h = (data & 4) ? 480 : 240;
                 
-                                if ((data >>> 5) & 1) { // No distinction for interlaced
+                                if (((data >>> 5) & 1) || h == vdiff) { // No distinction for interlaced & normal mode
                                     pseudo.CstrRender.resize({ w: w, h: h });
                                 }
-                                else { // Normal modes
-                                    if (h == vdiff) {
-                                        pseudo.CstrRender.resize({ w: w, h: h });
-                                    }
-                                    else {
-                                        vdiff = vdiff == 226 ? 240 : vdiff; // paradox-059
-                                        pseudo.CstrRender.resize({ w: w, h: vpos ? vpos : vdiff });
-                                    }
+                                else { // Special cases
+                                    vdiff = vdiff == 226 ? 240 : vdiff; // pdx-059, wurst2k
+                                    pseudo.CstrRender.resize({ w: w, h: vpos ? vpos : vdiff });
                                 }
                             }
                             return;
@@ -4691,7 +4693,7 @@ pseudo.CstrGraphics = (function() {
                             return;
                     }
 
-                    pseudo.CstrMain.error('GPU Write Status ' + pseudo.CstrMain.hex((data >>> 24) & 0xff));
+                    pseudo.CstrMain.error('GPU Write Status ' + pseudo.CstrMain.hex(((data >>> 24) & 0xff)));
                     return;
             }
         },
@@ -4736,29 +4738,19 @@ pseudo.CstrGraphics = (function() {
         },
 
         photoWrite(data) {
-            const p = { n2: (data[1] >>> 0) & 0xffff, n3: (data[1] >>> 16) & 0xffff, n4: (data[2] >>> 0) & 0xffff, n5: (data[2] >>> 16) & 0xffff, };
+            const p = photoData(data);
 
-            vrop.h.start = vrop.h.p = p.n2;
-            vrop.v.start = vrop.v.p = p.n3;
-            vrop.h.end   = vrop.h.p + p.n4;
-            vrop.v.end   = vrop.v.p + p.n5;
-
-            vrop.pvram = p.n3 * 1024;
+            vrop.pvram = p[1] * 1024;
             modeDMA = GPU_DMA_VRAM2MEM;
 
             ret.status |= GPU_STAT_READYFORVRAM;
         },
 
         photoRead(data) {
-            const p = { n2: (data[1] >>> 0) & 0xffff, n3: (data[1] >>> 16) & 0xffff, n4: (data[2] >>> 0) & 0xffff, n5: (data[2] >>> 16) & 0xffff, };
-
-            vrop.h.start = vrop.h.p = p.n2;
-            vrop.v.start = vrop.v.p = p.n3;
-            vrop.h.end   = vrop.h.p + p.n4;
-            vrop.v.end   = vrop.v.p + p.n5;
+            const p = photoData(data);
 
             vrop.enabled = true;
-            vrop.raw = new union((p.n4 * p.n5) * 4);
+            vrop.raw = new union((p[2] * p[3]) * 4);
             modeDMA = GPU_DMA_MEM2VRAM;
 
             // Cache invalidation

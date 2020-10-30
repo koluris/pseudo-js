@@ -235,7 +235,7 @@ pseudo.CstrRender = (function() {
 
             vertex.push(
                 p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v
+                p.vx[i].v + ofs.v,
             );
         }
 
@@ -263,7 +263,7 @@ pseudo.CstrRender = (function() {
 
             vertex.push(
                 p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v
+                p.vx[i].v + ofs.v,
             );
         }
 
@@ -303,7 +303,7 @@ pseudo.CstrRender = (function() {
 
             vertex.push(
                 p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v
+                p.vx[i].v + ofs.v,
             );
 
             texture.push(
@@ -339,12 +339,12 @@ pseudo.CstrRender = (function() {
 
             vertex.push(
                 p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v
+                p.vx[i].v + ofs.v,
             );
 
             texture.push(
                 p.tx[i].u,
-                p.tx[i].v
+                p.tx[i].v,
             );
         }
 
