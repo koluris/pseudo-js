@@ -145,7 +145,7 @@ pseudo.CstrHardware = (function() {
                       return directMemH(hwr.uh, addr);
 
                   case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
-                      return directMemH(hwr.uh, addr);
+                      return audio.scopeR(addr);
 
                   /* unused */
                   case (addr == 0x1014): // ?

@@ -142,9 +142,6 @@ const pseudo = window.pseudo || {};
 
 
 
-// #define spuAcc(addr)//   pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1]
-
-
 
 
 
@@ -201,8 +198,8 @@ pseudo.CstrAudio = (function() {
     function decodeStream() {
         sbuf.fill(0);
 
-        for (let i = 0; i < SPU_MAX_CHAN; i++) {
-            const ch = spuVoices[i];
+        for (let n = 0; n < SPU_MAX_CHAN; n++) {
+            const ch = spuVoices[n];
 
             if (ch.isNew) {
                 ch.paddr  = ch.saddr;
@@ -223,6 +220,9 @@ pseudo.CstrAudio = (function() {
             for (let ns = 0; ns < SPU_SAMPLE_COUNT; ns++) {
                 for (; ch.spos >= 0x10000; ch.spos -= 0x10000) {
                     if (ch.bpos == 28) {
+                        if (ch.paddr == -1) {
+                            ch.active = false;
+                        }
 
                         ch.bpos = 0;
                         const shift   = spuMem.ub[ch.paddr] & 0xf;
@@ -2141,7 +2141,7 @@ pseudo.CstrHardware = (function() {
                       return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
 
                   case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
-                      return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+                      return pseudo.CstrAudio.scopeR(addr);
 
                   
                   case (addr == 0x1014): // ?
