@@ -245,7 +245,7 @@ pseudo.CstrAudio = (function() {
         continue;
       }
 
-      for (let i=0; i<1024; i++) {
+      for (let i=0; i<512; i++) {
         chn.count += chn.freq;
         if (chn.count >= 44100) {
           chn.pos += (chn.count/44100) | 0;
@@ -255,7 +255,7 @@ pseudo.CstrAudio = (function() {
         // Mix Channel Samples
         if (stereo) {
           sbuf.temp[i] += chn.buffer.sh[chn.pos] * (chn.volume.l/0x3fff);
-          sbuf.temp[i+1024] += -chn.buffer.sh[chn.pos] * (chn.volume.r/0x3fff);
+          sbuf.temp[i+512] += -chn.buffer.sh[chn.pos] * (chn.volume.r/0x3fff);
         }
         else {
           sbuf.temp[i] += chn.buffer.sh[chn.pos] * ((chn.volume.l+chn.volume.r)/2)/0x3fff;
@@ -274,10 +274,10 @@ pseudo.CstrAudio = (function() {
       }
     }
     // Volume Mix
-    for (let i=0; i<1024; i++) {
+    for (let i=0; i<512; i++) {
       if (stereo) {
         sbuf.final[i] = (sbuf.temp[i]/4) * (spuVolumeL/0x3fff);
-        sbuf.final[i+1024] = -(sbuf.temp[i+1024]/4) * (spuVolumeR/0x3fff);
+        sbuf.final[i+512] = -(sbuf.temp[i+512]/4) * (spuVolumeR/0x3fff);
       }
       else {
         sbuf.final[i] = (sbuf.temp[i]/4) * ((spuVolumeL+spuVolumeR)/2)/0x3fff;
@@ -354,13 +354,13 @@ pseudo.CstrAudio = (function() {
       spuMem = union(1024*256*2);
 
       sbuf = {
-        temp : new Int32Array(1024*2),
-        final: new Int16Array(1024*2),
+        temp : new Int32Array(512*2),
+        final: new Int16Array(512*2),
       };
 
       // Initialize Web Audio
-      ctxAudio  = new (window.AudioContext || window.webkitAudioContext)();
-      ctxScript = ctxAudio.createScriptProcessor(1024, 0, stereo ? 2 : 1);
+      ctxAudio  = new AudioContext();
+      ctxScript = ctxAudio.createScriptProcessor(512, 0, stereo ? 2 : 1);
 
       // Callback
       ctxScript.onaudioprocess = function(e) {
@@ -368,11 +368,11 @@ pseudo.CstrAudio = (function() {
         const float  = int16ToFloat32(decodeStream());
 
         if (stereo) {
-          output.getChannelData(0).set(float.slice(0, 1024));
-          output.getChannelData(1).set(float.slice(1024));
+          output.getChannelData(0).set(float.slice(0, 512));
+          output.getChannelData(1).set(float.slice(512));
         }
         else {
-          output.getChannelData(0).set(float.slice(0, 1024));
+          output.getChannelData(0).set(float.slice(0, 512));
         }
       };
     },
@@ -2059,7 +2059,7 @@ pseudo.CstrCounters = (function() {
             }
 
             // Graphics
-            vbk += threshold;
+            vbk += threshold * 2;
 
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
                 pseudo.CstrBus.interruptSet(0);

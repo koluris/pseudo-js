@@ -16,7 +16,7 @@
   44100
 
 #define SBUF_SIZE\
-  1024
+  512
 
 #define MAX_CHANNELS\
   24
@@ -226,7 +226,7 @@ pseudo.CstrAudio = (function() {
       };
 
       // Initialize Web Audio
-      ctxAudio  = new (window.AudioContext || window.webkitAudioContext)();
+      ctxAudio  = new AudioContext();
       ctxScript = ctxAudio.createScriptProcessor(SBUF_SIZE, 0, stereo ? 2 : 1);
 
       // Callback
