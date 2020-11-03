@@ -673,6 +673,73 @@ pseudo.CstrAudio = (function() {
             pseudo.CstrMain.error('/// PSeudo SPU Write: ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
         },
 
+        scopeR: function(addr) {
+            switch(true) {
+                case (addr >= 0x1c00 && addr <= 0x1d7e): // Channels
+                    {
+                        const ch = (addr >> 4) & 0x1f;
+
+                        switch(addr & 0xf) {
+                            case 0xc: // Hack
+                                if (spuVoices[ch].isNew) {
+                                    return 1;
+                                }
+                                return 0;
+                                
+                            case 0xe: // Madman
+                                if (spuVoices[ch].raddr) {
+                                    return spuVoices[ch].raddr >>> 3;
+                                }
+                                return 0;
+                                
+                            
+                            case 0x0:
+                            case 0x2:
+                            case 0x4:
+                            case 0x6:
+                            case 0x8:
+                            case 0xa:
+                                return hwr.uh[(( addr) & (hwr.uh.byteLength - 1)) >>> 1];
+                        }
+                    }
+
+                    pseudo.CstrMain.error('/// PSeudo SPU Read Channel: ' + pseudo.CstrMain.hex(addr & 0xf));
+                    return 0;
+
+                case (addr == 0x1da6): // Transfer Address
+                    return spuAddr >>> 3;
+                    
+                
+                case (addr == 0x1d80): // Volume L ?
+                case (addr == 0x1d82): // Volume R ?
+                case (addr == 0x1d88): // Sound On 1
+                case (addr == 0x1d8a): // Sound On 2
+                case (addr == 0x1d8c): // Sound Off 1
+                case (addr == 0x1d8e): // Sound Off 2
+                case (addr == 0x1d90): // ?
+                case (addr == 0x1d92): // ?
+                case (addr == 0x1d94): // Noise Mode On 1
+                case (addr == 0x1d96): // Noise Mode On 2
+                case (addr == 0x1d98): // Reverb Mode On 1
+                case (addr == 0x1d9a): // Reverb Mode On 2
+                case (addr == 0x1d9c): // Voice Status 0 - 15
+                case (addr == 0x1daa): // Control
+                case (addr == 0x1dac): // ?
+                case (addr == 0x1dae): // Status
+                case (addr == 0x1db0): // ?
+                case (addr == 0x1db2): // ?
+                case (addr == 0x1db4): // ?
+                case (addr == 0x1db6): // ?
+                case (addr == 0x1db8): // ?
+                case (addr == 0x1dba): // ?
+                case (addr >= 0x1e00 && addr <= 0x1e0e): // ?
+                    return hwr.uh[(( addr) & (hwr.uh.byteLength - 1)) >>> 1];
+            }
+
+            pseudo.CstrMain.error('/// PSeudo SPU Read: ' + pseudo.CstrMain.hex(addr));
+            return 0;
+        },
+
         executeDMA: function(addr) {
             const size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] >>> 16) * (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0xffff) * 2;
 
