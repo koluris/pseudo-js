@@ -1,168 +1,16 @@
 // /* Base structure taken from SOPE open source emulator, and improved upon (Credits: SaD, linuzappz) */
 
-// #define ram  mem.__ram
-// #define hwr  mem.__hwr
+#define ram  mem.__ram
+#define hwr  mem.__hwr
 
-// #define SHRT_MIN\
-//   -32768
+#define SHRT_MIN \
+    -32768
 
-// #define SHRT_MAX\
-//   32767
-
-// #define USHRT_MAX\
-//   65536
-
-// #define SAMPLE_RATE\
-//   44100
-
-// #define SBUF_SIZE\
-//   512
-
-// #define MAX_CHANNELS\
-//   24
-
-// #define MAX_VOLUME\
-//   0x3fff
+#define SHRT_MAX \
+    32767
 
 // #define spuAcc(addr)\
 //   directMemH(hwr.uh, addr)
-
-// #define spuChannel(addr)\
-//   (addr>>>4)&0x1f
-
-// pseudo.CstrAudio = (function() {
-//   // Web Audio
-//   let ctxAudio, ctxScript;
-//   let sbuf, stereo = true;
-
-//   // SPU specific
-//   let spuMem;
-//   let spuAddr;
-//   let spuVoices = [];
-//   let spuVolumeL, spuVolumeR;
-//
-//   function depackVAG(chn) {
-//     let p = chn.saddr;
-//     let s_1  = 0;
-//     let s_2  = 0;
-//     let temp = [];
-//
-//     while (1) {
-//       const shift  = spuMem.ub[p]&15;
-//       const filter = spuMem.ub[p]>>4;
-//
-//       for (let i=2; i<16; i++) {
-//         let a = ((spuMem.ub[p+i]&0x0f)<<12);
-//         let b = ((spuMem.ub[p+i]&0xf0)<< 8);
-//         if (a&0x8000) a |= 0xffff0000;
-//         if (b&0x8000) b |= 0xffff0000;
-//         temp[i*2-4] = a>>shift;
-//         temp[i*2-3] = b>>shift;
-//       }
-//
-//       for (let i=0; i<28; i++) {
-//         let res = temp[i] + ((s_1*f[filter][0] + s_2*f[filter][1] + 32)>>6);
-//         s_2 = s_1;
-//         s_1 = res;
-//         res = Math.min(Math.max(res, SHRT_MIN), SHRT_MAX);
-//         chn.buffer.sh[chn.size++] = res;
-//
-//         // Overflow
-//         if (chn.size === USHRT_MAX) {
-//           cpu.consoleWrite(MSG_ERROR, 'SPU Channel size overflow > '+USHRT_MAX);
-//           return;
-//         }
-//       }
-//
-//       // Fin
-//       const operator = spuMem.ub[p+1];
-//
-//       if (operator === 3 || operator === 7) { // Termination
-//         return;
-//       }
-//       if (operator === 6) { // Repeat
-//         chn.raddr = chn.size;
-//       }
-//
-//       // Advance Buffer
-//       p+=16;
-//     }
-//   }
-//
-//   function decodeStream() {
-//     for (let n=0; n<MAX_CHANNELS; n++) {
-//       const chn = spuVoices[n];
-//    
-//       // Channel on?
-//       if (chn.on === false) {
-//         continue;
-//       }
-//
-//       for (let i=0; i<SBUF_SIZE; i++) {
-//         chn.count += chn.freq;
-//         if (chn.count >= SAMPLE_RATE) {
-//           chn.pos += (chn.count/SAMPLE_RATE) | 0;
-//           chn.count %= SAMPLE_RATE;
-//         }
-//
-//         // Mix Channel Samples
-//         if (stereo) {
-//           sbuf.temp[i] += chn.buffer.sh[chn.pos] * (chn.volume.l/MAX_VOLUME);
-//           sbuf.temp[i+SBUF_SIZE] += -chn.buffer.sh[chn.pos] * (chn.volume.r/MAX_VOLUME);
-//         }
-//         else {
-//           sbuf.temp[i] += chn.buffer.sh[chn.pos] * ((chn.volume.l+chn.volume.r)/2)/MAX_VOLUME;
-//         }
-//
-//         // End of Sample
-//         if (chn.pos >= chn.size) {
-//           if (chn.raddr > 0) { // Repeat?
-//             chn.pos = chn.raddr;
-//             chn.count = 0;
-//             continue;
-//           }
-//           chn.on = false;
-//           break;
-//         }
-//       }
-//     }
-//     // Volume Mix
-//     for (let i=0; i<SBUF_SIZE; i++) {
-//       if (stereo) {
-//         sbuf.final[i] = (sbuf.temp[i]/4) * (spuVolumeL/MAX_VOLUME);
-//         sbuf.final[i+SBUF_SIZE] = -(sbuf.temp[i+SBUF_SIZE]/4) * (spuVolumeR/MAX_VOLUME);
-//       }
-//       else {
-//         sbuf.final[i] = (sbuf.temp[i]/4) * ((spuVolumeL+spuVolumeR)/2)/MAX_VOLUME;
-//       }
-//     }
-//
-//     // Clear
-//     sbuf.temp.fill(0);
-//     return sbuf.final;
-//   }
-//
-//   return {
-//     awake: function() {
-//       sbuf = {
-//         temp : new SintWcap(SBUF_SIZE*2),
-//         final: new SintHcap(SBUF_SIZE*2),
-//       };
-//     },
-//
-//     reset: function() {
-//       sbuf.temp.fill(0);
-//       sbuf.final.fill(0);
-//
-//       // Variables
-//       spuVolumeL = MAX_VOLUME;
-//       spuVolumeR = MAX_VOLUME;
-//     }
-//   };
-// })();
-
-// #undef ram
-// #undef hwr
 
 #define audioSet(a, b) \
     rest = (spuMem.ub[ch.paddr] & a) << b; \
@@ -210,7 +58,7 @@ pseudo.CstrAudio = (function() {
 
     function voiceOn(data) {
         for (let i = 0; i < SPU_MAX_CHAN; i++) {
-            if (data & (1 << n) && spuVoices[i].saddr) {
+            if (data & (1 << i) && spuVoices[i].saddr) {
                 spuVoices[i].isNew  = true;
                 spuVoices[i].repeat = false;
             }
@@ -235,13 +83,13 @@ pseudo.CstrAudio = (function() {
                 ch.active = true;
             }
             
-            if (ch.active === false) {
+            if (ch.active == false) {
                 continue;
             }
 
             for (let ns = 0; ns < SPU_SAMPLE_COUNT; ns++) {
                 for (; ch.spos >= 0x10000; ch.spos -= 0x10000) {
-                    if (ch.bpos === 28) {
+                    if (ch.bpos == 28) {
 
                         ch.bpos = 0;
                         const shift   = spuMem.ub[ch.paddr] & 0xf;
@@ -271,6 +119,8 @@ pseudo.CstrAudio = (function() {
                 ch.spos += ch.freq;
             }
         }
+
+        return sbuf;
     }
 
     return {
@@ -308,23 +158,21 @@ pseudo.CstrAudio = (function() {
 
             // Channels
             for (let i = 0; i < SPU_MAX_CHAN; i++) {
-                spuVoices[i] = {
-                    isNew   : false,
-                    active  : false,
-                    repeat  : false,
-                    spos    : 0,
-                    bpos    : 0,
-                    freq    : 0,
-                    sample  : 0,
-                    volumeL : 0,
-                    volumeR : 0,
-                    paddr   : 0,
-                    saddr   : 0,
-                    raddr   : 0,
-                };
-
-                spuVoices[i].bfr.fill(0);
-                spuVoices[i].  s.fill(0);
+                const ch = spuVoices[i];
+                ch.bfr.fill(0);
+                ch.  s.fill(0);
+                ch.isNew   = false;
+                ch.active  = false;
+                ch.repeat  = false;
+                ch.spos    = 0;
+                ch.bpos    = 0;
+                ch.freq    = 0;
+                ch.sample  = 0;
+                ch.volumeL = 0;
+                ch.volumeR = 0;
+                ch.paddr   = 0;
+                ch.saddr   = 0;
+                ch.raddr   = 0;
             }
 
             // Connect
@@ -519,3 +367,6 @@ pseudo.CstrAudio = (function() {
         }
     };
 })();
+
+#undef ram
+#undef hwr
