@@ -40,16 +40,6 @@
 //   let spuAddr;
 //   let spuVoices = [];
 //   let spuVolumeL, spuVolumeR;
-
-//   function int16ToFloat32(input) {
-//     let output = new F32cap(input.bSize/2);
-    
-//     for (let i=0; i<input.bSize/2; i++) {
-//       const int = input[i];
-//       output[i] = int >= 0x8000 ? -(0x10000-int)/0x8000 : int/0x7fff;
-//     }
-//     return output;
-//   }
 //
 //   function depackVAG(chn) {
 //     let p = chn.saddr;
@@ -152,48 +142,6 @@
 //     return sbuf.final;
 //   }
 //
-//   function voiceOn(data) {
-//     for (let n=0; n<MAX_CHANNELS; n++) {
-//       if (data&(1<<n)) {
-//         spuVoices[n].on    = true;
-//         spuVoices[n].count = 0;
-//         spuVoices[n].pos   = 0;
-//         spuVoices[n].raddr = 0;
-//         spuVoices[n].size  = 0;
-//
-//         //spuVoices[n].buffer.sh.fill(0);
-//         depackVAG(spuVoices[n]);
-//       }
-//     }
-//   }
-//
-//   function voiceOff(data) {
-//     for (let n=0; n<MAX_CHANNELS; n++) {
-//       if (data&(1<<n)) {
-//         spuVoices[n].on = false;
-//       }
-//     }
-//   }
-//
-//   function setVolume(data) {
-//     let ret = data;
-//
-//     if (data&0x8000) {
-//       if (data&0x1000) {
-//         ret ^= 0xffff;
-//       }
-//       ret = ((ret&0x7f)+1)/2;
-//       ret += ret/(2*((data&0x2000) ? -1 : 1));
-//       ret *= 128;
-//     }
-//     else {
-//       if (data&0x4000) {
-//         ret = 0x3fff-(data&0x3fff);
-//       }
-//     }
-//     return ret&0x3fff;
-//   }
-//
 //   return {
 //     awake: function() {
 //       sbuf = {
@@ -209,31 +157,20 @@
 //       // Variables
 //       spuVolumeL = MAX_VOLUME;
 //       spuVolumeR = MAX_VOLUME;
-//
-//       // Channels
-//       for (let n=0; n<MAX_CHANNELS; n++) {
-//         spuVoices[n] = {
-//           buffer : union(USHRT_MAX*2),
-//           count  : 0,
-//           freq   : 0,
-//           on     : false,
-//           pos    : 0,
-//           raddr  : 0,
-//           saddr  : 0,
-//           size   : 0,
-//           volume : {
-//             l: 0, r: 0
-//           }
-//         };
-//
-//         spuVoices[n].buffer.sh.fill(0);
-//       }
 //     }
 //   };
 // })();
 
 // #undef ram
 // #undef hwr
+
+#define audioSet(a, b) \
+    rest = (spuMem.ub[ch.paddr] & a) << b; \
+    if (rest & 0x8000) rest |= 0xffff0000; \
+    rest = (rest >> shift) + ((ch.s[0] * f[predict][0] + ch.s[1] * f[predict][1] + 32) >> 6); \
+    ch.s[1] = ch.s[0]; \
+    ch.s[0] = Math.min(Math.max(rest, SHRT_MIN), SHRT_MAX); \
+    ch.bfr[i++] = ch.s[0]
 
 #define SPU_CHANNEL(addr) \
     (addr >> 4) & 0x1f
@@ -255,13 +192,99 @@ pseudo.CstrAudio = (function() {
     let spuMem;
     let spuAddr;
     let spuVoices = [];
+    let sbuf;
+
+    function int16ToFloat32(input) {
+        let output = new F32cap(input.bSize / 2);
+        
+        for (let i = 0; i < input.bSize / 2; i++) {
+            const int = input[i];
+            output[i] = int >= 0x8000 ? -(0x10000 - int) / 0x8000 : int / 0x7fff;
+        }
+        return output;
+    }
+
+    function setVolume(data) {
+        return ((data & 0x7fff) ^ 0x4000) - 0x4000;
+    }
+
+    function voiceOn(data) {
+        for (let i = 0; i < SPU_MAX_CHAN; i++) {
+            if (data & (1 << n) && spuVoices[i].saddr) {
+                spuVoices[i].isNew  = true;
+                spuVoices[i].repeat = false;
+            }
+        }
+    }
 
     function decodeStream() {
+        sbuf.fill(0);
+
+        for (let i = 0; i < SPU_MAX_CHAN; i++) {
+            const ch = spuVoices[i];
+
+            if (ch.isNew) {
+                ch.paddr  = ch.saddr;
+                ch.spos   = 0x10000;
+                ch.bpos   = 28;
+                ch.sample = 0;
+                ch.s[0]   = 0;
+                ch.s[1]   = 0;
+                
+                ch.isNew  = false;
+                ch.active = true;
+            }
+            
+            if (ch.active === false) {
+                continue;
+            }
+
+            for (let ns = 0; ns < SPU_SAMPLE_COUNT; ns++) {
+                for (; ch.spos >= 0x10000; ch.spos -= 0x10000) {
+                    if (ch.bpos === 28) {
+
+                        ch.bpos = 0;
+                        const shift   = spuMem.ub[ch.paddr] & 0xf;
+                        const predict = spuMem.ub[ch.paddr++] >> 4;
+                        const op      = spuMem.ub[ch.paddr++];
+                        
+                        for (let i = 0, rest; i < 28; ch.paddr++) {
+                            audioSet(0x0f, 0xc);
+                            audioSet(0xf0, 0x8);
+                        }
+                        
+                        if ((op & 4) && (!ch.repeat)) {
+                            ch.raddr = ch.paddr - 16;
+                        }
+                        
+                        if ((op & 1)) {
+                            ch.paddr = (op != 3 || ch.raddr == 0) ? -1 : ch.raddr;
+                        }
+                    }
+
+                    ch.sample = ch.bfr[ch.bpos++] >> 2;
+                }
+
+                sbuf[(ns * 2) + 0] += (ch.sample * ch.volumeL) >> 14;
+                sbuf[(ns * 2) + 1] += (ch.sample * ch.volumeR) >> 14;
+                
+                ch.spos += ch.freq;
+            }
+        }
     }
 
     return {
         awake() {
             spuMem = union(256 * 1024 * 2);
+              sbuf = new UintHcap(SPU_SAMPLE_SIZE);
+
+            // Channels
+            for (let i = 0; i < SPU_MAX_CHAN; i++) {
+                spuVoices[i] = {
+                    bfr: new SintWcap(28),
+                      s: new SintWcap(2)
+                };
+            }
 
             // Initialize Web Audio
             ctxAudio  = new AudioContext();
@@ -285,8 +308,23 @@ pseudo.CstrAudio = (function() {
 
             // Channels
             for (let i = 0; i < SPU_MAX_CHAN; i++) {
-                spuVoices[n] = {
+                spuVoices[i] = {
+                    isNew   : false,
+                    active  : false,
+                    repeat  : false,
+                    spos    : 0,
+                    bpos    : 0,
+                    freq    : 0,
+                    sample  : 0,
+                    volumeL : 0,
+                    volumeR : 0,
+                    paddr   : 0,
+                    saddr   : 0,
+                    raddr   : 0,
                 };
+
+                spuVoices[i].bfr.fill(0);
+                spuVoices[i].  s.fill(0);
             }
 
             // Connect
@@ -310,7 +348,7 @@ pseudo.CstrAudio = (function() {
                                 return;
                                 
                             case 0x4: // Pitch
-                                spuVoices[ch].freq = MIN(data, 0x3fff) << 4;
+                                spuVoices[ch].freq = Math.min(data, 0x3fff) << 4;
                                 return;
                                 
                             case 0x6: // Sound Address
@@ -404,7 +442,7 @@ pseudo.CstrAudio = (function() {
                                 
                             case 0xe: // Madman
                                 if (spuVoices[ch].raddr) {
-                                    return spuVoices[ch].raddr >>> 3;
+                                    return spuVoices[ch].raddr >> 3;
                                 }
                                 return 0;
                                 
