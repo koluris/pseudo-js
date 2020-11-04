@@ -268,7 +268,7 @@ pseudo.CstrAudio = (function() {
             }
 
             // Initialize Web Audio
-            ctxAudio  = new AudioContext();
+            ctxAudio  = new AudioContext({ sampleRate: 44100 });
             ctxScript = ctxAudio.createScriptProcessor(SPU_SAMPLE_SIZE, 0, 2);
 
             // Callback
