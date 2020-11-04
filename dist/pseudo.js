@@ -513,7 +513,7 @@ pseudo.CstrBus = (function() {
     // Definition and threshold of interrupts
     const interrupts = [{
         code: 0,
-        target: 8
+        target: 4
     }, {
         code: 1,
         target: 1

@@ -8,7 +8,7 @@ pseudo.CstrBus = (function() {
     // Definition and threshold of interrupts
     const interrupts = [{
         code: IRQ_VBLANK,
-        dest: 8
+        dest: 4
     }, {
         code: IRQ_GPU,
         dest: 1
