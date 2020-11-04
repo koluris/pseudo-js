@@ -325,7 +325,6 @@ pseudo.CstrCdrom = (function() {
 
   return {
     interruptRead2(buf) {
-      kbRead += buf.bSize;
       transfer.data.set(buf);
       stat = CD_STAT_DATA_READY;
 
@@ -345,14 +344,15 @@ pseudo.CstrCdrom = (function() {
         interruptQueue(9); // CdlPause
       }
       else {
-        cdreadint = 1
+        cdreadint = 1;
+        
+        kbRead += buf.bSize;
+        divBlink.css({ 'background':'transparent' });
+        divKb.innerText = Math.round(kbRead / 1024) + ' kb';
       }
 
       bus.interruptSet(IRQ_CD);
-
       cpu.resume();
-      divBlink.css({ 'background':'transparent' });
-      divKb.innerText = Math.round(kbRead/1024)+' kb';
     },
 
     awake(blink, kb) {
