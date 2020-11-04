@@ -1,15 +1,13 @@
 /* Base structure taken from FPSE open source emulator, and improved upon (Credits: BERO, LDChen) */
 
-#define hwr  mem.__hwr
-
 #define count(n) \
-    directMemH(hwr.uh, 0x1100 + (n << 4))
+    directMemH(mem.hwr.uh, 0x1100 + (n << 4))
 
 #define  mode(n) \
-    directMemW(hwr.uw, 0x1104 + (n << 4))
+    directMemW(mem.hwr.uw, 0x1104 + (n << 4))
 
 #define   dst(n) \
-    directMemH(hwr.uh, 0x1108 + (n << 4))
+    directMemH(mem.hwr.uh, 0x1108 + (n << 4))
 
 #define bound(n) \
     bounds[n]
@@ -17,7 +15,7 @@
 #define RTC_PORT(addr) \
     (addr >>> 4) & 3
 
-pseudo.CstrCounters = (function() {
+pseudo.CstrCounters = function() {
     // PSX root clock
     const PSX_CLOCK      = 33868800;
     const PSX_VSYNC_NTSC = PSX_CLOCK / 60;
@@ -119,6 +117,6 @@ pseudo.CstrCounters = (function() {
             psx.error('RTC Write: '+ psx.hex(addr & 0xf));
         }
     };
-})();
+};
 
-#undef hwr
+const rootcnt = new pseudo.CstrCounters();

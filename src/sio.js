@@ -27,7 +27,7 @@
         btnState |= ~(0xffff ^ (1 << btn)); \
     }
 
-pseudo.CstrSerial = (function() {
+pseudo.CstrSerial = function() {
   const PAD_BTN_SELECT   =  0;
   const PAD_BTN_START    =  3;
   const PAD_BTN_UP       =  4;
@@ -228,4 +228,6 @@ pseudo.CstrSerial = (function() {
       bfr[4] = (btnState >>> 8) & 0xff;
     }
   };
-})();
+};
+
+const sio = new pseudo.CstrSerial();

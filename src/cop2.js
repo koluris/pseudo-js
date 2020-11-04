@@ -185,7 +185,7 @@
     G2 = limC2(MAC2 >> 4); \
     B2 = limC3(MAC3 >> 4)
 
-pseudo.CstrCop2 = (function() {
+pseudo.CstrCop2 = function() {
     const cop2c = union(32 * 4);
     const cop2d = union(32 * 4);
 
@@ -774,4 +774,6 @@ pseudo.CstrCop2 = (function() {
             oooo(cop2c.uw, addr) = data;
         }
     };
-})();
+};
+
+const cop2 = new pseudo.CstrCop2();

@@ -1,8 +1,6 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
-#define hwr  mem.__hwr
-
-pseudo.CstrHardware = (function() {
+pseudo.CstrHardware = function() {
   return {
       write: {
           w(addr, data) {
@@ -17,7 +15,7 @@ pseudo.CstrHardware = (function() {
                           return;
                       }
 
-                      directMemW(hwr.uw, addr) = data;
+                      directMemW(mem.hwr.uw, addr) = data;
                       return;
 
                   case (addr == 0x10f4): // DICR, thanks Calb, Galtor :)
@@ -52,7 +50,7 @@ pseudo.CstrHardware = (function() {
                   case (addr == 0x1d80): // SPU in 32 bits?
                   case (addr == 0x1d84): // SPU in 32 bits?
                   case (addr == 0x1d8c): // SPU in 32 bits?
-                      directMemW(hwr.uw, addr) = data;
+                      directMemW(mem.hwr.uw, addr) = data;
                       return;
               }
 
@@ -80,7 +78,7 @@ pseudo.CstrHardware = (function() {
                   /* unused */
                   case (addr == 0x1014): // ?
                   case (addr == 0x1074): // IRQ Mask
-                      directMemH(hwr.uh, addr) = data;
+                      directMemH(mem.hwr.uh, addr) = data;
                       return;
               }
 
@@ -100,11 +98,11 @@ pseudo.CstrHardware = (function() {
                   /* unused */
                   case (addr == 0x10f6): // ?
                   case (addr == 0x2041): // DIP Switch?
-                      directMemB(hwr.ub, addr) = data;
+                      directMemB(mem.hwr.ub, addr) = data;
                       return;
               }
 
-              psx.error('Hardware Write b '+psx.hex(addr)+' <- '+psx.hex(data));
+              psx.error('Hardware Write b ' + psx.hex(addr) + ' <- ' + psx.hex(data));
           }
       },
 
@@ -112,10 +110,10 @@ pseudo.CstrHardware = (function() {
           w(addr) {
               switch(true) {
                   case (addr >= 0x1080 && addr <= 0x10e8): // DMA
-                      return directMemW(hwr.uw, addr);
+                      return directMemW(mem.hwr.uw, addr);
 
                   case (addr >= 0x1100 && addr <= 0x1110): // Rootcounters
-                      return directMemW(hwr.uw, addr);
+                      return directMemW(mem.hwr.uw, addr);
 
                   case (addr >= 0x1810 && addr <= 0x1814): // Graphics
                       return vs.scopeR(addr);
@@ -130,10 +128,10 @@ pseudo.CstrHardware = (function() {
                   case (addr == 0x1074): // IRQ Mask
                   case (addr == 0x10f0): // DPCR
                   case (addr == 0x10f4): // DICR
-                      return directMemW(hwr.uw, addr);
+                      return directMemW(mem.hwr.uw, addr);
               }
 
-              psx.error('Hardware Read w '+psx.hex(addr));
+              psx.error('Hardware Read w ' + psx.hex(addr));
           },
 
           h(addr) {
@@ -142,7 +140,7 @@ pseudo.CstrHardware = (function() {
                       return sio.read.h(addr);
 
                   case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
-                      return directMemH(hwr.uh, addr);
+                      return directMemH(mem.hwr.uh, addr);
 
                   case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
                       return audio.scopeR(addr);
@@ -152,10 +150,10 @@ pseudo.CstrHardware = (function() {
                   case (addr == 0x1070): // IRQ Status
                   case (addr == 0x1074): // IRQ Mask
                   case (addr == 0x1130): // ?
-                      return directMemH(hwr.uh, addr);
+                      return directMemH(mem.hwr.uh, addr);
               }
 
-              psx.error('Hardware Read h '+psx.hex(addr));
+              psx.error('Hardware Read h ' + psx.hex(addr));
           },
 
           b(addr) {
@@ -170,13 +168,13 @@ pseudo.CstrHardware = (function() {
                   case (addr == 0x10f6): // ?
                   case (addr == 0x1d68): // ?
                   case (addr == 0x1d78): // ?
-                      return directMemB(hwr.ub, addr);
+                      return directMemB(mem.hwr.ub, addr);
               }
 
-              psx.error('Hardware Read b '+psx.hex(addr));
+              psx.error('Hardware Read b ' + psx.hex(addr));
           }
       }
   };
-})();
+};
 
-#undef hwr
+const io = new pseudo.CstrHardware();

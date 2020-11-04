@@ -136,7 +136,7 @@
     ] \
 }
 
-pseudo.CstrRender = (function() {
+pseudo.CstrRender = function() {
     let ctx, attrib, bfr, divRes; // WebGL Context
     let blend, bit, ofs;
     let drawArea, spriteTP;
@@ -762,4 +762,6 @@ pseudo.CstrRender = (function() {
             disableTexture();
         }
     };
-})();
+};
+
+const render = new pseudo.CstrRender();

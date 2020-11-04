@@ -1,19 +1,15 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
-#define ram  mem.__ram
-#define rom  mem.__rom
-#define hwr  mem.__hwr
-
 #define definitionMemW(maccess, width, hw, size) \
     if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { \
         if (cpu.writeOK()) { \
-            maccess(ram.width, addr) = data; \
+            maccess(mem.ram.width, addr) = data; \
         } \
         return; \
     } \
     \
     if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { \
-        maccess(hwr.width, addr) = data; \
+        maccess(mem.hwr.width, addr) = data; \
         return; \
     } \
     \
@@ -30,11 +26,11 @@
 
 #define definitionMemR(maccess, width, hw, size) \
     if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { \
-        return maccess(ram.width, addr); \
+        return maccess(mem.ram.width, addr); \
     } \
     \
     if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { \
-        return maccess(hwr.width, addr); \
+        return maccess(mem.hwr.width, addr); \
     } \
     \
     if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { \
@@ -42,7 +38,7 @@
     } \
     \
     if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { \
-        return maccess(rom.width, addr); \
+        return maccess(mem.rom.width, addr); \
     } \
     \
     if ((addr) == 0xfffe0130) { \
@@ -52,7 +48,7 @@
     psx.error('Mem R ' + size + ' ' + psx.hex(addr)); \
     return 0
 
-pseudo.CstrMem = (function() {
+pseudo.CstrMem = function() {
     // This mask unifies the RAM mirrors (0, 8, A) into one unique case
     const MEM_MASK = 0x00ffffff;
     
@@ -64,26 +60,26 @@ pseudo.CstrMem = (function() {
     const PSX_EXE_HEADER_SIZE = 0x800;
 
     return {
-        __ram: union(0x200000),
-        __rom: union(0x80000),
-        __hwr: union(0x4000),
+        ram: union(0x200000),
+        rom: union(0x80000),
+        hwr: union(0x4000),
 
         reset() {
             // Reset all, except for BIOS
-            ram.ub.fill(0);
-            hwr.ub.fill(0);
+            mem.ram.ub.fill(0);
+            mem.hwr.ub.fill(0);
         },
 
         writeROM(data) {
-            rom.ub.set(new UintBcap(data));
+            mem.rom.ub.set(new UintBcap(data));
         },
 
         writeExecutable(data) {
             const header = new UintWcap(data, 0, PSX_EXE_HEADER_SIZE);
-            const offset = header[2 + 4] & (ram.ub.bSize - 1); // Offset needs boundaries... huh?
+            const offset = header[2 + 4] & (mem.ram.ub.bSize - 1); // Offset needs boundaries... huh?
             const size   = header[2 + 5];
 
-            ram.ub.set(new UintBcap(data, PSX_EXE_HEADER_SIZE, size), offset);
+            mem.ram.ub.set(new UintBcap(data, PSX_EXE_HEADER_SIZE, size), offset);
 
             return header;
         },
@@ -123,14 +119,12 @@ pseudo.CstrMem = (function() {
             madr &= 0xffffff;
 
             while(--bcr) {
-                directMemW(ram.uw, madr) = (madr - 4) & 0xffffff;
+                directMemW(mem.ram.uw, madr) = (madr - 4) & 0xffffff;
                 madr -= 4;
             }
-            directMemW(ram.uw, madr) = 0xffffff;
+            directMemW(mem.ram.uw, madr) = 0xffffff;
         }
     };
-})();
+};
 
-#undef ram
-#undef rom
-#undef hwr
+const mem = new pseudo.CstrMem();

@@ -1,8 +1,5 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
-#define ram  mem.__ram
-#define rom  mem.__rom
-
 #define pc base[32]
 #define lo base[33]
 #define hi base[34]
@@ -30,7 +27,7 @@
 
 // Inline functions for speedup
 #define setptr(addr) \
-    ptr = addr >>> 20 === 0xbfc ? rom.uw : ram.uw
+    ptr = addr >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw
 
 #define opcodeMult(a, b) \
     { \
@@ -52,7 +49,7 @@
 #define opcodeSWx(o, d) \
     mem.write.w(ob & (~(3)), (base[rt] o shift[d][ob & 3]) | (mem.read.w(ob & (~(3))) & mask[d][ob & 3]))
 
-pseudo.CstrMips = (function() {
+pseudo.CstrMips = function() {
     // SW & LW tables
     const mask = [
         [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
@@ -492,11 +489,10 @@ pseudo.CstrMips = (function() {
             setptr(addr);
         }
     };
-})();
+};
 
 #undef pc
 #undef lo
 #undef hi
 
-#undef ram
-#undef rom
+const cpu = new pseudo.CstrMips();

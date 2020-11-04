@@ -1,13 +1,9 @@
 /* Base structure taken from PCSX-df open source emulator, and improved upon (Credits: Stephen Chao) */
 
-#define ram  mem.__ram
-#define hwr  mem.__hwr
-#define vram  vs.__vram
-
 #define GPU_COMMAND(x) \
     ((x >>> 24) & 0xff)
 
-pseudo.CstrGraphics = (function() {
+pseudo.CstrGraphics = function() {
     // Constants
     const GPU_STAT_ODDLINES         = 0x80000000;
     const GPU_STAT_DMABITS          = 0x60000000;
@@ -92,7 +88,7 @@ pseudo.CstrGraphics = (function() {
                     addr += i;
                 }
         
-                ret.data = stream ? directMemW(ram.uw, addr) : addr;
+                ret.data = stream ? directMemW(mem.ram.uw, addr) : addr;
                 addr += 4;
                 i++;
 
@@ -137,10 +133,10 @@ pseudo.CstrGraphics = (function() {
                 ret.status &= (~(0x14000000));
 
                 do {
-                    const vramValue = vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
+                    const vramValue = vs.vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
 
                     if (stream) {
-                        directMemW(ram.uw, addr) = vramValue;
+                        directMemW(mem.ram.uw, addr) = vramValue;
                     }
                     else {
                         ret.data = vramValue;
@@ -176,7 +172,7 @@ pseudo.CstrGraphics = (function() {
         while (vrop.v.p < vrop.v.end) {
             while (vrop.h.p < vrop.h.end) {
                 // Keep position of vram
-                const ramValue = directMemH(ram.uh, addr);
+                const ramValue = directMemH(mem.ram.uh, addr);
 
                 if (isVideo24Bit) {
                     vrop.raw.uh[count] = ramValue;
@@ -188,11 +184,11 @@ pseudo.CstrGraphics = (function() {
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
                 const pos = (vrop.v.p << 10) + vrop.h.p;
                 if (stream) {
-                    vram.uh[pos] = ramValue;
+                    vs.vram.uh[pos] = ramValue;
                 }
                 else { // A dumb hack for now
                     if (!(count % 2)) {
-                        vram.uw[pos >>> 1] = addr;
+                        vs.vram.uw[pos >>> 1] = addr;
                     }
                 }
                 addr += 2;
@@ -247,10 +243,10 @@ pseudo.CstrGraphics = (function() {
 
     // Exposed class functions/variables
     return {
-        __vram: union(FRAME_W * FRAME_H * 2),
+        vram: union(FRAME_W * FRAME_H * 2),
 
         reset() {
-            vram.uh.fill(0);
+            vs.vram.uh.fill(0);
             ret.data     = 0x400;
             ret.status   = GPU_STAT_READYFORCOMMANDS | GPU_STAT_IDLE | GPU_STAT_DISPLAYDISABLED | 0x2000;
             modeDMA      = GPU_DMA_NONE;
@@ -378,7 +374,7 @@ pseudo.CstrGraphics = (function() {
 
                 case 0x01000401:
                     while(madr !== 0xffffff) {
-                        const count = directMemW(ram.uw, madr);
+                        const count = directMemW(mem.ram.uw, madr);
                         dataMem.write(true, madr + 4, count >>> 24);
                         madr = count & 0xffffff;
                     }
@@ -412,8 +408,6 @@ pseudo.CstrGraphics = (function() {
             tcache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
         }
     };
-})();
+};
 
-#undef ram
-#undef hwr
-#undef vram
+const vs = new pseudo.CstrGraphics();

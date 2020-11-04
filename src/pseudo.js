@@ -1,6 +1,6 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
-pseudo.CstrMain = (function() {
+pseudo.CstrMain = function() {
     let divDropzone;
     let iso;
 
@@ -165,4 +165,6 @@ pseudo.CstrMain = (function() {
             });
         }
     };
-})();
+};
+
+const psx = new pseudo.CstrMain();

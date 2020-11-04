@@ -1,10 +1,7 @@
 /* Base structure taken from PCSX open source emulator, and improved upon (Credits: linuzappz, Shadow) */
 
-#define hwr  mem.__hwr
-#define ram  mem.__ram
-
 #define CD_REG(r) \
-  directMemB(hwr.ub, 0x1800 | r)
+  directMemB(mem.hwr.ub, 0x1800 | r)
 
 #define defaultCtrlAndStat() \
   ctrl |= 0x80; \
@@ -26,7 +23,7 @@
   readed = 0xff; \
   interruptQueue(6)
 
-pseudo.CstrCdrom = (function() {
+pseudo.CstrCdrom = function() {
   const CD_STAT_NO_INTR     = 0;
   const CD_STAT_DATA_READY  = 1;
   const CD_STAT_COMPLETE    = 2;
@@ -598,7 +595,7 @@ pseudo.CstrCdrom = (function() {
           }
           
           for (let i=0; i<size; i++) {
-            directMemB(ram.ub, madr + i) = transfer.data[transfer.p + i];
+            directMemB(mem.ram.ub, madr + i) = transfer.data[transfer.p + i];
           }
 
           transfer.p += size;
@@ -613,7 +610,6 @@ pseudo.CstrCdrom = (function() {
       }
     }
   };
-})();
+};
 
-#undef ram
-#undef hwr
+const cdrom = new pseudo.CstrCdrom();

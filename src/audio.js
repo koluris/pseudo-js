@@ -1,8 +1,5 @@
 /* Base structure taken from SOPE open source emulator, and improved upon (Credits: SaD, linuzappz) */
 
-#define ram  mem.__ram
-#define hwr  mem.__hwr
-
 #define SHRT_MIN \
     -32768
 
@@ -20,7 +17,7 @@
 #define SPU_CHANNEL(addr) \
     (addr >>> 4) & 0x1f
 
-pseudo.CstrAudio = (function() {
+pseudo.CstrAudio = function() {
     const SPU_SAMPLE_RATE = 44100;
     const SPU_SAMPLE_SIZE = 1024;
     const SPU_MAX_CHAN    = 24 + 1;
@@ -206,7 +203,7 @@ pseudo.CstrAudio = (function() {
                             case 0x8:
                             case 0xa:
                             case 0xc:
-                                directMemH(hwr.uh, addr) = data;
+                                directMemH(mem.hwr.uh, addr) = data;
                                 return;
                         }
                     }
@@ -262,7 +259,7 @@ pseudo.CstrAudio = (function() {
                 case (addr == 0x1dbc): // ?
                 case (addr == 0x1dbe): // ?
                 case (addr >= 0x1dc0 && addr <= 0x1dfe): // Reverb
-                    directMemH(hwr.uh, addr) = data;
+                    directMemH(mem.hwr.uh, addr) = data;
                     return;
             }
 
@@ -295,7 +292,7 @@ pseudo.CstrAudio = (function() {
                             case 0x6:
                             case 0x8:
                             case 0xa:
-                                return directMemH(hwr.uh, addr);
+                                return directMemH(mem.hwr.uh, addr);
                         }
                     }
 
@@ -329,7 +326,7 @@ pseudo.CstrAudio = (function() {
                 case (addr == 0x1db8): // ?
                 case (addr == 0x1dba): // ?
                 case (addr >= 0x1e00 && addr <= 0x1e0e): // ?
-                    return directMemH(hwr.uh, addr);
+                    return directMemH(mem.hwr.uh, addr);
             }
 
             psx.error('/// PSeudo SPU Read: ' + psx.hex(addr));
@@ -342,7 +339,7 @@ pseudo.CstrAudio = (function() {
             switch(chcr) {
                 case 0x01000201:
                     for (let i = 0; i < size; i++, madr += 2) {
-                        spuMem.uh[spuAddr >>> 1] = directMemH(ram.uh, madr);
+                        spuMem.uh[spuAddr >>> 1] = directMemH(mem.ram.uh, madr);
                         spuAddr += 2;
                         spuAddr &= 0x7ffff;
                     }
@@ -350,7 +347,7 @@ pseudo.CstrAudio = (function() {
 
                 case 0x01000200:
                     for (let i = 0; i < size; i++, madr += 2) {
-                        directMemH(ram.uh, madr) = spuMem.uh[spuAddr >>> 1];
+                        directMemH(mem.ram.uh, madr) = spuMem.uh[spuAddr >>> 1];
                         spuAddr += 2;
                         spuAddr &= 0x7ffff;
                     }
@@ -360,7 +357,6 @@ pseudo.CstrAudio = (function() {
             psx.error('/// PSeudo SPU DMA: ' + psx.hex(chcr));
         }
     };
-})();
+};
 
-#undef ram
-#undef hwr
+const audio = new pseudo.CstrAudio();

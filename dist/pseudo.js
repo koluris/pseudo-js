@@ -122,8 +122,6 @@ function union(size) {
 
 
 
-
-
 // Console output
 
 
@@ -150,10 +148,7 @@ const pseudo = window.pseudo || {};
 
 
 
-
-
-
-pseudo.CstrAudio = (function() {
+pseudo.CstrAudio = function() {
     const SPU_SAMPLE_RATE = 44100;
     const SPU_SAMPLE_SIZE = 1024;
     const SPU_MAX_CHAN    = 24 + 1;
@@ -339,12 +334,12 @@ pseudo.CstrAudio = (function() {
                             case 0x8:
                             case 0xa:
                             case 0xc:
-                                pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = data;
+                                mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
                                 return;
                         }
                     }
 
-                    pseudo.CstrMain.error('/// PSeudo SPU Write Channel: ' + pseudo.CstrMain.hex(addr & 0xf) + ' <- ' + pseudo.CstrMain.hex(data));
+                    psx.error('/// PSeudo SPU Write Channel: ' + psx.hex(addr & 0xf) + ' <- ' + psx.hex(data));
                     return;
 
                 case (addr == 0x1d88): // Sound On 1
@@ -395,11 +390,11 @@ pseudo.CstrAudio = (function() {
                 case (addr == 0x1dbc): // ?
                 case (addr == 0x1dbe): // ?
                 case (addr >= 0x1dc0 && addr <= 0x1dfe): // Reverb
-                    pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = data;
+                    mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
                     return;
             }
 
-            pseudo.CstrMain.error('/// PSeudo SPU Write: ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+            psx.error('/// PSeudo SPU Write: ' + psx.hex(addr) + ' <- ' + psx.hex(data));
         },
 
         scopeR(addr) {
@@ -428,11 +423,11 @@ pseudo.CstrAudio = (function() {
                             case 0x6:
                             case 0x8:
                             case 0xa:
-                                return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+                                return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
                         }
                     }
 
-                    pseudo.CstrMain.error('/// PSeudo SPU Read Channel: ' + pseudo.CstrMain.hex(addr & 0xf));
+                    psx.error('/// PSeudo SPU Read Channel: ' + psx.hex(addr & 0xf));
                     return 0;
 
                 case (addr == 0x1da6): // Transfer Address
@@ -462,44 +457,43 @@ pseudo.CstrAudio = (function() {
                 case (addr == 0x1db8): // ?
                 case (addr == 0x1dba): // ?
                 case (addr >= 0x1e00 && addr <= 0x1e0e): // ?
-                    return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+                    return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
             }
 
-            pseudo.CstrMain.error('/// PSeudo SPU Read: ' + pseudo.CstrMain.hex(addr));
+            psx.error('/// PSeudo SPU Read: ' + psx.hex(addr));
             return 0;
         },
 
         executeDMA(addr) {
-            const size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] >>> 16) * (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0xffff) * 2;
+            const size = (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] >>> 16) * (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0xffff) * 2;
 
-            switch(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) {
+            switch(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
                 case 0x01000201:
-                    for (let i = 0; i < size; i++, pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] += 2) {
-                        spuMem.uh[spuAddr >>> 1] = pseudo.CstrMem.__ram.uh[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
+                    for (let i = 0; i < size; i++, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] += 2) {
+                        spuMem.uh[spuAddr >>> 1] = mem.ram.uh[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uh.byteLength - 1)) >>> 1];
                         spuAddr += 2;
                         spuAddr &= 0x7ffff;
                     }
                     return;
 
                 case 0x01000200:
-                    for (let i = 0; i < size; i++, pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] += 2) {
-                        pseudo.CstrMem.__ram.uh[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1] = spuMem.uh[spuAddr >>> 1];
+                    for (let i = 0; i < size; i++, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] += 2) {
+                        mem.ram.uh[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uh.byteLength - 1)) >>> 1] = spuMem.uh[spuAddr >>> 1];
                         spuAddr += 2;
                         spuAddr &= 0x7ffff;
                     }
                     return;
             }
 
-            pseudo.CstrMain.error('/// PSeudo SPU DMA: ' + pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]));
+            psx.error('/// PSeudo SPU DMA: ' + psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
         }
     };
-})();
+};
+
+const audio = new pseudo.CstrAudio();
 
 
-
-
-
-pseudo.CstrBus = (function() {
+pseudo.CstrBus = function() {
     // Interrupts
     const IRQ_ENABLED  = 1;
     const IRQ_DISABLED = 0;
@@ -552,7 +546,7 @@ pseudo.CstrBus = (function() {
             for (const item of interrupts) {
                 if (item.queued) {
                     if (item.queued++ === item.target) {
-                        pseudo.CstrMem.__hwr.uh[((0x1070) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] |= (1 << item.code);
+                        mem.hwr.uh[((0x1070) & (mem.hwr.uh.byteLength - 1)) >>> 1] |= (1 << item.code);
                         item.queued = IRQ_DISABLED;
                         break;
                     }
@@ -567,31 +561,33 @@ pseudo.CstrBus = (function() {
         checkDMA(addr, data) {
             const chan = ((addr >>> 4) & 0xf) - 8;
 
-            if (pseudo.CstrMem.__hwr.uw[((0x10f0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & (8 << (chan * 4))) {
-                pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data;
+            if (mem.hwr.uw[((0x10f0) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (8 << (chan * 4))) {
+                mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
 
                 switch(chan) {
-                    case 0:  pseudo.CstrMdec.executeDMA(addr); break; // MDEC in
-                    case 1:  pseudo.CstrMdec.executeDMA(addr); break; // MDEC out
-                    case 2:    pseudo.CstrGraphics.executeDMA(addr); break; // Graphics
-                    case 3: pseudo.CstrCdrom.executeDMA(addr); break; // CD-ROM
-                    case 4: pseudo.CstrAudio.executeDMA(addr); break; // Audio
-                    case 6:   pseudo.CstrMem.executeDMA(addr); break; // Clear OT
+                    case 0:  mdec.executeDMA(addr); break; // MDEC in
+                    case 1:  mdec.executeDMA(addr); break; // MDEC out
+                    case 2:    vs.executeDMA(addr); break; // Graphics
+                    case 3: cdrom.executeDMA(addr); break; // CD-ROM
+                    case 4: audio.executeDMA(addr); break; // Audio
+                    case 6:   mem.executeDMA(addr); break; // Clear OT
 
                     default:
-                        pseudo.CstrMain.error('DMA Channel ' + chan);
+                        psx.error('DMA Channel ' + chan);
                         break;
                 }
-                pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
+                mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
 
-                if (pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & (1 << (16 + chan))) {
-                    pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] |= 1 << (24 + chan);
-                    pseudo.CstrBus.interruptSet(3);
+                if (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (1 << (16 + chan))) {
+                    mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] |= 1 << (24 + chan);
+                    bus.interruptSet(3);
                 }
             }
         }
     };
-})();
+};
+
+const bus = new pseudo.CstrBus();
 
 
 
@@ -617,10 +613,7 @@ pseudo.CstrBus = (function() {
 
 
 
-
-
-
-pseudo.CstrCdrom = (function() {
+pseudo.CstrCdrom = function() {
   const CD_STAT_NO_INTR     = 0;
   const CD_STAT_DATA_READY  = 1;
   const CD_STAT_COMPLETE    = 2;
@@ -685,7 +678,7 @@ pseudo.CstrCdrom = (function() {
     sector.prev[1] = (parseInt((sector.data[1]) / 10) * 16 + (sector.data[1]) % 10);
     sector.prev[2] = (parseInt((sector.data[2]) / 10) * 16 + (sector.data[2]) % 10);
 
-    pseudo.CstrMain.trackRead(sector.prev);
+    psx.trackRead(sector.prev);
   }
 
   function interruptQueue(code) {
@@ -887,12 +880,12 @@ pseudo.CstrCdrom = (function() {
         break;
 
       default:
-        pseudo.CstrMain.error('CD prevIrq -> ' + prevIrq);
+        psx.error('CD prevIrq -> ' + prevIrq);
         break;
     }
 
     if (stat !== CD_STAT_NO_INTR && re2 !== 0x18) {
-      pseudo.CstrBus.interruptSet(2);
+      bus.interruptSet(2);
     }
   }
 
@@ -912,7 +905,7 @@ pseudo.CstrCdrom = (function() {
     statP &= (~(0x40));
     res.data[0] = statP;
 
-    pseudo.CstrMips.pause();
+    cpu.pause();
     trackRead();
     divBlink.css({ 'background':'#f5cb0f' });
   }
@@ -945,8 +938,8 @@ pseudo.CstrCdrom = (function() {
         divKb.innerText = Math.round(kbRead / 1024) + ' kb';
       }
 
-      pseudo.CstrBus.interruptSet(2);
-      pseudo.CstrMips.resume();
+      bus.interruptSet(2);
+      cpu.resume();
     },
 
     awake(blink, kb) {
@@ -1056,12 +1049,12 @@ pseudo.CstrCdrom = (function() {
               break;
 
             default:
-              pseudo.CstrMain.error('CD W 0x1801 data -> ' + data);
+              psx.error('CD W 0x1801 data -> ' + data);
               break;
           }
 
           if (stat !== CD_STAT_NO_INTR) {
-            pseudo.CstrBus.interruptSet(2);
+            bus.interruptSet(2);
           }
           return;
 
@@ -1118,7 +1111,7 @@ pseudo.CstrCdrom = (function() {
                 return;
 
               default:
-                pseudo.CstrMain.error('mode&0x30 -> ' + pseudo.CstrMain.hex(mode & 0x30));
+                psx.error('mode&0x30 -> ' + psx.hex(mode & 0x30));
                 return;
             }
           }
@@ -1142,49 +1135,49 @@ pseudo.CstrCdrom = (function() {
 
           ctrl |= 0x18;
 
-          return pseudo.CstrMem.__hwr.ub[((0x1800 | 0) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0] = ctrl;
+          return mem.hwr.ub[((0x1800 | 0) & (mem.hwr.ub.byteLength - 1)) >>> 0] = ctrl;
 
         case 1:
-          pseudo.CstrMem.__hwr.ub[((0x1800 | 1) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0] = 0;
+          mem.hwr.ub[((0x1800 | 1) & (mem.hwr.ub.byteLength - 1)) >>> 0] = 0;
 
           if (res.ok) {
-            pseudo.CstrMem.__hwr.ub[((0x1800 | 1) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0] = res.data[res.p++];
+            mem.hwr.ub[((0x1800 | 1) & (mem.hwr.ub.byteLength - 1)) >>> 0] = res.data[res.p++];
 
             if (res.p === res.c) {
               res.ok = 0;
             }
           }
           
-          return pseudo.CstrMem.__hwr.ub[((0x1800 | 1) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0];
+          return mem.hwr.ub[((0x1800 | 1) & (mem.hwr.ub.byteLength - 1)) >>> 0];
 
         case 2:
           if (!readed) {
-            pseudo.CstrMain.error('CD R !readed');
+            psx.error('CD R !readed');
             return 0;
           }
           return transfer.data[transfer.p++];
 
         case 3:
-          pseudo.CstrMem.__hwr.ub[((0x1800 | 3) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0] = 0;
+          mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0] = 0;
 
           if (stat) {
             if (ctrl & 0x01) {
-              pseudo.CstrMem.__hwr.ub[((0x1800 | 3) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0] = stat | 0xe0;
+              mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0] = stat | 0xe0;
             }
             else {
-              pseudo.CstrMain.error('CD R CD_REG(3) = 0xff;');
-              pseudo.CstrMem.__hwr.ub[((0x1800 | 3) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0] = 0xff;
+              psx.error('CD R CD_REG(3) = 0xff;');
+              mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0] = 0xff;
             }
           }
           
-          return pseudo.CstrMem.__hwr.ub[((0x1800 | 3) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0];
+          return mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0];
       }
     },
 
     executeDMA(addr) {
-      const size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0xffff) * 4;
+      const size = (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0xffff) * 4;
 
-      switch(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) {
+      switch(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
         case 0x11000000:
         case 0x11400100: // ?
           if (!readed) {
@@ -1192,7 +1185,7 @@ pseudo.CstrCdrom = (function() {
           }
           
           for (let i=0; i<size; i++) {
-            pseudo.CstrMem.__ram.ub[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] + i) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = transfer.data[transfer.p + i];
+            mem.ram.ub[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + i) & (mem.ram.ub.byteLength - 1)) >>> 0] = transfer.data[transfer.p + i];
           }
 
           transfer.p += size;
@@ -1202,15 +1195,14 @@ pseudo.CstrCdrom = (function() {
         return;
 
         default:
-          pseudo.CstrMain.error('CD DMA -> '+pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]));
+          psx.error('CD DMA -> '+psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
           return;
       }
     }
   };
-})();
+};
 
-
-
+const cdrom = new pseudo.CstrCdrom();
 
 
 // 32-bit accessor
@@ -1274,7 +1266,7 @@ pseudo.CstrCdrom = (function() {
 
 
 
-pseudo.CstrCop2 = (function() {
+pseudo.CstrCop2 = function() {
     const cop2c = union(32 * 4);
     const cop2d = union(32 * 4);
 
@@ -1296,23 +1288,23 @@ pseudo.CstrCop2 = (function() {
                 case 0: // BASIC
                     switch(((code >>> 21) & 0x1f) & 7) {
                         case 0: // MFC2
-                            pseudo.CstrMips.setbase(((code >>> 16) & 0x1f), pseudo.CstrCop2.opcodeMFC2(((code >>> 11) & 0x1f)));
+                            cpu.setbase(((code >>> 16) & 0x1f), cop2.opcodeMFC2(((code >>> 11) & 0x1f)));
                             return;
 
                         case 2: // CFC2
-                            pseudo.CstrMips.setbase(((code >>> 16) & 0x1f), cop2c.uw[( ((code >>> 11) & 0x1f))]);
+                            cpu.setbase(((code >>> 16) & 0x1f), cop2c.uw[( ((code >>> 11) & 0x1f))]);
                             return;
 
                         case 4: // MTC2
-                            pseudo.CstrCop2.opcodeMTC2(((code >>> 11) & 0x1f), pseudo.CstrMips.readbase(((code >>> 16) & 0x1f)));
+                            cop2.opcodeMTC2(((code >>> 11) & 0x1f), cpu.readbase(((code >>> 16) & 0x1f)));
                             return;
 
                         case 6: // CTC2
-                            pseudo.CstrCop2.opcodeCTC2(((code >>> 11) & 0x1f), pseudo.CstrMips.readbase(((code >>> 16) & 0x1f)));
+                            cop2.opcodeCTC2(((code >>> 11) & 0x1f), cpu.readbase(((code >>> 16) & 0x1f)));
                             return;
                     }
 
-                    pseudo.CstrMain.error('COP2 Basic ' + (((code >>> 21) & 0x1f) & 7));
+                    psx.error('COP2 Basic ' + (((code >>> 21) & 0x1f) & 7));
                     return;
 
                 
@@ -1794,7 +1786,7 @@ pseudo.CstrCop2 = (function() {
                     break;
 
                 case 15: // SXY3
-                    pseudo.CstrMain.error('opcodeMFC2 -> ' + addr);
+                    psx.error('opcodeMFC2 -> ' + addr);
                     break;
 
                 case 28: // cop2d.uw[(28)]
@@ -1856,14 +1848,16 @@ pseudo.CstrCop2 = (function() {
 
                 
                 case 31: // cop2c.uw[(31)]
-                    pseudo.CstrMain.error('opcodeCTC2 -> ' + addr + ' <- ' + pseudo.CstrMain.hex(data));
+                    psx.error('opcodeCTC2 -> ' + addr + ' <- ' + psx.hex(data));
                     break;
             }
 
             cop2c.uw[( addr)] = data;
         }
     };
-})();
+};
+
+const cop2 = new pseudo.CstrCop2();
 
 
 
@@ -1881,9 +1875,7 @@ pseudo.CstrCop2 = (function() {
 
 
 
-
-
-pseudo.CstrCounters = (function() {
+pseudo.CstrCounters = function() {
     // PSX root clock
     const PSX_CLOCK      = 33868800;
     const PSX_VSYNC_NTSC = PSX_CLOCK / 60;
@@ -1911,55 +1903,55 @@ pseudo.CstrCounters = (function() {
         update(threshold) {
             let temp;
 
-            temp = pseudo.CstrMem.__hwr.uh[((0x1100 + (0 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] + ((pseudo.CstrMem.__hwr.uw[((0x1104 + (0 << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0x100) ? threshold : threshold / 8);
+            temp = mem.hwr.uh[((0x1100 + (0 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] + ((mem.hwr.uw[((0x1104 + (0 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x100) ? threshold : threshold / 8);
 
-            if (temp >= bounds[0] && pseudo.CstrMem.__hwr.uh[((0x1100 + (0 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] < bounds[0]) { temp = 0;
-                if (pseudo.CstrMem.__hwr.uw[((0x1104 + (0 << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
-                    pseudo.CstrBus.interruptSet(4);
+            if (temp >= bounds[0] && mem.hwr.uh[((0x1100 + (0 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] < bounds[0]) { temp = 0;
+                if (mem.hwr.uw[((0x1104 + (0 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
+                    bus.interruptSet(4);
                 }
             }
-            pseudo.CstrMem.__hwr.uh[((0x1100 + (0 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = temp;
+            mem.hwr.uh[((0x1100 + (0 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = temp;
 
-            if (!(pseudo.CstrMem.__hwr.uw[((0x1104 + (1 << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0x100)) {
-                temp = pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] + threshold;
+            if (!(mem.hwr.uw[((0x1104 + (1 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x100)) {
+                temp = mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] + threshold;
 
-                if (temp >= bounds[1] && pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] < bounds[1]) { temp = 0;
-                    if (pseudo.CstrMem.__hwr.uw[((0x1104 + (1 << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
-                        pseudo.CstrMain.error('RTC timer[1].count >= timer[1].bound');
+                if (temp >= bounds[1] && mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] < bounds[1]) { temp = 0;
+                    if (mem.hwr.uw[((0x1104 + (1 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
+                        psx.error('RTC timer[1].count >= timer[1].bound');
                     }
                 }
-                pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = temp;
+                mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = temp;
             }
             else {
                 if ((hbk -= threshold) <= 0) {
-                    if (++pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] == bounds[1]) { pseudo.CstrMem.__hwr.uh[((0x1100 + (1 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = 0;
+                    if (++mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] == bounds[1]) { mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = 0;
 
-                        if (pseudo.CstrMem.__hwr.uw[((0x1104 + (1 << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
-                            pseudo.CstrBus.interruptSet(5);
+                        if (mem.hwr.uw[((0x1104 + (1 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
+                            bus.interruptSet(5);
                         }
                     }
                     hbk = PSX_HSYNC;
                 }
             }
 
-            if (!(pseudo.CstrMem.__hwr.uw[((0x1104 + (2 << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 1)) {
-                temp = pseudo.CstrMem.__hwr.uh[((0x1100 + (2 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] + ((pseudo.CstrMem.__hwr.uw[((0x1104 + (2 << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0x200) ? threshold / 8 : threshold);
+            if (!(mem.hwr.uw[((0x1104 + (2 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 1)) {
+                temp = mem.hwr.uh[((0x1100 + (2 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] + ((mem.hwr.uw[((0x1104 + (2 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x200) ? threshold / 8 : threshold);
 
-                if (temp >= bounds[2] && pseudo.CstrMem.__hwr.uh[((0x1100 + (2 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] < bounds[2]) { temp = 0;
-                    if (pseudo.CstrMem.__hwr.uw[((0x1104 + (2 << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
-                        pseudo.CstrBus.interruptSet(6);
+                if (temp >= bounds[2] && mem.hwr.uh[((0x1100 + (2 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] < bounds[2]) { temp = 0;
+                    if (mem.hwr.uw[((0x1104 + (2 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
+                        bus.interruptSet(6);
                     }
                 }
-                pseudo.CstrMem.__hwr.uh[((0x1100 + (2 << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = temp;
+                mem.hwr.uh[((0x1100 + (2 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = temp;
             }
 
             // Graphics
             vbk += threshold * 2;
 
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
-                pseudo.CstrBus.interruptSet(0);
-                 pseudo.CstrGraphics.redraw();
-                pseudo.CstrMips.setSuspended();
+                bus.interruptSet(0);
+                 vs.redraw();
+                cpu.setSuspended();
             }
         },
 
@@ -1968,62 +1960,60 @@ pseudo.CstrCounters = (function() {
 
             switch(addr & 0xf) {
                 case RTC_COUNT:
-                    pseudo.CstrMem.__hwr.uh[((0x1100 + (p << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = data & 0xffff;
+                    mem.hwr.uh[((0x1100 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data & 0xffff;
                     return;
 
                 case RTC_MODE:
-                    pseudo.CstrMem.__hwr.uw[((0x1104 + ( p << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data;
-                    bounds[p] = ((pseudo.CstrMem.__hwr.uw[((0x1104 + (p << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 8) && pseudo.CstrMem.__hwr.uh[((0x1108 + (p << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1]) ? pseudo.CstrMem.__hwr.uh[((0x1108 + (p << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] : RTC_BOUND;
+                    mem.hwr.uw[((0x1104 + ( p << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
+                    bounds[p] = ((mem.hwr.uw[((0x1104 + (p << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 8) && mem.hwr.uh[((0x1108 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1]) ? mem.hwr.uh[((0x1108 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] : RTC_BOUND;
                     return;
 
                 case RTC_TARGET:
-                    pseudo.CstrMem.__hwr.uh[((0x1108 + (  p << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = data & 0xffff;
-                    bounds[p] = ((pseudo.CstrMem.__hwr.uw[((0x1104 + (p << 4)) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 8) && pseudo.CstrMem.__hwr.uh[((0x1108 + (p << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1]) ? pseudo.CstrMem.__hwr.uh[((0x1108 + (p << 4)) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] : RTC_BOUND;
+                    mem.hwr.uh[((0x1108 + (  p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data & 0xffff;
+                    bounds[p] = ((mem.hwr.uw[((0x1104 + (p << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 8) && mem.hwr.uh[((0x1108 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1]) ? mem.hwr.uh[((0x1108 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] : RTC_BOUND;
                     return;
             }
 
-            pseudo.CstrMain.error('RTC Write: '+ pseudo.CstrMain.hex(addr & 0xf));
+            psx.error('RTC Write: '+ psx.hex(addr & 0xf));
         }
     };
-})();
+};
+
+const rootcnt = new pseudo.CstrCounters();
 
 
-
-
-
-
-pseudo.CstrHardware = (function() {
+pseudo.CstrHardware = function() {
   return {
       write: {
           w(addr, data) {
               switch(true) {
                   case (addr == 0x1070): // IRQ Status
-                      pseudo.CstrMem.__hwr.uw[((0x1070) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] &= data & pseudo.CstrMem.__hwr.uw[((0x1074) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
+                      mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] &= data & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                       return;
 
                   case (addr >= 0x1080 && addr <= 0x10e8): // DMA
                       if (addr & 8) {
-                          pseudo.CstrBus.checkDMA(addr, data);
+                          bus.checkDMA(addr, data);
                           return;
                       }
 
-                      pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data;
+                      mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                       return;
 
                   case (addr == 0x10f4): // DICR, thanks Calb, Galtor :)
-                      pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = (pseudo.CstrMem.__hwr.uw[((0x10f4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
+                      mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] = (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
                       return;
 
                   case (addr >= 0x1104 && addr <= 0x1124): // Rootcounters
-                      pseudo.CstrCounters.scopeW(addr, data);
+                      rootcnt.scopeW(addr, data);
                       return;
 
                   case (addr >= 0x1810 && addr <= 0x1814): // Graphics
-                      pseudo.CstrGraphics.scopeW(addr, data);
+                      vs.scopeW(addr, data);
                       return;
 
                   case (addr >= 0x1820 && addr <= 0x1824): // Motion Decoder
-                      pseudo.CstrMdec.scopeW(addr, data);
+                      mdec.scopeW(addr, data);
                       return;
 
                   
@@ -2042,59 +2032,59 @@ pseudo.CstrHardware = (function() {
                   case (addr == 0x1d80): // SPU in 32 bits?
                   case (addr == 0x1d84): // SPU in 32 bits?
                   case (addr == 0x1d8c): // SPU in 32 bits?
-                      pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = data;
+                      mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                       return;
               }
 
-              pseudo.CstrMain.error('Hardware Write w ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+              psx.error('Hardware Write w ' + psx.hex(addr) + ' <- ' + psx.hex(data));
           },
 
           h(addr, data) {
               switch(true) {
                   case (addr >= 0x1048 && addr <= 0x104e): // SIO
-                      pseudo.CstrSerial.write.h(addr, data);
+                      sio.write.h(addr, data);
                       return;
 
                   case (addr == 0x1070): // IRQ Status
-                      pseudo.CstrMem.__hwr.uh[((0x1070) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] &= data & pseudo.CstrMem.__hwr.uh[((0x1074) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+                      mem.hwr.uh[((0x1070) & (mem.hwr.uh.byteLength - 1)) >>> 1] &= data & mem.hwr.uh[((0x1074) & (mem.hwr.uh.byteLength - 1)) >>> 1];
                       return;
 
                   case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
-                      pseudo.CstrCounters.scopeW(addr, data);
+                      rootcnt.scopeW(addr, data);
                       return;
 
                   case (addr >= 0x1c00 && addr <= 0x1dfe): // SPU
-                      pseudo.CstrAudio.scopeW(addr, data);
+                      audio.scopeW(addr, data);
                       return;
 
                   
                   case (addr == 0x1014): // ?
                   case (addr == 0x1074): // IRQ Mask
-                      pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1] = data;
+                      mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
                       return;
               }
 
-              pseudo.CstrMain.error('Hardware Write h ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+              psx.error('Hardware Write h ' + psx.hex(addr) + ' <- ' + psx.hex(data));
           },
 
           b(addr, data) {
               switch(true) {
                   case (addr == 0x1040): // SIO Data
-                      pseudo.CstrSerial.write.b(addr, data);
+                      sio.write.b(addr, data);
                       return;
 
                   case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
-                      pseudo.CstrCdrom.scopeW(addr, data);
+                      cdrom.scopeW(addr, data);
                       return;
 
                   
                   case (addr == 0x10f6): // ?
                   case (addr == 0x2041): // DIP Switch?
-                      pseudo.CstrMem.__hwr.ub[(( addr) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0] = data;
+                      mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
                       return;
               }
 
-              pseudo.CstrMain.error('Hardware Write b '+pseudo.CstrMain.hex(addr)+' <- '+pseudo.CstrMain.hex(data));
+              psx.error('Hardware Write b ' + psx.hex(addr) + ' <- ' + psx.hex(data));
           }
       },
 
@@ -2102,16 +2092,16 @@ pseudo.CstrHardware = (function() {
           w(addr) {
               switch(true) {
                   case (addr >= 0x1080 && addr <= 0x10e8): // DMA
-                      return pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
+                      return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
 
                   case (addr >= 0x1100 && addr <= 0x1110): // Rootcounters
-                      return pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
+                      return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
 
                   case (addr >= 0x1810 && addr <= 0x1814): // Graphics
-                      return pseudo.CstrGraphics.scopeR(addr);
+                      return vs.scopeR(addr);
 
                   case (addr >= 0x1820 && addr <= 0x1824): // Motion Decoder
-                      return pseudo.CstrMdec.scopeR(addr);
+                      return mdec.scopeR(addr);
 
                   
                   case (addr == 0x1014): // ?
@@ -2120,54 +2110,56 @@ pseudo.CstrHardware = (function() {
                   case (addr == 0x1074): // IRQ Mask
                   case (addr == 0x10f0): // DPCR
                   case (addr == 0x10f4): // DICR
-                      return pseudo.CstrMem.__hwr.uw[(( addr) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
+                      return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
               }
 
-              pseudo.CstrMain.error('Hardware Read w '+pseudo.CstrMain.hex(addr));
+              psx.error('Hardware Read w ' + psx.hex(addr));
           },
 
           h(addr) {
               switch(true) {
                   case (addr >= 0x1044 && addr <= 0x104e): // SIO
-                      return pseudo.CstrSerial.read.h(addr);
+                      return sio.read.h(addr);
 
                   case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
-                      return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+                      return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
 
                   case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
-                      return pseudo.CstrAudio.scopeR(addr);
+                      return audio.scopeR(addr);
 
                   
                   case (addr == 0x1014): // ?
                   case (addr == 0x1070): // IRQ Status
                   case (addr == 0x1074): // IRQ Mask
                   case (addr == 0x1130): // ?
-                      return pseudo.CstrMem.__hwr.uh[(( addr) & (pseudo.CstrMem.__hwr.uh.byteLength - 1)) >>> 1];
+                      return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
               }
 
-              pseudo.CstrMain.error('Hardware Read h '+pseudo.CstrMain.hex(addr));
+              psx.error('Hardware Read h ' + psx.hex(addr));
           },
 
           b(addr) {
               switch(true) {
                   case (addr == 0x1040): // SIO Data
-                      return pseudo.CstrSerial.read.b(addr);
+                      return sio.read.b(addr);
 
                   case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
-                      return pseudo.CstrCdrom.scopeR(addr);
+                      return cdrom.scopeR(addr);
 
                     
                   case (addr == 0x10f6): // ?
                   case (addr == 0x1d68): // ?
                   case (addr == 0x1d78): // ?
-                      return pseudo.CstrMem.__hwr.ub[(( addr) & (pseudo.CstrMem.__hwr.ub.byteLength - 1)) >>> 0];
+                      return mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0];
               }
 
-              pseudo.CstrMain.error('Hardware Read b '+pseudo.CstrMain.hex(addr));
+              psx.error('Hardware Read b ' + psx.hex(addr));
           }
       }
   };
-})();
+};
+
+const io = new pseudo.CstrHardware();
 
 
 
@@ -2196,11 +2188,7 @@ pseudo.CstrHardware = (function() {
 
 
 
-
-
-
-
-pseudo.CstrMdec = (function() {
+pseudo.CstrMdec = function() {
     const MDEC_BLOCK_NUM = 64;
 
     const zscan = [
@@ -2235,7 +2223,7 @@ pseudo.CstrMdec = (function() {
 
     function processBlock() {
         for (let i = 0; i < 6; i++, blk.index += MDEC_BLOCK_NUM) {
-            let rl = pseudo.CstrMem.__ram.uh[(( pMadr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
+            let rl = mem.ram.uh[(( pMadr) & (mem.ram.uh.byteLength - 1)) >>> 1];
             pMadr += 2;
             blk.raw[blk.index] = iq[0] * (((((rl) << 22) >> 22) << 0 >> 0));
 
@@ -2243,7 +2231,7 @@ pseudo.CstrMdec = (function() {
             const qScale = rl >> 10;
 
             while(true) {
-                rl = pseudo.CstrMem.__ram.uh[(( pMadr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
+                rl = mem.ram.uh[(( pMadr) & (mem.ram.uh.byteLength - 1)) >>> 1];
                 pMadr += 2;
                 
                 if (rl == 0xfe00) {
@@ -2320,10 +2308,10 @@ pseudo.CstrMdec = (function() {
                     let iR = ((0x0000059b * (cr)) >> 10);
                     
                     const idxY = indexY + (i * 16); let data;
-                    data = blk.raw[idxY + 0]; pseudo.CstrMem.__ram.ub[(((photo + ((0x00 + (i * 2)) * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + ((0x00 + (i * 2)) * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + ((0x00 + (i * 2)) * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
-                    data = blk.raw[idxY + 1]; pseudo.CstrMem.__ram.ub[(((photo + ((0x01 + (i * 2)) * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + ((0x01 + (i * 2)) * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + ((0x01 + (i * 2)) * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
-                    data = blk.raw[idxY + 8]; pseudo.CstrMem.__ram.ub[(((photo + ((0x10 + (i * 2)) * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + ((0x10 + (i * 2)) * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + ((0x10 + (i * 2)) * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
-                    data = blk.raw[idxY + 9]; pseudo.CstrMem.__ram.ub[(((photo + ((0x11 + (i * 2)) * 3 + 0))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + ((0x11 + (i * 2)) * 3 + 1))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; pseudo.CstrMem.__ram.ub[(((photo + ((0x11 + (i * 2)) * 3 + 2))) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
+                    data = blk.raw[idxY + 0]; mem.ram.ub[(((photo + ((0x00 + (i * 2)) * 3 + 0))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; mem.ram.ub[(((photo + ((0x00 + (i * 2)) * 3 + 1))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; mem.ram.ub[(((photo + ((0x00 + (i * 2)) * 3 + 2))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
+                    data = blk.raw[idxY + 1]; mem.ram.ub[(((photo + ((0x01 + (i * 2)) * 3 + 0))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; mem.ram.ub[(((photo + ((0x01 + (i * 2)) * 3 + 1))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; mem.ram.ub[(((photo + ((0x01 + (i * 2)) * 3 + 2))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
+                    data = blk.raw[idxY + 8]; mem.ram.ub[(((photo + ((0x10 + (i * 2)) * 3 + 0))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; mem.ram.ub[(((photo + ((0x10 + (i * 2)) * 3 + 1))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; mem.ram.ub[(((photo + ((0x10 + (i * 2)) * 3 + 2))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
+                    data = blk.raw[idxY + 9]; mem.ram.ub[(((photo + ((0x11 + (i * 2)) * 3 + 0))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iB) + 128 + 256]; mem.ram.ub[(((photo + ((0x11 + (i * 2)) * 3 + 1))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iG) + 128 + 256]; mem.ram.ub[(((photo + ((0x11 + (i * 2)) * 3 + 2))) & (mem.ram.ub.byteLength - 1)) >>> 0] = tableNormalize[(data + iR) + 128 + 256];;
                 }
                 
                 indexCb += 1;
@@ -2361,12 +2349,12 @@ pseudo.CstrMdec = (function() {
 
                 case 4: // Status
                     if (data & 0x80000000) { // Reset
-                        pseudo.CstrMdec.reset();
+                        mdec.reset();
                     }
                     return;
             }
 
-            pseudo.CstrMain.error('MDEC Write: ' + (addr & 0xf) + ' <- ' + pseudo.CstrMain.hex(data));
+            psx.error('MDEC Write: ' + (addr & 0xf) + ' <- ' + psx.hex(data));
         },
 
         scopeR(addr) {
@@ -2378,19 +2366,19 @@ pseudo.CstrMdec = (function() {
                     return status;
             }
 
-            pseudo.CstrMain.error('MDEC Read: ' + (addr & 0xf));
+            psx.error('MDEC Read: ' + (addr & 0xf));
             return;
         },
 
         executeDMA(addr) {
-            let size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] >>> 16) * (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0xffff);
+            let size = (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] >>> 16) * (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0xffff);
 
-            switch(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) {
+            switch(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
                 case 0x1000200:
                     if (cmd & 0x08000000) { // YUV15
                     }
                     else { // YUV24
-                        let photo = pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
+                        let photo = mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2];
         
                         for (; size > 0; size -= (MDEC_BLOCK_NUM * 6) / 2, photo += (MDEC_BLOCK_NUM * 6) * 2) {
                             // Reset Block
@@ -2407,12 +2395,12 @@ pseudo.CstrMdec = (function() {
                 case 0x1000201:
                     if (cmd === 0x40000001) {
                         for (let i = 0; i < MDEC_BLOCK_NUM; i++) {
-                            iq[i] = (pseudo.CstrMem.__ram.ub[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] + i) & (pseudo.CstrMem.__ram.ub.byteLength - 1)) >>> 0] * aanscales[zscan[i]]) >> 12;
+                            iq[i] = (mem.ram.ub[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + i) & (mem.ram.ub.byteLength - 1)) >>> 0] * aanscales[zscan[i]]) >> 12;
                         }
                     }
 
                     if ((cmd & 0xf5ff0000) === 0x30000000) { // Pointer
-                        pMadr = pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2];
+                        pMadr = mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                     }
                     return;
 
@@ -2421,23 +2409,19 @@ pseudo.CstrMdec = (function() {
                     return;
             }
 
-            pseudo.CstrMain.error('MDEC DMA: ' + pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]));
+            psx.error('MDEC DMA: ' + psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
         }
     };
-})();
+};
+
+const mdec = new pseudo.CstrMdec();
 
 
 
 
 
 
-
-
-
-
-
-
-pseudo.CstrMem = (function() {
+pseudo.CstrMem = function() {
     // This mask unifies the RAM mirrors (0, 8, A) into one unique case
     const MEM_MASK = 0x00ffffff;
     
@@ -2449,79 +2433,74 @@ pseudo.CstrMem = (function() {
     const PSX_EXE_HEADER_SIZE = 0x800;
 
     return {
-        __ram: union(0x200000),
-        __rom: union(0x80000),
-        __hwr: union(0x4000),
+        ram: union(0x200000),
+        rom: union(0x80000),
+        hwr: union(0x4000),
 
         reset() {
             // Reset all, except for BIOS
-            pseudo.CstrMem.__ram.ub.fill(0);
-            pseudo.CstrMem.__hwr.ub.fill(0);
+            mem.ram.ub.fill(0);
+            mem.hwr.ub.fill(0);
         },
 
         writeROM(data) {
-            pseudo.CstrMem.__rom.ub.set(new Uint8Array(data));
+            mem.rom.ub.set(new Uint8Array(data));
         },
 
         writeExecutable(data) {
             const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
-            const offset = header[2 + 4] & (pseudo.CstrMem.__ram.ub.byteLength - 1); // Offset needs boundaries... huh?
+            const offset = header[2 + 4] & (mem.ram.ub.byteLength - 1); // Offset needs boundaries... huh?
             const size   = header[2 + 5];
 
-            pseudo.CstrMem.__ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE, size), offset);
+            mem.ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE, size), offset);
 
             return header;
         },
 
         write: {
             w(addr, data) {
-                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (pseudo.CstrMips.writeOK()) { pseudo.CstrMem.__ram. uw[((addr) & (pseudo.CstrMem.__ram. uw.byteLength - 1)) >>> 2] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { pseudo.CstrMem.__hwr. uw[((addr) & (pseudo.CstrMem.__hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { pseudo.CstrHardware.write. w(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } pseudo.CstrMain.error('Mem W ' +  32 + ' ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (cpu.writeOK()) { mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { io.write. w(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  32 + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             },
 
             h(addr, data) {
-                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (pseudo.CstrMips.writeOK()) { pseudo.CstrMem.__ram. uh[((addr) & (pseudo.CstrMem.__ram. uh.byteLength - 1)) >>> 1] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { pseudo.CstrMem.__hwr. uh[((addr) & (pseudo.CstrMem.__hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { pseudo.CstrHardware.write. h(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } pseudo.CstrMain.error('Mem W ' +  16 + ' ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (cpu.writeOK()) { mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { io.write. h(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  16 + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             },
 
             b(addr, data) {
-                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (pseudo.CstrMips.writeOK()) { pseudo.CstrMem.__ram. ub[((addr) & (pseudo.CstrMem.__ram. ub.byteLength - 1)) >>> 0] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { pseudo.CstrMem.__hwr. ub[((addr) & (pseudo.CstrMem.__hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { pseudo.CstrHardware.write. b(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } pseudo.CstrMain.error('Mem W ' +  08 + ' ' + pseudo.CstrMain.hex(addr) + ' <- ' + pseudo.CstrMain.hex(data));
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { if (cpu.writeOK()) { mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; } return; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { io.write. b(addr & 0xffff, data); return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  08 + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             }
         },
 
         read: {
             w(addr) {
-                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return pseudo.CstrMem.__ram. uw[((addr) & (pseudo.CstrMem.__ram. uw.byteLength - 1)) >>> 2]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return pseudo.CstrMem.__hwr. uw[((addr) & (pseudo.CstrMem.__hwr. uw.byteLength - 1)) >>> 2]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return pseudo.CstrHardware.read. w(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return pseudo.CstrMem.__rom. uw[((addr) & (pseudo.CstrMem.__rom. uw.byteLength - 1)) >>> 2]; } if ((addr) == 0xfffe0130) { return 0; } pseudo.CstrMain.error('Mem R ' +  32 + ' ' + pseudo.CstrMain.hex(addr)); return 0;
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return io.read. w(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return mem.rom. uw[((addr) & (mem.rom. uw.byteLength - 1)) >>> 2]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  32 + ' ' + psx.hex(addr)); return 0;
             },
 
             h(addr) {
-                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return pseudo.CstrMem.__ram. uh[((addr) & (pseudo.CstrMem.__ram. uh.byteLength - 1)) >>> 1]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return pseudo.CstrMem.__hwr. uh[((addr) & (pseudo.CstrMem.__hwr. uh.byteLength - 1)) >>> 1]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return pseudo.CstrHardware.read. h(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return pseudo.CstrMem.__rom. uh[((addr) & (pseudo.CstrMem.__rom. uh.byteLength - 1)) >>> 1]; } if ((addr) == 0xfffe0130) { return 0; } pseudo.CstrMain.error('Mem R ' +  16 + ' ' + pseudo.CstrMain.hex(addr)); return 0;
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return io.read. h(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return mem.rom. uh[((addr) & (mem.rom. uh.byteLength - 1)) >>> 1]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  16 + ' ' + psx.hex(addr)); return 0;
             },
 
             b(addr) {
-                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return pseudo.CstrMem.__ram. ub[((addr) & (pseudo.CstrMem.__ram. ub.byteLength - 1)) >>> 0]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return pseudo.CstrMem.__hwr. ub[((addr) & (pseudo.CstrMem.__hwr. ub.byteLength - 1)) >>> 0]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return pseudo.CstrHardware.read. b(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return pseudo.CstrMem.__rom. ub[((addr) & (pseudo.CstrMem.__rom. ub.byteLength - 1)) >>> 0]; } if ((addr) == 0xfffe0130) { return 0; } pseudo.CstrMain.error('Mem R ' +  08 + ' ' + pseudo.CstrMain.hex(addr)); return 0;
+                if ((addr & MEM_MASK) < MEM_BOUNDS_RAM) { return mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0]; } if ((addr & MEM_MASK) < MEM_BOUNDS_SCR) { return mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0]; } if ((addr & MEM_MASK) < MEM_BOUNDS_HWR) { return io.read. b(addr & 0xffff); } if ((addr & MEM_MASK) < MEM_BOUNDS_ROM) { return mem.rom. ub[((addr) & (mem.rom. ub.byteLength - 1)) >>> 0]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  08 + ' ' + psx.hex(addr)); return 0;
             }
         },
 
         executeDMA(addr) {
-            if (!pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] || pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] !== 0x11000002) {
+            if (!mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] || mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] !== 0x11000002) {
                 return;
             }
-            pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] &= 0xffffff;
+            mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] &= 0xffffff;
 
-            while(--pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) {
-                pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) & (pseudo.CstrMem.__ram.uw.byteLength - 1)) >>> 2] = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] - 4) & 0xffffff;
-                pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] -= 4;
+            while(--mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
+                mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2] = (mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] - 4) & 0xffffff;
+                mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] -= 4;
             }
-            pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) & (pseudo.CstrMem.__ram.uw.byteLength - 1)) >>> 2] = 0xffffff;
+            mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2] = 0xffffff;
         }
     };
-})();
+};
 
-
-
-
-
-
-
+const mem = new pseudo.CstrMem();
 
 
 
@@ -2573,7 +2552,7 @@ pseudo.CstrMem = (function() {
 
 
 
-pseudo.CstrMips = (function() {
+pseudo.CstrMips = function() {
     // SW & LW tables
     const mask = [
         [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
@@ -2641,7 +2620,7 @@ pseudo.CstrMips = (function() {
 
                     case 8: // JR
                         branch(base[((code >>> 21) & 0x1f)]);
-                        ptr = base[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+                        ptr = base[32] >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
                         consoleOutput();
                         return;
 
@@ -2720,7 +2699,7 @@ pseudo.CstrMips = (function() {
                         return;
                 }
 
-                pseudo.CstrMain.error('Special CPU instruction ' + (code & 0x3f));
+                psx.error('Special CPU instruction ' + (code & 0x3f));
                 return;
 
             case 1: // REGIMM
@@ -2744,7 +2723,7 @@ pseudo.CstrMips = (function() {
                         return;
                 }
 
-                pseudo.CstrMain.error('Bcond CPU instruction ' + ((code >>> 16) & 0x1f));
+                psx.error('Bcond CPU instruction ' + ((code >>> 16) & 0x1f));
                 return;
 
             case 3: // JAL
@@ -2822,71 +2801,71 @@ pseudo.CstrMips = (function() {
                         return;
                 }
 
-                pseudo.CstrMain.error('Coprocessor 0 instruction ' + ((code >>> 21) & 0x1f));
+                psx.error('Coprocessor 0 instruction ' + ((code >>> 21) & 0x1f));
                 return;
 
             case 18: // COP2
-                pseudo.CstrCop2.execute(code);
+                cop2.execute(code);
                 return;
 
             case 32: // LB
-                base[((code >>> 16) & 0x1f)] = ((pseudo.CstrMem.read.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
+                base[((code >>> 16) & 0x1f)] = ((mem.read.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
                 return;
 
             case 33: // LH
-                base[((code >>> 16) & 0x1f)] = ((pseudo.CstrMem.read.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
+                base[((code >>> 16) & 0x1f)] = ((mem.read.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
                 return;
 
             case 34: // LWL
-                base[((code >>> 16) & 0x1f)] = (base[((code >>> 16) & 0x1f)] & mask[ 0][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) << shift[ 0][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
+                base[((code >>> 16) & 0x1f)] = (base[((code >>> 16) & 0x1f)] & mask[ 0][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (mem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) << shift[ 0][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
                 return;
 
             case 35: // LW
-                base[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[((code >>> 16) & 0x1f)] = mem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
 
             case 36: // LBU
-                base[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[((code >>> 16) & 0x1f)] = mem.read.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
 
             case 37: // LHU
-                base[((code >>> 16) & 0x1f)] = pseudo.CstrMem.read.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[((code >>> 16) & 0x1f)] = mem.read.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
 
             case 38: // LWR
-                base[((code >>> 16) & 0x1f)] = (base[((code >>> 16) & 0x1f)] & mask[ 1][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) >>> shift[ 1][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
+                base[((code >>> 16) & 0x1f)] = (base[((code >>> 16) & 0x1f)] & mask[ 1][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (mem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) >>> shift[ 1][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]);
                 return;
 
             case 40: // SB
-                pseudo.CstrMem.write.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
+                mem.write.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
                 return;
 
             case 41: // SH
-                pseudo.CstrMem.write.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
+                mem.write.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
                 return;
 
             case 42: // SWL
-                pseudo.CstrMem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (base[((code >>> 16) & 0x1f)] >>> shift[ 2][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
+                mem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (base[((code >>> 16) & 0x1f)] >>> shift[ 2][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (mem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
                 return;
 
             case 43: // SW
-                pseudo.CstrMem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
+                mem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
                 return;
 
             case 46: // SWR
-                pseudo.CstrMem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (base[((code >>> 16) & 0x1f)] << shift[ 3][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
+                mem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (base[((code >>> 16) & 0x1f)] << shift[ 3][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (mem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][(base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
                 return;
 
             case 50: // LWC2
-                pseudo.CstrCop2.opcodeMTC2(((code >>> 16) & 0x1f), pseudo.CstrMem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
+                cop2.opcodeMTC2(((code >>> 16) & 0x1f), mem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
                 return;
 
             case 58: // SWC2
-                pseudo.CstrMem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), pseudo.CstrCop2.opcodeMFC2(((code >>> 16) & 0x1f)));
+                mem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cop2.opcodeMFC2(((code >>> 16) & 0x1f)));
                 return;
         }
 
-        pseudo.CstrMain.error('Basic CPU instruction ' + ((code >>> 26) & 0x3f));
+        psx.error('Basic CPU instruction ' + ((code >>> 26) & 0x3f));
     }
 
     function branch(addr) {
@@ -2901,7 +2880,7 @@ pseudo.CstrMips = (function() {
         copr[14] = base[32];
 
         base[32] = 0x80;
-        ptr = base[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+        ptr = base[32] >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
     }
 
     function consoleOutput() {
@@ -2921,7 +2900,7 @@ pseudo.CstrMips = (function() {
 
         reset() {
             // Break emulation loop
-            pseudo.CstrMips.pause();
+            cpu.pause();
             divOutput.text(' ');
 
             // Reset processors
@@ -2933,35 +2912,35 @@ pseudo.CstrMips = (function() {
 
             opcodeCount = 0;
             base[32] = 0xbfc00000;
-            ptr = base[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+            ptr = base[32] >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
         },
 
         bootstrap() {
-            pseudo.CstrMips.consoleWrite('info', 'BIOS file has been written to ROM');
+            cpu.consoleWrite('info', 'BIOS file has been written to ROM');
             const start = performance.now();
 
             while(base[32] !== 0x80030000) {
                 step(false);
             }
             const delta = parseFloat(performance.now() - start).toFixed(2);
-            pseudo.CstrMips.consoleWrite('info', 'Bootstrap completed in ' + delta + ' ms');
+            cpu.consoleWrite('info', 'Bootstrap completed in ' + delta + ' ms');
         },
 
         run() {
             suspended = false;
-            requestAF = requestAnimationFrame(pseudo.CstrMips.run); //setTimeout(pseudo.CstrMips.run, 0);
+            requestAF = requestAnimationFrame(cpu.run); //setTimeout(cpu.run, 0);
 
             while(!suspended) { // And u don`t stop!
                 step(false);
 
                 if (opcodeCount >= 100) {
                     // Rootcounters, interrupts
-                    pseudo.CstrCounters.update(64);
-                      pseudo.CstrCdrom.update();
-                    pseudo.CstrBus.interruptsUpdate();
+                    rootcnt.update(64);
+                      cdrom.update();
+                    bus.interruptsUpdate();
     
                     // Exceptions
-                    if (pseudo.CstrMem.__hwr.uw[((0x1070) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & pseudo.CstrMem.__hwr.uw[((0x1074) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) {
+                    if (mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
                         if ((copr[12] & 0x401) === 0x401) {
                             exception(0x400, false);
                         }
@@ -2975,7 +2954,7 @@ pseudo.CstrMips = (function() {
             base[28] = header[2 + 3];
             base[29] = header[2 + 10];
             base[32] = header[2 + 2];
-            ptr = base[32] >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+            ptr = base[32] >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
         },
 
         writeOK() {
@@ -3006,24 +2985,23 @@ pseudo.CstrMips = (function() {
         },
 
         resume() {
-            pseudo.CstrMips.run();
+            cpu.run();
         },
 
         setpc(addr) {
-            ptr = addr >>> 20 === 0xbfc ? pseudo.CstrMem.__rom.uw : pseudo.CstrMem.__ram.uw;
+            ptr = addr >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
         }
     };
-})();
+};
 
 
 
 
 
+const cpu = new pseudo.CstrMips();
 
 
-
-
-pseudo.CstrMain = (function() {
+pseudo.CstrMain = function() {
     let divDropzone;
     let iso;
 
@@ -3032,7 +3010,7 @@ pseudo.CstrMain = (function() {
         const xhr = new XMLHttpRequest();
         xhr.onload = function() {
             if (xhr.status === 404) {
-                pseudo.CstrMips.consoleWrite('error', 'Unable to read file "' + path + '"');
+                cpu.consoleWrite('error', 'Unable to read file "' + path + '"');
             }
             else {
                 fn(xhr.response);
@@ -3066,29 +3044,29 @@ pseudo.CstrMain = (function() {
     }
 
     function executable(resp) {
-        // Set pseudo.CstrMem & processor
-        pseudo.CstrMips.parseExeHeader(
-            pseudo.CstrMem.writeExecutable(resp)
+        // Set mem & processor
+        cpu.parseExeHeader(
+            mem.writeExecutable(resp)
         );
-        pseudo.CstrMips.consoleWrite('info', 'PSX-EXE has been transferred to RAM');
+        cpu.consoleWrite('info', 'PSX-EXE has been transferred to RAM');
     }
 
     function reset() {
         // Reset all emulator components
-          pseudo.CstrAudio.reset();
-            pseudo.CstrBus.reset();
-          pseudo.CstrCdrom.reset();
-           pseudo.CstrCop2.reset();
-            pseudo.CstrMips.reset();
-           pseudo.CstrMdec.reset();
-            pseudo.CstrMem.reset();
-         pseudo.CstrRender.reset();
-        pseudo.CstrCounters.reset();
-            pseudo.CstrSerial.reset();
-             pseudo.CstrGraphics.reset();
+          audio.reset();
+            bus.reset();
+          cdrom.reset();
+           cop2.reset();
+            cpu.reset();
+           mdec.reset();
+            mem.reset();
+         render.reset();
+        rootcnt.reset();
+            sio.reset();
+             vs.reset();
 
         // CPU Bootstrap
-        pseudo.CstrMips.bootstrap();
+        cpu.bootstrap();
     }
 
     // Exposed class functions/variables
@@ -3097,14 +3075,14 @@ pseudo.CstrMain = (function() {
             divDropzone = dropzone;
             unusable = false;
       
-            pseudo.CstrRender.awake(screen, res);
-             pseudo.CstrAudio.awake();
-             pseudo.CstrCdrom.awake(blink, kb);
-               pseudo.CstrMips.awake(output);
+            render.awake(screen, res);
+             audio.awake();
+             cdrom.awake(blink, kb);
+               cpu.awake(output);
 
             request('bios/scph1001.bin', function(resp) {
                 // Completed
-                pseudo.CstrMem.writeROM(resp);
+                mem.writeROM(resp);
             });
         },
 
@@ -3116,7 +3094,7 @@ pseudo.CstrMain = (function() {
                     reader.onload = function(e) { // Callback
                         reset();
                         executable(e.target.result);
-                        pseudo.CstrMips.run();
+                        cpu.run();
                     };
                     // Read file
                     reader.readAsArrayBuffer(file);
@@ -3129,9 +3107,9 @@ pseudo.CstrMain = (function() {
                     chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
                         reset();
                         iso = file;
-                        pseudo.CstrMips.setbase(32, pseudo.CstrMips.readbase(31));
-                        pseudo.CstrMips.setpc(pseudo.CstrMips.readbase(32));
-                        pseudo.CstrMips.run();
+                        cpu.setbase(32, cpu.readbase(31));
+                        cpu.setpc(cpu.readbase(32));
+                        cpu.run();
                     });
                 }
             });
@@ -3140,12 +3118,12 @@ pseudo.CstrMain = (function() {
         drop: {
             file(e) {
                 e.preventDefault();
-                pseudo.CstrMain.drop.exit();
+                psx.drop.exit();
         
                 const dt = e.dataTransfer;
 
                 if (dt.files) {
-                    pseudo.CstrMain.openFile(dt.files[0]);
+                    psx.openFile(dt.files[0]);
                 }
             },
 
@@ -3183,12 +3161,14 @@ pseudo.CstrMain = (function() {
             const size   = (2352 - 12);
 
             chunkReader(iso, offset, size, 'raw', function(data) {
-                pseudo.CstrCdrom.interruptRead2(new Uint8Array(data));
+                cdrom.interruptRead2(new Uint8Array(data));
                 // slice(0, DATASIZE)
             });
         }
     };
-})();
+};
+
+const psx = new pseudo.CstrMain();
 
 
 
@@ -3239,7 +3219,7 @@ pseudo.CstrMain = (function() {
 
 
 
-pseudo.CstrRender = (function() {
+pseudo.CstrRender = function() {
     let ctx, attrib, bfr, divRes; // 'webgl', { preserveDrawingBuffer: true } Context
     let blend, bit, ofs;
     let drawArea, spriteTP;
@@ -3415,7 +3395,7 @@ pseudo.CstrRender = (function() {
             );
         }
 
-        pseudo.CstrTexCache.fetchTexture(ctx, p.tp[1], p.tp[0]);
+        tcache.fetchTexture(ctx, p.tp[1], p.tp[0]);
         drawScene(color, vertex, texture, ctx.TRIANGLE_STRIP, size);
     }
 
@@ -3451,7 +3431,7 @@ pseudo.CstrRender = (function() {
             );
         }
 
-        pseudo.CstrTexCache.fetchTexture(ctx, p.tp[1], p.tp[0]);
+        tcache.fetchTexture(ctx, p.tp[1], p.tp[0]);
         drawScene(color, vertex, texture, ctx.TRIANGLE_STRIP, size);
     }
 
@@ -3540,7 +3520,7 @@ pseudo.CstrRender = (function() {
             p.tx[0].u + p.vx[1].h, p.tx[0].v + p.vx[1].v,
         ];
 
-        pseudo.CstrTexCache.fetchTexture(ctx, spriteTP, p.tp[0]);
+        tcache.fetchTexture(ctx, spriteTP, p.tp[0]);
         drawScene(color, vertex, texture, ctx.TRIANGLE_STRIP, 4);
     }
 
@@ -3591,7 +3571,7 @@ pseudo.CstrRender = (function() {
             ];
 
             // Texture Cache
-            pseudo.CstrTexCache.init();
+            tcache.init();
         },
 
         reset() {
@@ -3610,8 +3590,8 @@ pseudo.CstrRender = (function() {
             };
 
             // Texture Cache
-            pseudo.CstrTexCache.reset(ctx);
-            pseudo.CstrRender.resize({ w: 640, h: 480 });
+            tcache.reset(ctx);
+            render.resize({ w: 640, h: 480 });
         },
 
         swapBuffers(clear) {
@@ -3634,7 +3614,7 @@ pseudo.CstrRender = (function() {
               
                 ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
                 ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
-                pseudo.CstrRender.swapBuffers(true);
+                render.swapBuffers(true);
     
                 divRes.innerText = res.w + ' x ' + res.h;
             }
@@ -3731,7 +3711,7 @@ pseudo.CstrRender = (function() {
             // Operations
             switch(addr) {
                 case 0x01: // FLUSH
-                    pseudo.CstrGraphics.scopeW(0x1f801814, 0x01000000);
+                    vs.scopeW(0x1f801814, 0x01000000);
                     return;
 
                 case 0x02: // BLOCK FILL
@@ -3764,11 +3744,11 @@ pseudo.CstrRender = (function() {
                     return;
 
                 case 0xa0: // LOAD IMAGE
-                    pseudo.CstrGraphics.photoRead(data);
+                    vs.photoRead(data);
                     return;
 
                 case 0xc0: // STORE IMAGE
-                    pseudo.CstrGraphics.photoWrite(data);
+                    vs.photoWrite(data);
                     return;
 
                 case 0xe1: // TEXTURE PAGE
@@ -3811,7 +3791,7 @@ pseudo.CstrRender = (function() {
                     return;
             }
 
-            pseudo.CstrMain.error('GPU Render Primitive ' + pseudo.CstrMain.hex(addr));
+            psx.error('GPU Render Primitive ' + psx.hex(addr));
         },
 
         outputVRAM(raw, bit24, iX, iY, iW, iH) {
@@ -3865,7 +3845,9 @@ pseudo.CstrRender = (function() {
             disableTexture();
         }
     };
-})();
+};
+
+const render = new pseudo.CstrRender();
 
 
 
@@ -3886,7 +3868,7 @@ pseudo.CstrRender = (function() {
 
 
 
-pseudo.CstrSerial = (function() {
+pseudo.CstrSerial = function() {
   const PAD_BTN_SELECT   =  0;
   const PAD_BTN_START    =  3;
   const PAD_BTN_UP       =  4;
@@ -3949,7 +3931,7 @@ pseudo.CstrSerial = (function() {
             baud = data;
             return;
         }
-        pseudo.CstrMain.error('SIO write h '+pseudo.CstrMain.hex(addr)+' <- '+pseudo.CstrMain.hex(data));
+        psx.error('SIO write h '+psx.hex(addr)+' <- '+psx.hex(data));
       },
 
       b(addr, data) {
@@ -3971,18 +3953,18 @@ pseudo.CstrSerial = (function() {
                       break;
 
                     default:
-                      console.dir('SIO write b data '+pseudo.CstrMain.hex(data));
+                      console.dir('SIO write b data '+psx.hex(data));
                       break;
                   }
                 }
-                pseudo.CstrBus.interruptSet(7);
+                bus.interruptSet(7);
                 return;
 
               case 2:
                 parp++;
                 
                 if (parp !== 5) {
-                  pseudo.CstrBus.interruptSet(7);
+                  bus.interruptSet(7);
                 }
                 else {
                   padst = 0;
@@ -3999,7 +3981,7 @@ pseudo.CstrSerial = (function() {
               if (control & 0x002) {
                 switch (control) {
                   case 0x1003:
-                    pseudo.CstrBus.interruptSet(7);
+                    bus.interruptSet(7);
                     break;
 
                   case 0x3003:
@@ -4012,7 +3994,7 @@ pseudo.CstrSerial = (function() {
             }
             return;
         }
-        pseudo.CstrMain.error('SIO write b '+pseudo.CstrMain.hex(addr)+' <- '+pseudo.CstrMain.hex(data));
+        psx.error('SIO write b '+psx.hex(addr)+' <- '+psx.hex(data));
       }
     },
 
@@ -4028,7 +4010,7 @@ pseudo.CstrSerial = (function() {
           case 0x104e:
             return baud;
         }
-        pseudo.CstrMain.error('SIO read h '+pseudo.CstrMain.hex(addr));
+        psx.error('SIO read h '+psx.hex(addr));
       },
 
       b(addr) {
@@ -4046,7 +4028,7 @@ pseudo.CstrSerial = (function() {
               return bfr[parp];
             }
         }
-        pseudo.CstrMain.error('SIO read b '+pseudo.CstrMain.hex(addr));
+        psx.error('SIO read b '+psx.hex(addr));
       }
     },
 
@@ -4087,15 +4069,15 @@ pseudo.CstrSerial = (function() {
       bfr[4] = (btnState >>> 8) & 0xff;
     }
   };
-})();
+};
+
+const sio = new pseudo.CstrSerial();
 
 
 
 
 
-
-
-pseudo.CstrTexCache = (function() {
+pseudo.CstrTexCache = function() {
     const TEX_04BIT   = 0;
     const TEX_08BIT   = 1;
     const TEX_15BIT   = 2;
@@ -4169,13 +4151,13 @@ pseudo.CstrTexCache = (function() {
             switch((tp >>> 7) & 3) {
                 case TEX_04BIT: // 16 color palette
                     for (let i = 0; i < 16; i++) {
-                        tex.cc[i] = pseudo.CstrTexCache.pixel2texel(pseudo.CstrGraphics.__vram.uh[tc.pos.cc]);
+                        tex.cc[i] = tcache.pixel2texel(vs.vram.uh[tc.pos.cc]);
                         tc.pos.cc++;
                     }
 
                     for (let h = 0, idx = 0; h < 256; h++) {
                         for (let w = 0; w < (256 / 4); w++) {
-                            const p = pseudo.CstrGraphics.__vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
+                            const p = vs.vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
                             tex.bfr.uw[idx++] = tex.cc[(p >>>  0) & 15];
                             tex.bfr.uw[idx++] = tex.cc[(p >>>  4) & 15];
                             tex.bfr.uw[idx++] = tex.cc[(p >>>  8) & 15];
@@ -4186,13 +4168,13 @@ pseudo.CstrTexCache = (function() {
 
                 case TEX_08BIT: // 256 color palette
                     for (let i = 0; i < 256; i++) {
-                        tex.cc[i] = pseudo.CstrTexCache.pixel2texel(pseudo.CstrGraphics.__vram.uh[tc.pos.cc]);
+                        tex.cc[i] = tcache.pixel2texel(vs.vram.uh[tc.pos.cc]);
                         tc.pos.cc++;
                     }
 
                     for (let h = 0, idx = 0; h < 256; h++) {
                         for (let w = 0; w < (256 / 2); w++) {
-                            const p = pseudo.CstrGraphics.__vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
+                            const p = vs.vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
                             tex.bfr.uw[idx++] = tex.cc[(p >>> 0) & 255];
                             tex.bfr.uw[idx++] = tex.cc[(p >>> 8) & 255];
                         }
@@ -4203,8 +4185,8 @@ pseudo.CstrTexCache = (function() {
                 case TEX_15BIT_2: // Seen on some rare cases
                     for (let h = 0, idx = 0; h < 256; h++) {
                         for (let w = 0; w < 256; w++) {
-                            const p = pseudo.CstrGraphics.__vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
-                            tex.bfr.uw[idx++] = pseudo.CstrTexCache.pixel2texel(p);
+                            const p = vs.vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
+                            tex.bfr.uw[idx++] = tcache.pixel2texel(p);
                         }
                     }
                     break;
@@ -4235,19 +4217,15 @@ pseudo.CstrTexCache = (function() {
             }
         }
     };
-})();
+};
+
+const tcache = new pseudo.CstrTexCache();
 
 
 
 
 
-
-
-
-
-
-
-pseudo.CstrGraphics = (function() {
+pseudo.CstrGraphics = function() {
     // Constants
     const GPU_STAT_ODDLINES         = 0x80000000;
     const GPU_STAT_DMABITS          = 0x60000000;
@@ -4332,7 +4310,7 @@ pseudo.CstrGraphics = (function() {
                     addr += i;
                 }
         
-                ret.data = stream ? pseudo.CstrMem.__ram.uw[(( addr) & (pseudo.CstrMem.__ram.uw.byteLength - 1)) >>> 2] : addr;
+                ret.data = stream ? mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] : addr;
                 addr += 4;
                 i++;
 
@@ -4367,7 +4345,7 @@ pseudo.CstrGraphics = (function() {
                     pipe.size = 0;
                     pipe.row  = 0;
 
-                    pseudo.CstrRender.draw(pipe.prim, pipe.data);
+                    render.draw(pipe.prim, pipe.data);
                 }
             }
         },
@@ -4377,10 +4355,10 @@ pseudo.CstrGraphics = (function() {
                 ret.status &= (~(0x14000000));
 
                 do {
-                    const vramValue = pseudo.CstrGraphics.__vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
+                    const vramValue = vs.vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
 
                     if (stream) {
-                        pseudo.CstrMem.__ram.uw[(( addr) & (pseudo.CstrMem.__ram.uw.byteLength - 1)) >>> 2] = vramValue;
+                        mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] = vramValue;
                     }
                     else {
                         ret.data = vramValue;
@@ -4415,24 +4393,24 @@ pseudo.CstrGraphics = (function() {
 
         while (vrop.v.p < vrop.v.end) {
             while (vrop.h.p < vrop.h.end) {
-                // Keep position of pseudo.CstrGraphics.__vram
-                const ramValue = pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
+                // Keep position of vram
+                const ramValue = mem.ram.uh[(( addr) & (mem.ram.uh.byteLength - 1)) >>> 1];
 
                 if (isVideo24Bit) {
                     vrop.raw.uh[count] = ramValue;
                 }
                 else {
-                    vrop.raw.uw[count] = pseudo.CstrTexCache.pixel2texel(ramValue);
+                    vrop.raw.uw[count] = tcache.pixel2texel(ramValue);
                 }
 
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
                 const pos = (vrop.v.p << 10) + vrop.h.p;
                 if (stream) {
-                    pseudo.CstrGraphics.__vram.uh[pos] = ramValue;
+                    vs.vram.uh[pos] = ramValue;
                 }
                 else { // A dumb hack for now
                     if (!(count % 2)) {
-                        pseudo.CstrGraphics.__vram.uw[pos >>> 1] = addr;
+                        vs.vram.uw[pos >>> 1] = addr;
                     }
                 }
                 addr += 2;
@@ -4455,7 +4433,7 @@ pseudo.CstrGraphics = (function() {
 
     function fetchEnd(count) {
         if (vrop.v.p >= vrop.v.end) {
-            pseudo.CstrRender.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
+            render.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
 
             vrop.enabled = false;
             vrop.raw.ub.fill(0);
@@ -4487,10 +4465,10 @@ pseudo.CstrGraphics = (function() {
 
     // Exposed class functions/variables
     return {
-        __vram: union(1024 * 512 * 2),
+        vram: union(1024 * 512 * 2),
 
         reset() {
-            pseudo.CstrGraphics.__vram.uh.fill(0);
+            vs.vram.uh.fill(0);
             ret.data     = 0x400;
             ret.status   = GPU_STAT_READYFORCOMMANDS | GPU_STAT_IDLE | GPU_STAT_DISPLAYDISABLED | 0x2000;
             modeDMA      = GPU_DMA_NONE;
@@ -4517,7 +4495,7 @@ pseudo.CstrGraphics = (function() {
 
         redraw() {
             ret.status ^= GPU_STAT_ODDLINES;
-            pseudo.CstrRender.swapBuffers(disabled);
+            render.swapBuffers(disabled);
         },
 
         scopeW(addr, data) {
@@ -4565,11 +4543,11 @@ pseudo.CstrGraphics = (function() {
                                 const h = (data & 4) ? 480 : 240;
                 
                                 if (((data >>> 5) & 1) || h == vdiff) { // No distinction for interlaced & normal mode
-                                    pseudo.CstrRender.resize({ w: w, h: h });
+                                    render.resize({ w: w, h: h });
                                 }
                                 else { // Special cases
                                     vdiff = vdiff == 226 ? 240 : vdiff; // pdx-059, wurst2k
-                                    pseudo.CstrRender.resize({ w: w, h: vpos ? vpos : vdiff });
+                                    render.resize({ w: w, h: vpos ? vpos : vdiff });
                                 }
                             }
                             return;
@@ -4588,7 +4566,7 @@ pseudo.CstrGraphics = (function() {
                             return;
                     }
 
-                    pseudo.CstrMain.error('GPU Write Status ' + pseudo.CstrMain.hex(((data >>> 24) & 0xff)));
+                    psx.error('GPU Write Status ' + psx.hex(((data >>> 24) & 0xff)));
                     return;
             }
         },
@@ -4605,22 +4583,22 @@ pseudo.CstrGraphics = (function() {
         },
 
         executeDMA(addr) {
-            const size = (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] >>> 16) * (pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 4) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] & 0xffff);
+            const size = (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] >>> 16) * (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0xffff);
 
-            switch(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) {
+            switch(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
                 case 0x01000200:
-                    dataMem.read(true, pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2], size);
+                    dataMem.read(true, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2], size);
                     return;
 
                 case 0x01000201:
-                    dataMem.write(true, pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2], size);
+                    dataMem.write(true, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2], size);
                     return;
 
                 case 0x01000401:
-                    while(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] !== 0xffffff) {
-                        const count = pseudo.CstrMem.__ram.uw[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) & (pseudo.CstrMem.__ram.uw.byteLength - 1)) >>> 2];
-                        dataMem.write(true, pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] + 4, count >>> 24);
-                        pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] = count & 0xffffff;
+                    while(mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] !== 0xffffff) {
+                        const count = mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2];
+                        dataMem.write(true, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + 4, count >>> 24);
+                        mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] = count & 0xffffff;
                     }
                     return;
 
@@ -4629,7 +4607,7 @@ pseudo.CstrGraphics = (function() {
                     return;
             }
 
-            pseudo.CstrMain.error('GPU DMA ' + pseudo.CstrMain.hex(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]));
+            psx.error('GPU DMA ' + psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
         },
 
         photoWrite(data) {
@@ -4649,9 +4627,10 @@ pseudo.CstrGraphics = (function() {
             modeDMA = GPU_DMA_MEM2VRAM;
 
             // Cache invalidation
-            pseudo.CstrTexCache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
+            tcache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
         }
     };
-})();
+};
 
+const vs = new pseudo.CstrGraphics();
 

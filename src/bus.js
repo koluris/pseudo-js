@@ -1,6 +1,6 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
-pseudo.CstrBus = (function() {
+pseudo.CstrBus = function() {
     // Interrupts
     const IRQ_ENABLED  = 1;
     const IRQ_DISABLED = 0;
@@ -92,4 +92,6 @@ pseudo.CstrBus = (function() {
             }
         }
     };
-})();
+};
+
+const bus = new pseudo.CstrBus();

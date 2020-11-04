@@ -43,65 +43,50 @@ function union(size) {
     };
 }
 
-#define audio   pseudo.CstrAudio
-#define bus     pseudo.CstrBus
-#define cdrom   pseudo.CstrCdrom
-#define cop2    pseudo.CstrCop2
-#define cpu     pseudo.CstrMips
-#define io      pseudo.CstrHardware
-#define mdec    pseudo.CstrMdec
-#define mem     pseudo.CstrMem
-#define psx     pseudo.CstrMain
-#define render  pseudo.CstrRender
-#define rootcnt pseudo.CstrCounters
-#define sio     pseudo.CstrSerial
-#define tcache  pseudo.CstrTexCache
-#define vs      pseudo.CstrGraphics
-
 /***
     Mem banks
 ***/
-#define directMemW(mem, addr) \
-    mem[((addr) & (mem.bSize - 1)) >>> 2]
+#define directMemW(module, addr) \
+    module[((addr) & (module.bSize - 1)) >>> 2]
 
-#define directMemH(mem, addr) \
-    mem[((addr) & (mem.bSize - 1)) >>> 1]
+#define directMemH(module, addr) \
+    module[((addr) & (module.bSize - 1)) >>> 1]
 
-#define directMemB(mem, addr) \
-    mem[((addr) & (mem.bSize - 1)) >>> 0]
+#define directMemB(module, addr) \
+    module[((addr) & (module.bSize - 1)) >>> 0]
 
 /***
     Hardware IO
 ***/
 #define data32 \
-    directMemW(mem.__hwr.uw, 0x1070)
+    directMemW(mem.hwr.uw, 0x1070)
 
 #define mask32 \
-    directMemW(mem.__hwr.uw, 0x1074)
+    directMemW(mem.hwr.uw, 0x1074)
 
 #define data16 \
-    directMemH(mem.__hwr.uh, 0x1070)
+    directMemH(mem.hwr.uh, 0x1070)
 
 #define mask16 \
-    directMemH(mem.__hwr.uh, 0x1074)
+    directMemH(mem.hwr.uh, 0x1074)
 
 #define dpcr \
-    directMemW(mem.__hwr.uw, 0x10f0)
+    directMemW(mem.hwr.uw, 0x10f0)
 
 #define dicr \
-    directMemW(mem.__hwr.uw, 0x10f4)
+    directMemW(mem.hwr.uw, 0x10f4)
 
 /***
     DMA
 ***/
 #define madr \
-    directMemW(mem.__hwr.uw, (addr & 0xfff0) | 0)
+    directMemW(mem.hwr.uw, (addr & 0xfff0) | 0)
 
 #define bcr \
-    directMemW(mem.__hwr.uw, (addr & 0xfff0) | 4)
+    directMemW(mem.hwr.uw, (addr & 0xfff0) | 4)
 
 #define chcr \
-    directMemW(mem.__hwr.uw, (addr & 0xfff0) | 8)
+    directMemW(mem.hwr.uw, (addr & 0xfff0) | 8)
 
 /***
     Mips processor

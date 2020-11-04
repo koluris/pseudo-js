@@ -1,11 +1,9 @@
 /* Base structure taken from FPSE open source emulator, and improved upon (Credits: BERO, LDChen) */
 
-#define vram vs.__vram
-
 #define COLOR_32BIT(a, b, c, r) \
     (((a) & 0xff) << 24) | (((b) & 0xff) << 16) | (((c) & 0xff) << 8) | ((r) & 0xff)
 
-pseudo.CstrTexCache = (function() {
+pseudo.CstrTexCache = function() {
     const TEX_04BIT   = 0;
     const TEX_08BIT   = 1;
     const TEX_15BIT   = 2;
@@ -79,13 +77,13 @@ pseudo.CstrTexCache = (function() {
             switch((tp >>> 7) & 3) {
                 case TEX_04BIT: // 16 color palette
                     for (let i = 0; i < 16; i++) {
-                        tex.cc[i] = tcache.pixel2texel(vram.uh[tc.pos.cc]);
+                        tex.cc[i] = tcache.pixel2texel(vs.vram.uh[tc.pos.cc]);
                         tc.pos.cc++;
                     }
 
                     for (let h = 0, idx = 0; h < 256; h++) {
                         for (let w = 0; w < (256 / 4); w++) {
-                            const p = vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
+                            const p = vs.vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
                             tex.bfr.uw[idx++] = tex.cc[(p >>>  0) & 15];
                             tex.bfr.uw[idx++] = tex.cc[(p >>>  4) & 15];
                             tex.bfr.uw[idx++] = tex.cc[(p >>>  8) & 15];
@@ -96,13 +94,13 @@ pseudo.CstrTexCache = (function() {
 
                 case TEX_08BIT: // 256 color palette
                     for (let i = 0; i < 256; i++) {
-                        tex.cc[i] = tcache.pixel2texel(vram.uh[tc.pos.cc]);
+                        tex.cc[i] = tcache.pixel2texel(vs.vram.uh[tc.pos.cc]);
                         tc.pos.cc++;
                     }
 
                     for (let h = 0, idx = 0; h < 256; h++) {
                         for (let w = 0; w < (256 / 2); w++) {
-                            const p = vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
+                            const p = vs.vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
                             tex.bfr.uw[idx++] = tex.cc[(p >>> 0) & 255];
                             tex.bfr.uw[idx++] = tex.cc[(p >>> 8) & 255];
                         }
@@ -113,7 +111,7 @@ pseudo.CstrTexCache = (function() {
                 case TEX_15BIT_2: // Seen on some rare cases
                     for (let h = 0, idx = 0; h < 256; h++) {
                         for (let w = 0; w < 256; w++) {
-                            const p = vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
+                            const p = vs.vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
                             tex.bfr.uw[idx++] = tcache.pixel2texel(p);
                         }
                     }
@@ -145,6 +143,6 @@ pseudo.CstrTexCache = (function() {
             }
         }
     };
-})();
+};
 
-#undef vram
+const tcache = new pseudo.CstrTexCache();

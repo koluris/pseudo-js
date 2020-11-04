@@ -1,7 +1,5 @@
 /* Base structure taken from FPSE open source emulator, and improved upon (Credits: BERO, LDChen) */
 
-#define ram  mem.__ram
-
 #define VALUE_OF(a) \
     (SIGN_EXT_32(((a) << 22) >> 22))
 
@@ -21,14 +19,14 @@
     tableNormalize[(a) + 128 + 256]
 
 #define RGB24_CL(a) \
-    directMemB(ram.ub, (photo + (a + 0))) = TABLE_NORM(data + iB); \
-    directMemB(ram.ub, (photo + (a + 1))) = TABLE_NORM(data + iG); \
-    directMemB(ram.ub, (photo + (a + 2))) = TABLE_NORM(data + iR); \
+    directMemB(mem.ram.ub, (photo + (a + 0))) = TABLE_NORM(data + iB); \
+    directMemB(mem.ram.ub, (photo + (a + 1))) = TABLE_NORM(data + iG); \
+    directMemB(mem.ram.ub, (photo + (a + 2))) = TABLE_NORM(data + iR); \
 
 #define MB_INDEX(a) \
     (idx + (kh * a))
 
-pseudo.CstrMdec = (function() {
+pseudo.CstrMdec = function() {
     const MDEC_BLOCK_NUM = 64;
 
     const zscan = [
@@ -63,7 +61,7 @@ pseudo.CstrMdec = (function() {
 
     function processBlock() {
         for (let i = 0; i < 6; i++, blk.index += MDEC_BLOCK_NUM) {
-            let rl = directMemH(ram.uh, pMadr);
+            let rl = directMemH(mem.ram.uh, pMadr);
             pMadr += 2;
             blk.raw[blk.index] = iq[0] * VALUE_OF(rl);
 
@@ -71,7 +69,7 @@ pseudo.CstrMdec = (function() {
             const qScale = rl >> 10;
 
             while(true) {
-                rl = directMemH(ram.uh, pMadr);
+                rl = directMemH(mem.ram.uh, pMadr);
                 pMadr += 2;
                 
                 if (rl == 0xfe00) {
@@ -235,7 +233,7 @@ pseudo.CstrMdec = (function() {
                 case 0x1000201:
                     if (cmd === 0x40000001) {
                         for (let i = 0; i < MDEC_BLOCK_NUM; i++) {
-                            iq[i] = (directMemB(ram.ub, madr + i) * aanscales[zscan[i]]) >> 12;
+                            iq[i] = (directMemB(mem.ram.ub, madr + i) * aanscales[zscan[i]]) >> 12;
                         }
                     }
 
@@ -252,6 +250,6 @@ pseudo.CstrMdec = (function() {
             psx.error('MDEC DMA: ' + psx.hex(chcr));
         }
     };
-})();
+};
 
-#undef ram
+const mdec = new pseudo.CstrMdec();
