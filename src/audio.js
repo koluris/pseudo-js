@@ -233,7 +233,7 @@ pseudo.CstrAudio = (function() {
                     return;
                     
                 case (addr == 0x1da8): // Data
-                    spuMem[spuAddr >>> 1] = data;
+                    spuMem.uh[spuAddr >>> 1] = data;
                     spuAddr += 2;
                     spuAddr &= 0x7ffff;
                     return;

@@ -155,8 +155,8 @@ const pseudo = window.pseudo || {};
 
 pseudo.CstrAudio = (function() {
     const SPU_SAMPLE_RATE  = 44100;
-    const SPU_SAMPLE_SIZE  = 512;
-    const SPU_SAMPLE_COUNT = SPU_SAMPLE_SIZE / 4;
+    const SPU_SAMPLE_SIZE  = 2048;
+    const SPU_SAMPLE_COUNT = SPU_SAMPLE_SIZE / 2;
     const SPU_MAX_CHAN     = 24 + 1;
 
     const f = [
@@ -366,7 +366,7 @@ pseudo.CstrAudio = (function() {
                     return;
                     
                 case (addr == 0x1da8): // Data
-                    spuMem[spuAddr >>> 1] = data;
+                    spuMem.uh[spuAddr >>> 1] = data;
                     spuAddr += 2;
                     spuAddr &= 0x7ffff;
                     return;
