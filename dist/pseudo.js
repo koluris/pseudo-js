@@ -201,15 +201,13 @@ pseudo.CstrAudio = (function() {
             const ch = spuVoices[n];
 
             if (ch.isNew) {
+                ch.s.fill(0);
                 ch.paddr  = ch.saddr;
+                ch.isNew  = false;
+                ch.active = true;
                 ch.spos   = 0x10000;
                 ch.bpos   = 28;
                 ch.sample = 0;
-                ch.s[0]   = 0;
-                ch.s[1]   = 0;
-                
-                ch.isNew  = false;
-                ch.active = true;
             }
             
             if (ch.active == false) {
@@ -266,8 +264,8 @@ pseudo.CstrAudio = (function() {
               sbuf = new Uint16Array(SPU_SAMPLE_SIZE * 2);
 
             // Channels
-            for (let i = 0; i < SPU_MAX_CHAN; i++) {
-                spuVoices[i] = {
+            for (let n = 0; n < SPU_MAX_CHAN; n++) {
+                spuVoices[n] = {
                     bfr: new Int32Array(28),
                       s: new Int32Array(2)
                 };
@@ -289,25 +287,17 @@ pseudo.CstrAudio = (function() {
 
         reset() {
             spuMem.uh.fill(0);
-
-            // Variables
             spuAddr = 0xffffffff;
 
             // Channels
-            for (let i = 0; i < SPU_MAX_CHAN; i++) {
-                const ch = spuVoices[i];
-                ch.bfr.fill(0);
-                ch.  s.fill(0);
+            for (let n = 0; n < SPU_MAX_CHAN; n++) {
+                const ch = spuVoices[n];
                 ch.isNew   = false;
                 ch.active  = false;
                 ch.repeat  = false;
-                ch.spos    = 0;
-                ch.bpos    = 0;
                 ch.freq    = 0;
-                ch.sample  = 0;
                 ch.volumeL = 0;
                 ch.volumeR = 0;
-                ch.paddr   = 0;
                 ch.saddr   = 0;
                 ch.raddr   = 0;
             }
@@ -321,7 +311,7 @@ pseudo.CstrAudio = (function() {
             switch(true) {
                 case (addr >= 0x1c00 && addr <= 0x1d7e): // Channels
                     {
-                        const ch = (addr >> 4) & 0x1f;
+                        const ch = (addr >>> 4) & 0x1f;
 
                         switch(addr & 0xf) {
                             case 0x0: // Volume L
@@ -337,11 +327,11 @@ pseudo.CstrAudio = (function() {
                                 return;
                                 
                             case 0x6: // Sound Address
-                                spuVoices[ch].saddr = data << 3;
+                                spuVoices[ch].saddr  = data << 3;
                                 return;
                                 
                             case 0xe: // Return Address
-                                spuVoices[ch].raddr = data << 3;
+                                spuVoices[ch].raddr  = data << 3;
                                 spuVoices[ch].repeat = true;
                                 return;
                                 
@@ -416,7 +406,7 @@ pseudo.CstrAudio = (function() {
             switch(true) {
                 case (addr >= 0x1c00 && addr <= 0x1d7e): // Channels
                     {
-                        const ch = (addr >> 4) & 0x1f;
+                        const ch = (addr >>> 4) & 0x1f;
 
                         switch(addr & 0xf) {
                             case 0xc: // Hack
