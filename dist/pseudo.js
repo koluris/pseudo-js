@@ -480,16 +480,16 @@ pseudo.CstrAudio = (function() {
 
             switch(pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 8) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) {
                 case 0x01000201:
-                    for (let i = 0; i < size; i++, addr += 2) {
-                        spuMem.uh[spuAddr >>> 1] = pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
+                    for (let i = 0; i < size; i++, pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] += 2) {
+                        spuMem.uh[spuAddr >>> 1] = pseudo.CstrMem.__ram.uh[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1];
                         spuAddr += 2;
                         spuAddr &= 0x7ffff;
                     }
                     return;
 
                 case 0x01000200:
-                    for (let i = 0; i < size; i++, addr += 2) {
-                        pseudo.CstrMem.__ram.uh[(( addr) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1] = spuMem.uh[spuAddr >>> 1];
+                    for (let i = 0; i < size; i++, pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2] += 2) {
+                        pseudo.CstrMem.__ram.uh[(( pseudo.CstrMem.__hwr.uw[(((addr & 0xfff0) | 0) & (pseudo.CstrMem.__hwr.uw.byteLength - 1)) >>> 2]) & (pseudo.CstrMem.__ram.uh.byteLength - 1)) >>> 1] = spuMem.uh[spuAddr >>> 1];
                         spuAddr += 2;
                         spuAddr &= 0x7ffff;
                     }

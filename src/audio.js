@@ -347,16 +347,16 @@ pseudo.CstrAudio = (function() {
 
             switch(chcr) {
                 case 0x01000201:
-                    for (let i = 0; i < size; i++, addr += 2) {
-                        spuMem.uh[spuAddr >>> 1] = directMemH(ram.uh, addr);
+                    for (let i = 0; i < size; i++, madr += 2) {
+                        spuMem.uh[spuAddr >>> 1] = directMemH(ram.uh, madr);
                         spuAddr += 2;
                         spuAddr &= 0x7ffff;
                     }
                     return;
 
                 case 0x01000200:
-                    for (let i = 0; i < size; i++, addr += 2) {
-                        directMemH(ram.uh, addr) = spuMem.uh[spuAddr >>> 1];
+                    for (let i = 0; i < size; i++, madr += 2) {
+                        directMemH(ram.uh, madr) = spuMem.uh[spuAddr >>> 1];
                         spuAddr += 2;
                         spuAddr &= 0x7ffff;
                     }
