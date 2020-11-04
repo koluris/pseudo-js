@@ -155,8 +155,8 @@ const pseudo = window.pseudo || {};
 
 pseudo.CstrAudio = (function() {
     const SPU_SAMPLE_RATE  = 44100;
-    const SPU_SAMPLE_SIZE  = 2048;
-    const SPU_SAMPLE_COUNT = SPU_SAMPLE_SIZE / 2;
+    const SPU_SAMPLE_SIZE  = 1024;
+    const SPU_SAMPLE_COUNT = SPU_SAMPLE_SIZE / 4;
     const SPU_MAX_CHAN     = 24 + 1;
 
     const f = [
@@ -217,7 +217,7 @@ pseudo.CstrAudio = (function() {
                 continue;
             }
 
-            for (let ns = 0; ns < SPU_SAMPLE_COUNT; ns++) {
+            for (let ns = 0; ns < SPU_SAMPLE_SIZE; ns++) {
                 for (; ch.spos >= 0x10000; ch.spos -= 0x10000) {
                     if (ch.bpos == 28) {
                         if (ch.paddr == -1) {
@@ -246,8 +246,8 @@ pseudo.CstrAudio = (function() {
                     ch.sample = ch.bfr[ch.bpos++] >> 2;
                 }
 
-                sbuf[(ns * 2) + 0] += (ch.sample * ch.volumeL) >> 14;
-                sbuf[(ns * 2) + 1] += (ch.sample * ch.volumeR) >> 14;
+                sbuf[ns] += (ch.sample * ch.volumeL) >> 14;
+                sbuf[ns + SPU_SAMPLE_SIZE] += (ch.sample * ch.volumeR) >> 14;
                 
                 ch.spos += ch.freq;
             }
@@ -259,7 +259,7 @@ pseudo.CstrAudio = (function() {
     return {
         awake() {
             spuMem = union(256 * 1024 * 2);
-              sbuf = new Uint16Array(SPU_SAMPLE_SIZE);
+              sbuf = new Uint16Array(SPU_SAMPLE_SIZE * 2);
 
             // Channels
             for (let i = 0; i < SPU_MAX_CHAN; i++) {
