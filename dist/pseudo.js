@@ -154,10 +154,8 @@ const pseudo = window.pseudo || {};
 
 
 pseudo.CstrAudio = (function() {
-    const SPU_SAMPLE_RATE  = 44100;
-    const SPU_SAMPLE_SIZE  = 1024;
-    const SPU_SAMPLE_COUNT = SPU_SAMPLE_SIZE / 4;
-    const SPU_MAX_CHAN     = 24 + 1;
+    const SPU_SAMPLE_SIZE = 1024;
+    const SPU_MAX_CHAN    = 24 + 1;
 
     const f = [
         [0, 0], [60, 0], [115, -52], [98, -55], [122, -60]
