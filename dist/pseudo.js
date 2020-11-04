@@ -215,43 +215,48 @@ pseudo.CstrAudio = (function() {
                 continue;
             }
 
-            for (let ns = 0; ns < SPU_SAMPLE_SIZE; ns++) {
-                for (; ch.spos >= 0x10000; ch.spos -= 0x10000) {
-                    if (ch.bpos == 28) {
-                        if (ch.paddr == -1) {
-                            ch.active = false;
-                        }
-
-                        ch.bpos = 0;
-                        const shift   = spuMem.ub[ch.paddr] & 0xf;
-                        const predict = spuMem.ub[ch.paddr++] >> 4;
-                        const op      = spuMem.ub[ch.paddr++];
-                        
-                        for (let i = 0, rest; i < 28; ch.paddr++) {
-                            rest = (spuMem.ub[ch.paddr] & 0x0f) <<  0xc; if (rest & 0x8000) rest |= 0xffff0000; rest = (rest >> shift) + ((ch.s[0] * f[predict][0] + ch.s[1] * f[predict][1] + 32) >> 6); ch.s[1] = ch.s[0]; ch.s[0] = Math.min(Math.max(rest, -32768), 32767); ch.bfr[i++] = ch.s[0];
-                            rest = (spuMem.ub[ch.paddr] & 0xf0) <<  0x8; if (rest & 0x8000) rest |= 0xffff0000; rest = (rest >> shift) + ((ch.s[0] * f[predict][0] + ch.s[1] * f[predict][1] + 32) >> 6); ch.s[1] = ch.s[0]; ch.s[0] = Math.min(Math.max(rest, -32768), 32767); ch.bfr[i++] = ch.s[0];
-                        }
-                        
-                        if ((op & 4) && (!ch.repeat)) {
-                            ch.raddr = ch.paddr - 16;
-                        }
-                        
-                        if ((op & 1)) {
-                            ch.paddr = (op != 3 || ch.raddr == 0) ? -1 : ch.raddr;
-                        }
-                    }
-
-                    ch.sample = ch.bfr[ch.bpos++] >> 2;
-                }
-
-                sbuf[ns] += (ch.sample * ch.volumeL) >> 14;
-                sbuf[ns + SPU_SAMPLE_SIZE] += (ch.sample * ch.volumeR) >> 14;
-                
-                ch.spos += ch.freq;
-            }
+            decodeChannel(ch);
         }
 
         return sbuf;
+    }
+
+    function decodeChannel(ch) {
+        for (let ns = 0; ns < SPU_SAMPLE_SIZE; ns++) {
+            for (; ch.spos >= 0x10000; ch.spos -= 0x10000) {
+                if (ch.bpos == 28) {
+                    if (ch.paddr == -1) {
+                        ch.active = false;
+                        return;
+                    }
+
+                    ch.bpos = 0;
+                    const shift   = spuMem.ub[ch.paddr] & 0xf;
+                    const predict = spuMem.ub[ch.paddr++] >> 4;
+                    const op      = spuMem.ub[ch.paddr++];
+                    
+                    for (let i = 0, rest; i < 28; ch.paddr++) {
+                        rest = (spuMem.ub[ch.paddr] & 0x0f) <<  0xc; if (rest & 0x8000) rest |= 0xffff0000; rest = (rest >> shift) + ((ch.s[0] * f[predict][0] + ch.s[1] * f[predict][1] + 32) >> 6); ch.s[1] = ch.s[0]; ch.s[0] = Math.min(Math.max(rest, -32768), 32767); ch.bfr[i++] = ch.s[0];
+                        rest = (spuMem.ub[ch.paddr] & 0xf0) <<  0x8; if (rest & 0x8000) rest |= 0xffff0000; rest = (rest >> shift) + ((ch.s[0] * f[predict][0] + ch.s[1] * f[predict][1] + 32) >> 6); ch.s[1] = ch.s[0]; ch.s[0] = Math.min(Math.max(rest, -32768), 32767); ch.bfr[i++] = ch.s[0];
+                    }
+                    
+                    if ((op & 4) && (!ch.repeat)) {
+                        ch.raddr = ch.paddr - 16;
+                    }
+                    
+                    if ((op & 1)) {
+                        ch.paddr = (op != 3 || ch.raddr == 0) ? -1 : ch.raddr;
+                    }
+                }
+
+                ch.sample = ch.bfr[ch.bpos++] >> 2;
+            }
+
+            sbuf[ns] += (ch.sample * ch.volumeL) >> 14;
+            sbuf[ns + SPU_SAMPLE_SIZE] += (ch.sample * ch.volumeR) >> 14;
+            
+            ch.spos += ch.freq;
+        }
     }
 
     return {
