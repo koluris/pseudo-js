@@ -154,6 +154,7 @@ const pseudo = window.pseudo || {};
 
 
 pseudo.CstrAudio = (function() {
+    const SPU_SAMPLE_RATE = 44100;
     const SPU_SAMPLE_SIZE = 1024;
     const SPU_MAX_CHAN    = 24 + 1;
 
@@ -273,7 +274,7 @@ pseudo.CstrAudio = (function() {
             }
 
             // Initialize Web Audio
-            ctxAudio  = new AudioContext({ sampleRate: 44100 });
+            ctxAudio  = new AudioContext({ sampleRate: SPU_SAMPLE_RATE });
             ctxScript = ctxAudio.createScriptProcessor(SPU_SAMPLE_SIZE, 0, 2);
 
             // Callback
