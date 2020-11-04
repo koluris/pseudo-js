@@ -76,7 +76,7 @@ pseudo.CstrMips = (function() {
     const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
 
     let divOutput;
-    let ptr, bp, opcodeCount, requestAF;
+    let ptr, suspended, opcodeCount, requestAF;
 
     // Base CPU stepper
     function step(inslot) {
@@ -427,10 +427,10 @@ pseudo.CstrMips = (function() {
         },
 
         run() {
-            bp = false;
+            suspended = false;
             requestAF = requestAnimationFrame(cpu.run); //setTimeout(cpu.run, 0);
 
-            while(!bp) { // And u don`t stop!
+            while(!suspended) { // And u don`t stop!
                 step(false);
 
                 if (opcodeCount >= 100) {
@@ -465,8 +465,8 @@ pseudo.CstrMips = (function() {
             divOutput.append('<div class="' + kind + '"><span>PSeudo:: </span>' + str + '</div>');
         },
 
-        setbp() {
-            bp = true;
+        setSuspended() {
+            suspended = true;
         },
 
         setbase(addr, data) {
@@ -481,7 +481,7 @@ pseudo.CstrMips = (function() {
             cancelAnimationFrame(requestAF);
             requestAF = undefined;
             //clearTimeout(requestAF);
-            bp = true;
+            suspended = true;
         },
 
         resume() {

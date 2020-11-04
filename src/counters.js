@@ -92,8 +92,8 @@ pseudo.CstrCounters = (function() {
 
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
                 bus.interruptSet(IRQ_VBLANK);
-                vs.redraw();
-                cpu.setbp();
+                 vs.redraw();
+                cpu.setSuspended();
             }
         },
 
