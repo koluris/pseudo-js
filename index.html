@@ -1,31 +1,31 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PSeudo</title>
 
-  <STYLE>
+  <style>
     @import url('css/normalize.css');
 
     /* Fonts */
     @font-face {
       src: url('css/oswald-300.woff2');
-      font-FAMILY: 'Oswald 300';
+      font-family: 'Oswald 300';
     }
     @font-face {
       src: url('css/oswald-400.woff2');
-      font-FAMILY: 'Oswald 400';
+      font-family: 'Oswald 400';
     }
     @font-face {
       src: url('css/ps.woff2');
-      font-FAMILY: 'PS';
+      font-family: 'PS';
     }
 
     /* Text Selection */
     ::selection {
       color: white;
-      BACKGROUND: RGBA(255, 255, 255, .15);
+      background: rgba(255, 255, 255, .15);
     }
 
     /* ScrollBar */
@@ -33,138 +33,122 @@
       width: 3px;
     }
     ::-webkit-scrollbar-thumb {
-      BACKGROUND: #93a0a8;
+      background: #93a0a8;
     }
 
     /* General */
     * {
-      box-SIZING: border-box;
+      box-sizing: border-box;
     }
-    html, BODY {
+    html, body {
       color: white;
-      BACKGROUND: #222 url('res/noise.png');
+      background: #222 url('res/noise.png');
       font: normal 13px 'Helvetica Neue', sans-serif;
-      HEIGHT: 100%;
+      height: 100%;
     }
     canvas {
       image-rendering: -webkit-optimize-contrast;
       image-rendering: pixelated;
     }
     .centered-h, .centered-v {
-      DISPLAY: flex;
+      display: flex;
       flex: 1;
-      MARGIN: 0 10%;
+      margin: 0 10%;
     }
     .centered-v {
       flex-direction: column;
     }
     #container {
-      DISPLAY: flex;
+      display: flex;
       flex-direction: column;
-      HEIGHT: 100%;
+      height: 100%;
     }
 
     /* Small header */
     #header {
-      BACKGROUND: RGBA(0, 0, 0, .2);
-      HEIGHT: 25px;
-      border-bottom: 1px solid RGBA(255, 255, 255, .15);
+      background: rgba(0, 0, 0, .2);
+      height: 25px;
+      border-bottom: 1px solid rgba(255, 255, 255, .15);
     }
 
     /* Main */
     #main {
-      DISPLAY: flex;
+      display: flex;
       flex: 1;
-      MARGIN-bottom: 15px;
+      margin-bottom: 15px;
     }
     #main .header {
-      DISPLAY: flex;
-      ALIGN-items: center;
-      min-HEIGHT: 50px;
+      display: flex;
+      align-items: center;
+      min-height: 50px;
     }
     #main .ps {
       width: 32px;
     }
     #main .brand {
       font: normal 28px 'PS', sans-serif;
-      letter-SPACING: 2px;
+      letter-spacing: 2px;
       MARGIN-left: 15px;
     }
 
     /* Screen */
     #main .screen {
-      DISPLAY: flex;
-      JUSTIFY-content: center;
-      ALIGN-items: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       flex: 1;
       position: relative;
-      BACKGROUND: #151515;
-      min-HEIGHT: 250px;
+      background: #151515;
+      min-height: 250px;
       border-radius: 10px;
     }
     #screen {
-      DISPLAY: block;
-      BACKGROUND: #151515;
+      display: block;
+      background: #151515;
     }
 
     /* CD-ROM indication */
     #main .screen > .led {
-      DISPLAY: flex;
-      ALIGN-items: center;
+      display: flex;
+      align-items: center;
       position: absolute;
       bottom: 8px;
       left: 10px;
     }
     #blink {
-      BACKGROUND: transparent;
+      background: transparent;
       width: 10px;
-      HEIGHT: 10px;
+      height: 10px;
       border-radius: 5px;
       border: 1px solid #f5cb0f;
     }
     #kb {
       color: #93a0a8;
       font-size: 11px;
-      MARGIN-left: 8px;
+      margin-left: 8px;
     }
 
     /* Information */
-    #main .screen > .properties {
-      DISPLAY: flex;
-      ALIGN-items: center;
-      position: absolute;
-      top: 8px;
-      RIGHT: 10px;
-    }
     #resolution {
+      position: absolute;
       color: #f5cb0f;
-      MARGIN-RIGHT: 8px;
-    }
-    #double {
-      DISPLAY: flex;
-      JUSTIFY-content: center;
-      ALIGN-items: center;
-      color: white;
-      font-size: 12px;
-      width: 28px;
-      HEIGHT: 28px;
-      border-radius: 14px;
-      border: 2px solid white;
-      cursor: pointer;
+      top: 8px;
+      right: 10px;
     }
 
     /* Panels */
     #footer {
-      DISPLAY: flex;
-      HEIGHT: 180px;
-      MARGIN-bottom: 15px;
+      display: flex;
+      height: 180px;
+      margin-bottom: 15px;
     }
     #footer .header {
       font: normal 21px 'Oswald 400', sans-serif;
-      letter-SPACING: 1px;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
     }
     #footer .panel-l {
-      DISPLAY: flex;
+      display: flex;
       flex-direction: column;
       flex: 1;
     }
@@ -174,10 +158,10 @@
       flex: 1;
       color: #93a0a8;
       font: normal 13px 'Andale Mono', sans-serif;
-      border-top: 1px solid RGBA(255, 255, 255, .1);
-      border-bottom: 1px solid RGBA(255, 255, 255, .1);
-      PADDING: 7px 0;
-      overflow-Y: scroll;
+      border-top: 1px solid rgba(255, 255, 255, .1);
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+      padding: 7px 0;
+      overflow-y: scroll;
     }
     #output > .info {
       color: #1ba1a4;
@@ -189,30 +173,30 @@
       color: #f5cb0f;
     }
     #footer .panel-r {
-      DISPLAY: flex;
+      display: flex;
       width: 180px;
-      MARGIN-left: 15px;
+      margin-left: 15px;
     }
 
     /* File drop */
     #dropzone {
-      DISPLAY: flex;
+      display: flex;
       flex-direction: column;
-      JUSTIFY-content: center;
-      ALIGN-items: center;
+      justify-content: center;
+      align-items: center;
       flex: 1;
-      BACKGROUND: RGBA(0, 0, 0, .1);
-      text-ALIGN: center;
-      border: 5px solid RGBA(255, 255, 255, .1);
+      background: rgba(0, 0, 0, .1);
+      text-align: center;
+      border: 5px solid rgba(255, 255, 255, .1);
       border-radius: 90px;
       transition: border .2s ease-in-out;
     }
     .dropzone-active {
       border: 5px solid #93a0a8 !important;
     }
-    #dropzone > IMG {
+    #dropzone > img {
       width: 45px;
-      MARGIN-bottom: 20px;
+      margin-bottom: 20px;
     }
     #dropzone > div:nth-child(2) {
       font: normal 15px 'Oswald 400', sans-serif;
@@ -220,14 +204,22 @@
     #dropzone > div:nth-child(3) {
       color: #93a0a8;
       font: normal 13px 'Oswald 300', sans-serif;
-      MARGIN-bottom: 5px;
+      margin-bottom: 5px;
     }
-    #dropzone > IMG, #dropzone > div {
+    #dropzone > img, #dropzone > div {
       pointer-events: none !important;
     }
-  </STYLE>
+
+    /* GitHub */
+    #fork-me {
+      position: absolute;
+      width: 100px;
+      top: 0;
+      left: 0;
+    }
+  </style>
 </head>
-<BODY>
+<body>
   <div id="container">
     <div id="header">
     </div>
@@ -236,23 +228,20 @@
     <div id="main">
       <div class="centered-v">
         <div class="header">
-           <IMG class="ps" src="res/ps.png"/>
+           <img class="ps" src="res/ps.png"/>
            <div class="brand">PSeudo</div>
         </div>
 
         <!-- Screen -->
         <div class="screen">
-          <canvas id="screen" width="640" HEIGHT="480">
+          <canvas id="screen" width="640" height="480">
             No support for <code>canvas</code> element.
           </canvas>
           <div class="led">
             <div id="blink"></div>
             <div id="kb">0 kb</div>
           </div>
-          <div class="properties">
-            <div id="resolution"></div>
-            <div id="double">x1</div>
-          </div>
+          <div id="resolution"></div>
         </div>
       </div>
     </div>
@@ -265,8 +254,8 @@
           <div id="output"></div>
         </div>
         <div class="panel-r">
-          <div id="dropzone" ondrop="psx.drop.file(event)" ONDRAGENTER="psx.drop.enter()" ONDRAGLEAVE="psx.drop.exit()" ONDRAGOVER="psx.drop.over(event)" onclick="chooseFile()">
-            <IMG src="res/drop.png"/>
+          <div id="dropzone" ondrop="psx.drop.file(event)" ondragenter="psx.drop.enter()" ondragleave="psx.drop.exit()" ondragover="psx.drop.over(event)" onclick="chooseFile()">
+            <img src="res/drop.png"/>
             <div>DROP PSX GAMES HERE</div>
             <div>bin img iso psx exe</div>
           </div>
@@ -276,7 +265,7 @@
   </div>
 
   <!-- Fork me on GitHub -->
-  <a href="https://github.com/dkoluris/pseudo-js"><IMG STYLE="position:absolute;width:100px;top:0;left:0" src="res/fork-me.png" alt="Fork me on GitHub"></a>
+  <a href="https://github.com/dkoluris/pseudo-js"><img id="fork-me" src="res/fork-me.png" alt="Fork me on GitHub"></a>
 
   <script src="dist/quer-3.5.1.slim.min.js"></script>
   <script src="dist/pseudo.js"></script>
@@ -312,5 +301,5 @@
       }, 1000);
     });
   </script>
-</BODY>
+</body>
 </html>
