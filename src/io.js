@@ -112,12 +112,6 @@ pseudo.CstrHardware = function() {
         read: {
             w(addr) {
                 switch(true) {
-                    case (addr >= 0x1080 && addr <= 0x10e8): // DMA
-                        return directMemW(mem.hwr.uw, addr);
-
-                    case (addr >= 0x1100 && addr <= 0x1110): // Rootcounters
-                        return directMemW(mem.hwr.uw, addr);
-
                     case (addr >= 0x1810 && addr <= 0x1814): // Graphics
                         return vs.scopeR(addr);
 
@@ -129,8 +123,10 @@ pseudo.CstrHardware = function() {
                     case (addr == 0x1060): // ?
                     case (addr == 0x1070): // IRQ Status
                     case (addr == 0x1074): // IRQ Mask
+                    case (addr >= 0x1080 && addr <= 0x10e8): // DMA
                     case (addr == 0x10f0): // DPCR
                     case (addr == 0x10f4): // DICR
+                    case (addr >= 0x1100 && addr <= 0x1110): // Rootcounters
                         return directMemW(mem.hwr.uw, addr);
                 }
 
@@ -142,9 +138,6 @@ pseudo.CstrHardware = function() {
                     case (addr >= 0x1044 && addr <= 0x104e): // SIO
                         return sio.read.h(addr);
 
-                    case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
-                        return directMemH(mem.hwr.uh, addr);
-
                     case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
                         return audio.scopeR(addr);
 
@@ -153,6 +146,7 @@ pseudo.CstrHardware = function() {
                     case (addr == 0x105a): // SIO 1 Control
                     case (addr == 0x1070): // IRQ Status
                     case (addr == 0x1074): // IRQ Mask
+                    case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
                     case (addr == 0x1130): // ?
                         return directMemH(mem.hwr.uh, addr);
                 }

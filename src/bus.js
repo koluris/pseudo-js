@@ -67,7 +67,7 @@ pseudo.CstrBus = function() {
         
         checkDMA(addr, data) {
             const chan = ((addr >>> 4) & 0xf) - 8;
-
+            
             if (dpcr & (8 << (chan * 4))) {
                 chcr = data;
 

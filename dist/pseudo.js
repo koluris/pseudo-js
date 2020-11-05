@@ -383,6 +383,7 @@ pseudo.CstrBus = function() {
         
         checkDMA(addr, data) {
             const chan = ((addr >>> 4) & 0xf) - 8;
+            
             if (mem.hwr.uw[((0x10f0) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (8 << (chan * 4))) {
                 mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                 switch(chan) {
@@ -1552,10 +1553,6 @@ pseudo.CstrHardware = function() {
         read: {
             w(addr) {
                 switch(true) {
-                    case (addr >= 0x1080 && addr <= 0x10e8): // DMA
-                        return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
-                    case (addr >= 0x1100 && addr <= 0x1110): // Rootcounters
-                        return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                     case (addr >= 0x1810 && addr <= 0x1814): // Graphics
                         return vs.scopeR(addr);
                     case (addr >= 0x1820 && addr <= 0x1824): // Motion Decoder
@@ -1565,8 +1562,10 @@ pseudo.CstrHardware = function() {
                     case (addr == 0x1060): // ?
                     case (addr == 0x1070): // IRQ Status
                     case (addr == 0x1074): // IRQ Mask
+                    case (addr >= 0x1080 && addr <= 0x10e8): // DMA
                     case (addr == 0x10f0): // DPCR
                     case (addr == 0x10f4): // DICR
+                    case (addr >= 0x1100 && addr <= 0x1110): // Rootcounters
                         return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                 }
                 psx.error('Hardware Read w ' + psx.hex(addr));
@@ -1575,8 +1574,6 @@ pseudo.CstrHardware = function() {
                 switch(true) {
                     case (addr >= 0x1044 && addr <= 0x104e): // SIO
                         return sio.read.h(addr);
-                    case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
-                        return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
                     case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
                         return audio.scopeR(addr);
                     
@@ -1584,6 +1581,7 @@ pseudo.CstrHardware = function() {
                     case (addr == 0x105a): // SIO 1 Control
                     case (addr == 0x1070): // IRQ Status
                     case (addr == 0x1074): // IRQ Mask
+                    case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
                     case (addr == 0x1130): // ?
                         return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
                 }
