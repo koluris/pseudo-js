@@ -1578,6 +1578,7 @@ pseudo.CstrHardware = function() {
                         return audio.scopeR(addr);
                     
                     case (addr == 0x1014): // ?
+                    case (addr == 0x1054): // SIO 1 Status
                     case (addr == 0x105a): // SIO 1 Control
                     case (addr == 0x1070): // IRQ Status
                     case (addr == 0x1074): // IRQ Mask
