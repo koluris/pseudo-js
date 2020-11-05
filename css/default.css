@@ -1,0 +1,209 @@
+/* Fonts */
+@font-face {
+    src: url('../res/oswald-300.woff2');
+    font-family: 'Oswald 300';
+}
+@font-face {
+    src: url('../res/oswald-400.woff2');
+    font-family: 'Oswald 400';
+}
+@font-face {
+    src: url('../res/ps.woff2');
+    font-family: 'PS';
+}
+
+/* Text Selection */
+::selection {
+    color: white;
+    background: rgba(255, 255, 255, .15);
+}
+
+/* ScrollBar */
+::-webkit-scrollbar {
+    width: 3px;
+}
+::-webkit-scrollbar-thumb {
+    background: #93a0a8;
+}
+
+/* General */
+* {
+    box-sizing: border-box;
+}
+html, body {
+    color: white;
+    background: #222 url('../res/noise.png');
+    font: normal 13px 'Helvetica Neue', sans-serif;
+    height: 100%;
+}
+canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+}
+.centered-h, .centered-v {
+    display: flex;
+    flex: 1;
+    margin: 0 10%;
+}
+.centered-v {
+    flex-direction: column;
+}
+#container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Small header */
+#header {
+    background: rgba(0, 0, 0, .2);
+    height: 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, .15);
+}
+
+/* Main */
+#main {
+    display: flex;
+    flex: 1;
+    margin-bottom: 15px;
+}
+#main .header {
+    display: flex;
+    align-items: center;
+    min-height: 50px;
+}
+#main .ps {
+    width: 32px;
+}
+#main .brand {
+    font: normal 28px 'PS', sans-serif;
+    letter-spacing: 2px;
+    MARGIN-left: 15px;
+}
+
+/* Screen */
+#main .screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    position: relative;
+    background: #151515;
+    min-height: 250px;
+    border-radius: 10px;
+}
+#screen {
+    display: block;
+    background: #151515;
+}
+
+/* CD-ROM indication */
+#main .screen > .led {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    bottom: 8px;
+    left: 10px;
+}
+#blink {
+    background: transparent;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    border: 1px solid #f5cb0f;
+}
+#kb {
+    color: #93a0a8;
+    font-size: 11px;
+    margin-left: 8px;
+}
+
+/* Information */
+#resolution {
+    position: absolute;
+    color: #f5cb0f;
+    top: 8px;
+    right: 10px;
+}
+
+/* Panels */
+#footer {
+    display: flex;
+    height: 180px;
+    margin-bottom: 15px;
+}
+#footer .header {
+    font: normal 21px 'Oswald 400', sans-serif;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+}
+#footer .panel-l {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* Console */
+#output {
+    flex: 1;
+    color: #93a0a8;
+    font: normal 13px 'Andale Mono', sans-serif;
+    border-top: 1px solid rgba(255, 255, 255, .1);
+    border-bottom: 1px solid rgba(255, 255, 255, .1);
+    padding: 7px 0;
+    overflow-y: scroll;
+}
+#output > .info {
+    color: #1ba1a4;
+}
+#output > .error {
+    color: #de1429;
+}
+#output > .info > span, #output > .error > span {
+    color: #f5cb0f;
+}
+#footer .panel-r {
+    display: flex;
+    width: 180px;
+    margin-left: 15px;
+}
+
+/* File drop */
+#dropzone {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    background: rgba(0, 0, 0, .1);
+    text-align: center;
+    border: 5px solid rgba(255, 255, 255, .1);
+    border-radius: 90px;
+    transition: border .2s ease-in-out;
+}
+.dropzone-active {
+    border: 5px solid #93a0a8 !important;
+}
+#dropzone > img {
+    width: 45px;
+    margin-bottom: 20px;
+}
+#dropzone > div:nth-child(2) {
+    font: normal 15px 'Oswald 400', sans-serif;
+}
+#dropzone > div:nth-child(3) {
+    color: #93a0a8;
+    font: normal 13px 'Oswald 300', sans-serif;
+    margin-bottom: 5px;
+}
+#dropzone > img, #dropzone > div {
+    pointer-events: none !important;
+}
+
+/* GitHub */
+#fork-me {
+    position: absolute;
+    width: 100px;
+    top: 0;
+    left: 0;
+}
