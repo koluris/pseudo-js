@@ -79,6 +79,7 @@ pseudo.CstrMain = function() {
              cdrom.awake(blink, kb);
                cpu.awake(output);
 
+            cpu.consoleWrite(MSG_INFO, 'Welcome to PSeudo 0.84, a JavaScript based PSX emulator');
             request('bios/scph1001.bin', function(resp) {
                 // Completed
                 mem.writeROM(resp);
