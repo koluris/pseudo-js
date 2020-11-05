@@ -208,7 +208,7 @@ pseudo.CstrAudio = function() {
                         }
                     }
 
-                    psx.error('/// PSeudo SPU Write Channel: ' + psx.hex(addr & 0xf) + ' <- ' + psx.hex(data));
+                    psx.error('SPU Write Channel: ' + psx.hex(addr & 0xf) + ' <- ' + psx.hex(data));
                     return;
 
                 case (addr == 0x1d88): // Sound On 1
@@ -263,7 +263,7 @@ pseudo.CstrAudio = function() {
                     return;
             }
 
-            psx.error('/// PSeudo SPU Write: ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            psx.error('SPU Write: ' + psx.hex(addr) + ' <- ' + psx.hex(data));
         },
 
         scopeR(addr) {
@@ -296,7 +296,7 @@ pseudo.CstrAudio = function() {
                         }
                     }
 
-                    psx.error('/// PSeudo SPU Read Channel: ' + psx.hex(addr & 0xf));
+                    psx.error('SPU Read Channel: ' + psx.hex(addr & 0xf));
                     return 0;
 
                 case (addr == 0x1da6): // Transfer Address
@@ -329,7 +329,7 @@ pseudo.CstrAudio = function() {
                     return directMemH(mem.hwr.uh, addr);
             }
 
-            psx.error('/// PSeudo SPU Read: ' + psx.hex(addr));
+            psx.error('SPU Read: ' + psx.hex(addr));
             return 0;
         },
 
@@ -354,7 +354,7 @@ pseudo.CstrAudio = function() {
                     return;
             }
 
-            psx.error('/// PSeudo SPU DMA: ' + psx.hex(chcr));
+            psx.error('SPU DMA: ' + psx.hex(chcr));
         }
     };
 };

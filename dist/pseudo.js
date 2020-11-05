@@ -339,7 +339,7 @@ pseudo.CstrAudio = function() {
                         }
                     }
 
-                    psx.error('/// PSeudo SPU Write Channel: ' + psx.hex(addr & 0xf) + ' <- ' + psx.hex(data));
+                    psx.error('SPU Write Channel: ' + psx.hex(addr & 0xf) + ' <- ' + psx.hex(data));
                     return;
 
                 case (addr == 0x1d88): // Sound On 1
@@ -394,7 +394,7 @@ pseudo.CstrAudio = function() {
                     return;
             }
 
-            psx.error('/// PSeudo SPU Write: ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            psx.error('SPU Write: ' + psx.hex(addr) + ' <- ' + psx.hex(data));
         },
 
         scopeR(addr) {
@@ -427,7 +427,7 @@ pseudo.CstrAudio = function() {
                         }
                     }
 
-                    psx.error('/// PSeudo SPU Read Channel: ' + psx.hex(addr & 0xf));
+                    psx.error('SPU Read Channel: ' + psx.hex(addr & 0xf));
                     return 0;
 
                 case (addr == 0x1da6): // Transfer Address
@@ -460,7 +460,7 @@ pseudo.CstrAudio = function() {
                     return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
             }
 
-            psx.error('/// PSeudo SPU Read: ' + psx.hex(addr));
+            psx.error('SPU Read: ' + psx.hex(addr));
             return 0;
         },
 
@@ -485,7 +485,7 @@ pseudo.CstrAudio = function() {
                     return;
             }
 
-            psx.error('/// PSeudo SPU DMA: ' + psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
+            psx.error('SPU DMA: ' + psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
         }
     };
 };
@@ -1983,180 +1983,184 @@ const rootcnt = new pseudo.CstrCounters();
 
 
 pseudo.CstrHardware = function() {
-  return {
-      write: {
-          w(addr, data) {
-              switch(true) {
-                  case (addr == 0x1070): // IRQ Status
-                      mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] &= data & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2];
-                      return;
+    return {
+        write: {
+            w(addr, data) {
+                switch(true) {
+                    case (addr == 0x1070): // IRQ Status
+                        mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] &= data & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2];
+                        return;
 
-                  case (addr >= 0x1080 && addr <= 0x10e8): // DMA
-                      if (addr & 8) {
-                          bus.checkDMA(addr, data);
-                          return;
-                      }
+                    case (addr >= 0x1080 && addr <= 0x10e8): // DMA
+                        if (addr & 8) {
+                            bus.checkDMA(addr, data);
+                            return;
+                        }
 
-                      mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
-                      return;
+                        mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
+                        return;
 
-                  case (addr == 0x10f4): // DICR, thanks Calb, Galtor :)
-                      mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] = (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
-                      return;
+                    case (addr == 0x10f4): // DICR, thanks Calb, Galtor :)
+                        mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] = (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
+                        return;
 
-                  case (addr >= 0x1104 && addr <= 0x1124): // Rootcounters
-                      rootcnt.scopeW(addr, data);
-                      return;
+                    case (addr >= 0x1104 && addr <= 0x1124): // Rootcounters
+                        rootcnt.scopeW(addr, data);
+                        return;
 
-                  case (addr >= 0x1810 && addr <= 0x1814): // Graphics
-                      vs.scopeW(addr, data);
-                      return;
+                    case (addr >= 0x1810 && addr <= 0x1814): // Graphics
+                        vs.scopeW(addr, data);
+                        return;
 
-                  case (addr >= 0x1820 && addr <= 0x1824): // Motion Decoder
-                      mdec.scopeW(addr, data);
-                      return;
-
-                  
-                  case (addr == 0x1000): // ?
-                  case (addr == 0x1004): // ?
-                  case (addr == 0x1008): // ?
-                  case (addr == 0x100c): // ?
-                  case (addr == 0x1010): // ?
-                  case (addr == 0x1014): // SPU
-                  case (addr == 0x1018): // DV5
-                  case (addr == 0x101c): // ?
-                  case (addr == 0x1020): // COM
-                  case (addr == 0x1060): // RAM Size
-                  case (addr == 0x1074): // IRQ Mask
-                  case (addr == 0x10f0): // DPCR
-                  case (addr == 0x1d80): // SPU in 32 bits?
-                  case (addr == 0x1d84): // SPU in 32 bits?
-                  case (addr == 0x1d8c): // SPU in 32 bits?
-                      mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
-                      return;
-              }
-
-              psx.error('Hardware Write w ' + psx.hex(addr) + ' <- ' + psx.hex(data));
-          },
-
-          h(addr, data) {
-              switch(true) {
-                  case (addr >= 0x1048 && addr <= 0x104e): // SIO
-                      sio.write.h(addr, data);
-                      return;
-
-                  case (addr == 0x1070): // IRQ Status
-                      mem.hwr.uh[((0x1070) & (mem.hwr.uh.byteLength - 1)) >>> 1] &= data & mem.hwr.uh[((0x1074) & (mem.hwr.uh.byteLength - 1)) >>> 1];
-                      return;
-
-                  case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
-                      rootcnt.scopeW(addr, data);
-                      return;
-
-                  case (addr >= 0x1c00 && addr <= 0x1dfe): // SPU
-                      audio.scopeW(addr, data);
-                      return;
-
-                  
-                  case (addr == 0x1014): // ?
-                  case (addr == 0x1074): // IRQ Mask
-                      mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
-                      return;
-              }
-
-              psx.error('Hardware Write h ' + psx.hex(addr) + ' <- ' + psx.hex(data));
-          },
-
-          b(addr, data) {
-              switch(true) {
-                  case (addr == 0x1040): // SIO Data
-                      sio.write.b(addr, data);
-                      return;
-
-                  case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
-                      cdrom.scopeW(addr, data);
-                      return;
-
-                  
-                  case (addr == 0x10f6): // ?
-                  case (addr == 0x2041): // DIP Switch?
-                      mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
-                      return;
-              }
-
-              psx.error('Hardware Write b ' + psx.hex(addr) + ' <- ' + psx.hex(data));
-          }
-      },
-
-      read: {
-          w(addr) {
-              switch(true) {
-                  case (addr >= 0x1080 && addr <= 0x10e8): // DMA
-                      return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
-
-                  case (addr >= 0x1100 && addr <= 0x1110): // Rootcounters
-                      return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
-
-                  case (addr >= 0x1810 && addr <= 0x1814): // Graphics
-                      return vs.scopeR(addr);
-
-                  case (addr >= 0x1820 && addr <= 0x1824): // Motion Decoder
-                      return mdec.scopeR(addr);
-
-                  
-                  case (addr == 0x1014): // ?
-                  case (addr == 0x1060): // ?
-                  case (addr == 0x1070): // IRQ Status
-                  case (addr == 0x1074): // IRQ Mask
-                  case (addr == 0x10f0): // DPCR
-                  case (addr == 0x10f4): // DICR
-                      return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
-              }
-
-              psx.error('Hardware Read w ' + psx.hex(addr));
-          },
-
-          h(addr) {
-              switch(true) {
-                  case (addr >= 0x1044 && addr <= 0x104e): // SIO
-                      return sio.read.h(addr);
-
-                  case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
-                      return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
-
-                  case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
-                      return audio.scopeR(addr);
-
-                  
-                  case (addr == 0x1014): // ?
-                  case (addr == 0x1070): // IRQ Status
-                  case (addr == 0x1074): // IRQ Mask
-                  case (addr == 0x1130): // ?
-                      return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
-              }
-
-              psx.error('Hardware Read h ' + psx.hex(addr));
-          },
-
-          b(addr) {
-              switch(true) {
-                  case (addr == 0x1040): // SIO Data
-                      return sio.read.b(addr);
-
-                  case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
-                      return cdrom.scopeR(addr);
+                    case (addr >= 0x1820 && addr <= 0x1824): // Motion Decoder
+                        mdec.scopeW(addr, data);
+                        return;
 
                     
-                  case (addr == 0x10f6): // ?
-                  case (addr == 0x1d68): // ?
-                  case (addr == 0x1d78): // ?
-                      return mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0];
-              }
+                    case (addr == 0x1000): // ?
+                    case (addr == 0x1004): // ?
+                    case (addr == 0x1008): // ?
+                    case (addr == 0x100c): // ?
+                    case (addr == 0x1010): // ?
+                    case (addr == 0x1014): // SPU
+                    case (addr == 0x1018): // DV5
+                    case (addr == 0x101c): // ?
+                    case (addr == 0x1020): // COM
+                    case (addr == 0x1060): // RAM Size
+                    case (addr == 0x1074): // IRQ Mask
+                    case (addr == 0x10f0): // DPCR
+                    case (addr == 0x1d80): // SPU in 32 bits?
+                    case (addr == 0x1d84): // SPU in 32 bits?
+                    case (addr == 0x1d8c): // SPU in 32 bits?
+                        mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
+                        return;
+                }
 
-              psx.error('Hardware Read b ' + psx.hex(addr));
-          }
-      }
-  };
+                psx.error('Hardware Write w ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            },
+
+            h(addr, data) {
+                switch(true) {
+                    case (addr >= 0x1048 && addr <= 0x104e): // SIO
+                        sio.write.h(addr, data);
+                        return;
+
+                    case (addr == 0x1070): // IRQ Status
+                        mem.hwr.uh[((0x1070) & (mem.hwr.uh.byteLength - 1)) >>> 1] &= data & mem.hwr.uh[((0x1074) & (mem.hwr.uh.byteLength - 1)) >>> 1];
+                        return;
+
+                    case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
+                        rootcnt.scopeW(addr, data);
+                        return;
+
+                    case (addr >= 0x1c00 && addr <= 0x1dfe): // SPU
+                        audio.scopeW(addr, data);
+                        return;
+
+                    
+                    case (addr == 0x1014): // ?
+                    case (addr == 0x1058): // SIO 1 Mode
+                    case (addr == 0x105a): // SIO 1 Control
+                    case (addr == 0x105e): // SIO 1 Baud
+                    case (addr == 0x1074): // IRQ Mask
+                        mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
+                        return;
+                }
+
+                psx.error('Hardware Write h ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            },
+
+            b(addr, data) {
+                switch(true) {
+                    case (addr == 0x1040): // SIO Data
+                        sio.write.b(addr, data);
+                        return;
+
+                    case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
+                        cdrom.scopeW(addr, data);
+                        return;
+
+                    
+                    case (addr == 0x10f6): // ?
+                    case (addr == 0x2041): // DIP Switch?
+                        mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
+                        return;
+                }
+
+                psx.error('Hardware Write b ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            }
+        },
+
+        read: {
+            w(addr) {
+                switch(true) {
+                    case (addr >= 0x1080 && addr <= 0x10e8): // DMA
+                        return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
+
+                    case (addr >= 0x1100 && addr <= 0x1110): // Rootcounters
+                        return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
+
+                    case (addr >= 0x1810 && addr <= 0x1814): // Graphics
+                        return vs.scopeR(addr);
+
+                    case (addr >= 0x1820 && addr <= 0x1824): // Motion Decoder
+                        return mdec.scopeR(addr);
+
+                    
+                    case (addr == 0x1014): // ?
+                    case (addr == 0x1060): // ?
+                    case (addr == 0x1070): // IRQ Status
+                    case (addr == 0x1074): // IRQ Mask
+                    case (addr == 0x10f0): // DPCR
+                    case (addr == 0x10f4): // DICR
+                        return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
+                }
+
+                psx.error('Hardware Read w ' + psx.hex(addr));
+            },
+
+            h(addr) {
+                switch(true) {
+                    case (addr >= 0x1044 && addr <= 0x104e): // SIO
+                        return sio.read.h(addr);
+
+                    case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
+                        return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
+
+                    case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
+                        return audio.scopeR(addr);
+
+                    
+                    case (addr == 0x1014): // ?
+                    case (addr == 0x105a): // SIO 1 Control
+                    case (addr == 0x1070): // IRQ Status
+                    case (addr == 0x1074): // IRQ Mask
+                    case (addr == 0x1130): // ?
+                        return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
+                }
+
+                psx.error('Hardware Read h ' + psx.hex(addr));
+            },
+
+            b(addr) {
+                switch(true) {
+                    case (addr == 0x1040): // SIO Data
+                        return sio.read.b(addr);
+
+                    case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
+                        return cdrom.scopeR(addr);
+
+                    
+                    case (addr == 0x10f6): // ?
+                    case (addr == 0x1d68): // ?
+                    case (addr == 0x1d78): // ?
+                        return mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0];
+                }
+
+                psx.error('Hardware Read b ' + psx.hex(addr));
+            }
+        }
+    };
 };
 
 const io = new pseudo.CstrHardware();
@@ -2450,31 +2454,15 @@ pseudo.CstrMem = function() {
         },
 
         write: {
-            w(addr, data) {
-                switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (!cpu.writeOK()) { return; } mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. w(addr & 0xffff, data); return; } mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '32' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data));
-            },
-
-            h(addr, data) {
-                switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (!cpu.writeOK()) { return; } mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. h(addr & 0xffff, data); return; } mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '16' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data));
-            },
-
-            b(addr, data) {
-                switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (!cpu.writeOK()) { return; } mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. b(addr & 0xffff, data); return; } mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '08' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data));
-            }
+            w(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (!cpu.writeOK()) { return; } mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. w(addr & 0xffff, data); return; } mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '32' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            h(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (!cpu.writeOK()) { return; } mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. h(addr & 0xffff, data); return; } mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '16' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            b(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (!cpu.writeOK()) { return; } mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. b(addr & 0xffff, data); return; } mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '08' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
         },
 
         read: {
-            w(addr) {
-                switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2]; case 0xbf: return mem.rom. uw[((addr) & (mem.rom. uw.byteLength - 1)) >>> 2]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. w(addr & 0xffff); } return mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '32' + ' ' + psx.hex(addr)); return 0;
-            },
-
-            h(addr) {
-                switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1]; case 0xbf: return mem.rom. uh[((addr) & (mem.rom. uh.byteLength - 1)) >>> 1]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. h(addr & 0xffff); } return mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '16' + ' ' + psx.hex(addr)); return 0;
-            },
-
-            b(addr) {
-                switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0]; case 0xbf: return mem.rom. ub[((addr) & (mem.rom. ub.byteLength - 1)) >>> 0]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. b(addr & 0xffff); } return mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '08' + ' ' + psx.hex(addr)); return 0;
-            }
+            w(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2]; case 0xbf: return mem.rom. uw[((addr) & (mem.rom. uw.byteLength - 1)) >>> 2]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. w(addr & 0xffff); } return mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '32' + ' ' + psx.hex(addr)); return 0; },
+            h(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1]; case 0xbf: return mem.rom. uh[((addr) & (mem.rom. uh.byteLength - 1)) >>> 1]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. h(addr & 0xffff); } return mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '16' + ' ' + psx.hex(addr)); return 0; },
+            b(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0]; case 0xbf: return mem.rom. ub[((addr) & (mem.rom. ub.byteLength - 1)) >>> 0]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. b(addr & 0xffff); } return mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '08' + ' ' + psx.hex(addr)); return 0; },
         },
 
         executeDMA(addr) {
@@ -3135,7 +3123,8 @@ pseudo.CstrMain = function() {
         },
 
         error(out) {
-            throw new Error('PSeudo / '+out);
+            cpu.pause();
+            throw new Error('/// PSeudo ' + out);
         },
 
         trackRead(time) {

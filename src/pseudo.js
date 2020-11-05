@@ -144,7 +144,8 @@ pseudo.CstrMain = function() {
         },
 
         error(out) {
-            throw new Error('PSeudo / '+out);
+            cpu.pause();
+            throw new Error('/// PSeudo ' + out);
         },
 
         trackRead(time) {
