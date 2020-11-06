@@ -1,6 +1,7 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
 pseudo.CstrHardware = function() {
+    // Exposed class functions/variables
     return {
         write: {
             w(addr, data) {
@@ -10,12 +11,11 @@ pseudo.CstrHardware = function() {
                         return;
 
                     case (addr >= 0x1080 && addr <= 0x10e8): // DMA
+                        directMemW(mem.hwr.uw, addr) = data;
+
                         if (addr & 8) {
                             bus.checkDMA(addr, data);
-                            return;
                         }
-
-                        directMemW(mem.hwr.uw, addr) = data;
                         return;
 
                     case (addr == 0x10f4): // DICR, thanks Calb, Galtor :)

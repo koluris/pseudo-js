@@ -320,6 +320,7 @@ pseudo.CstrCdrom = function() {
     divBlink.css({ 'background':'#f5cb0f' });
   }
 
+  // Exposed class functions/variables
   return {
     interruptRead2(buf) {
       transfer.data.set(buf);

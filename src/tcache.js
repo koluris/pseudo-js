@@ -17,6 +17,7 @@ pseudo.CstrTexCache = function() {
     let index;
     let tex;
 
+    // Exposed class functions/variables
     return {
         init() {
             for (let i = 0; i < TCACHE_MAX; i++) {

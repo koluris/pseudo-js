@@ -57,11 +57,11 @@ pseudo.CstrMdec = function() {
 
     let tableNormalize = new UintBcap(MDEC_BLOCK_NUM * 6 * 2);
     let iq = new SintWcap(MDEC_BLOCK_NUM * 4);
-    let cmd, status, pMadr;
+    let cmd, status, pMadr, rl;
 
     function processBlock() {
         for (let i = 0; i < 6; i++, blk.index += MDEC_BLOCK_NUM) {
-            let rl = directMemH(mem.ram.uh, pMadr);
+            rl = directMemH(mem.ram.uh, pMadr);
             pMadr += 2;
             blk.raw[blk.index] = iq[0] * VALUE_OF(rl);
 

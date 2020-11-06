@@ -196,6 +196,7 @@ pseudo.CstrCop2 = function() {
         return 0xffffffff;
     }
 
+    // Exposed class functions/variables
     return {
         reset() {
             cop2c.ub.fill(0);

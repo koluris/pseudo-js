@@ -30,6 +30,7 @@ pseudo.CstrCounters = function() {
     let bounds = [];
     let vbk, hbk;
 
+    // Exposed class functions/variables
     return {
         reset() {
             for (let i = 0; i < 3; i++) {

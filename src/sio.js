@@ -46,6 +46,7 @@ pseudo.CstrSerial = function() {
   let baud, control, mode, status, padst, parp;
   let bfr = new UintBcap(256);
 
+  // Exposed class functions/variables
   return {
     reset() {
       bfr.fill(0);

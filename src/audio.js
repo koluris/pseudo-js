@@ -122,6 +122,7 @@ pseudo.CstrAudio = function() {
         }
     }
 
+    // Exposed class functions/variables
     return {
         awake() {
             spuMem = union(256 * 1024 * 2);

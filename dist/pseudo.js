@@ -105,6 +105,7 @@ pseudo.CstrAudio = function() {
             ch.spos += ch.freq;
         }
     }
+    // Exposed class functions/variables
     return {
         awake() {
             spuMem = union(256 * 1024 * 2);
@@ -661,6 +662,7 @@ pseudo.CstrCdrom = function() {
     trackRead();
     divBlink.css({ 'background':'#f5cb0f' });
   }
+  // Exposed class functions/variables
   return {
     interruptRead2(buf) {
       transfer.data.set(buf);
@@ -925,6 +927,7 @@ pseudo.CstrCop2 = function() {
         }
         return 0xffffffff;
     }
+    // Exposed class functions/variables
     return {
         reset() {
             cop2c.ub.fill(0);
@@ -1387,6 +1390,7 @@ pseudo.CstrCounters = function() {
     const RTC_BOUND  = 0xffff;
     let bounds = [];
     let vbk, hbk;
+    // Exposed class functions/variables
     return {
         reset() {
             for (let i = 0; i < 3; i++) {
@@ -1461,6 +1465,7 @@ pseudo.CstrCounters = function() {
 };
 const rootcnt = new pseudo.CstrCounters();
 pseudo.CstrHardware = function() {
+    // Exposed class functions/variables
     return {
         write: {
             w(addr, data) {
@@ -1469,11 +1474,10 @@ pseudo.CstrHardware = function() {
                         mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] &= data & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                         return;
                     case (addr >= 0x1080 && addr <= 0x10e8): // DMA
+                        mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                         if (addr & 8) {
                             bus.checkDMA(addr, data);
-                            return;
                         }
-                        mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                         return;
                     case (addr == 0x10f4): // DICR, thanks Calb, Galtor :)
                         mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] = (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
@@ -1633,10 +1637,10 @@ pseudo.CstrMdec = function() {
     };
     let tableNormalize = new Uint8Array(MDEC_BLOCK_NUM * 6 * 2);
     let iq = new Int32Array(MDEC_BLOCK_NUM * 4);
-    let cmd, status, pMadr;
+    let cmd, status, pMadr, rl;
     function processBlock() {
         for (let i = 0; i < 6; i++, blk.index += MDEC_BLOCK_NUM) {
-            let rl = mem.ram.uh[(( pMadr) & (mem.ram.uh.byteLength - 1)) >>> 1];
+            rl = mem.ram.uh[(( pMadr) & (mem.ram.uh.byteLength - 1)) >>> 1];
             pMadr += 2;
             blk.raw[blk.index] = iq[0] * (((((rl) << 22) >> 22) << 0 >> 0));
             let k = 0;
@@ -1808,6 +1812,7 @@ pseudo.CstrMdec = function() {
 const mdec = new pseudo.CstrMdec();
 pseudo.CstrMem = function() {
     const PSX_EXE_HEADER_SIZE = 0x800;
+    // Exposed class functions/variables
     return {
         ram: union(0x200000),
         rom: union(0x80000),
@@ -2881,6 +2886,7 @@ pseudo.CstrSerial = function() {
   const PAD_BTN_SQUARE   = 15;
   let baud, control, mode, status, padst, parp;
   let bfr = new Uint8Array(256);
+  // Exposed class functions/variables
   return {
     reset() {
       bfr.fill(0);
@@ -3055,6 +3061,7 @@ pseudo.CstrTexCache = function() {
     let cache = [];
     let index;
     let tex;
+    // Exposed class functions/variables
     return {
         init() {
             for (let i = 0; i < TCACHE_MAX; i++) {

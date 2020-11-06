@@ -55,6 +55,7 @@
 pseudo.CstrMem = function() {
     const PSX_EXE_HEADER_SIZE = 0x800;
 
+    // Exposed class functions/variables
     return {
         ram: union(0x200000),
         rom: union(0x80000),
