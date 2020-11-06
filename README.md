@@ -1,3 +1,5 @@
+[![GitHub stars](https://img.shields.io/github/stars/dkoluris/pseudo-js.svg?style=flat-square)](https://github.com/dkoluris/pseudo-js/stargazers) [![GitHub license](https://img.shields.io/github/license/dkoluris/pseudo-js.svg?style=flat-square)](https://github.com/dkoluris/pseudo-js/blob/master/LICENSE) [![Twitter](https://img.shields.io/twitter/url/https/github.com/dkoluris/pseudo-js.svg?style=social)](https://twitter.com/intent/tweet?text=Wow:&url=https%3A%2F%2Fgithub.com%2Fdkoluris%2Fpseudo-js)
+
 ## Overview
 **PSeudo** emulator is being developed using **.h headers** in addition to **.js files**. This technique helps me keep the workspace clean and simple, while at the same time modular code gets inlined for optimization. The codebase is compatible with **ES6 JavaScript** onwards.
 
