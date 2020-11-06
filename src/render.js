@@ -443,7 +443,7 @@ pseudo.CstrRender = function() {
 
     // Exposed class functions/variables
     return {
-        awake(canvas, resolution) {
+        init(canvas, resolution) {
             divRes = resolution[0];
 
             // WebGL Canvas

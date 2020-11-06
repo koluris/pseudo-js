@@ -72,7 +72,6 @@ pseudo.CstrMips = function() {
     // Cache for expensive calculation
     const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
 
-    let divOutput;
     let ptr, suspended, opcodeCount, requestAF;
 
     // Base CPU stepper
@@ -383,22 +382,16 @@ pseudo.CstrMips = function() {
     function consoleOutput() {
         if (pc === 0xb0) {
             if (base[9] === 59 || base[9] === 61) {
-                const char = Text.fromCharCode(base[4] & 0xff).replace(/\n/, '<br/>');
-                divOutput.append(char.toUpperCase());
+                psx.consoleKernel(base[4] & 0xff);
             }
         }
     }
 
     // Exposed class functions/variables
     return {
-        awake(output) {
-            divOutput = output;
-        },
-
         reset() {
             // Break emulation loop
             cpu.pause();
-            divOutput.text(' ');
 
             // Reset processors
             base.fill(0);
@@ -413,14 +406,14 @@ pseudo.CstrMips = function() {
         },
 
         bootstrap() {
-            cpu.consoleWrite(MSG_INFO, 'BIOS file has been written to ROM');
+            psx.consoleInformation(MSG_INFO, 'BIOS file has been written to ROM');
             const start = performance.now();
 
             while(pc !== 0x80030000) {
                 step(false);
             }
             const delta = parseFloat(performance.now() - start).toFixed(2);
-            cpu.consoleWrite(MSG_INFO, 'Bootstrap completed in ' + delta + ' ms');
+            psx.consoleInformation(MSG_INFO, 'Bootstrap completed in ' + delta + ' ms');
         },
 
         run() {
@@ -434,7 +427,7 @@ pseudo.CstrMips = function() {
                     // Rootcounters, interrupts
                     rootcnt.update(64);
                       cdrom.update();
-                    bus.interruptsUpdate();
+                        bus.update();
     
                     // Exceptions
                     if (data32 & mask32) {
@@ -454,12 +447,8 @@ pseudo.CstrMips = function() {
             setptr(pc);
         },
 
-        writeOK() {
-            return !(copr[12] & 0x10000);
-        },
-
-        consoleWrite(kind, str) {
-            divOutput.append('<div class="' + kind + '"><span>PSeudo:: </span>' + str + '</div>');
+        writeProtected() {
+            return copr[12] & 0x10000;
         },
 
         setSuspended() {

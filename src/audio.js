@@ -124,7 +124,7 @@ pseudo.CstrAudio = function() {
 
     // Exposed class functions/variables
     return {
-        awake() {
+        init() {
             spuMem = union(256 * 1024 * 2);
               sbuf = new UintHcap(SPU_SAMPLE_SIZE * 2);
 

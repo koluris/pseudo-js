@@ -78,7 +78,7 @@
 
       // Startup
       setTimeout(function() {
-        psx.awake(screen, blink, kb, res, output, dropzone);
+        psx.init(screen, blink, kb, res, output, dropzone);
 
         $(document).keydown(function(e) {
           sio.padListener(e.keyCode, true);

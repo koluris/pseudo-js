@@ -1,6 +1,7 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
 pseudo.CstrMain = function() {
+    let divOutput;
     let divDropzone;
     let iso;
 
@@ -9,7 +10,7 @@ pseudo.CstrMain = function() {
         const xhr = new XMLHttpRequest();
         xhr.onload = function() {
             if (xhr.status === 404) {
-                cpu.consoleWrite(MSG_ERROR, 'Unable to read file "' + path + '"');
+                psx.consoleInformation(MSG_ERROR, 'Unable to read file "' + path + '"');
             }
             else {
                 fn(xhr.response);
@@ -47,10 +48,12 @@ pseudo.CstrMain = function() {
         cpu.parseExeHeader(
             mem.writeExecutable(resp)
         );
-        cpu.consoleWrite(MSG_INFO, 'PSX-EXE has been transferred to RAM');
+        psx.consoleInformation(MSG_INFO, 'PSX-EXE has been transferred to RAM');
     }
 
     function reset() {
+        divOutput.text(' ');
+        
         // Reset all emulator components
           audio.reset();
             bus.reset();
@@ -70,19 +73,17 @@ pseudo.CstrMain = function() {
 
     // Exposed class functions/variables
     return {
-        awake(screen, blink, kb, res, output, dropzone) {
+        init(screen, blink, kb, res, output, dropzone) {
+            divOutput   = output;
             divDropzone = dropzone;
-            unusable = false;
-      
-            render.awake(screen, res);
-             audio.awake();
-             cdrom.awake(blink, kb);
-               cpu.awake(output);
-
-            cpu.consoleWrite(MSG_INFO, 'Welcome to PSeudo 0.84, a JavaScript based PSX emulator');
+            
+            render.init(screen, res);
+             audio.init();
+             cdrom.init(blink, kb);
+            
             request('bios/scph1001.bin', function(resp) {
-                // Completed
                 mem.writeROM(resp);
+                psx.consoleInformation(MSG_INFO, 'Welcome to PSeudo 0.84, a JavaScript based PSX emulator');
             });
         },
 
@@ -142,6 +143,18 @@ pseudo.CstrMain = function() {
 
         hex(number) {
             return '0x' + (number >>> 0).toText(16);
+        },
+
+        consoleInformation(kind, text) {
+            divOutput.append(
+                '<div class="' + kind + '"><span>PSeudo:: </span>' + text + '</div>'
+            );
+        },
+
+        consoleKernel(char) {
+            divOutput.append(
+                Text.fromCharCode(char).replace(/\n/, '<br/>').toUpperCase()
+            );
         },
 
         error(out) {

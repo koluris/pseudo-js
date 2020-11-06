@@ -107,7 +107,7 @@ pseudo.CstrAudio = function() {
     }
     // Exposed class functions/variables
     return {
-        awake() {
+        init() {
             spuMem = union(256 * 1024 * 2);
               sbuf = new Uint16Array(SPU_SAMPLE_SIZE * 2);
             // Channels
@@ -367,7 +367,7 @@ pseudo.CstrBus = function() {
                 item.queued = IRQ_DISABLED;
             }
         },
-        interruptsUpdate() { // A method to schedule when IRQs should fire
+        update() { // A method to schedule when IRQs should fire
             for (const item of interrupts) {
                 if (item.queued) {
                     if (item.queued++ === item.target) {
@@ -690,7 +690,7 @@ pseudo.CstrCdrom = function() {
       bus.interruptSet(2);
       cpu.resume();
     },
-    awake(blink, kb) {
+    init(blink, kb) {
       // Get HTML elements
       divBlink = blink;
       divKb    = kb[0];
@@ -1833,9 +1833,9 @@ pseudo.CstrMem = function() {
             return header;
         },
         write: {
-            w(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (!cpu.writeOK()) { return; } mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. w(addr & 0xffff, data); return; } mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '32' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
-            h(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (!cpu.writeOK()) { return; } mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. h(addr & 0xffff, data); return; } mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '16' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
-            b(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (!cpu.writeOK()) { return; } mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. b(addr & 0xffff, data); return; } mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '08' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            w(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.writeProtected()) { return; } mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. w(addr & 0xffff, data); return; } mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '32' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            h(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.writeProtected()) { return; } mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. h(addr & 0xffff, data); return; } mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '16' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            b(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.writeProtected()) { return; } mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. b(addr & 0xffff, data); return; } mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '08' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
         },
         read: {
             w(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2]; case 0xbf: return mem.rom. uw[((addr) & (mem.rom. uw.byteLength - 1)) >>> 2]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. w(addr & 0xffff); } return mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '32' + ' ' + psx.hex(addr)); return 0; },
@@ -1874,7 +1874,6 @@ pseudo.CstrMips = function() {
     const copr = new Uint32Array(16);
     // Cache for expensive calculation
     const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
-    let divOutput;
     let ptr, suspended, opcodeCount, requestAF;
     // Base CPU stepper
     function step(inslot) {
@@ -2114,20 +2113,15 @@ pseudo.CstrMips = function() {
     function consoleOutput() {
         if (base[32] === 0xb0) {
             if (base[9] === 59 || base[9] === 61) {
-                const char = String.fromCharCode(base[4] & 0xff).replace(/\n/, '<br/>');
-                divOutput.append(char.toUpperCase());
+                psx.consoleKernel(base[4] & 0xff);
             }
         }
     }
     // Exposed class functions/variables
     return {
-        awake(output) {
-            divOutput = output;
-        },
         reset() {
             // Break emulation loop
             cpu.pause();
-            divOutput.text(' ');
             // Reset processors
             base.fill(0);
             copr.fill(0);
@@ -2138,13 +2132,13 @@ pseudo.CstrMips = function() {
             ptr = base[32] >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
         },
         bootstrap() {
-            cpu.consoleWrite('info', 'BIOS file has been written to ROM');
+            psx.consoleInformation('info', 'BIOS file has been written to ROM');
             const start = performance.now();
             while(base[32] !== 0x80030000) {
                 step(false);
             }
             const delta = parseFloat(performance.now() - start).toFixed(2);
-            cpu.consoleWrite('info', 'Bootstrap completed in ' + delta + ' ms');
+            psx.consoleInformation('info', 'Bootstrap completed in ' + delta + ' ms');
         },
         run() {
             suspended = false;
@@ -2155,7 +2149,7 @@ pseudo.CstrMips = function() {
                     // Rootcounters, interrupts
                     rootcnt.update(64);
                       cdrom.update();
-                    bus.interruptsUpdate();
+                        bus.update();
     
                     // Exceptions
                     if (mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
@@ -2173,11 +2167,8 @@ pseudo.CstrMips = function() {
             base[32] = header[2 + 2];
             ptr = base[32] >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
         },
-        writeOK() {
-            return !(copr[12] & 0x10000);
-        },
-        consoleWrite(kind, str) {
-            divOutput.append('<div class="' + kind + '"><span>PSeudo:: </span>' + str + '</div>');
+        writeProtected() {
+            return copr[12] & 0x10000;
         },
         setSuspended() {
             suspended = true;
@@ -2204,6 +2195,7 @@ pseudo.CstrMips = function() {
 };
 const cpu = new pseudo.CstrMips();
 pseudo.CstrMain = function() {
+    let divOutput;
     let divDropzone;
     let iso;
     // AJAX function
@@ -2211,7 +2203,7 @@ pseudo.CstrMain = function() {
         const xhr = new XMLHttpRequest();
         xhr.onload = function() {
             if (xhr.status === 404) {
-                cpu.consoleWrite('error', 'Unable to read file "' + path + '"');
+                psx.consoleInformation('error', 'Unable to read file "' + path + '"');
             }
             else {
                 fn(xhr.response);
@@ -2245,9 +2237,11 @@ pseudo.CstrMain = function() {
         cpu.parseExeHeader(
             mem.writeExecutable(resp)
         );
-        cpu.consoleWrite('info', 'PSX-EXE has been transferred to RAM');
+        psx.consoleInformation('info', 'PSX-EXE has been transferred to RAM');
     }
     function reset() {
+        divOutput.text(' ');
+        
         // Reset all emulator components
           audio.reset();
             bus.reset();
@@ -2265,18 +2259,17 @@ pseudo.CstrMain = function() {
     }
     // Exposed class functions/variables
     return {
-        awake(screen, blink, kb, res, output, dropzone) {
+        init(screen, blink, kb, res, output, dropzone) {
+            divOutput   = output;
             divDropzone = dropzone;
-            unusable = false;
-      
-            render.awake(screen, res);
-             audio.awake();
-             cdrom.awake(blink, kb);
-               cpu.awake(output);
-            cpu.consoleWrite('info', 'Welcome to PSeudo 0.84, a JavaScript based PSX emulator');
+            
+            render.init(screen, res);
+             audio.init();
+             cdrom.init(blink, kb);
+            
             request('bios/scph1001.bin', function(resp) {
-                // Completed
                 mem.writeROM(resp);
+                psx.consoleInformation('info', 'Welcome to PSeudo 0.84, a JavaScript based PSX emulator');
             });
         },
         openFile(file) {
@@ -2328,6 +2321,16 @@ pseudo.CstrMain = function() {
         },
         hex(number) {
             return '0x' + (number >>> 0).toString(16);
+        },
+        consoleInformation(kind, text) {
+            divOutput.append(
+                '<div class="' + kind + '"><span>PSeudo:: </span>' + text + '</div>'
+            );
+        },
+        consoleKernel(char) {
+            divOutput.append(
+                String.fromCharCode(char).replace(/\n/, '<br/>').toUpperCase()
+            );
         },
         error(out) {
             cpu.pause();
@@ -2602,7 +2605,7 @@ pseudo.CstrRender = function() {
     }
     // Exposed class functions/variables
     return {
-        awake(canvas, resolution) {
+        init(canvas, resolution) {
             divRes = resolution[0];
             // 'webgl', { preserveDrawingBuffer: true } Canvas
             ctx = canvas[0].getContext('webgl', { preserveDrawingBuffer: true });

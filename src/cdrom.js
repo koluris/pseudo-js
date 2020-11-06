@@ -353,7 +353,7 @@ pseudo.CstrCdrom = function() {
       cpu.resume();
     },
 
-    awake(blink, kb) {
+    init(blink, kb) {
       // Get HTML elements
       divBlink = blink;
       divKb    = kb[0];
