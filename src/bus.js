@@ -69,8 +69,6 @@ pseudo.CstrBus = function() {
             const chan = ((addr >>> 4) & 0xf) - 8;
             
             if (dpcr & (8 << (chan * 4))) {
-                chcr = data;
-
                 switch(chan) {
                     case 0:  mdec.executeDMA(addr); break; // MDEC in
                     case 1:  mdec.executeDMA(addr); break; // MDEC out

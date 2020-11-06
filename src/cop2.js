@@ -208,19 +208,19 @@ pseudo.CstrCop2 = function() {
                 case 0: // BASIC
                     switch(rs & 7) {
                         case 0: // MFC2
-                            cpu.setbase(rt, cop2.opcodeMFC2(rd));
+                            cpu.base[rt] = cop2.opcodeMFC2(rd);
                             return;
 
                         case 2: // CFC2
-                            cpu.setbase(rt, oooo(cop2c.uw, rd));
+                            cpu.base[rt] = oooo(cop2c.uw, rd)
                             return;
 
                         case 4: // MTC2
-                            cop2.opcodeMTC2(rd, cpu.readbase(rt));
+                            cop2.opcodeMTC2(rd, cpu.base[rt]);
                             return;
 
                         case 6: // CTC2
-                            cop2.opcodeCTC2(rd, cpu.readbase(rt));
+                            cop2.opcodeCTC2(rd, cpu.base[rt]);
                             return;
                     }
 
