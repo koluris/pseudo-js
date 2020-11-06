@@ -529,8 +529,10 @@ pseudo.CstrRender = function() {
                 res.w = data.w;
                 res.h = data.h;
               
+                //ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
+                //ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
                 ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-                ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
+                ctx.viewport(0, 0, 640, 480);
                 render.swapBuffers(true);
     
                 divRes.innerText = res.w + ' x ' + res.h;
