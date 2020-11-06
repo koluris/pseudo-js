@@ -6,6 +6,8 @@
 
 **PSeudo JS** is a PSX emulator based on JavaScript and is being developed using **.h headers** in addition to **.js files**. This unusual technique helps me keep the workspace clean and simple, while at the same time modular code gets inlined for optimization before runtime on the VM. The codebase is compatible with **ES5 JavaScript** onwards.
 
+<a href="https://www.youtube.com/watch?v=dGA6fzY5bmI">Check out this video demonstration</a>
+
 <img alt="Bushido Blade" src="https://raw.githubusercontent.com/dkoluris/pseudo-js/master/res/bushido-blade.jpg" width="48.5%"/><img alt="Bust-A-Move" src="https://raw.githubusercontent.com/dkoluris/pseudo-js/master/res/bust-a-move.jpg" width="48.5%" align="right"/>
 
 <img alt="Klonoa" src="https://raw.githubusercontent.com/dkoluris/pseudo-js/master/res/klonoa-1.jpg" width="48.5%"/><img alt="Soul Reaver" src="https://raw.githubusercontent.com/dkoluris/pseudo-js/master/res/soul-reaver-1.jpg" width="48.5%" align="right"/>
