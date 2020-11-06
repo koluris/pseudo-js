@@ -26,7 +26,7 @@
 #define UintHcap                Uint16Array
 #define UintBcap                Uint8Array
 #define useFunction             useProgram
-#define WebGL                   'webgl', { preserveDrawingBuffer: true }
+#define WebGL                   'webgl', { antialias: false, depth: false, preserveDrawingBuffer: true, stencil: false }
 
 // A kind of helper for various data manipulation
 function union(size) {

@@ -2349,7 +2349,7 @@ pseudo.CstrMain = function() {
 };
 const psx = new pseudo.CstrMain();
 pseudo.CstrRender = function() {
-    let ctx, attrib, bfr, divRes; // 'webgl', { preserveDrawingBuffer: true } Context
+    let ctx, attrib, bfr, divRes; // Draw context
     let blend, bit, ofs;
     let drawArea, spriteTP;
     // Resolution
@@ -2602,8 +2602,8 @@ pseudo.CstrRender = function() {
     return {
         init(canvas, resolution) {
             divRes = resolution[0];
-            // 'webgl', { preserveDrawingBuffer: true } Canvas
-            ctx = canvas[0].getContext('webgl', { preserveDrawingBuffer: true });
+            // Draw canvas
+            ctx = canvas[0].getContext('webgl', { antialias: false, depth: false, preserveDrawingBuffer: true, stencil: false });
             ctx.enable(ctx.BLEND);
             ctx.clearColor(21 / 255.0, 21 / 255.0, 21 / 255.0, 1.0);
             // Shaders
