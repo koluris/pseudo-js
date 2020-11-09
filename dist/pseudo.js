@@ -2143,7 +2143,7 @@ pseudo.CstrMips = function() {
         },
         run() {
             suspended = false;
-            requestAF = requestAnimationFrame(cpu.run); //setTimeout(cpu.run, 0);
+            requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
             while(!suspended) { // And u don`t stop!
                 step(false);
                 if (opcodeCount >= 100) {
@@ -2172,9 +2172,9 @@ pseudo.CstrMips = function() {
             suspended = true;
         },
         pause() {
-            cancelAnimationFrame(requestAF);
+            //cancelAnimationFrame(requestAF);
+            clearTimeout(requestAF);
             requestAF = undefined;
-            //clearTimeout(requestAF);
             suspended = true;
         },
         resume() {
@@ -2600,7 +2600,7 @@ pseudo.CstrRender = function() {
         init(canvas, resolution) {
             divRes = resolution[0];
             // Draw canvas
-            ctx = canvas[0].getContext('webgl', { antialias: false, depth: false, preserveDrawingBuffer: true, stencil: false });
+            ctx = canvas[0].getContext('webgl2', { antialias: false, depth: false, preserveDrawingBuffer: true, stencil: false, desynchronized: true });
             ctx.enable(ctx.BLEND);
             ctx.clearColor(21 / 255.0, 21 / 255.0, 21 / 255.0, 1.0);
             // Shaders
@@ -2826,8 +2826,6 @@ pseudo.CstrRender = function() {
                 ctx.bindTexture  (ctx.TEXTURE_2D, tex);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
                 ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGB , iW, iH, 0, ctx.RGB , ctx.UNSIGNED_BYTE, raw.ub);
             }
             else {
@@ -2835,8 +2833,6 @@ pseudo.CstrRender = function() {
                 ctx.bindTexture  (ctx.TEXTURE_2D, tex);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
                 ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
             }
             createColor([

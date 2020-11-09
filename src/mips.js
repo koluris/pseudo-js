@@ -420,7 +420,7 @@ pseudo.CstrMips = function() {
 
         run() {
             suspended = false;
-            requestAF = requestAnimationFrame(cpu.run); //setTimeout(cpu.run, 0);
+            requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
 
             while(!suspended) { // And u don`t stop!
                 step(false);
@@ -454,9 +454,9 @@ pseudo.CstrMips = function() {
         },
 
         pause() {
-            cancelAnimationFrame(requestAF);
+            //cancelAnimationFrame(requestAF);
+            clearTimeout(requestAF);
             requestAF = undefined;
-            //clearTimeout(requestAF);
             suspended = true;
         },
 
