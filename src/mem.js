@@ -5,7 +5,7 @@
         case 0x00: \
         case 0x80: \
         case 0xA0: \
-            if (cpu.writeProtected()) { \
+            if (cpu.copr[12] & 0x10000) { \
                 return; \
             } \
             maccess(mem.ram.width, addr) = data; \

@@ -1832,9 +1832,9 @@ pseudo.CstrMem = function() {
             return header;
         },
         write: {
-            w(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.writeProtected()) { return; } mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. w(addr & 0xffff, data); return; } mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '32' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
-            h(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.writeProtected()) { return; } mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. h(addr & 0xffff, data); return; } mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '16' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
-            b(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.writeProtected()) { return; } mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. b(addr & 0xffff, data); return; } mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '08' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            w(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.copr[12] & 0x10000) { return; } mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. w(addr & 0xffff, data); return; } mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '32' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            h(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.copr[12] & 0x10000) { return; } mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. h(addr & 0xffff, data); return; } mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '16' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            b(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.copr[12] & 0x10000) { return; } mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. b(addr & 0xffff, data); return; } mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '08' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
         },
         read: {
             w(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2]; case 0xbf: return mem.rom. uw[((addr) & (mem.rom. uw.byteLength - 1)) >>> 2]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. w(addr & 0xffff); } return mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '32' + ' ' + psx.hex(addr)); return 0; },
@@ -2167,9 +2167,6 @@ pseudo.CstrMips = function() {
             cpu.base[29] = header[2 + 10];
             cpu.base[32] = header[2 + 2];
             ptr = cpu.base[32] >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
-        },
-        writeProtected() {
-            return cpu.copr[12] & 0x10000;
         },
         setSuspended() {
             suspended = true;

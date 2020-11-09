@@ -449,10 +449,6 @@ pseudo.CstrMips = function() {
             setptr(pc);
         },
 
-        writeProtected() {
-            return cpu.copr[12] & 0x10000;
-        },
-
         setSuspended() {
             suspended = true;
         },
