@@ -1,17 +1,17 @@
 pseudo.CstrGraphics = function() {
-    const pipe = {
+    let pipe = {
         data: new Uint32Array(256)
     };
 
-    const pSize = [];
+    let pSize = [];
     pSize[ 56] = 8;
     pSize[116] = 3;
 
     return {
         writeData(addr) {
             if (!pipe.size) {
-                const prim  = (addr >>> 24) & 0xff
-                const count = pSize[prim];
+                let prim  = (addr >>> 24) & 0xff
+                let count = pSize[prim];
 
                 if (count) {
                     pipe.data[0] = addr;
@@ -39,7 +39,7 @@ pseudo.CstrGraphics = function() {
         executeDMA(addr) {
             if (chcr === 0x01000401) {
                 while(madr !== 0xffffff) {
-                    const size = directMemW(mem.ram.uw, madr);
+                    let size = directMemW(mem.ram.uw, madr);
                     let haha = madr + 4;
                     for (let i = 0; i < (size >>> 24); i++) {
                         vs.writeData(directMemW(mem.ram.uw, haha));
@@ -53,4 +53,4 @@ pseudo.CstrGraphics = function() {
     };
 };
 
-const vs = new pseudo.CstrGraphics();
+let vs = new pseudo.CstrGraphics();

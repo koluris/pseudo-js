@@ -1,40 +1,21 @@
-#define opcode \
-    ((code >>> 26) & 0x3f)
-
-#define rs \
-    ((code >>> 21) & 0x1f)
-
-#define rt \
-    ((code >>> 16) & 0x1f)
-
-#define rd \
-    ((code >>> 11) & 0x1f)
-
-#define shamt \
-    ((code >>>  6) & 0x1f)
-
-#define imm_u \
-    (code & 0xffff)
-
-#define imm_s \
-    (SIGN_EXT_16(code))
-
-#define ob \
-    (base[rs] + imm_s)
-
-#define b_addr \
-    (pc + (imm_s << 2))
-
-#define s_addr \
-    ((pc & 0xf0000000) | (code & 0x3ffffff) << 2)
-
 pseudo.CstrMips = function() {
-    const base = new Uint32Array(32);
-    let pc;
+    let base = new Uint32Array(32);
+    let pc, code;
 
     function step() {
-        const code = mem.read.w(pc);
+        code = mem.read.w(pc);
         pc += 4;
+
+        let opcode = (code >>> 26) & 0x3f;
+        let rs     = (code >>> 21) & 0x1f;
+        let rt     = (code >>> 16) & 0x1f;
+        let rd     = (code >>> 11) & 0x1f;
+        let shamt  = (code >>>  6) & 0x1f;
+        let imm_u  = (code & 0xffff);
+        let imm_s  = (SIGN_EXT_16(code));
+        let ob     = (base[rs] + imm_s);
+        let b_addr = (pc + (imm_s << 2));
+        let s_addr = (pc & 0xf0000000) | (code & 0x3ffffff) << 2;
 
         switch(opcode) {
             case 0: // SPECIAL
@@ -143,16 +124,16 @@ pseudo.CstrMips = function() {
 
     return {
         run() {
-            let vblank = 1;
-            requestAnimationFrame(cpu.run);
-            
-            while(vblank) {
-                step(false);
+            let counter = 0;
 
-                if (vblank++ > 100000) {
-                    vblank = 0;
+            while(true) {
+                step();
+
+                if (counter++ > 100000) {
+                    break;
                 }
             }
+            requestAnimationFrame(cpu.run);
         },
 
         setpc(addr) {
@@ -161,4 +142,4 @@ pseudo.CstrMips = function() {
     };
 };
 
-const cpu = new pseudo.CstrMips();
+let cpu = new pseudo.CstrMips();

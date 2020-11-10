@@ -1,16 +1,16 @@
 pseudo.CstrMain = function() {
     return {
         init(screen) {
-            const xhr = new XMLHttpRequest();
-            xhr.onload = function() {
-                render.init(screen);
+            render.init(screen);
 
-                const header = new Uint32Array(xhr.response, 0, 0x800);
-                const start  = header[4];
-                const size   = header[7];
+            let xhr = new XMLHttpRequest();
+            xhr.onload = function() {
+                let header = new Uint32Array(this.response, 0, 0x800);
+                let start  = header[4];
+                let size   = header[7];
 
                 mem.ram.ub.set(
-                    new Uint8Array(xhr.response, 0x800, size), start & (mem.ram.ub.byteLength - 1)
+                    new Uint8Array(this.response, 0x800, size), start & (mem.ram.ub.byteLength - 1)
                 );
                 cpu.setpc(start);
                 cpu.run();
@@ -22,4 +22,4 @@ pseudo.CstrMain = function() {
     };
 };
 
-const psx = new pseudo.CstrMain();
+let psx = new pseudo.CstrMain();

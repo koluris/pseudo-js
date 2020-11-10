@@ -22,7 +22,7 @@ pseudo.CstrRender = function() {
             switch(addr & 0xfc) {
                 case 0x38: // POLY G4
                     {
-                        const p = {
+                        let p = {
                             colors: [
                                 RGBC(data[0]),
                                 RGBC(data[2]),
@@ -37,7 +37,7 @@ pseudo.CstrRender = function() {
                             ]
                         };
 
-                        const gradient = ctx.createLinearGradient(0, 0, p.points[3].x, p.points[3].y);
+                        let gradient = ctx.createLinearGradient(0, 0, p.points[3].x, p.points[3].y);
                         gradient.addColorStop(0, 'RGBA(' + p.colors[0].r + ', ' + p.colors[0].g + ', ' + p.colors[0].b + ', 255)');
                         gradient.addColorStop(1, 'RGBA(' + p.colors[3].r + ', ' + p.colors[3].g + ', ' + p.colors[3].b + ', 255)');
 
@@ -53,7 +53,7 @@ pseudo.CstrRender = function() {
 
                 case 0x74: // SPRITE 8
                     {
-                        const p = {
+                        let p = {
                             colors: [
                                 RGBC(data[0])
                             ],
@@ -77,4 +77,4 @@ pseudo.CstrRender = function() {
     };
 };
 
-const render = new pseudo.CstrRender();
+let render = new pseudo.CstrRender();

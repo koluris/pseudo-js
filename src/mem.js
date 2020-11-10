@@ -1,6 +1,4 @@
 pseudo.CstrMem = function() {
-    const PSX_EXE_HEADER_SIZE = 0x800;
-
     return {
         ram: union(0x200000),
         hwr: union(0x4000),
@@ -78,4 +76,4 @@ pseudo.CstrMem = function() {
     };
 };
 
-const mem = new pseudo.CstrMem();
+let mem = new pseudo.CstrMem();

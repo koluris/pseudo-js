@@ -1,6 +1,6 @@
 // A kind of helper for various data manipulation
 function union(size) {
-    const bfr = new ArrayBuffer(size);
+    let bfr = new ArrayBuffer(size);
 
     return {
         uw: new Uint32Array(bfr),
@@ -48,4 +48,8 @@ function union(size) {
 
 // Declare our namespace
 'use strict';
-const pseudo = window.pseudo || {};
+let pseudo = window.pseudo || {};
+
+// 21 processor instructions
+//  2 draw primitives
+//  1 DMA channel

@@ -1,6 +1,6 @@
 // A kind of helper for various data manipulation
 function union(size) {
-    const bfr = new ArrayBuffer(size);
+    let bfr = new ArrayBuffer(size);
     return {
         uw: new Uint32Array(bfr),
         uh: new Uint16Array(bfr),
@@ -12,9 +12,11 @@ function union(size) {
 }
 // Declare our namespace
 'use strict';
-const pseudo = window.pseudo || {};
+let pseudo = window.pseudo || {};
+// 21 processor instructions
+//  2 draw primitives
+//  1 DMA channel
 pseudo.CstrMem = function() {
-    const PSX_EXE_HEADER_SIZE = 0x800;
     return {
         ram: union(0x200000),
         hwr: union(0x4000),
@@ -83,89 +85,99 @@ pseudo.CstrMem = function() {
         }
     };
 };
-const mem = new pseudo.CstrMem();
+let mem = new pseudo.CstrMem();
 pseudo.CstrMips = function() {
-    const base = new Uint32Array(32);
-    let pc;
+    let base = new Uint32Array(32);
+    let pc, code;
     function step() {
-        const code = mem.read.w(pc);
+        code = mem.read.w(pc);
         pc += 4;
-        switch(((code >>> 26) & 0x3f)) {
+        let opcode = (code >>> 26) & 0x3f;
+        let rs     = (code >>> 21) & 0x1f;
+        let rt     = (code >>> 16) & 0x1f;
+        let rd     = (code >>> 11) & 0x1f;
+        let shamt  = (code >>>  6) & 0x1f;
+        let imm_u  = (code & 0xffff);
+        let imm_s  = (((code) << 16 >> 16));
+        let ob     = (base[rs] + imm_s);
+        let b_addr = (pc + (imm_s << 2));
+        let s_addr = (pc & 0xf0000000) | (code & 0x3ffffff) << 2;
+        switch(opcode) {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
                     case 0: // SLL
                         if (code) { // No operation
-                            base[((code >>> 11) & 0x1f)] = base[((code >>> 16) & 0x1f)] << ((code >>> 6) & 0x1f);
+                            base[rd] = base[rt] << shamt;
                         }
                         return;
                     case 2: // SRL
-                        base[((code >>> 11) & 0x1f)] = base[((code >>> 16) & 0x1f)] >>> ((code >>> 6) & 0x1f);
+                        base[rd] = base[rt] >>> shamt;
                         return;
                     case 8: // JR
-                        branch(base[((code >>> 21) & 0x1f)]);
+                        branch(base[rs]);
                         return;
                     case 36: // AND
-                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] & base[((code >>> 16) & 0x1f)];
+                        base[rd] = base[rs] & base[rt];
                         return;
                     case 37: // OR
-                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] | base[((code >>> 16) & 0x1f)];
+                        base[rd] = base[rs] | base[rt];
                         return;
                 }
                 return;
             case 2: // J
-                branch(((pc & 0xf0000000) | (code & 0x3ffffff) << 2));
+                branch(s_addr);
                 return;
             case 3: // JAL
                 base[31] = pc + 4;
-                branch(((pc & 0xf0000000) | (code & 0x3ffffff) << 2));
+                branch(s_addr);
                 return;
             case 4: // BEQ
-                if (base[((code >>> 21) & 0x1f)] === base[((code >>> 16) & 0x1f)]) {
-                    branch((pc + ((((code) << 16 >> 16)) << 2)));
+                if (base[rs] === base[rt]) {
+                    branch(b_addr);
                 }
                 return;
             case 5: // BNE
-                if (base[((code >>> 21) & 0x1f)] !== base[((code >>> 16) & 0x1f)]) {
-                    branch((pc + ((((code) << 16 >> 16)) << 2)));
+                if (base[rs] !== base[rt]) {
+                    branch(b_addr);
                 }
                 return;
             case 7: // BGTZ
-                if (((base[((code >>> 21) & 0x1f)]) << 0 >> 0) > 0) {
-                    branch((pc + ((((code) << 16 >> 16)) << 2)));
+                if (((base[rs]) << 0 >> 0) > 0) {
+                    branch(b_addr);
                 }
                 return;
             case 9: // ADDIU
-                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16));
+                base[rt] = base[rs] + imm_s;
                 return;
             case 10: // SLTI
-                base[((code >>> 16) & 0x1f)] = ((base[((code >>> 21) & 0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
+                base[rt] = ((base[rs]) << 0 >> 0) < imm_s;
                 return;
             case 12: // ANDI
-                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] & (code & 0xffff);
+                base[rt] = base[rs] & imm_u;
                 return;
             case 13: // ORI
-                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] | (code & 0xffff);
+                base[rt] = base[rs] | imm_u;
                 return;
             case 15: // LUI
-                base[((code >>> 16) & 0x1f)] = code << 16;
+                base[rt] = code << 16;
                 return;
             case 33: // LH
-                base[((code >>> 16) & 0x1f)] = ((mem.read.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
+                base[rt] = ((mem.read.h(ob)) << 16 >> 16);
                 return;
             case 35: // LW
-                base[((code >>> 16) & 0x1f)] = mem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[rt] = mem.read.w(ob);
                 return;
             case 36: // LBU
-                base[((code >>> 16) & 0x1f)] = mem.read.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[rt] = mem.read.b(ob);
                 return;
             case 40: // SB
-                mem.write.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
+                mem.write.b(ob, base[rt]);
                 return;
             case 41: // SH
-                mem.write.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
+                mem.write.h(ob, base[rt]);
                 return;
             case 43: // SW
-                mem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
+                mem.write.w(ob, base[rt]);
                 return;
         }
     }
@@ -175,33 +187,32 @@ pseudo.CstrMips = function() {
     }
     return {
         run() {
-            let vblank = 1;
-            requestAnimationFrame(cpu.run);
-            
-            while(vblank) {
-                step(false);
-                if (vblank++ > 100000) {
-                    vblank = 0;
+            let counter = 0;
+            while(true) {
+                step();
+                if (counter++ > 100000) {
+                    break;
                 }
             }
+            requestAnimationFrame(cpu.run);
         },
         setpc(addr) {
             pc = addr;
         }
     };
 };
-const cpu = new pseudo.CstrMips();
+let cpu = new pseudo.CstrMips();
 pseudo.CstrMain = function() {
     return {
         init(screen) {
-            const xhr = new XMLHttpRequest();
+            render.init(screen);
+            let xhr = new XMLHttpRequest();
             xhr.onload = function() {
-                render.init(screen);
-                const header = new Uint32Array(xhr.response, 0, 0x800);
-                const start  = header[4];
-                const size   = header[7];
+                let header = new Uint32Array(this.response, 0, 0x800);
+                let start  = header[4];
+                let size   = header[7];
                 mem.ram.ub.set(
-                    new Uint8Array(xhr.response, 0x800, size), start & (mem.ram.ub.byteLength - 1)
+                    new Uint8Array(this.response, 0x800, size), start & (mem.ram.ub.byteLength - 1)
                 );
                 cpu.setpc(start);
                 cpu.run();
@@ -212,7 +223,7 @@ pseudo.CstrMain = function() {
         }
     };
 };
-const psx = new pseudo.CstrMain();
+let psx = new pseudo.CstrMain();
 pseudo.CstrRender = function() {
     let ctx;
     return {
@@ -223,7 +234,7 @@ pseudo.CstrRender = function() {
             switch(addr & 0xfc) {
                 case 0x38: // POLY G4
                     {
-                        const p = {
+                        let p = {
                             colors: [
                                 { r: (data[0] >>> 0) & 0xff, g: (data[0] >>> 8) & 0xff, b: (data[0] >>> 16) & 0xff, a: (data[0] >>> 24) & 0xff, },
                                 { r: (data[2] >>> 0) & 0xff, g: (data[2] >>> 8) & 0xff, b: (data[2] >>> 16) & 0xff, a: (data[2] >>> 24) & 0xff, },
@@ -237,7 +248,7 @@ pseudo.CstrRender = function() {
                                 { x: (data[7] >> 0) & 0xffff, y: (data[7] >> 16) & 0xffff, },
                             ]
                         };
-                        const gradient = ctx.createLinearGradient(0, 0, p.points[3].x, p.points[3].y);
+                        let gradient = ctx.createLinearGradient(0, 0, p.points[3].x, p.points[3].y);
                         gradient.addColorStop(0, 'RGBA(' + p.colors[0].r + ', ' + p.colors[0].g + ', ' + p.colors[0].b + ', 255)');
                         gradient.addColorStop(1, 'RGBA(' + p.colors[3].r + ', ' + p.colors[3].g + ', ' + p.colors[3].b + ', 255)');
                         ctx.fillStyle = gradient;
@@ -251,7 +262,7 @@ pseudo.CstrRender = function() {
                     return;
                 case 0x74: // SPRITE 8
                     {
-                        const p = {
+                        let p = {
                             colors: [
                                 { r: (data[0] >>> 0) & 0xff, g: (data[0] >>> 8) & 0xff, b: (data[0] >>> 16) & 0xff, a: (data[0] >>> 24) & 0xff, }
                             ],
@@ -273,19 +284,19 @@ pseudo.CstrRender = function() {
         }
     };
 };
-const render = new pseudo.CstrRender();
+let render = new pseudo.CstrRender();
 pseudo.CstrGraphics = function() {
-    const pipe = {
+    let pipe = {
         data: new Uint32Array(256)
     };
-    const pSize = [];
+    let pSize = [];
     pSize[ 56] = 8;
     pSize[116] = 3;
     return {
         writeData(addr) {
             if (!pipe.size) {
-                const prim  = (addr >>> 24) & 0xff
-                const count = pSize[prim];
+                let prim  = (addr >>> 24) & 0xff
+                let count = pSize[prim];
                 if (count) {
                     pipe.data[0] = addr;
                     pipe.prim = prim;
@@ -309,7 +320,7 @@ pseudo.CstrGraphics = function() {
         executeDMA(addr) {
             if (mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] === 0x01000401) {
                 while(mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] !== 0xffffff) {
-                    const size = mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2];
+                    let size = mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2];
                     let haha = mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + 4;
                     for (let i = 0; i < (size >>> 24); i++) {
                         vs.writeData(mem.ram.uw[(( haha) & (mem.ram.uw.byteLength - 1)) >>> 2]);
@@ -322,4 +333,4 @@ pseudo.CstrGraphics = function() {
         }
     };
 };
-const vs = new pseudo.CstrGraphics();
+let vs = new pseudo.CstrGraphics();
