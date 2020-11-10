@@ -155,9 +155,6 @@ pseudo.CstrMips = function() {
         base: new UintWcap(32 + 1),
 
         reset() {
-            // Break emulation loop
-            cpu.pause();
-
             // Reset processors
             cpu.base.fill(0);
 
@@ -177,7 +174,7 @@ pseudo.CstrMips = function() {
                 vbk += 64;
 
                 if (vbk >= 100000) { vbk = 0;
-                    cpu.setSuspended();
+                    suspended = true;
                 }
             }
         },
@@ -187,20 +184,6 @@ pseudo.CstrMips = function() {
             cpu.base[29] = header[2 + 10];
             pc = header[2 + 2];
             setptr(pc);
-        },
-
-        setSuspended() {
-            suspended = true;
-        },
-
-        pause() {
-            cancelAnimationFrame(requestAF);
-            requestAF = undefined;
-            suspended = true;
-        },
-
-        resume() {
-            cpu.run();
         },
 
         setpc(addr) {

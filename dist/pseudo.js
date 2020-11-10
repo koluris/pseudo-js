@@ -198,8 +198,6 @@ pseudo.CstrMips = function() {
     return {
         base: new Uint32Array(32 + 1),
         reset() {
-            // Break emulation loop
-            cpu.pause();
             // Reset processors
             cpu.base.fill(0);
             cpu.base[32] = 0xbfc00000;
@@ -213,7 +211,7 @@ pseudo.CstrMips = function() {
                 step(false);
                 vbk += 64;
                 if (vbk >= 100000) { vbk = 0;
-                    cpu.setSuspended();
+                    suspended = true;
                 }
             }
         },
@@ -222,17 +220,6 @@ pseudo.CstrMips = function() {
             cpu.base[29] = header[2 + 10];
             cpu.base[32] = header[2 + 2];
             ptr = mem.ram.uw;
-        },
-        setSuspended() {
-            suspended = true;
-        },
-        pause() {
-            cancelAnimationFrame(requestAF);
-            requestAF = undefined;
-            suspended = true;
-        },
-        resume() {
-            cpu.run();
         },
         setpc(addr) {
             ptr = mem.ram.uw;
