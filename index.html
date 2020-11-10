@@ -1,95 +1,21 @@
-<!doctype html>
 <html>
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PSeudo</title>
-
-  <style>
-    @import url('css/normalize.css');
-    @import url('css/default.css');
-  </style>
 </head>
 <body>
-  <div id="container">
-    <div id="header">
-    </div>
-
-    <!-- Main -->
-    <div id="main">
-      <div class="centered-v">
-        <div class="header">
-           <img class="ps" src="res/ps.png"/>
-           <div class="brand">PSeudo</div>
-        </div>
-
-        <!-- Screen -->
-        <div class="screen">
-          <canvas id="screen" width="640" height="480">
-            No support for <code>canvas</code> element.
-          </canvas>
-          <div class="led">
-            <div id="blink"></div>
-            <div id="kb">0 kb</div>
-          </div>
-          <div id="resolution"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panels -->
-    <div id="footer">
-      <div class="centered-h">
-        <div class="panel-l">
-          <div class="header">CONSOLE</div>
-          <div id="output"></div>
-        </div>
-        <div class="panel-r">
-          <div id="dropzone" ondrop="psx.drop.file(event)" ondragenter="psx.drop.enter()" ondragleave="psx.drop.exit()" ondragover="psx.drop.over(event)" onclick="chooseFile()">
-            <img src="res/drop.png"/>
-            <div>DROP PSX GAMES HERE</div>
-            <div>bin img iso psx exe</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Fork me on GitHub -->
-  <a href="https://github.com/dkoluris/pseudo-js"><img id="fork-me" src="res/fork-me.png" alt="Fork me on GitHub"></a>
+  <canvas id="screen" width="640" height="480">
+    No support for <code>canvas</code> element.
+  </canvas>
 
   <script src="dist/quer-3.5.1.slim.min.js"></script>
   <script src="dist/pseudo.js"></script>
 
   <script>
-    function chooseFile() {
-      $('<input type="file">').on('change', function () {
-        psx.openFile(this.files[0]);
-      }).click();
-    }
-
     $(function() {
       const screen   = $('#screen');
-      const blink    = $('#blink');
-      const kb       = $('#kb');
-      const res      = $('#resolution');
-      const output   = $('#output');
       const dropzone = $('#dropzone');
 
-      // Startup
-      setTimeout(function() {
-        psx.init(screen, blink, kb, res, output, dropzone);
-
-        $(document).keydown(function(e) {
-          sio.padListener(e.keyCode, true);
-          //console.info('down' + e.keyCode);
-        });
-
-        $(document).keyup(function(e) {
-          sio.padListener(e.keyCode, false);
-          //console.info('up' + e.keyCode);
-        });
-      }, 1000);
+      psx.init(screen, dropzone);
     });
   </script>
 </body>

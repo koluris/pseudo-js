@@ -58,18 +58,6 @@ function union(size) {
 /***
     Hardware IO
 ***/
-#define data32 \
-    directMemW(mem.hwr.uw, 0x1070)
-
-#define mask32 \
-    directMemW(mem.hwr.uw, 0x1074)
-
-#define data16 \
-    directMemH(mem.hwr.uh, 0x1070)
-
-#define mask16 \
-    directMemH(mem.hwr.uh, 0x1074)
-
 #define dpcr \
     directMemW(mem.hwr.uw, 0x10f0)
 
@@ -108,39 +96,6 @@ function union(size) {
 
 #define rd \
     ((code >>> 11) & 0x1f)
-
-/***
-    Bus interrupts
-***/
-#define IRQ_VBLANK  0
-#define IRQ_GPU     1
-#define IRQ_CD      2
-#define IRQ_DMA     3
-#define IRQ_RTC0    4
-#define IRQ_RTC1    5
-#define IRQ_RTC2    6
-#define IRQ_SIO0    7
-#define IRQ_SIO1    8
-#define IRQ_SPU     9
-#define IRQ_PIO     10
-
-/***
-    CD-ROM & ISO
-***/
-#define UDF_FRAMESIZERAW \
-    2352
-
-#define UDF_DATASIZE \
-    (UDF_FRAMESIZERAW - 12)
-
-#define BCD2INT(n) \
-    (parseInt((n) / 16) * 10 + (n) % 16)
-
-#define INT2BCD(n) \
-    (parseInt((n) / 10) * 16 + (n) % 10)
-
-#define MSF2SECTOR(m, s, f) \
-    (((m) * 60 + (s) - 2) * 75 + (f))
 
 /***
     Graphics

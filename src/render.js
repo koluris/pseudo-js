@@ -78,7 +78,7 @@
 }
 
 pseudo.CstrRender = function() {
-    let ctx, attrib, bfr, divRes; // Draw context
+    let ctx, attrib, bfr; // Draw context
     let blend, bit, ofs;
     let drawArea, spriteTP;
 
@@ -236,9 +236,7 @@ pseudo.CstrRender = function() {
 
     // Exposed class functions/variables
     return {
-        init(canvas, resolution) {
-            divRes = resolution[0];
-
+        init(canvas) {
             // Draw canvas
             ctx = canvas[0].fetchContext(WebGL);
             ctx.enable(ctx.BLEND);

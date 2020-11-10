@@ -31,13 +31,12 @@ pseudo.CstrMips = function() {
     // Base + Coprocessor
     const base = new UintWcap(32 + 3); // + pc, lo, hi
 
-    let ptr, suspended, opcodeCount, requestAF;
+    let ptr, suspended, requestAF;
 
     // Base CPU stepper
     function step(inslot) {
-        cpu.base[0] = 0; // As weird as this seems, it is needed
+        //cpu.base[0] = 0; // As weird as this seems, it is needed
         const code  = directMemW(ptr, pc);
-        opcodeCount++;
         pc += 4;
 
         switch(opcode) {
@@ -56,7 +55,6 @@ pseudo.CstrMips = function() {
                     case 8: // JR
                         branch(cpu.base[rs]);
                         setptr(pc);
-                        consoleOutput();
                         return;
 
                     case 36: // AND
@@ -152,14 +150,6 @@ pseudo.CstrMips = function() {
         pc = addr;
     }
 
-    function consoleOutput() {
-        if (pc === 0xb0) {
-            if (cpu.base[9] === 59 || cpu.base[9] === 61) {
-                psx.consoleKernel(cpu.base[4] & 0xff);
-            }
-        }
-    }
-
     // Exposed class functions/variables
     return {
         base: new UintWcap(32 + 1),
@@ -171,7 +161,6 @@ pseudo.CstrMips = function() {
             // Reset processors
             cpu.base.fill(0);
 
-            opcodeCount = 0;
             pc = 0xbfc00000;
             setptr(pc);
         },
@@ -180,25 +169,15 @@ pseudo.CstrMips = function() {
             suspended = false;
             requestAF = requestAnimationFrame(cpu.run);
 
-            const PSX_CLOCK      = 33868800;
-            const PSX_VSYNC_NTSC = PSX_CLOCK / 60;
-
             let vbk = 0;
 
             while(!suspended) { // And u don`t stop!
                 step(false);
 
-                if (opcodeCount >= 100) {
-                    // Rootcounters, interrupts
-                    vbk += 64;
+                vbk += 64;
 
-                    if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
-                        data16 |= (1 << 0);
-                        vs.redraw();
-                        cpu.setSuspended();
-                    }
-                    
-                    opcodeCount = 0;
+                if (vbk >= 100000) { vbk = 0;
+                    cpu.setSuspended();
                 }
             }
         },

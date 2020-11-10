@@ -15,26 +15,6 @@ function union(size) {
 // Declare our namespace
 'use strict';
 const pseudo = window.pseudo || {};
-pseudo.CstrBus = function() {
-    return {
-        checkDMA(addr, data) {
-            const chan = ((addr >>> 4) & 0xf) - 8;
-            
-            if (mem.hwr.uw[((0x10f0) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (8 << (chan * 4))) {
-                if (chan === 2) {
-                    vs.executeDMA(addr);
-                }
-                
-                mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
-                if (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (1 << (16 + chan))) {
-                    mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] |= 1 << (24 + chan);
-                    bus.interruptSet(3);
-                }
-            }
-        }
-    };
-};
-const bus = new pseudo.CstrBus();
 pseudo.CstrHardware = function() {
     // Exposed class functions/variables
     return {
@@ -44,7 +24,19 @@ pseudo.CstrHardware = function() {
                     case (addr >= 0x1080 && addr <= 0x10e8): // DMA
                         mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                         if (addr & 8) {
-                            bus.checkDMA(addr, data);
+                            const chan = ((addr >>> 4) & 0xf) - 8;
+            
+                            if (mem.hwr.uw[((0x10f0) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (8 << (chan * 4))) {
+                                if (chan === 2) {
+                                    vs.executeDMA(addr);
+                                }
+                                
+                                mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
+                                if (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (1 << (16 + chan))) {
+                                    mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] |= 1 << (24 + chan);
+                                    bus.interruptSet(IRQ_DMA);
+                                }
+                            }
                         }
                         return;
                     case (addr == 0x10f4): // DICR, thanks Calb, Galtor :)
@@ -121,12 +113,11 @@ const mem = new pseudo.CstrMem();
 pseudo.CstrMips = function() {
     // Base + Coprocessor
     const base = new Uint32Array(32 + 3); // + cpu.base[32], lo, hi
-    let ptr, suspended, opcodeCount, requestAF;
+    let ptr, suspended, requestAF;
     // Base CPU stepper
     function step(inslot) {
-        cpu.base[0] = 0; // As weird as this seems, it is needed
+        //cpu.base[0] = 0; // As weird as this seems, it is needed
         const code  = ptr[(( cpu.base[32]) & (ptr.byteLength - 1)) >>> 2];
-        opcodeCount++;
         cpu.base[32] += 4;
         switch(((code >>> 26) & 0x3f)) {
             case 0: // SPECIAL
@@ -142,7 +133,6 @@ pseudo.CstrMips = function() {
                     case 8: // JR
                         branch(cpu.base[((code >>> 21) & 0x1f)]);
                         ptr = mem.ram.uw;
-                        consoleOutput();
                         return;
                     case 36: // AND
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & cpu.base[((code >>> 16) & 0x1f)];
@@ -216,13 +206,6 @@ pseudo.CstrMips = function() {
         step(true);
         cpu.base[32] = addr;
     }
-    function consoleOutput() {
-        if (cpu.base[32] === 0xb0) {
-            if (cpu.base[9] === 59 || cpu.base[9] === 61) {
-                psx.consoleKernel(cpu.base[4] & 0xff);
-            }
-        }
-    }
     // Exposed class functions/variables
     return {
         base: new Uint32Array(32 + 1),
@@ -231,28 +214,18 @@ pseudo.CstrMips = function() {
             cpu.pause();
             // Reset processors
             cpu.base.fill(0);
-            opcodeCount = 0;
             cpu.base[32] = 0xbfc00000;
             ptr = mem.ram.uw;
         },
         run() {
             suspended = false;
             requestAF = requestAnimationFrame(cpu.run);
-            const PSX_CLOCK      = 33868800;
-            const PSX_VSYNC_NTSC = PSX_CLOCK / 60;
             let vbk = 0;
             while(!suspended) { // And u don`t stop!
                 step(false);
-                if (opcodeCount >= 100) {
-                    // Rootcounters, interrupts
-                    vbk += 64;
-                    if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
-                        mem.hwr.uh[((0x1070) & (mem.hwr.uh.byteLength - 1)) >>> 1] |= (1 << 0);
-                        vs.redraw();
-                        cpu.setSuspended();
-                    }
-                    
-                    opcodeCount = 0;
+                vbk += 64;
+                if (vbk >= 100000) { vbk = 0;
+                    cpu.setSuspended();
                 }
             }
         },
@@ -280,114 +253,32 @@ pseudo.CstrMips = function() {
 };
 const cpu = new pseudo.CstrMips();
 pseudo.CstrMain = function() {
-    let divOutput;
-    let divDropzone;
-    let iso;
     // AJAX function
     function request(path, fn) {
         const xhr = new XMLHttpRequest();
         xhr.onload = function() {
-            if (xhr.status === 404) {
-                psx.consoleInformation('error', 'Unable to read file "' + path + '"');
-            }
-            else {
-                fn(xhr.response);
-            }
+            fn(xhr.response);
         };
         xhr.responseType = 'arraybuffer';
         xhr.open('GET', path);
         xhr.send();
     }
-    // Chunk reader function
-    function chunkReader(file, start, size, kind, fn) {
-        const end = start + size;
-        // Check boundaries
-        if (file.size > end) {
-            const reader = new FileReader();
-            reader.onload = function(e) { // Callback
-                fn(e.target.result);
-            };
-            // Read sliced area
-            const slice = file.slice(start, end);
-            if (kind === 'text') {
-                reader.readAsText(slice);
-            }
-            else {
-                reader.readAsArrayBuffer(slice);
-            }
-        }
-    }
-    function executable(resp) {
-        // Set mem & processor
-        cpu.parseExeHeader(
-            mem.writeExecutable(resp)
-        );
-        psx.consoleInformation('info', 'PSX-EXE has been transferred to RAM');
-    }
-    function reset() {
-        divOutput.text(' ');
-        
-        // Reset all emulator components
-           cpu.reset();
-           mem.reset();
-        render.reset();
-            vs.reset();
-    }
-    // Exposed class functions/variables
     return {
-        init(screen, blink, kb, res, output, dropzone) {
-            divOutput   = output;
-            divDropzone = dropzone;
-            
-            render.init(screen, res);
-        },
-        openFile(file) {
-            // PS-X EXE
-            chunkReader(file, 0, 8, 'text', function(id) {
-                if (id === 'PS-X EXE') {
-                    const reader = new FileReader();
-                    reader.onload = function(e) { // Callback
-                        reset();
-                        executable(e.target.result);
-                        cpu.run();
-                    };
-                    // Read file
-                    reader.readAsArrayBuffer(file);
-                }
+        init(screen) {
+            render.init(screen);
+            request('print-text.exe', function(resp) {
+                cpu.reset();
+                mem.reset();
+                render.reset();
+                vs.reset();
+                cpu.parseExeHeader(
+                    mem.writeExecutable(resp)
+                );
+                cpu.run();
             });
-        },
-        drop: {
-            file(e) {
-                e.preventDefault();
-                psx.drop.exit();
-        
-                const dt = e.dataTransfer;
-                if (dt.files) {
-                    psx.openFile(dt.files[0]);
-                }
-            },
-            over(e) {
-                e.preventDefault();
-            },
-            enter() {
-                divDropzone.addClass('dropzone-active');
-            },
-            exit() {
-                divDropzone.removeClass('dropzone-active');
-            }
         },
         hex(number) {
             return '0x' + (number >>> 0).toString(16);
-        },
-        consoleInformation(kind, text) {
-            divOutput.append(
-                '<div class="' + kind + '"><span>PSeudo:: </span>' + text + '</div>'
-            );
-        },
-        consoleKernel(char) {
-            divOutput.append(
-                String.fromCharCode(char).replace(/\n/, '<br/>').toUpperCase()
-            );
         },
         error(out) {
             cpu.pause();
@@ -397,7 +288,7 @@ pseudo.CstrMain = function() {
 };
 const psx = new pseudo.CstrMain();
 pseudo.CstrRender = function() {
-    let ctx, attrib, bfr, divRes; // Draw context
+    let ctx, attrib, bfr; // Draw context
     let blend, bit, ofs;
     let drawArea, spriteTP;
     // Resolution
@@ -527,8 +418,7 @@ pseudo.CstrRender = function() {
     }
     // Exposed class functions/variables
     return {
-        init(canvas, resolution) {
-            divRes = resolution[0];
+        init(canvas) {
             // Draw canvas
             ctx = canvas[0].getContext('webgl2', { antialias: false, depth: false, desynchronized: true, preserveDrawingBuffer: true, stencil: false });
             ctx.enable(ctx.BLEND);
@@ -852,13 +742,6 @@ pseudo.CstrGraphics = function() {
                 }
                 else {
                     pipe.data[pipe.row] = ret.data;
-                    if (pipe.size > 128) { // Lines with termination code
-                        if ((pipe.size == 254 && pipe.row >= 3) || (pipe.size == 255 && pipe.row >= 4 && !(pipe.row & 1))) {
-                            if ((pipe.data[pipe.row] & 0xf000f000) == 0x50005000) {
-                                pipe.row = pipe.size - 1;
-                            }
-                        }
-                    }
                     pipe.row++;
                 }
                 if (pipe.size === pipe.row) {
