@@ -60,7 +60,6 @@ pseudo.CstrMain = function() {
             mem.reset();
          render.reset();
         rootcnt.reset();
-            sio.reset();
              vs.reset();
     }
 

@@ -126,37 +126,6 @@ pseudo.CstrGraphics = function() {
                     render.draw(pipe.prim, pipe.data);
                 }
             }
-        },
-
-        read(stream, addr, size) {
-            if (modeDMA == GPU_DMA_VRAM2MEM) {
-                ret.status &= (~(0x14000000));
-
-                do {
-                    const vramValue = vs.vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
-
-                    if (stream) {
-                        directMemW(mem.ram.uw, addr) = vramValue;
-                    }
-                    else {
-                        ret.data = vramValue;
-                    }
-                    addr += 4;
-
-                    if ((vrop.h.p += 2) >= vrop.h.end) {
-                        vrop.h.p = vrop.h.start;
-                        vrop.pvram += FRAME_W;
-
-                        if (++vrop.v.p >= vrop.v.end) {
-                            modeDMA = GPU_DMA_NONE;
-                            ret.status &= (~(GPU_STAT_READYFORVRAM));
-                            break;
-                        }
-                    }
-                } while (--size);
-        
-                ret.status = (ret.status | 0x14000000) & (~(GPU_STAT_DMABITS));
-            }
         }
     };
 
@@ -173,13 +142,6 @@ pseudo.CstrGraphics = function() {
             while (vrop.h.p < vrop.h.end) {
                 // Keep position of vram
                 const ramValue = directMemH(mem.ram.uh, addr);
-
-                if (isVideo24Bit) {
-                    vrop.raw.uh[count] = ramValue;
-                }
-                else {
-                    vrop.raw.uw[count] = tcache.pixel2texel(ramValue);
-                }
 
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
                 const pos = (vrop.v.p << 10) + vrop.h.p;
@@ -211,8 +173,6 @@ pseudo.CstrGraphics = function() {
 
     function fetchEnd(count) {
         if (vrop.v.p >= vrop.v.end) {
-            render.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
-
             vrop.enabled = false;
             vrop.raw.ub.fill(0);
 
@@ -365,7 +325,7 @@ pseudo.CstrGraphics = function() {
 
             switch(chcr) {
                 case 0x01000200:
-                    dataMem.read(true, madr, size);
+                    //dataMem.read(true, madr, size);
                     return;
 
                 case 0x01000201:

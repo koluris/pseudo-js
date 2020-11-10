@@ -83,10 +83,10 @@ pseudo.CstrBus = function() {
                 switch(chan) {
                     case 0: break; // MDEC in
                     case 1: break; // MDEC out
-                    case 2:    vs.executeDMA(addr); break; // Graphics
+                    case 2: vs.executeDMA(addr); break; // Graphics
                     case 3: break; // CD-ROM
                     case 4: break; // Audio
-                    case 6:   break; // Clear OT
+                    case 6: break; // Clear OT
                     default:
                         psx.error('DMA Channel ' + chan);
                         break;
@@ -107,58 +107,13 @@ pseudo.CstrCounters = function() {
     const PSX_VSYNC_NTSC = PSX_CLOCK / 60;
     const PSX_VSYNC_PAL  = PSX_CLOCK / 50;
     const PSX_HSYNC      = PSX_CLOCK / 60 / 480;
-    const RTC_COUNT  = 0;
-    const RTC_MODE   = 4;
-    const RTC_TARGET = 8;
-    const RTC_BOUND  = 0xffff;
-    let bounds = [];
-    let vbk, hbk;
+    let vbk;
     // Exposed class functions/variables
     return {
         reset() {
-            for (let i = 0; i < 3; i++) {
-                bounds[i] = RTC_BOUND;
-            }
             vbk = 0;
-            hbk = PSX_HSYNC;
         },
         update(threshold) {
-            // let temp;
-            // temp = mem.hwr.uh[((0x1100 + (0 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] + ((mem.hwr.uw[((0x1104 + (0 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x100) ? threshold : threshold / 8);
-            // if (temp >= bounds[0] && mem.hwr.uh[((0x1100 + (0 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] < bounds[0]) { temp = 0;
-            //     if (mem.hwr.uw[((0x1104 + (0 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
-            //         bus.interruptSet(4);
-            //     }
-            // }
-            // mem.hwr.uh[((0x1100 + (0 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = temp;
-            // if (!(mem.hwr.uw[((0x1104 + (1 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x100)) {
-            //     temp = mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] + threshold;
-            //     if (temp >= bounds[1] && mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] < bounds[1]) { temp = 0;
-            //         if (mem.hwr.uw[((0x1104 + (1 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
-            //             psx.error('RTC timer[1].count >= timer[1].bound');
-            //         }
-            //     }
-            //     mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = temp;
-            // }
-            // else {
-            //     if ((hbk -= threshold) <= 0) {
-            //         if (++mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] == bounds[1]) { mem.hwr.uh[((0x1100 + (1 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = 0;
-            //             if (mem.hwr.uw[((0x1104 + (1 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
-            //                 bus.interruptSet(5);
-            //             }
-            //         }
-            //         hbk = PSX_HSYNC;
-            //     }
-            // }
-            // if (!(mem.hwr.uw[((0x1104 + (2 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 1)) {
-            //     temp = mem.hwr.uh[((0x1100 + (2 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] + ((mem.hwr.uw[((0x1104 + (2 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x200) ? threshold / 8 : threshold);
-            //     if (temp >= bounds[2] && mem.hwr.uh[((0x1100 + (2 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] < bounds[2]) { temp = 0;
-            //         if (mem.hwr.uw[((0x1104 + (2 << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0x50) {
-            //             bus.interruptSet(6);
-            //         }
-            //     }
-            //     mem.hwr.uh[((0x1100 + (2 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = temp;
-            // }
             // Graphics
             vbk += threshold * 2;
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
@@ -166,23 +121,6 @@ pseudo.CstrCounters = function() {
                  vs.redraw();
                 cpu.setSuspended();
             }
-        },
-        scopeW(addr, data) {
-            const p = (addr >>> 4) & 3;
-            switch(addr & 0xf) {
-                case RTC_COUNT:
-                    mem.hwr.uh[((0x1100 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data & 0xffff;
-                    return;
-                case RTC_MODE:
-                    mem.hwr.uw[((0x1104 + ( p << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
-                    bounds[p] = ((mem.hwr.uw[((0x1104 + (p << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 8) && mem.hwr.uh[((0x1108 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1]) ? mem.hwr.uh[((0x1108 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] : RTC_BOUND;
-                    return;
-                case RTC_TARGET:
-                    mem.hwr.uh[((0x1108 + (  p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data & 0xffff;
-                    bounds[p] = ((mem.hwr.uw[((0x1104 + (p << 4)) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 8) && mem.hwr.uh[((0x1108 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1]) ? mem.hwr.uh[((0x1108 + (p << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] : RTC_BOUND;
-                    return;
-            }
-            psx.error('RTC Write: '+ psx.hex(addr & 0xf));
         }
     };
 };
@@ -478,7 +416,6 @@ pseudo.CstrMain = function() {
             mem.reset();
          render.reset();
         rootcnt.reset();
-            sio.reset();
              vs.reset();
     }
     // Exposed class functions/variables
@@ -603,32 +540,7 @@ pseudo.CstrRender = function() {
         else {
             disableTexture();
         }
-        ctx.enable(ctx.SCISSOR_TEST);
-        ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);
         ctx.drawArrays(mode, 0, size);
-        ctx.disable(ctx.SCISSOR_TEST);
-    }
-    
-    function drawF(data, size, mode) {
-        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[4] >> 0) & 0xffff, v: (data[4] >> 16) & 0xffff, }, ] };
-        let color  = [];
-        let vertex = [];
-        
-        const opaque = composeBlend(p.cr[0].n);
-        
-        for (let i = 0; i < size; i++) {
-            color.push(
-                p.cr[0].a,
-                p.cr[0].b,
-                p.cr[0].c,
-                opaque
-            );
-            vertex.push(
-                p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v,
-            );
-        }
-        drawScene(color, vertex, null, mode, size);
     }
     
     function drawG(data, size, mode) {          const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }, { a: (data[2] >>> 0) & 0xff, b: (data[2] >>> 8) & 0xff, c: (data[2] >>> 16) & 0xff, n: (data[2] >>> 24) & 0xff, }, { a: (data[4] >>> 0) & 0xff, b: (data[4] >>> 8) & 0xff, c: (data[4] >>> 16) & 0xff, n: (data[4] >>> 24) & 0xff, }, { a: (data[6] >>> 0) & 0xff, b: (data[6] >>> 8) & 0xff, c: (data[6] >>> 16) & 0xff, n: (data[6] >>> 24) & 0xff, }, ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[5] >> 0) & 0xffff, v: (data[5] >> 16) & 0xffff, }, { h: (data[7] >> 0) & 0xffff, v: (data[7] >> 16) & 0xffff, }, ] };
@@ -651,102 +563,6 @@ pseudo.CstrRender = function() {
             );
         }
         drawScene(color, vertex, null, mode, size);
-    }
-    
-    function drawFT(data, size) {
-        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[5] >> 0) & 0xffff, v: (data[5] >> 16) & 0xffff, }, { h: (data[7] >> 0) & 0xffff, v: (data[7] >> 16) & 0xffff, }, ], tx: [ { u: (data[2] >>> 0) & 0xff, v: (data[2] >>> 8) & 0xff, }, { u: (data[4] >>> 0) & 0xff, v: (data[4] >>> 8) & 0xff, }, { u: (data[6] >>> 0) & 0xff, v: (data[6] >>> 8) & 0xff, }, { u: (data[8] >>> 0) & 0xff, v: (data[8] >>> 8) & 0xff, }, ], tp: [ (data[2] >>> 16) & 0xffff, (data[4] >>> 16) & 0xffff, ] };
-        let color   = [];
-        let vertex  = [];
-        let texture = [];
-        
-        blend = (p.tp[1] >>> 5) & 3;
-        const opaque = composeBlend(p.cr[0].n);
-        
-        for (let i = 0; i < size; i++) {
-            if (p.cr[0].n & 1) {
-                color.push(
-                    255 >>> 1,
-                    255 >>> 1,
-                    255 >>> 1,
-                    opaque
-                );
-            }
-            else {
-                color.push(
-                    p.cr[0].a,
-                    p.cr[0].b,
-                    p.cr[0].c,
-                    opaque
-                );
-            }
-            vertex.push(
-                p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v,
-            );
-            texture.push(
-                p.tx[i].u,
-                p.tx[i].v
-            );
-        }
-        tcache.fetchTexture(ctx, p.tp[1], p.tp[0]);
-        drawScene(color, vertex, texture, ctx.TRIANGLE_STRIP, size);
-    }
-    
-    function drawGT(data, size) {
-        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }, { a: (data[3] >>> 0) & 0xff, b: (data[3] >>> 8) & 0xff, c: (data[3] >>> 16) & 0xff, n: (data[3] >>> 24) & 0xff, }, { a: (data[6] >>> 0) & 0xff, b: (data[6] >>> 8) & 0xff, c: (data[6] >>> 16) & 0xff, n: (data[6] >>> 24) & 0xff, }, { a: (data[9] >>> 0) & 0xff, b: (data[9] >>> 8) & 0xff, c: (data[9] >>> 16) & 0xff, n: (data[9] >>> 24) & 0xff, }, ], vx: [ { h: (data[ 1] >> 0) & 0xffff, v: (data[ 1] >> 16) & 0xffff, }, { h: (data[ 4] >> 0) & 0xffff, v: (data[ 4] >> 16) & 0xffff, }, { h: (data[ 7] >> 0) & 0xffff, v: (data[ 7] >> 16) & 0xffff, }, { h: (data[10] >> 0) & 0xffff, v: (data[10] >> 16) & 0xffff, }, ], tx: [ { u: (data[ 2] >>> 0) & 0xff, v: (data[ 2] >>> 8) & 0xff, }, { u: (data[ 5] >>> 0) & 0xff, v: (data[ 5] >>> 8) & 0xff, }, { u: (data[ 8] >>> 0) & 0xff, v: (data[ 8] >>> 8) & 0xff, }, { u: (data[11] >>> 0) & 0xff, v: (data[11] >>> 8) & 0xff, }, ], tp: [ (data[2] >>> 16) & 0xffff, (data[5] >>> 16) & 0xffff, ] };
-        let color   = [];
-        let vertex  = [];
-        let texture = [];
-        
-        blend = (p.tp[1] >>> 5) & 3;
-        const opaque = composeBlend(p.cr[0].n);
-        
-        for (let i = 0; i < size; i++) {
-            color.push(
-                p.cr[i].a,
-                p.cr[i].b,
-                p.cr[i].c,
-                opaque
-            );
-            vertex.push(
-                p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v,
-            );
-            texture.push(
-                p.tx[i].u,
-                p.tx[i].v,
-            );
-        }
-        tcache.fetchTexture(ctx, p.tp[1], p.tp[0]);
-        drawScene(color, vertex, texture, ctx.TRIANGLE_STRIP, size);
-    }
-    
-    function drawTile(data, size) {
-        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, ] };
-        let color  = [];
-        let vertex = [];
-        
-        const opaque = composeBlend(p.cr[0].n);
-        
-        if (size) {
-            p.vx[1].h = size;
-            p.vx[1].v = size;
-        }
-        for (let i = 0; i < 4; i++) {
-            color.push(
-                p.cr[0].a,
-                p.cr[0].b,
-                p.cr[0].c,
-                opaque
-            );
-        }
-        vertex = [
-            p.vx[0].h + ofs.h,             p.vx[0].v + ofs.v,
-            p.vx[0].h + ofs.h + p.vx[1].h, p.vx[0].v + ofs.v,
-            p.vx[0].h + ofs.h,             p.vx[0].v + ofs.v + p.vx[1].v,
-            p.vx[0].h + ofs.h + p.vx[1].h, p.vx[0].v + ofs.v + p.vx[1].v,
-        ];
-        drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
     }
     
     function drawSprite(data, size) {
@@ -881,65 +697,11 @@ pseudo.CstrRender = function() {
         draw(addr, data) {
             // Primitives
             switch(addr & 0xfc) {
-                case 0x20: // POLY F3
-                    drawF(data, 3, ctx.TRIANGLE_STRIP);
-                    return;
-                case 0x24: // POLY FT3
-                    drawFT(data, 3);
-                    return;
-                case 0x28: // POLY F4
-                    drawF(data, 4, ctx.TRIANGLE_STRIP);
-                    return;
-                case 0x2c: // POLY FT4
-                    drawFT(data, 4);
-                    return;
-                case 0x30: // POLY G3
-                    drawG(data, 3, ctx.TRIANGLE_STRIP);
-                    return;
-                case 0x34: // POLY GT3
-                    drawGT(data, 3);
-                    return;
                 case 0x38: // POLY G4
                     drawG(data, 4, ctx.TRIANGLE_STRIP);
                     return;
-                case 0x3c: // POLY GT4
-                    drawGT(data, 4);
-                    return;
-                case 0x40: // LINE F2
-                    drawF(data, 2, ctx.LINE_STRIP);
-                    return;
-                case 0x48: // LINE F3
-                    drawF(data, 3, ctx.LINE_STRIP);
-                    return;
-                case 0x4c: // LINE F4
-                    drawF(data, 4, ctx.LINE_STRIP);
-                    return;
-                case 0x50: // LINE G2
-                    drawG(data, 2, ctx.LINE_STRIP);
-                    return;
-                case 0x58: // LINE G3
-                    drawG(data, 3, ctx.LINE_STRIP);
-                    return;
-                case 0x5c: // LINE G4
-                    drawG(data, 4, ctx.LINE_STRIP);
-                    return;
-                case 0x60: // TILE S
-                    drawTile(data, 0);
-                    return;
-                case 0x64: // SPRITE S
-                    drawSprite(data, 0);
-                    return;
-                case 0x68: // TILE 1
-                    drawTile(data, 1);
-                    return;
-                case 0x70: // TILE 8
-                    drawTile(data, 8);
-                    return;
                 case 0x74: // SPRITE 8
                     drawSprite(data, 8);
-                    return;
-                case 0x78: // TILE 16
-                    drawTile(data, 16);
                     return;
                 case 0x7c: // SPRITE 16
                     drawSprite(data, 16);
@@ -973,20 +735,13 @@ pseudo.CstrRender = function() {
                         drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
                     }
                     return;
-                case 0x80: // MOVE IMAGE
-                    return;
                 case 0xa0: // LOAD IMAGE
                     vs.photoRead(data);
-                    return;
-                case 0xc0: // STORE IMAGE
-                    vs.photoWrite(data);
                     return;
                 case 0xe1: // TEXTURE PAGE
                     blend = (data[0] >>> 5) & 3;
                     spriteTP = data[0] & 0x7ff;
                     ctx.blendFunc(bit[blend].src, bit[blend].target);
-                    return;
-                case 0xe2: // TEXTURE WINDOW
                     return;
                 case 0xe3: // DRAW AREA START
                     {
@@ -1010,236 +765,12 @@ pseudo.CstrRender = function() {
                     ofs.h = (((data[0]) << 0 >> 0) << 21) >> 21;
                     ofs.v = (((data[0]) << 0 >> 0) << 10) >> 21;
                     return;
-                case 0xe6: // STP
-                    return;
             }
             psx.error('GPU Render Primitive ' + psx.hex(addr));
-        },
-        outputVRAM(raw, bit24, iX, iY, iW, iH) {
-            // Disable state
-            ctx.disable(ctx.BLEND);
-            if (bit24) {
-                iX = (iX * 2) / 3;
-                iW = (iW * 2) / 3;
-                const tex = ctx.createTexture();
-                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGB , iW, iH, 0, ctx.RGB , ctx.UNSIGNED_BYTE, raw.ub);
-            }
-            else {
-                const tex = ctx.createTexture();
-                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
-            }
-            createColor([
-                255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
-                255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
-                255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
-                255 >>> 1, 255 >>> 1, 255 >>> 1, 255,
-            ]);
-            createVertex([
-                iX,      iY,
-                iX + iW, iY,
-                iX,      iY + iH,
-                iX + iW, iY + iH,
-            ]);
-            createTexture([
-                0, 0,
-                1, 0,
-                0, 1,
-                1, 1,
-            ]);
-            ctx.drawArrays(ctx.TRIANGLE_STRIP, 0, 4);
-            ctx.enable(ctx.BLEND);
-            disableTexture();
         }
     };
 };
 const render = new pseudo.CstrRender();
-pseudo.CstrSerial = function() {
-  const PAD_BTN_SELECT   =  0;
-  const PAD_BTN_START    =  3;
-  const PAD_BTN_UP       =  4;
-  const PAD_BTN_RIGHT    =  5;
-  const PAD_BTN_DOWN     =  6;
-  const PAD_BTN_LEFT     =  7;
-  const PAD_BTN_L2       =  8;
-  const PAD_BTN_R2       =  9;
-  const PAD_BTN_L1       = 10;
-  const PAD_BTN_R1       = 11;
-  const PAD_BTN_TRIANGLE = 12;
-  const PAD_BTN_CIRCLE   = 13;
-  const PAD_BTN_CROSS    = 14;
-  const PAD_BTN_SQUARE   = 15;
-  let baud, control, mode, status, padst, parp;
-  let bfr = new Uint8Array(256);
-  // Exposed class functions/variables
-  return {
-    reset() {
-      bfr.fill(0);
-      btnState = 0xffff;
-      baud     = 0;
-      control  = 0;
-      mode     = 0;
-      status   = 0x001 | 0x004;
-      padst    = 0;
-      parp     = 0;
-      bfr[0] = 0x00;
-      bfr[1] = 0x41;
-      bfr[2] = 0x5a;
-      bfr[3] = 0xff;
-      bfr[4] = 0xff;
-    },
-    write: {
-      h(addr, data) {
-        switch(addr) {
-          case 0x1048: // Mode
-            mode = data;
-            return;
-          case 0x104a: // Control
-            control = data;
-            if (control&0x010) {
-              status  &= ~0x200;
-              control &= ~0x010;
-            }
-            if (control&0x040 || !control) {
-              status = 0x001 | 0x004;
-              padst  = 0;
-              parp   = 0;
-            }
-            return;
-          case 0x104e: // Baud
-            baud = data;
-            return;
-        }
-        psx.error('SIO write h '+psx.hex(addr)+' <- '+psx.hex(data));
-      },
-      b(addr, data) {
-        switch(addr) {
-          case 0x1040:
-            switch(padst) {
-              case 1:
-                if (data&0x40) {
-                  padst = 2;
-                  parp  = 1;
-                  switch(data) {
-                    case 0x42:
-                      bfr[1] = 0x41;
-                      break;
-                    case 0x43:
-                      bfr[1] = 0x43;
-                      break;
-                    default:
-                      console.dir('SIO write b data '+psx.hex(data));
-                      break;
-                  }
-                }
-                bus.interruptSet(7);
-                return;
-              case 2:
-                parp++;
-                
-                if (parp !== 5) {
-                  bus.interruptSet(7);
-                }
-                else {
-                  padst = 0;
-                }
-                return;
-            }
-            if (data === 1) {
-              status &= ~0x004;
-              status |=  0x002;
-              padst = 1;
-              parp  = 0;
-              if (control & 0x002) {
-                switch (control) {
-                  case 0x1003:
-                    bus.interruptSet(7);
-                    break;
-                  case 0x3003:
-                    break;
-                      
-                  default:
-                    break;
-                }
-              }
-            }
-            return;
-        }
-        psx.error('SIO write b '+psx.hex(addr)+' <- '+psx.hex(data));
-      }
-    },
-    read: {
-      h(addr) {
-        switch(addr) {
-          case 0x1044:
-            return status;
-          case 0x104a:
-            return control;
-          case 0x104e:
-            return baud;
-        }
-        psx.error('SIO read h '+psx.hex(addr));
-      },
-      b(addr) {
-        switch(addr) {
-          case 0x1040:
-            {
-              if (!(status & 0x002)) {
-                return 0;
-              }
-              if (parp === 5) {
-                status &= (~(0x002));
-                status |= 0x004;
-              }
-              return bfr[parp];
-            }
-        }
-        psx.error('SIO read b '+psx.hex(addr));
-      }
-    },
-    padListener(code, pushed) {
-      if (code == 50) { // Select
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_SELECT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_SELECT)); };
-      }
-      
-      if (code == 49) { // Start
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_START)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_START)); };
-      }
-      
-      if (code == 38) { // Up
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_UP)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_UP)); };
-      }
-      
-      if (code == 39) { // R
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_RIGHT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_RIGHT)); };
-      }
-      
-      if (code == 40) { // Down
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_DOWN)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_DOWN)); };
-      }
-      
-      if (code == 37) { // Left
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_LEFT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_LEFT)); };
-      }
-      
-      if (code == 90) { // X
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CIRCLE)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CIRCLE)); };
-      }
-      
-      if (code == 88) { // Z
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CROSS)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CROSS)); };
-      }
-      bfr[3] = (btnState >>> 0) & 0xff;
-      bfr[4] = (btnState >>> 8) & 0xff;
-    }
-  };
-};
-const sio = new pseudo.CstrSerial();
 pseudo.CstrTexCache = function() {
     const TEX_04BIT   = 0;
     const TEX_08BIT   = 1;
@@ -1471,32 +1002,6 @@ pseudo.CstrGraphics = function() {
                     render.draw(pipe.prim, pipe.data);
                 }
             }
-        },
-        read(stream, addr, size) {
-            if (modeDMA == GPU_DMA_VRAM2MEM) {
-                ret.status &= (~(0x14000000));
-                do {
-                    const vramValue = vs.vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
-                    if (stream) {
-                        mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] = vramValue;
-                    }
-                    else {
-                        ret.data = vramValue;
-                    }
-                    addr += 4;
-                    if ((vrop.h.p += 2) >= vrop.h.end) {
-                        vrop.h.p = vrop.h.start;
-                        vrop.pvram += 1024;
-                        if (++vrop.v.p >= vrop.v.end) {
-                            modeDMA = GPU_DMA_NONE;
-                            ret.status &= (~(GPU_STAT_READYFORVRAM));
-                            break;
-                        }
-                    }
-                } while (--size);
-        
-                ret.status = (ret.status | 0x14000000) & (~(GPU_STAT_DMABITS));
-            }
         }
     };
     function fetchFromRAM(stream, addr, size) {
@@ -1510,12 +1015,6 @@ pseudo.CstrGraphics = function() {
             while (vrop.h.p < vrop.h.end) {
                 // Keep position of vram
                 const ramValue = mem.ram.uh[(( addr) & (mem.ram.uh.byteLength - 1)) >>> 1];
-                if (isVideo24Bit) {
-                    vrop.raw.uh[count] = ramValue;
-                }
-                else {
-                    vrop.raw.uw[count] = tcache.pixel2texel(ramValue);
-                }
                 // Check if it`s a 16-bit (stream), or a 32-bit (command) address
                 const pos = (vrop.v.p << 10) + vrop.h.p;
                 if (stream) {
@@ -1543,7 +1042,6 @@ pseudo.CstrGraphics = function() {
     }
     function fetchEnd(count) {
         if (vrop.v.p >= vrop.v.end) {
-            render.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
             vrop.enabled = false;
             vrop.raw.ub.fill(0);
             modeDMA = GPU_DMA_NONE;
@@ -1671,7 +1169,7 @@ pseudo.CstrGraphics = function() {
             const size = (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] >>> 16) * (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0xffff);
             switch(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
                 case 0x01000200:
-                    dataMem.read(true, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2], size);
+                    //dataMem.read(true, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2], size);
                     return;
                 case 0x01000201:
                     dataMem.write(true, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2], size);

@@ -36,18 +36,6 @@
     Primitive Structures
 ***/
 
-#define PFx(data) { \
-    cr: [ \
-        RGBC(data[0]) \
-    ], \
-    vx: [ \
-        POINT(data[1]), \
-        POINT(data[2]), \
-        POINT(data[3]), \
-        POINT(data[4]), \
-    ] \
-}
-
 #define PGx(data) { \
     cr: [ \
         RGBC(data[0]), \
@@ -60,53 +48,6 @@
         POINT(data[3]), \
         POINT(data[5]), \
         POINT(data[7]), \
-    ] \
-}
-
-#define PFTx(data) { \
-    cr: [ \
-        RGBC(data[0]) \
-    ], \
-    vx: [ \
-        POINT(data[1]), \
-        POINT(data[3]), \
-        POINT(data[5]), \
-        POINT(data[7]), \
-    ], \
-    tx: [ \
-        UV(data[2]), \
-        UV(data[4]), \
-        UV(data[6]), \
-        UV(data[8]), \
-    ], \
-    tp: [ \
-        TPAGE(data[2]), \
-        TPAGE(data[4]), \
-    ] \
-}
-
-#define PGTx(data) { \
-    cr: [ \
-        RGBC(data[0]), \
-        RGBC(data[3]), \
-        RGBC(data[6]), \
-        RGBC(data[9]), \
-    ], \
-    vx: [ \
-        POINT(data[ 1]), \
-        POINT(data[ 4]), \
-        POINT(data[ 7]), \
-        POINT(data[10]), \
-    ], \
-    tx: [ \
-        UV(data[ 2]), \
-        UV(data[ 5]), \
-        UV(data[ 8]), \
-        UV(data[11]), \
-    ], \
-    tp: [ \
-        TPAGE(data[2]), \
-        TPAGE(data[5]), \
     ] \
 }
 
@@ -208,38 +149,7 @@ pseudo.CstrRender = function() {
             disableTexture();
         }
 
-        ctx.enable(ctx.SCISSOR_TEST);
-        ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);
         ctx.drawVertices(mode, 0, size);
-        ctx.disable(ctx.SCISSOR_TEST);
-    }
-
-    /***
-        Vertices
-    ***/
-
-    function drawF(data, size, mode) {
-        const p = PFx(data);
-        let color  = [];
-        let vertex = [];
-        
-        const opaque = composeBlend(p.cr[0].n);
-        
-        for (let i = 0; i < size; i++) {
-            color.push(
-                p.cr[0].a,
-                p.cr[0].b,
-                p.cr[0].c,
-                opaque
-            );
-
-            vertex.push(
-                p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v,
-            );
-        }
-
-        drawScene(color, vertex, null, mode, size);
     }
 
     /***
@@ -268,123 +178,6 @@ pseudo.CstrRender = function() {
         }
 
         drawScene(color, vertex, null, mode, size);
-    }
-
-    /***
-        Textured Vertices
-    ***/
-
-    function drawFT(data, size) {
-        const p = PFTx(data);
-        let color   = [];
-        let vertex  = [];
-        let texture = [];
-        
-        blend = (p.tp[1] >>> 5) & 3;
-        const opaque = composeBlend(p.cr[0].n);
-        
-        for (let i = 0; i < size; i++) {
-            if (p.cr[0].n & 1) {
-                color.push(
-                    COLOR_HALF,
-                    COLOR_HALF,
-                    COLOR_HALF,
-                    opaque
-                );
-            }
-            else {
-                color.push(
-                    p.cr[0].a,
-                    p.cr[0].b,
-                    p.cr[0].c,
-                    opaque
-                );
-            }
-
-            vertex.push(
-                p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v,
-            );
-
-            texture.push(
-                p.tx[i].u,
-                p.tx[i].v
-            );
-        }
-
-        tcache.fetchTexture(ctx, p.tp[1], p.tp[0]);
-        drawScene(color, vertex, texture, ctx.TRIANGLE_STRIP, size);
-    }
-
-    /***
-        Gouraud/Textured Vertices
-    ***/
-
-    function drawGT(data, size) {
-        const p = PGTx(data);
-        let color   = [];
-        let vertex  = [];
-        let texture = [];
-        
-        blend = (p.tp[1] >>> 5) & 3;
-        const opaque = composeBlend(p.cr[0].n);
-        
-        for (let i = 0; i < size; i++) {
-            color.push(
-                p.cr[i].a,
-                p.cr[i].b,
-                p.cr[i].c,
-                opaque
-            );
-
-            vertex.push(
-                p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v,
-            );
-
-            texture.push(
-                p.tx[i].u,
-                p.tx[i].v,
-            );
-        }
-
-        tcache.fetchTexture(ctx, p.tp[1], p.tp[0]);
-        drawScene(color, vertex, texture, ctx.TRIANGLE_STRIP, size);
-    }
-
-    /***
-        Tiles
-    ***/
-
-    function drawTile(data, size) {
-        const p = TILEx(data);
-        let color  = [];
-        let vertex = [];
-        
-        const opaque = composeBlend(p.cr[0].n);
-        
-        if (size) {
-            p.vx[1].h = size;
-            p.vx[1].v = size;
-        }
-
-        for (let i = 0; i < 4; i++) {
-            color.push(
-                p.cr[0].a,
-                p.cr[0].b,
-                p.cr[0].c,
-                opaque
-            );
-        }
-
-        vertex = [
-            p.vx[0].h + ofs.h,             p.vx[0].v + ofs.v,
-            p.vx[0].h + ofs.h + p.vx[1].h, p.vx[0].v + ofs.v,
-            p.vx[0].h + ofs.h,             p.vx[0].v + ofs.v + p.vx[1].v,
-            p.vx[0].h + ofs.h + p.vx[1].h, p.vx[0].v + ofs.v + p.vx[1].v,
-        ];
-
-        drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
     }
 
     /***
@@ -542,84 +335,12 @@ pseudo.CstrRender = function() {
         draw(addr, data) {
             // Primitives
             switch(addr & 0xfc) {
-                case 0x20: // POLY F3
-                    drawF(data, 3, ctx.TRIANGLE_STRIP);
-                    return;
-
-                case 0x24: // POLY FT3
-                    drawFT(data, 3);
-                    return;
-
-                case 0x28: // POLY F4
-                    drawF(data, 4, ctx.TRIANGLE_STRIP);
-                    return;
-
-                case 0x2c: // POLY FT4
-                    drawFT(data, 4);
-                    return;
-
-                case 0x30: // POLY G3
-                    drawG(data, 3, ctx.TRIANGLE_STRIP);
-                    return;
-
-                case 0x34: // POLY GT3
-                    drawGT(data, 3);
-                    return;
-
                 case 0x38: // POLY G4
                     drawG(data, 4, ctx.TRIANGLE_STRIP);
                     return;
 
-                case 0x3c: // POLY GT4
-                    drawGT(data, 4);
-                    return;
-
-                case 0x40: // LINE F2
-                    drawF(data, 2, ctx.LINE_STRIP);
-                    return;
-
-                case 0x48: // LINE F3
-                    drawF(data, 3, ctx.LINE_STRIP);
-                    return;
-
-                case 0x4c: // LINE F4
-                    drawF(data, 4, ctx.LINE_STRIP);
-                    return;
-
-                case 0x50: // LINE G2
-                    drawG(data, 2, ctx.LINE_STRIP);
-                    return;
-
-                case 0x58: // LINE G3
-                    drawG(data, 3, ctx.LINE_STRIP);
-                    return;
-
-                case 0x5c: // LINE G4
-                    drawG(data, 4, ctx.LINE_STRIP);
-                    return;
-
-                case 0x60: // TILE S
-                    drawTile(data, 0);
-                    return;
-
-                case 0x64: // SPRITE S
-                    drawSprite(data, 0);
-                    return;
-
-                case 0x68: // TILE 1
-                    drawTile(data, 1);
-                    return;
-
-                case 0x70: // TILE 8
-                    drawTile(data, 8);
-                    return;
-
                 case 0x74: // SPRITE 8
                     drawSprite(data, 8);
-                    return;
-
-                case 0x78: // TILE 16
-                    drawTile(data, 16);
                     return;
 
                 case 0x7c: // SPRITE 16
@@ -659,24 +380,14 @@ pseudo.CstrRender = function() {
                     }
                     return;
 
-                case 0x80: // MOVE IMAGE
-                    return;
-
                 case 0xa0: // LOAD IMAGE
                     vs.photoRead(data);
-                    return;
-
-                case 0xc0: // STORE IMAGE
-                    vs.photoWrite(data);
                     return;
 
                 case 0xe1: // TEXTURE PAGE
                     blend = (data[0] >>> 5) & 3;
                     spriteTP = data[0] & 0x7ff;
                     ctx.blendFunc(bit[blend].src, bit[blend].dest);
-                    return;
-
-                case 0xe2: // TEXTURE WINDOW
                     return;
 
                 case 0xe3: // DRAW AREA START
@@ -705,59 +416,9 @@ pseudo.CstrRender = function() {
                     ofs.h = (SIGN_EXT_32(data[0]) << 21) >> 21;
                     ofs.v = (SIGN_EXT_32(data[0]) << 10) >> 21;
                     return;
-
-                case 0xe6: // STP
-                    return;
             }
 
             psx.error('GPU Render Primitive ' + psx.hex(addr));
-        },
-
-        outputVRAM(raw, bit24, iX, iY, iW, iH) {
-            // Disable state
-            ctx.disable(ctx.BLEND);
-
-            if (bit24) {
-                iX = (iX * 2) / 3;
-                iW = (iW * 2) / 3;
-                const tex = ctx.createTexture();
-                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGB , iW, iH, 0, ctx.RGB , ctx.UNSIGNED_BYTE, raw.ub);
-            }
-            else {
-                const tex = ctx.createTexture();
-                ctx.bindTexture  (ctx.TEXTURE_2D, tex);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.texPhoto2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, iW, iH, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, raw.ub);
-            }
-
-            createColor([
-                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
-                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
-                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
-                COLOR_HALF, COLOR_HALF, COLOR_HALF, COLOR_MAX,
-            ]);
-
-            createVertex([
-                iX,      iY,
-                iX + iW, iY,
-                iX,      iY + iH,
-                iX + iW, iY + iH,
-            ]);
-
-            createTexture([
-                0, 0,
-                1, 0,
-                0, 1,
-                1, 1,
-            ]);
-
-            ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
-            ctx.enable(ctx.BLEND);
-            disableTexture();
         }
     };
 };
