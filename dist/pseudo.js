@@ -27,15 +27,9 @@ pseudo.CstrHardware = function() {
                     case 0x1810: // GPU Data
                         vs.writeData(data);
                         return;
-                    
-                    case 0x10a0: // GPU DMA mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]
-                    case 0x10a4: // GPU DMA mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2]
-                    case 0x10f0: // DPCR
-                    case 0x10f4: // DICR
-                    case 0x1814: // GPU Status
-                        mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
-                        return;
                 }
+                mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
+                return;
             }
         },
         read: {
@@ -43,12 +37,8 @@ pseudo.CstrHardware = function() {
                 switch(addr) {
                     case 0x1814: // GPU Status
                         return 0x14802000;
-                    
-                    case 0x10a8: // GPU DMA mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]
-                    case 0x10f0: // DPCR
-                    case 0x1810: // GPU Data
-                        return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                 }
+                return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
             }
         }
     };
@@ -205,51 +195,11 @@ pseudo.CstrMain = function() {
 };
 const psx = new pseudo.CstrMain();
 pseudo.CstrRender = function() {
-    let ctx, attrib, bfr; // Draw context
-    // Generic function for shaders
-    function createShader(kind, content) {
-        const shader = ctx.createShader(kind);
-        ctx.shaderSource (shader, content);
-        ctx.compileShader(shader);
-        ctx.getShaderParameter(shader, ctx.COMPILE_STATUS);
-        return shader;
-    }
-    function drawScene(color, vertex) {
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
-        ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new Uint8Array(color), ctx.DYNAMIC_DRAW);
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);
-        ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vertex), ctx.DYNAMIC_DRAW);
-        ctx.drawArrays(ctx.TRIANGLE_STRIP, 0, 4);
-    }
+    let ctx;
     // Exposed class functions/variables
     return {
         init(canvas) {
-            // Draw canvas
-            ctx = canvas.getContext('webgl');
-            // Shaders
-            const func = ctx.createProgram();
-            ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '     attribute vec2 a_position;     attribute vec4 a_color;     uniform vec2 u_resolution;     varying vec4 v_color;         void main() {         gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);         v_color = a_color;     }'));
-            ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '     precision mediump float;     varying vec4 v_color;         void main() {         gl_FragColor = v_color;     }'));
-            ctx.linkProgram(func);
-            ctx.getProgramParameter(func, ctx.LINK_STATUS);
-            ctx.useProgram (func);
-            // Attributes
-            attrib = {
-                _c: ctx.getAttribLocation(func, 'a_color'),
-                _p: ctx.getAttribLocation(func, 'a_position'),
-                _r: ctx.getUniformLocation  (func, 'u_resolution'),
-            };
-            ctx.enableVertexAttribArray(attrib._c);
-            ctx.enableVertexAttribArray(attrib._p);
-            // Buffers
-            bfr = {
-                _c: ctx.createBuffer(),
-                _v: ctx.createBuffer(),
-            };
-            ctx.uniform2f(attrib._r, 320 / 2, 240 / 2);
-            ctx.viewport(0, 0, 320 * 2, 240 * 2);
+            ctx = canvas.getContext('2d');
         },
         draw(addr, data) {
             switch(addr & 0xfc) {
@@ -269,44 +219,37 @@ pseudo.CstrRender = function() {
                                 { h: (data[7] >> 0) & 0xffff, v: (data[7] >> 16) & 0xffff, },
                             ]
                         };
-                        let color  = [];
-                        let vertex = [];
-                        for (let i = 0; i < 4; i++) {
-                            color.push(
-                                p.cr[i].a,
-                                p.cr[i].b,
-                                p.cr[i].c,
-                                255
-                            );
-                            vertex.push(
-                                p.vx[i].h,
-                                p.vx[i].v,
-                            );
-                        }
-                        drawScene(color, vertex);
+                        var grd = ctx.createLinearGradient(0, 0, p.vx[3].h, p.vx[3].v);
+                        grd.addColorStop(0, 'RGBA(' + p.cr[0].a + ', ' + p.cr[0].b + ', ' + p.cr[0].c + ', 255)');
+                        grd.addColorStop(1, 'RGBA(' + p.cr[3].a + ', ' + p.cr[3].b + ', ' + p.cr[3].c + ', 255)');
+                        ctx.fillStyle = grd;
+                        ctx.fillRect(
+                            p.vx[0].h,
+                            p.vx[0].v,
+                            p.vx[3].h,
+                            p.vx[3].v,
+                        );
                     }
                     return;
                 case 0x74: // SPRITE 8
                     {
                         const p = {
-                            vx: [
+                            colors: [
+                                { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }
+                            ],
+                            points: [
                                 { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, },
                                 { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, },
                             ]
                         };
-                        let color  = [
-                            127, 127, 127, 255,
-                            127, 127, 127, 255,
-                            127, 127, 127, 255,
-                            127, 127, 127, 255,
-                        ];
-                        let vertex = [
-                            p.vx[0].h,     p.vx[0].v,
-                            p.vx[0].h + 8, p.vx[0].v,
-                            p.vx[0].h,     p.vx[0].v + 8,
-                            p.vx[0].h + 8, p.vx[0].v + 8,
-                        ];
-                        drawScene(color, vertex);
+                        ctx.fillStyle = 'RGBA(' + p.colors[0].a + ', ' + p.colors[0].b + ', ' + p.colors[0].c + ', 255)';
+                        ctx.fillRect(
+                            p.points[0].h,
+                            p.points[0].v,
+                            8,
+                            8,
+                        );
+                        ctx.closePath();
                     }
                     return;
             }

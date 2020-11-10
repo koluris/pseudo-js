@@ -15,62 +15,12 @@
 }
 
 pseudo.CstrRender = function() {
-    let ctx, attrib, bfr; // Draw context
-
-    // Generic function for shaders
-    function createShader(kind, content) {
-        const shader = ctx.createShader(kind);
-        ctx.shaderSource (shader, content);
-        ctx.compileShader(shader);
-        ctx.fetchShaderParameter(shader, ctx.COMPILE_STATUS);
-
-        return shader;
-    }
-
-    function drawScene(color, vertex) {
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
-        ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new UintBcap(color), ctx.DYNAMIC_DRAW);
-
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);
-        ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new SintHcap(vertex), ctx.DYNAMIC_DRAW);
-
-        ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
-    }
+    let ctx;
 
     // Exposed class functions/variables
     return {
         init(canvas) {
-            // Draw canvas
-            ctx = canvas.fetchContext(WebGL);
-
-            // Shaders
-            const func = ctx.createFunction();
-            ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, SHADER_VERTEX));
-            ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, SHADER_FRAGMENT));
-            ctx.linkFunction(func);
-            ctx.fetchFunctionParameter(func, ctx.LINK_STATUS);
-            ctx.useFunction (func);
-
-            // Attributes
-            attrib = {
-                _c: ctx.fetchAttribute(func, 'a_color'),
-                _p: ctx.fetchAttribute(func, 'a_position'),
-                _r: ctx.fetchUniform  (func, 'u_resolution'),
-            };
-
-            ctx.enableVertexAttrib(attrib._c);
-            ctx.enableVertexAttrib(attrib._p);
-
-            // Buffers
-            bfr = {
-                _c: ctx.createBuffer(),
-                _v: ctx.createBuffer(),
-            };
-
-            ctx.uniform2f(attrib._r, 320 / 2, 240 / 2);
-            ctx.viewport(0, 0, 320 * 2, 240 * 2);
+            ctx = canvas.fetchContext('2d');
         },
 
         draw(addr, data) {
@@ -92,51 +42,40 @@ pseudo.CstrRender = function() {
                             ]
                         };
 
-                        let color  = [];
-                        let vertex = [];
+                        var grd = ctx.createLinearGradient(0, 0, p.vx[3].h, p.vx[3].v);
+                        grd.addColorStop(0, 'RGBA(' + p.cr[0].a + ', ' + p.cr[0].b + ', ' + p.cr[0].c + ', 255)');
+                        grd.addColorStop(1, 'RGBA(' + p.cr[3].a + ', ' + p.cr[3].b + ', ' + p.cr[3].c + ', 255)');
 
-                        for (let i = 0; i < 4; i++) {
-                            color.push(
-                                p.cr[i].a,
-                                p.cr[i].b,
-                                p.cr[i].c,
-                                255
-                            );
-
-                            vertex.push(
-                                p.vx[i].h,
-                                p.vx[i].v,
-                            );
-                        }
-
-                        drawScene(color, vertex);
+                        ctx.fillStyle = grd;
+                        ctx.fillRect(
+                            p.vx[0].h,
+                            p.vx[0].v,
+                            p.vx[3].h,
+                            p.vx[3].v,
+                        );
                     }
                     return;
 
                 case 0x74: // SPRITE 8
                     {
                         const p = {
-                            vx: [
+                            colors: [
+                                RGBC(data[0])
+                            ],
+                            points: [
                                 POINT(data[1]),
                                 POINT(data[3]),
                             ]
                         };
 
-                        let color  = [
-                            127, 127, 127, 255,
-                            127, 127, 127, 255,
-                            127, 127, 127, 255,
-                            127, 127, 127, 255,
-                        ];
-
-                        let vertex = [
-                            p.vx[0].h,     p.vx[0].v,
-                            p.vx[0].h + 8, p.vx[0].v,
-                            p.vx[0].h,     p.vx[0].v + 8,
-                            p.vx[0].h + 8, p.vx[0].v + 8,
-                        ];
-
-                        drawScene(color, vertex);
+                        ctx.fillStyle = 'RGBA(' + p.colors[0].a + ', ' + p.colors[0].b + ', ' + p.colors[0].c + ', 255)';
+                        ctx.fillRect(
+                            p.points[0].h,
+                            p.points[0].v,
+                            8,
+                            8,
+                        );
+                        ctx.closePath();
                     }
                     return;
             }
