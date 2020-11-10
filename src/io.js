@@ -22,8 +22,6 @@ pseudo.CstrHardware = function() {
                         directMemW(mem.hwr.uw, addr) = data;
                         return;
                 }
-
-                psx.error('Hardware Write w ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             }
         },
 
@@ -39,8 +37,6 @@ pseudo.CstrHardware = function() {
                     case 0x1810: // GPU Data
                         return directMemW(mem.hwr.uw, addr);
                 }
-
-                psx.error('Hardware Read w ' + psx.hex(addr));
             }
         }
     };

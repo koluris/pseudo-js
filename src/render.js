@@ -14,35 +14,6 @@
     v: (data >> 16) & 0xffff, \
 }
 
-/***
-    Primitive Structures
-***/
-
-#define PGx(data) { \
-    cr: [ \
-        RGBC(data[0]), \
-        RGBC(data[2]), \
-        RGBC(data[4]), \
-        RGBC(data[6]), \
-    ], \
-    vx: [ \
-        POINT(data[1]), \
-        POINT(data[3]), \
-        POINT(data[5]), \
-        POINT(data[7]), \
-    ] \
-}
-
-#define SPRTx(data) { \
-    cr: [ \
-        RGBC(data[0]) \
-    ], \
-    vx: [ \
-        POINT(data[1]), \
-        POINT(data[3]), \
-    ] \
-}
-
 pseudo.CstrRender = function() {
     let ctx, attrib, bfr; // Draw context
 
@@ -56,7 +27,7 @@ pseudo.CstrRender = function() {
         return shader;
     }
 
-    function drawScene(color, vertex, texture, mode, size) {
+    function drawScene(color, vertex) {
         ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
         ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
         ctx.bufferData(ctx.ARRAY_BUFFER, new UintBcap(color), ctx.DYNAMIC_DRAW);
@@ -65,65 +36,14 @@ pseudo.CstrRender = function() {
         ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
         ctx.bufferData(ctx.ARRAY_BUFFER, new SintHcap(vertex), ctx.DYNAMIC_DRAW);
 
-        ctx.drawVertices(mode, 0, size);
-    }
-
-    /***
-        Gouraud Vertices
-    ***/
-
-    function drawG(data, size, mode) { \
-        const p = PGx(data);
-        let color  = [];
-        let vertex = [];
-
-        for (let i = 0; i < size; i++) {
-            color.push(
-                p.cr[i].a,
-                p.cr[i].b,
-                p.cr[i].c,
-                255
-            );
-
-            vertex.push(
-                p.vx[i].h,
-                p.vx[i].v,
-            );
-        }
-
-        drawScene(color, vertex, null, mode, size);
-    }
-
-    /***
-        Sprites
-    ***/
-
-    function drawSprite(data, size) {
-        const p = SPRTx(data);
-        let color   = [];
-        let vertex  = [];
-
-        for (let i = 0; i < 4; i++) {
-            color.push(
-                127, 127, 127, 255
-            );
-        }
-
-        vertex = [
-            p.vx[0].h,        p.vx[0].v,
-            p.vx[0].h + size, p.vx[0].v,
-            p.vx[0].h,        p.vx[0].v + size,
-            p.vx[0].h + size, p.vx[0].v + size,
-        ];
-
-        drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
+        ctx.drawVertices(ctx.TRIANGLE_STRIP, 0, 4);
     }
 
     // Exposed class functions/variables
     return {
         init(canvas) {
             // Draw canvas
-            ctx = canvas[0].fetchContext(WebGL);
+            ctx = canvas.fetchContext(WebGL);
 
             // Shaders
             const func = ctx.createFunction();
@@ -156,15 +76,68 @@ pseudo.CstrRender = function() {
         draw(addr, data) {
             switch(addr & 0xfc) {
                 case 0x38: // POLY G4
-                    drawG(data, 4, ctx.TRIANGLE_STRIP);
+                    {
+                        const p = {
+                            cr: [
+                                RGBC(data[0]),
+                                RGBC(data[2]),
+                                RGBC(data[4]),
+                                RGBC(data[6]),
+                            ],
+                            vx: [
+                                POINT(data[1]),
+                                POINT(data[3]),
+                                POINT(data[5]),
+                                POINT(data[7]),
+                            ]
+                        };
+
+                        let color  = [];
+                        let vertex = [];
+
+                        for (let i = 0; i < 4; i++) {
+                            color.push(
+                                p.cr[i].a,
+                                p.cr[i].b,
+                                p.cr[i].c,
+                                255
+                            );
+
+                            vertex.push(
+                                p.vx[i].h,
+                                p.vx[i].v,
+                            );
+                        }
+
+                        drawScene(color, vertex);
+                    }
                     return;
 
                 case 0x74: // SPRITE 8
-                    drawSprite(data, 8);
-                    return;
+                    {
+                        const p = {
+                            vx: [
+                                POINT(data[1]),
+                                POINT(data[3]),
+                            ]
+                        };
 
-                case 0x7c: // SPRITE 16
-                    drawSprite(data, 16);
+                        let color  = [
+                            127, 127, 127, 255,
+                            127, 127, 127, 255,
+                            127, 127, 127, 255,
+                            127, 127, 127, 255,
+                        ];
+
+                        let vertex = [
+                            p.vx[0].h,     p.vx[0].v,
+                            p.vx[0].h + 8, p.vx[0].v,
+                            p.vx[0].h,     p.vx[0].v + 8,
+                            p.vx[0].h + 8, p.vx[0].v + 8,
+                        ];
+
+                        drawScene(color, vertex);
+                    }
                     return;
             }
         }

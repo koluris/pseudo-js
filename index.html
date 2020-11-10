@@ -1,22 +1,17 @@
 <html>
-<head>
-  <title>PSeudo</title>
-</head>
-<body>
-  <canvas id="screen" width="640" height="480">
-    No support for <code>canvas</code> element.
-  </canvas>
+    <head>
+        <title>PSeudo</title>
+    </head>
+    <body>
+        <canvas id="screen" width="640" height="480">
+        </canvas>
 
-  <script src="dist/quer-3.5.1.slim.min.js"></script>
-  <script src="dist/pseudo.js"></script>
+        <script src="dist/pseudo.js"></script>
 
-  <script>
-    $(function() {
-      const screen   = $('#screen');
-      const dropzone = $('#dropzone');
-
-      psx.init(screen, dropzone);
-    });
-  </script>
-</body>
+        <script>
+            psx.init(
+                document.getElementById('screen')
+            );
+        </script>
+    </body>
 </html>

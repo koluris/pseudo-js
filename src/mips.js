@@ -52,8 +52,6 @@ pseudo.CstrMips = function() {
                         base[rd] = base[rs] | base[rt];
                         return;
                 }
-
-                psx.error('Special CPU instruction ' + (code & 0x3f));
                 return;
 
             case 2: // J
@@ -127,8 +125,6 @@ pseudo.CstrMips = function() {
                 mem.write.w(ob, base[rt]);
                 return;
         }
-
-        psx.error('Basic CPU instruction ' + opcode);
     }
 
     function branch(addr) {

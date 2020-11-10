@@ -2,20 +2,16 @@
     ((x >>> 24) & 0xff)
 
 pseudo.CstrGraphics = function() {
-    let pSize = new UintBcap(256);
-
     // Command Pipeline
     const pipe = {
         data: new UintWcap(256)
     };
 
-    return {
-        init() {
-            pSize.fill(0);
-            pSize[ 56] = 8;
-            pSize[116] = 3;
-        },
+    const pSize = [];
+    pSize[ 56] = 8;
+    pSize[116] = 3;
 
+    return {
         writeData(addr) {
             if (!pipe.size) {
                 const prim  = GPU_COMMAND(addr);
@@ -39,7 +35,7 @@ pseudo.CstrGraphics = function() {
             if (pipe.size === pipe.row) {
                 pipe.size = 0;
                 pipe.row  = 0;
-    
+
                 render.draw(pipe.prim, pipe.data);
             }
         },

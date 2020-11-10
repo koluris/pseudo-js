@@ -14,9 +14,7 @@
             \
             maccess(mem.hwr.width, addr) = data; \
             return; \
-    } \
-    \
-    psx.error('Mem W ' + size + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data))
+    }
 
 #define scopeMemR(maccess, width, hw, size) \
     switch(addr >>> 24) { \
@@ -36,7 +34,6 @@
             return maccess(mem.hwr.width, addr); \
     } \
     \
-    psx.error('Mem R ' + size + ' ' + psx.hex(addr)); \
     return 0
 
 pseudo.CstrMem = function() {
