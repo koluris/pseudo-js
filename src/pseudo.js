@@ -1,6 +1,7 @@
 pseudo.CstrMain = function() {
     return {
         init(screen) {
+                vs.init();
             render.init(screen);
 
             const xhr = new XMLHttpRequest();

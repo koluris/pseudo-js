@@ -18,24 +18,21 @@ pseudo.CstrHardware = function() {
     return {
         write: {
             w(addr, data) {
-                switch(true) {
-                    case (addr >= 0x1080 && addr <= 0x10e8): // DMA
-                        mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
-                        if (addr & 8) {
-                            const chan = ((addr >>> 4) & 0xf) - 8;
-                            if (chan === 2) {
-                                vs.executeDMA(addr);
-                            }
-                            mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
-                        }
+                switch(addr) {
+                    case 0x10a8: // GPU DMA mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]
+                        mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
+                        vs.executeDMA(addr);
+                        mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
                         return;
-                    case (addr == 0x1810): // GPU Data
+                    case 0x1810: // GPU Data
                         vs.writeData(data);
                         return;
                     
-                    case (addr == 0x10f0): // DPCR
-                    case (addr == 0x10f4): // DICR
-                    case (addr == 0x1814): // GPU Status
+                    case 0x10a0: // GPU DMA mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]
+                    case 0x10a4: // GPU DMA mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2]
+                    case 0x10f0: // DPCR
+                    case 0x10f4: // DICR
+                    case 0x1814: // GPU Status
                         mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                         return;
                 }
@@ -44,13 +41,13 @@ pseudo.CstrHardware = function() {
         },
         read: {
             w(addr) {
-                switch(true) {
-                    case (addr == 0x1814): // GPU Status
+                switch(addr) {
+                    case 0x1814: // GPU Status
                         return 0x14802000;
                     
-                    case (addr == 0x10a8): // GPU DMA
-                    case (addr == 0x10f0): // DPCR
-                    case (addr == 0x1810): // GPU Data
+                    case 0x10a8: // GPU DMA mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]
+                    case 0x10f0: // DPCR
+                    case 0x1810: // GPU Data
                         return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                 }
                 psx.error('Hardware Read w ' + psx.hex(addr));
@@ -195,6 +192,7 @@ const cpu = new pseudo.CstrMips();
 pseudo.CstrMain = function() {
     return {
         init(screen) {
+                vs.init();
             render.init(screen);
             const xhr = new XMLHttpRequest();
             xhr.onload = function() {
@@ -317,59 +315,21 @@ pseudo.CstrRender = function() {
 };
 const render = new pseudo.CstrRender();
 pseudo.CstrGraphics = function() {
-    // Primitive Size
-    const pSize = [
-        0x00,0x01,0x03,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x04,0x04,0x04,0x04,0x07,0x07,0x07,0x07, 0x05,0x05,0x05,0x05,0x09,0x09,0x09,0x09,
-        0x06,0x06,0x06,0x06,0x09,0x09,0x09,0x09, 0x08,0x08,0x08,0x08,0x0c,0x0c,0x0c,0x0c,
-        0x03,0x03,0x03,0x03,0x00,0x00,0x00,0x00, 0xfe,0xfe,0xfe,0xfe,0xfe,0xfe,0xfe,0xfe,
-        0x04,0x04,0x04,0x04,0x00,0x00,0x00,0x00, 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
-        0x03,0x03,0x03,0x03,0x04,0x04,0x04,0x04, 0x02,0x02,0x02,0x02,0x03,0x03,0x03,0x03,
-        0x02,0x02,0x02,0x02,0x03,0x03,0x03,0x03, 0x02,0x02,0x02,0x02,0x03,0x03,0x03,0x03,
-        0x04,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x00,0x01,0x01,0x01,0x01,0x01,0x01,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-    ];
+    let pSize = new Uint8Array(256);
     // Command Pipeline
     const pipe = {
         data: new Uint32Array(256)
     };
-    function writeData(addr) {
-        if (!pipe.size) {
-            const prim  = ((addr >>> 24) & 0xff);
-            const count = pSize[prim];
-            if (count) {
-                pipe.data[0] = addr;
-                pipe.prim = prim;
-                pipe.size = count;
-                pipe.row  = 1;
-            }
-            else {
-                return;
-            }
-        }
-        else {
-            pipe.data[pipe.row] = addr;
-            pipe.row++;
-        }
-        if (pipe.size === pipe.row) {
-            pipe.size = 0;
-            pipe.row  = 0;
-            render.draw(pipe.prim, pipe.data);
-        }
-    }
     return {
+        init() {
+            pSize.fill(0);
+            pSize[ 56] = 8;
+            pSize[116] = 3;
+        },
         writeData(addr) {
             if (!pipe.size) {
                 const prim  = ((addr >>> 24) & 0xff);
                 const count = pSize[prim];
-    
                 if (count) {
                     pipe.data[0] = addr;
                     pipe.prim = prim;
@@ -384,7 +344,6 @@ pseudo.CstrGraphics = function() {
                 pipe.data[pipe.row] = addr;
                 pipe.row++;
             }
-    
             if (pipe.size === pipe.row) {
                 pipe.size = 0;
                 pipe.row  = 0;
@@ -399,7 +358,7 @@ pseudo.CstrGraphics = function() {
                     let haha = mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + 4;
                     let i = 0;
                     while (i < (count >>> 24)) {
-                        writeData(mem.ram.uw[(( haha) & (mem.ram.uw.byteLength - 1)) >>> 2]);
+                        vs.writeData(mem.ram.uw[(( haha) & (mem.ram.uw.byteLength - 1)) >>> 2]);
                         haha += 4;
                         i++;
                     }
