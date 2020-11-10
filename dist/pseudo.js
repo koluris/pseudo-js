@@ -13,36 +13,6 @@ function union(size) {
 // Declare our namespace
 'use strict';
 const pseudo = window.pseudo || {};
-pseudo.CstrHardware = function() {
-    return {
-        write: {
-            w(addr, data) {
-                switch(addr) {
-                    case 0x10a8: // GPU DMA mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]
-                        mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
-                        vs.executeDMA(addr);
-                        mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
-                        return;
-                    case 0x1810: // GPU Data
-                        vs.writeData(data);
-                        return;
-                }
-                mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
-                return;
-            }
-        },
-        read: {
-            w(addr) {
-                switch(addr) {
-                    case 0x1814: // GPU Status
-                        return 0x14802000;
-                }
-                return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
-            }
-        }
-    };
-};
-const io = new pseudo.CstrHardware();
 pseudo.CstrMem = function() {
     const PSX_EXE_HEADER_SIZE = 0x800;
     return {
@@ -58,14 +28,67 @@ pseudo.CstrMem = function() {
             }
         },
         write: {
-            w(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: io.write. w(addr & 0xffff, data); return; }; },
-            h(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; return; case 0x1f: io.write. h(addr & 0xffff, data); return; }; },
-            b(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; return; case 0x1f: io.write. b(addr & 0xffff, data); return; }; },
+            w(addr, data) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] = data;
+                        return;
+                    case 0x1f:
+                        switch(addr & 0xffff) {
+                            case 0x10a8: // GPU DMA mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]
+                                mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
+                                vs.executeDMA(addr);
+                                mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
+                                return;
+        
+                            case 0x1810: // GPU Data
+                                vs.writeData(data);
+                                return;
+                        }
+                        mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
+                        return;
+                }
+            },
+            h(addr, data) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        mem.ram.uh[(( addr) & (mem.ram.uh.byteLength - 1)) >>> 1] = data;
+                        return;
+                }
+            },
+            b(addr, data) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 0] = data;
+                        return;
+                }
+            },
         },
         read: {
-            w(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2]; case 0x1f: return io.read. w(addr & 0xffff); } return 0; },
-            h(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1]; case 0x1f: return io.read. h(addr & 0xffff); } return 0; },
-            b(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0]; case 0x1f: return io.read. b(addr & 0xffff); } return 0; },
+            w(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2];
+                    case 0x1f:
+                        switch(addr & 0xffff) {
+                            case 0x1814: // GPU Status
+                                return 0x14802000;
+                        }
+                        return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
+                }
+            },
+            h(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return mem.ram.uh[(( addr) & (mem.ram.uh.byteLength - 1)) >>> 1];
+                }
+            },
+            b(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 0];
+                }
+            },
         }
     };
 };

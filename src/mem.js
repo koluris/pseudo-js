@@ -1,29 +1,3 @@
-#define scopeMemW(maccess, width, hw, size) \
-    switch(addr >>> 24) { \
-        case 0x00: \
-        case 0x80: \
-        case 0xA0: \
-            maccess(mem.ram.width, addr) = data; \
-            return; \
-        \
-        case 0x1f: \
-            io.write.hw(addr & 0xffff, data); \
-            return; \
-    }
-
-#define scopeMemR(maccess, width, hw, size) \
-    switch(addr >>> 24) { \
-        case 0x00: \
-        case 0x80: \
-        case 0xA0: \
-            return maccess(mem.ram.width, addr); \
-        \
-        case 0x1f: \
-            return io.read.hw(addr & 0xffff); \
-    } \
-    \
-    return 0
-
 pseudo.CstrMem = function() {
     const PSX_EXE_HEADER_SIZE = 0x800;
 
@@ -44,15 +18,74 @@ pseudo.CstrMem = function() {
         },
 
         write: {
-            w(addr, data) { scopeMemW(directMemW, uw, w, '32'); },
-            h(addr, data) { scopeMemW(directMemH, uh, h, '16'); },
-            b(addr, data) { scopeMemW(directMemB, ub, b, '08'); },
+            w(addr, data) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        directMemW(mem.ram.uw, addr) = data;
+                        return;
+
+                    case 0x1f:
+                        switch(addr & 0xffff) {
+                            case 0x10a8: // GPU DMA chcr
+                                chcr = data;
+                                vs.executeDMA(addr);
+                                chcr = data & (~(0x01000000));
+                                return;
+        
+                            case 0x1810: // GPU Data
+                                vs.writeData(data);
+                                return;
+                        }
+                        directMemW(mem.hwr.uw, addr) = data;
+                        return;
+                }
+            },
+
+            h(addr, data) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        directMemH(mem.ram.uh, addr) = data;
+                        return;
+                }
+            },
+
+            b(addr, data) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        directMemB(mem.ram.ub, addr) = data;
+                        return;
+                }
+            },
         },
 
         read: {
-            w(addr) { scopeMemR(directMemW, uw, w, '32'); },
-            h(addr) { scopeMemR(directMemH, uh, h, '16'); },
-            b(addr) { scopeMemR(directMemB, ub, b, '08'); },
+            w(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return directMemW(mem.ram.uw, addr);
+
+                    case 0x1f:
+                        switch(addr & 0xffff) {
+                            case 0x1814: // GPU Status
+                                return 0x14802000;
+                        }
+                        return directMemW(mem.hwr.uw, addr);
+                }
+            },
+
+            h(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return directMemH(mem.ram.uh, addr);
+                }
+            },
+
+            b(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return directMemB(mem.ram.ub, addr);
+                }
+            },
         }
     };
 };
