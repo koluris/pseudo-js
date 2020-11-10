@@ -6,10 +6,6 @@ function union(size) {
         uw: new Uint32Array(bfr),
         uh: new Uint16Array(bfr),
         ub: new Uint8Array(bfr),
-
-        sw: new Int32Array(bfr),
-        sh: new Int16Array(bfr),
-        sb: new Int8Array(bfr),
     };
 }
 
@@ -36,15 +32,6 @@ function union(size) {
 
 #define chcr \
     directMemW(mem.hwr.uw, (addr & 0xfff0) | 8)
-
-/***
-    Mips processor
-***/
-#define SIGN_EXT_32(n) \
-    ((n) <<  0 >>  0)
-
-#define SIGN_EXT_16(n) \
-    ((n) << 16 >> 16)
 
 // Declare our namespace
 'use strict';

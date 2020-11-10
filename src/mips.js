@@ -1,3 +1,9 @@
+#define SIGN_EXT_32(n) \
+    ((n) <<  0 >>  0)
+
+#define SIGN_EXT_16(n) \
+    ((n) << 16 >> 16)
+
 pseudo.CstrMips = function() {
     let base = new Uint32Array(32);
     let pc, code;
