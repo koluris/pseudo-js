@@ -56,15 +56,6 @@ function union(size) {
     module[((addr) & (module.bSize - 1)) >>> 0]
 
 /***
-    Hardware IO
-***/
-#define dpcr \
-    directMemW(mem.hwr.uw, 0x10f0)
-
-#define dicr \
-    directMemW(mem.hwr.uw, 0x10f4)
-
-/***
     DMA
 ***/
 #define madr \
@@ -126,10 +117,6 @@ function union(size) {
     void main() { \
         gl_FragColor = v_color; \
     }'
-
-// Console output
-#define MSG_INFO  'info'
-#define MSG_ERROR 'error'
 
 // Declare our namespace
 'use strict';

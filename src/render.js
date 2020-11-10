@@ -1,13 +1,3 @@
-/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
-
-#undef RGB
-
-#define COLOR_MAX \
-    255
-
-#define COLOR_HALF \
-    COLOR_MAX >>> 1
-
 /***
     Base components
 ***/
@@ -23,14 +13,6 @@
     h: (data >>  0) & 0xffff, \
     v: (data >> 16) & 0xffff, \
 }
-
-#define UV(data) { \
-    u: (data >>> 0) & 0xff, \
-    v: (data >>> 8) & 0xff, \
-}
-
-#define TPAGE(data) \
-    (data >>> 16) & 0xffff
 
 /***
     Primitive Structures
@@ -51,16 +33,6 @@
     ] \
 }
 
-#define TILEx(data) { \
-    cr: [ \
-        RGBC(data[0]) \
-    ], \
-    vx: [ \
-        POINT(data[1]), \
-        POINT(data[2]), \
-    ] \
-}
-
 #define SPRTx(data) { \
     cr: [ \
         RGBC(data[0]) \
@@ -68,12 +40,6 @@
     vx: [ \
         POINT(data[1]), \
         POINT(data[3]), \
-    ], \
-    tx: [ \
-        UV(data[2]) \
-    ], \
-    tp: [ \
-        TPAGE(data[2]) \
     ] \
 }
 
@@ -96,21 +62,15 @@ pseudo.CstrRender = function() {
         return shader;
     }
 
-    function createColor(color) {
+    function drawScene(color, vertex, texture, mode, size) {
         ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
         ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
         ctx.bufferData(ctx.ARRAY_BUFFER, new UintBcap(color), ctx.DYNAMIC_DRAW);
-    }
 
-    function createVertex(vertex) {
         ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._v);
         ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
         ctx.bufferData(ctx.ARRAY_BUFFER, new SintHcap(vertex), ctx.DYNAMIC_DRAW);
-    }
 
-    function drawScene(color, vertex, texture, mode, size) {
-        createColor   (color);
-        createVertex (vertex);
         ctx.drawVertices(mode, 0, size);
     }
 
@@ -157,9 +117,9 @@ pseudo.CstrRender = function() {
 
         for (let i = 0; i < 4; i++) {
             color.push(
-                COLOR_HALF,
-                COLOR_HALF,
-                COLOR_HALF,
+                127,
+                127,
+                127,
                 255
             );
         }
@@ -236,13 +196,10 @@ pseudo.CstrRender = function() {
 
             // Operations
             switch(addr) {
-                case 0xa0: // LOAD IMAGE
-                    vs.photoRead(data);
-                    return;
-
                 /* unused */
                 case 0x01: // FLUSH
                 case 0x02: // BLOCK FILL
+                case 0xa0: // LOAD IMAGE
                 case 0xe1: // TEXTURE PAGE
                 case 0xe3: // DRAW AREA START
                 case 0xe4: // DRAW AREA END
@@ -250,7 +207,7 @@ pseudo.CstrRender = function() {
                     return;
             }
 
-            psx.error('GPU Render Primitive ' + psx.hex(addr));
+            psx.error('GPU Render Primitive ' + psx.hex(addr & 0xfc));
         }
     };
 };

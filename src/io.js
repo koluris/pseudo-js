@@ -9,13 +9,11 @@ pseudo.CstrHardware = function() {
                         if (addr & 8) {
                             const chan = ((addr >>> 4) & 0xf) - 8;
 
-                            if (dpcr & (8 << (chan * 4))) {
-                                if (chan === 2) {
-                                    vs.executeDMA(addr);
-                                }
-
-                                chcr = data & (~(0x01000000));
+                            if (chan === 2) {
+                                vs.executeDMA(addr);
                             }
+
+                            chcr = data & (~(0x01000000));
                         }
                         return;
 
