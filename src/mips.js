@@ -149,14 +149,14 @@ pseudo.CstrMips = function() {
             while(vblank) {
                 step(false);
 
-                if (vblank++ >= 100000) {
+                if (vblank++ > 100000) {
                     vblank = 0;
                 }
             }
         },
 
-        parseExeHeader(header) {
-            pc = header[4];
+        setpc(addr) {
+            pc = addr;
         }
     };
 };

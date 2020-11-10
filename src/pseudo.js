@@ -4,7 +4,7 @@ pseudo.CstrMain = function() {
             const xhr = new XMLHttpRequest();
             xhr.onload = function() {
                 render.init(screen);
-                cpu.parseExeHeader(mem.writeExecutable(xhr.response));
+                mem.writeExecutable(xhr.response);
                 cpu.run();
             };
             xhr.responseType = 'arraybuffer';

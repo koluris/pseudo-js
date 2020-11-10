@@ -51,11 +51,11 @@ pseudo.CstrMem = function() {
         writeExecutable(data) {
             const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
             const offset = header[6];
+            cpu.setpc(header[4]);
             const exe = new Uint8Array(data, PSX_EXE_HEADER_SIZE);
             for (let i = 0; i < exe.byteLength; i++) {
                 mem.ram.ub[(( offset + i) & (mem.ram.ub.byteLength - 1)) >>> 0] = exe[i];
             }
-            return header;
         },
         write: {
             w(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. w(addr & 0xffff, data); return; } mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; }; },
@@ -166,13 +166,13 @@ pseudo.CstrMips = function() {
             
             while(vblank) {
                 step(false);
-                if (vblank++ >= 100000) {
+                if (vblank++ > 100000) {
                     vblank = 0;
                 }
             }
         },
-        parseExeHeader(header) {
-            pc = header[4];
+        setpc(addr) {
+            pc = addr;
         }
     };
 };
@@ -183,7 +183,7 @@ pseudo.CstrMain = function() {
             const xhr = new XMLHttpRequest();
             xhr.onload = function() {
                 render.init(screen);
-                cpu.parseExeHeader(mem.writeExecutable(xhr.response));
+                mem.writeExecutable(xhr.response);
                 cpu.run();
             };
             xhr.responseType = 'arraybuffer';
