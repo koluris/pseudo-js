@@ -70,12 +70,12 @@ pseudo.CstrBus = function() {
             
             if (dpcr & (8 << (chan * 4))) {
                 switch(chan) {
-                    case 0:  mdec.executeDMA(addr); break; // MDEC in
-                    case 1:  mdec.executeDMA(addr); break; // MDEC out
-                    case 2:    vs.executeDMA(addr); break; // Graphics
-                    case 3: cdrom.executeDMA(addr); break; // CD-ROM
-                    case 4: audio.executeDMA(addr); break; // Audio
-                    case 6:   mem.executeDMA(addr); break; // Clear OT
+                    case 0: break; // MDEC in
+                    case 1: break; // MDEC out
+                    case 2: vs.executeDMA(addr); break; // Graphics
+                    case 3: break; // CD-ROM
+                    case 4: break; // Audio
+                    case 6: break; // Clear OT
 
                     default:
                         psx.error('DMA Channel ' + chan);

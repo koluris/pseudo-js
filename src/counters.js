@@ -42,49 +42,49 @@ pseudo.CstrCounters = function() {
         },
 
         update(threshold) {
-            let temp;
+            // let temp;
 
-            temp = count(0) + ((mode(0) & 0x100) ? threshold : threshold / 8);
+            // temp = count(0) + ((mode(0) & 0x100) ? threshold : threshold / 8);
 
-            if (temp >= bound(0) && count(0) < bound(0)) { temp = 0;
-                if (mode(0) & 0x50) {
-                    bus.interruptSet(IRQ_RTC0);
-                }
-            }
-            count(0) = temp;
+            // if (temp >= bound(0) && count(0) < bound(0)) { temp = 0;
+            //     if (mode(0) & 0x50) {
+            //         bus.interruptSet(IRQ_RTC0);
+            //     }
+            // }
+            // count(0) = temp;
 
-            if (!(mode(1) & 0x100)) {
-                temp = count(1) + threshold;
+            // if (!(mode(1) & 0x100)) {
+            //     temp = count(1) + threshold;
 
-                if (temp >= bound(1) && count(1) < bound(1)) { temp = 0;
-                    if (mode(1) & 0x50) {
-                        psx.error('RTC timer[1].count >= timer[1].bound');
-                    }
-                }
-                count(1) = temp;
-            }
-            else {
-                if ((hbk -= threshold) <= 0) {
-                    if (++count(1) == bound(1)) { count(1) = 0;
+            //     if (temp >= bound(1) && count(1) < bound(1)) { temp = 0;
+            //         if (mode(1) & 0x50) {
+            //             psx.error('RTC timer[1].count >= timer[1].bound');
+            //         }
+            //     }
+            //     count(1) = temp;
+            // }
+            // else {
+            //     if ((hbk -= threshold) <= 0) {
+            //         if (++count(1) == bound(1)) { count(1) = 0;
 
-                        if (mode(1) & 0x50) {
-                            bus.interruptSet(IRQ_RTC1);
-                        }
-                    }
-                    hbk = PSX_HSYNC;
-                }
-            }
+            //             if (mode(1) & 0x50) {
+            //                 bus.interruptSet(IRQ_RTC1);
+            //             }
+            //         }
+            //         hbk = PSX_HSYNC;
+            //     }
+            // }
 
-            if (!(mode(2) & 1)) {
-                temp = count(2) + ((mode(2) & 0x200) ? threshold / 8 : threshold);
+            // if (!(mode(2) & 1)) {
+            //     temp = count(2) + ((mode(2) & 0x200) ? threshold / 8 : threshold);
 
-                if (temp >= bound(2) && count(2) < bound(2)) { temp = 0;
-                    if (mode(2) & 0x50) {
-                        bus.interruptSet(IRQ_RTC2);
-                    }
-                }
-                count(2) = temp;
-            }
+            //     if (temp >= bound(2) && count(2) < bound(2)) { temp = 0;
+            //         if (mode(2) & 0x50) {
+            //             bus.interruptSet(IRQ_RTC2);
+            //         }
+            //     }
+            //     count(2) = temp;
+            // }
 
             // Graphics
             vbk += threshold * 2;

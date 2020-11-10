@@ -5,9 +5,6 @@
         case 0x00: \
         case 0x80: \
         case 0xA0: \
-            if (cpu.copr[12] & 0x10000) { \
-                return; \
-            } \
             maccess(mem.ram.width, addr) = data; \
             return; \
         \
@@ -19,10 +16,6 @@
             \
             maccess(mem.hwr.width, addr) = data; \
             return; \
-    } \
-    \
-    if ((addr) == 0xfffe0130) { \
-        return; \
     } \
     \
     psx.error('Mem W ' + size + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data))
@@ -45,10 +38,6 @@
             return maccess(mem.hwr.width, addr); \
     } \
     \
-    if ((addr) == 0xfffe0130) { \
-        return 0; \
-    } \
-    \
     psx.error('Mem R ' + size + ' ' + psx.hex(addr)); \
     return 0
 
@@ -58,17 +47,12 @@ pseudo.CstrMem = function() {
     // Exposed class functions/variables
     return {
         ram: union(0x200000),
-        rom: union(0x80000),
         hwr: union(0x4000),
 
         reset() {
             // Reset all, except for BIOS
             mem.ram.ub.fill(0);
             mem.hwr.ub.fill(0);
-        },
-
-        writeROM(data) {
-            mem.rom.ub.set(new UintBcap(data));
         },
 
         writeExecutable(data) {

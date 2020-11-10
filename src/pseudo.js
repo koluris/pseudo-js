@@ -55,20 +55,13 @@ pseudo.CstrMain = function() {
         divOutput.text(' ');
         
         // Reset all emulator components
-          audio.reset();
             bus.reset();
-          cdrom.reset();
-           cop2.reset();
             cpu.reset();
-           mdec.reset();
             mem.reset();
          render.reset();
         rootcnt.reset();
             sio.reset();
              vs.reset();
-
-        // CPU Bootstrap
-        cpu.bootstrap();
     }
 
     // Exposed class functions/variables
@@ -78,13 +71,6 @@ pseudo.CstrMain = function() {
             divDropzone = dropzone;
             
             render.init(screen, res);
-             audio.init();
-             cdrom.init(blink, kb);
-            
-            request('bios/scph1001.bin', function(resp) {
-                mem.writeROM(resp);
-                psx.consoleInformation(MSG_INFO, 'Welcome to PSeudo 0.84, a JavaScript based PSX emulator');
-            });
         },
 
         openFile(file) {
@@ -99,19 +85,6 @@ pseudo.CstrMain = function() {
                     };
                     // Read file
                     reader.readAsBuffer(file);
-                }
-            });
-
-            // ISO 9660
-            chunkReader(file, 0x9319, 5, 'text', function(id) {
-                if (id === 'CD001') {
-                    chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
-                        reset();
-                        iso = file;
-                        cpu.base[32] = cpu.base[31];
-                        cpu.setpc(cpu.base[32]);
-                        cpu.run();
-                    });
                 }
             });
         },
@@ -160,24 +133,6 @@ pseudo.CstrMain = function() {
         error(out) {
             cpu.pause();
             throw new Error('/// PSeudo ' + out);
-        },
-
-        trackRead(time) {
-            if (!iso) {
-                return;
-            }
-
-            const minute = BCD2INT(time[0]);
-            const sec    = BCD2INT(time[1]);
-            const frame  = BCD2INT(time[2]);
-
-            const offset = MSF2SECTOR(minute, sec, frame) * UDF_FRAMESIZERAW + 12;
-            const size   = UDF_DATASIZE;
-
-            chunkReader(iso, offset, size, 'raw', function(data) {
-                cdrom.interruptRead2(new UintBcap(data));
-                // slice(0, DATASIZE)
-            });
         }
     };
 };
