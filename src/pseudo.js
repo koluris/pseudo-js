@@ -55,12 +55,10 @@ pseudo.CstrMain = function() {
         divOutput.text(' ');
         
         // Reset all emulator components
-            bus.reset();
-            cpu.reset();
-            mem.reset();
-         render.reset();
-        rootcnt.reset();
-             vs.reset();
+           cpu.reset();
+           mem.reset();
+        render.reset();
+            vs.reset();
     }
 
     // Exposed class functions/variables

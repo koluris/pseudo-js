@@ -16,81 +16,15 @@ function union(size) {
 'use strict';
 const pseudo = window.pseudo || {};
 pseudo.CstrBus = function() {
-    // Interrupts
-    const IRQ_ENABLED  = 1;
-    const IRQ_DISABLED = 0;
-    // Definition and threshold of interrupts
-    const interrupts = [{
-        code: 0,
-        target: 4
-    }, {
-        code: 1,
-        target: 1
-    }, {
-        code: 2,
-        target: 4
-    }, {
-        code: 3,
-        target: 8
-    }, {
-        code: 4,
-        target: 1
-    }, {
-        code: 5,
-        target: 1
-    }, {
-        code: 6,
-        target: 1
-    }, {
-        code: 7,
-        target: 8
-    }, {
-        code: 8,
-        target: 8
-    }, {
-        code: 9,
-        target: 1
-    }, {
-        code: 10,
-        target: 1
-    }];
-    // Exposed class functions/variables
     return {
-        reset() {
-            for (const item of interrupts) {
-                item.queued = IRQ_DISABLED;
-            }
-        },
-        update() { // A method to schedule when IRQs should fire
-            for (const item of interrupts) {
-                if (item.queued) {
-                    if (item.queued++ === item.target) {
-                        mem.hwr.uh[((0x1070) & (mem.hwr.uh.byteLength - 1)) >>> 1] |= (1 << item.code);
-                        item.queued = IRQ_DISABLED;
-                        break;
-                    }
-                }
-            }
-        },
-        interruptSet(code) {
-            interrupts[code].queued = IRQ_ENABLED;
-        },
-        
         checkDMA(addr, data) {
             const chan = ((addr >>> 4) & 0xf) - 8;
             
             if (mem.hwr.uw[((0x10f0) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (8 << (chan * 4))) {
-                switch(chan) {
-                    case 0: break; // MDEC in
-                    case 1: break; // MDEC out
-                    case 2: vs.executeDMA(addr); break; // Graphics
-                    case 3: break; // CD-ROM
-                    case 4: break; // Audio
-                    case 6: break; // Clear OT
-                    default:
-                        psx.error('DMA Channel ' + chan);
-                        break;
+                if (chan === 2) {
+                    vs.executeDMA(addr);
                 }
+                
                 mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
                 if (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (1 << (16 + chan))) {
                     mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] |= 1 << (24 + chan);
@@ -101,30 +35,6 @@ pseudo.CstrBus = function() {
     };
 };
 const bus = new pseudo.CstrBus();
-pseudo.CstrCounters = function() {
-    // PSX root clock
-    const PSX_CLOCK      = 33868800;
-    const PSX_VSYNC_NTSC = PSX_CLOCK / 60;
-    const PSX_VSYNC_PAL  = PSX_CLOCK / 50;
-    const PSX_HSYNC      = PSX_CLOCK / 60 / 480;
-    let vbk;
-    // Exposed class functions/variables
-    return {
-        reset() {
-            vbk = 0;
-        },
-        update(threshold) {
-            // Graphics
-            vbk += threshold * 2;
-            if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
-                bus.interruptSet(0);
-                 vs.redraw();
-                cpu.setSuspended();
-            }
-        }
-    };
-};
-const rootcnt = new pseudo.CstrCounters();
 pseudo.CstrHardware = function() {
     // Exposed class functions/variables
     return {
@@ -328,12 +238,19 @@ pseudo.CstrMips = function() {
         run() {
             suspended = false;
             requestAF = requestAnimationFrame(cpu.run);
+            const PSX_CLOCK      = 33868800;
+            const PSX_VSYNC_NTSC = PSX_CLOCK / 60;
+            let vbk = 0;
             while(!suspended) { // And u don`t stop!
                 step(false);
                 if (opcodeCount >= 100) {
                     // Rootcounters, interrupts
-                    rootcnt.update(64);
-                        bus.update();
+                    vbk += 64;
+                    if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
+                        mem.hwr.uh[((0x1070) & (mem.hwr.uh.byteLength - 1)) >>> 1] |= (1 << 0);
+                        vs.redraw();
+                        cpu.setSuspended();
+                    }
                     
                     opcodeCount = 0;
                 }
@@ -411,12 +328,10 @@ pseudo.CstrMain = function() {
         divOutput.text(' ');
         
         // Reset all emulator components
-            bus.reset();
-            cpu.reset();
-            mem.reset();
-         render.reset();
-        rootcnt.reset();
-             vs.reset();
+           cpu.reset();
+           mem.reset();
+        render.reset();
+            vs.reset();
     }
     // Exposed class functions/variables
     return {
@@ -674,25 +589,15 @@ pseudo.CstrRender = function() {
             }
         },
         resize(data) {
-            // Same resolution? Ciao!
-            if (data.w === res.w && data.h === res.h) {
-                return;
-            }
-    
-            // Check if we have a valid resolution
-            if (data.w > 0 && data.h > 0) {
-                // Store valid resolution
-                res.w = data.w;
-                res.h = data.h;
-              
-                //ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-                //ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
-                ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-                ctx.viewport(0, 0, 640, 480);
-                render.swapBuffers(true);
-    
-                divRes.innerText = res.w + ' x ' + res.h;
-            }
+            // Store valid resolution
+            res.w = data.w;
+            res.h = data.h;
+            
+            //ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
+            //ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
+            ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
+            ctx.viewport(0, 0, 640, 480);
+            render.swapBuffers(true);
         },
         draw(addr, data) {
             // Primitives
@@ -710,60 +615,20 @@ pseudo.CstrRender = function() {
             // Operations
             switch(addr) {
                 case 0x01: // FLUSH
-                    vs.scopeW(0x1f801814, 0x01000000);
                     return;
                 case 0x02: // BLOCK FILL
-                    {
-                        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, ] };
-                        let color  = [];
-                        let vertex = [];
-                        for (let i = 0; i < 4; i++) {
-                            color.push(
-                                p.cr[0].a,
-                                p.cr[0].b,
-                                p.cr[0].c,
-                                255
-                            );
-                        }
-                        vertex = [
-                            p.vx[0].h,             p.vx[0].v,
-                            p.vx[0].h + p.vx[1].h, p.vx[0].v,
-                            p.vx[0].h,             p.vx[0].v + p.vx[1].v,
-                            p.vx[0].h + p.vx[1].h, p.vx[0].v + p.vx[1].v,
-                        ];
-                        
-                        drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
-                    }
                     return;
                 case 0xa0: // LOAD IMAGE
                     vs.photoRead(data);
                     return;
                 case 0xe1: // TEXTURE PAGE
-                    blend = (data[0] >>> 5) & 3;
                     spriteTP = data[0] & 0x7ff;
-                    ctx.blendFunc(bit[blend].src, bit[blend].target);
                     return;
                 case 0xe3: // DRAW AREA START
-                    {
-                        const pane = {
-                            h: data[0] & 0x3ff, v: (data[0] >> 10) & 0x1ff
-                        };
-                        drawArea.start.h = drawAreaCalc(pane.h);
-                        drawArea.start.v = drawAreaCalc(pane.v);
-                    }
                     return;
                 case 0xe4: // DRAW AREA END
-                    {
-                        const pane = {
-                            h: data[0] & 0x3ff, v: (data[0] >> 10) & 0x1ff
-                        };
-                        drawArea.end.h = drawAreaCalc(pane.h);
-                        drawArea.end.v = drawAreaCalc(pane.v);
-                    }
                     return;
                 case 0xe5: // DRAW OFFSET
-                    ofs.h = (((data[0]) << 0 >> 0) << 21) >> 21;
-                    ofs.v = (((data[0]) << 0 >> 0) << 10) >> 21;
                     return;
             }
             psx.error('GPU Render Primitive ' + psx.hex(addr));

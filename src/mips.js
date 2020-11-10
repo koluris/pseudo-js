@@ -180,13 +180,23 @@ pseudo.CstrMips = function() {
             suspended = false;
             requestAF = requestAnimationFrame(cpu.run);
 
+            const PSX_CLOCK      = 33868800;
+            const PSX_VSYNC_NTSC = PSX_CLOCK / 60;
+
+            let vbk = 0;
+
             while(!suspended) { // And u don`t stop!
                 step(false);
 
                 if (opcodeCount >= 100) {
                     // Rootcounters, interrupts
-                    rootcnt.update(64);
-                        bus.update();
+                    vbk += 64;
+
+                    if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
+                        data16 |= (1 << 0);
+                        vs.redraw();
+                        cpu.setSuspended();
+                    }
                     
                     opcodeCount = 0;
                 }

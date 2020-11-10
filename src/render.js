@@ -311,25 +311,15 @@ pseudo.CstrRender = function() {
         },
 
         resize(data) {
-            // Same resolution? Ciao!
-            if (data.w === res.w && data.h === res.h) {
-                return;
-            }
-    
-            // Check if we have a valid resolution
-            if (data.w > 0 && data.h > 0) {
-                // Store valid resolution
-                res.w = data.w;
-                res.h = data.h;
-              
-                //ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-                //ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
-                ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-                ctx.viewport(0, 0, 640, 480);
-                render.swapBuffers(true);
-    
-                divRes.innerText = res.w + ' x ' + res.h;
-            }
+            // Store valid resolution
+            res.w = data.w;
+            res.h = data.h;
+            
+            //ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
+            //ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
+            ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
+            ctx.viewport(0, 0, 640, 480);
+            render.swapBuffers(true);
         },
 
         draw(addr, data) {
@@ -351,33 +341,9 @@ pseudo.CstrRender = function() {
             // Operations
             switch(addr) {
                 case 0x01: // FLUSH
-                    vs.scopeW(0x1f801814, 0x01000000);
                     return;
 
                 case 0x02: // BLOCK FILL
-                    {
-                        const p = TILEx(data);
-                        let color  = [];
-                        let vertex = [];
-
-                        for (let i = 0; i < 4; i++) {
-                            color.push(
-                                p.cr[0].a,
-                                p.cr[0].b,
-                                p.cr[0].c,
-                                COLOR_MAX
-                            );
-                        }
-
-                        vertex = [
-                            p.vx[0].h,             p.vx[0].v,
-                            p.vx[0].h + p.vx[1].h, p.vx[0].v,
-                            p.vx[0].h,             p.vx[0].v + p.vx[1].v,
-                            p.vx[0].h + p.vx[1].h, p.vx[0].v + p.vx[1].v,
-                        ];
-                        
-                        drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
-                    }
                     return;
 
                 case 0xa0: // LOAD IMAGE
@@ -385,36 +351,16 @@ pseudo.CstrRender = function() {
                     return;
 
                 case 0xe1: // TEXTURE PAGE
-                    blend = (data[0] >>> 5) & 3;
                     spriteTP = data[0] & 0x7ff;
-                    ctx.blendFunc(bit[blend].src, bit[blend].dest);
                     return;
 
                 case 0xe3: // DRAW AREA START
-                    {
-                        const pane = {
-                            h: data[0] & 0x3ff, v: (data[0] >> 10) & 0x1ff
-                        };
-
-                        drawArea.start.h = drawAreaCalc(pane.h);
-                        drawArea.start.v = drawAreaCalc(pane.v);
-                    }
                     return;
 
                 case 0xe4: // DRAW AREA END
-                    {
-                        const pane = {
-                            h: data[0] & 0x3ff, v: (data[0] >> 10) & 0x1ff
-                        };
-
-                        drawArea.end.h = drawAreaCalc(pane.h);
-                        drawArea.end.v = drawAreaCalc(pane.v);
-                    }
                     return;
 
                 case 0xe5: // DRAW OFFSET
-                    ofs.h = (SIGN_EXT_32(data[0]) << 21) >> 21;
-                    ofs.v = (SIGN_EXT_32(data[0]) << 10) >> 21;
                     return;
             }
 
