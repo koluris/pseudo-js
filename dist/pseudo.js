@@ -62,15 +62,10 @@ pseudo.CstrMem = function() {
     return {
         ram: union(0x200000),
         hwr: union(0x4000),
-        reset() {
-            mem.ram.ub.fill(0);
-            mem.hwr.ub.fill(0);
-        },
         writeExecutable(data) {
             const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
             const offset = header[2 + 4] & (mem.ram.ub.byteLength - 1);
-            const size   = header[2 + 5];
-            mem.ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE, size), offset);
+            mem.ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE), offset);
             return header;
         },
         write: {
@@ -87,11 +82,11 @@ pseudo.CstrMem = function() {
 };
 const mem = new pseudo.CstrMem();
 pseudo.CstrMips = function() {
-    const base = new Uint32Array(32 + 1);
-    let ptr, suspended, requestAF;
+    const base = new Uint32Array(32);
+    let pc;
     function step() {
-        const code = mem.read.w(base[32]);
-        base[32] += 4;
+        const code = mem.read.w(pc);
+        pc += 4;
         switch(((code >>> 26) & 0x3f)) {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
@@ -116,25 +111,25 @@ pseudo.CstrMips = function() {
                 psx.error('Special CPU instruction ' + (code & 0x3f));
                 return;
             case 2: // J
-                branch(((base[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
+                branch(((pc & 0xf0000000) | (code & 0x3ffffff) << 2));
                 return;
             case 3: // JAL
-                base[31] = base[32] + 4;
-                branch(((base[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
+                base[31] = pc + 4;
+                branch(((pc & 0xf0000000) | (code & 0x3ffffff) << 2));
                 return;
             case 4: // BEQ
                 if (base[((code >>> 21) & 0x1f)] === base[((code >>> 16) & 0x1f)]) {
-                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
+                    branch((pc + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
             case 5: // BNE
                 if (base[((code >>> 21) & 0x1f)] !== base[((code >>> 16) & 0x1f)]) {
-                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
+                    branch((pc + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
             case 7: // BGTZ
                 if (((base[((code >>> 21) & 0x1f)]) << 0 >> 0) > 0) {
-                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
+                    branch((pc + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
             case 9: // ADDIU
@@ -175,30 +170,22 @@ pseudo.CstrMips = function() {
     }
     function branch(addr) {
         step();
-        base[32] = addr;
+        pc = addr;
     }
     return {
-        reset() {
-            // Reset processors
-            base.fill(0);
-            base[32] = 0xbfc00000;
-        },
         run() {
-            suspended = false;
-            requestAF = requestAnimationFrame(cpu.run);
+            let vblank = 1;
+            requestAnimationFrame(cpu.run);
             
-            let vbk = 0;
-            while(!suspended) {
+            while(vblank) {
                 step(false);
-                if (vbk++ >= 100000) { vbk = 0;
-                    suspended = true;
+                if (vblank++ >= 100000) {
+                    vblank = 0;
                 }
             }
         },
         parseExeHeader(header) {
-            base[28] = header[2 + 3];
-            base[29] = header[2 + 10];
-            base[32] = header[2 + 2];
+            pc = header[2 + 2];
         }
     };
 };
@@ -209,9 +196,6 @@ pseudo.CstrMain = function() {
             render.init(screen);
             const xhr = new XMLHttpRequest();
             xhr.onload = function() {
-                cpu.reset();
-                mem.reset();
-                 vs.reset();
                 cpu.parseExeHeader(
                     mem.writeExecutable(xhr.response)
                 );
@@ -311,13 +295,10 @@ pseudo.CstrRender = function() {
                 _c: ctx.createBuffer(),
                 _v: ctx.createBuffer(),
             };
-        },
-        resize(res) {
-            ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-            ctx.viewport(0, 0, 640, 480);
+            ctx.uniform2f(attrib._r, 320 / 2, 240 / 2);
+            ctx.viewport(0, 0, 320 * 2, 240 * 2);
         },
         draw(addr, data) {
-            // Primitives
             switch(addr & 0xfc) {
                 case 0x38: // POLY G4
                     drawG(data, 4, ctx.TRIANGLE_STRIP);
@@ -329,19 +310,6 @@ pseudo.CstrRender = function() {
                     drawSprite(data, 16);
                     return;
             }
-            // Operations
-            switch(addr) {
-                
-                case 0x01: // FLUSH
-                case 0x02: // BLOCK FILL
-                case 0xa0: // LOAD IMAGE
-                case 0xe1: // TEXTURE PAGE
-                case 0xe3: // DRAW AREA START
-                case 0xe4: // DRAW AREA END
-                case 0xe5: // DRAW OFFSET
-                    return;
-            }
-            psx.error('GPU Render Primitive ' + psx.hex(addr & 0xfc));
         }
     };
 };
@@ -404,17 +372,7 @@ pseudo.CstrGraphics = function() {
             }
         }
     };
-    // Exposed class functions/variables
     return {
-        reset() {
-            status = 0;
-            // Command Pipe
-            pipe.data.fill(0);
-            pipe.prim = 0;
-            pipe.size = 0;
-            pipe.row  = 0;
-            render.resize({ w: 320, h: 240 });
-        },
         scopeW(addr, data) {
             switch(addr & 0xf) {
                 case 0: // Data

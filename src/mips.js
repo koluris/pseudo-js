@@ -1,5 +1,3 @@
-#define pc base[32]
-
 #define opcode \
     ((code >>> 26) & 0x3f)
 
@@ -22,8 +20,8 @@
     ((pc & 0xf0000000) | (code & 0x3ffffff) << 2)
 
 pseudo.CstrMips = function() {
-    const base = new UintWcap(32 + 1);
-    let ptr, suspended, requestAF;
+    const base = new UintWcap(32);
+    let pc;
 
     function step() {
         const code = mem.read.w(pc);
@@ -139,33 +137,23 @@ pseudo.CstrMips = function() {
     }
 
     return {
-        reset() {
-            base.fill(0);
-        },
-
         run() {
-            suspended = false;
-            requestAF = requestAnimationFrame(cpu.run);
+            let vblank = 1;
+            requestAnimationFrame(cpu.run);
             
-            let vbk = 0;
-
-            while(!suspended) {
+            while(vblank) {
                 step(false);
 
-                if (vbk++ >= 100000) { vbk = 0;
-                    suspended = true;
+                if (vblank++ >= 100000) {
+                    vblank = 0;
                 }
             }
         },
 
         parseExeHeader(header) {
-            base[28] = header[2 + 3];
-            base[29] = header[2 + 10];
             pc = header[2 + 2];
         }
     };
 };
-
-#undef pc
 
 const cpu = new pseudo.CstrMips();

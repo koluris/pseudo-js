@@ -5,10 +5,6 @@ pseudo.CstrMain = function() {
 
             const xhr = new XMLHttpRequest();
             xhr.onload = function() {
-                cpu.reset();
-                mem.reset();
-                 vs.reset();
-
                 cpu.parseExeHeader(
                     mem.writeExecutable(xhr.response)
                 );

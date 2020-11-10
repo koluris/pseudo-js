@@ -46,17 +46,11 @@ pseudo.CstrMem = function() {
         ram: union(0x200000),
         hwr: union(0x4000),
 
-        reset() {
-            mem.ram.ub.fill(0);
-            mem.hwr.ub.fill(0);
-        },
-
         writeExecutable(data) {
             const header = new UintWcap(data, 0, PSX_EXE_HEADER_SIZE);
             const offset = header[2 + 4] & (mem.ram.ub.bSize - 1);
-            const size   = header[2 + 5];
 
-            mem.ram.ub.set(new UintBcap(data, PSX_EXE_HEADER_SIZE, size), offset);
+            mem.ram.ub.set(new UintBcap(data, PSX_EXE_HEADER_SIZE), offset);
 
             return header;
         },

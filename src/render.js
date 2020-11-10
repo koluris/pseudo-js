@@ -148,15 +148,12 @@ pseudo.CstrRender = function() {
                 _c: ctx.createBuffer(),
                 _v: ctx.createBuffer(),
             };
-        },
 
-        resize(res) {
-            ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-            ctx.viewport(0, 0, 640, 480);
+            ctx.uniform2f(attrib._r, 320 / 2, 240 / 2);
+            ctx.viewport(0, 0, 320 * 2, 240 * 2);
         },
 
         draw(addr, data) {
-            // Primitives
             switch(addr & 0xfc) {
                 case 0x38: // POLY G4
                     drawG(data, 4, ctx.TRIANGLE_STRIP);
@@ -170,21 +167,6 @@ pseudo.CstrRender = function() {
                     drawSprite(data, 16);
                     return;
             }
-
-            // Operations
-            switch(addr) {
-                /* unused */
-                case 0x01: // FLUSH
-                case 0x02: // BLOCK FILL
-                case 0xa0: // LOAD IMAGE
-                case 0xe1: // TEXTURE PAGE
-                case 0xe3: // DRAW AREA START
-                case 0xe4: // DRAW AREA END
-                case 0xe5: // DRAW OFFSET
-                    return;
-            }
-
-            psx.error('GPU Render Primitive ' + psx.hex(addr & 0xfc));
         }
     };
 };

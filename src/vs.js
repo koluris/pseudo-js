@@ -68,20 +68,7 @@ pseudo.CstrGraphics = function() {
         }
     };
 
-    // Exposed class functions/variables
     return {
-        reset() {
-            status = 0;
-
-            // Command Pipe
-            pipe.data.fill(0);
-            pipe.prim = 0;
-            pipe.size = 0;
-            pipe.row  = 0;
-
-            render.resize({ w: 320, h: 240 });
-        },
-
         scopeW(addr, data) {
             switch(addr & 0xf) {
                 case 0: // Data
