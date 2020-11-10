@@ -1,5 +1,3 @@
-/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
-
 #define scopeMemW(maccess, width, hw, size) \
     switch(addr >>> 24) { \
         case 0x00: \
@@ -44,13 +42,11 @@
 pseudo.CstrMem = function() {
     const PSX_EXE_HEADER_SIZE = 0x800;
 
-    // Exposed class functions/variables
     return {
         ram: union(0x200000),
         hwr: union(0x4000),
 
         reset() {
-            // Reset all, except for BIOS
             mem.ram.ub.fill(0);
             mem.hwr.ub.fill(0);
         },
@@ -75,17 +71,6 @@ pseudo.CstrMem = function() {
             w(addr) { scopeMemR(directMemW, uw, w, '32'); },
             h(addr) { scopeMemR(directMemH, uh, h, '16'); },
             b(addr) { scopeMemR(directMemB, ub, b, '08'); },
-        },
-
-        executeDMA(addr) {
-            if (!bcr || chcr !== 0x11000002) {
-                return;
-            }
-            let p = madr;
-
-            for (let i = bcr - 1; i >= 0; i--, p -= 4) {
-                mem.write.w(p, (i == 0) ? 0xffffff : (p - 4) & 0xffffff);
-            }
         }
     };
 };

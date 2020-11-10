@@ -59,12 +59,10 @@ pseudo.CstrHardware = function() {
 const io = new pseudo.CstrHardware();
 pseudo.CstrMem = function() {
     const PSX_EXE_HEADER_SIZE = 0x800;
-    // Exposed class functions/variables
     return {
         ram: union(0x200000),
         hwr: union(0x4000),
         reset() {
-            // Reset all, except for BIOS
             mem.ram.ub.fill(0);
             mem.hwr.ub.fill(0);
         },
@@ -84,121 +82,106 @@ pseudo.CstrMem = function() {
             w(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2]; case 0xbf: return mem.rom. uw[((addr) & (mem.rom. uw.byteLength - 1)) >>> 2]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. w(addr & 0xffff); } return mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2]; } psx.error('Mem R ' +  '32' + ' ' + psx.hex(addr)); return 0; },
             h(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1]; case 0xbf: return mem.rom. uh[((addr) & (mem.rom. uh.byteLength - 1)) >>> 1]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. h(addr & 0xffff); } return mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1]; } psx.error('Mem R ' +  '16' + ' ' + psx.hex(addr)); return 0; },
             b(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0]; case 0xbf: return mem.rom. ub[((addr) & (mem.rom. ub.byteLength - 1)) >>> 0]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. b(addr & 0xffff); } return mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0]; } psx.error('Mem R ' +  '08' + ' ' + psx.hex(addr)); return 0; },
-        },
-        executeDMA(addr) {
-            if (!mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] || mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] !== 0x11000002) {
-                return;
-            }
-            let p = mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2];
-            for (let i = mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] - 1; i >= 0; i--, p -= 4) {
-                mem.write.w(p, (i == 0) ? 0xffffff : (p - 4) & 0xffffff);
-            }
         }
     };
 };
 const mem = new pseudo.CstrMem();
 pseudo.CstrMips = function() {
-    // Base + Coprocessor
-    const base = new Uint32Array(32 + 3); // + cpu.base[32], lo, hi
+    const base = new Uint32Array(32 + 1);
     let ptr, suspended, requestAF;
-    // Base CPU stepper
     function step() {
-        //cpu.base[0] = 0; // As weird as this seems, it is needed
-        const code = mem.read.w(cpu.base[32]);
-        cpu.base[32] += 4;
+        const code = mem.read.w(base[32]);
+        base[32] += 4;
         switch(((code >>> 26) & 0x3f)) {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
                     case 0: // SLL
-                        if (code) { // No operation?
-                            cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] << ((code >>> 6) & 0x1f);
+                        if (code) { // No operation
+                            base[((code >>> 11) & 0x1f)] = base[((code >>> 16) & 0x1f)] << ((code >>> 6) & 0x1f);
                         }
                         return;
                     case 2: // SRL
-                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] >>> ((code >>> 6) & 0x1f);
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 16) & 0x1f)] >>> ((code >>> 6) & 0x1f);
                         return;
                     case 8: // JR
-                        branch(cpu.base[((code >>> 21) & 0x1f)]);
+                        branch(base[((code >>> 21) & 0x1f)]);
                         return;
                     case 36: // AND
-                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & cpu.base[((code >>> 16) & 0x1f)];
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] & base[((code >>> 16) & 0x1f)];
                         return;
                     case 37: // OR
-                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] | cpu.base[((code >>> 16) & 0x1f)];
+                        base[((code >>> 11) & 0x1f)] = base[((code >>> 21) & 0x1f)] | base[((code >>> 16) & 0x1f)];
                         return;
                 }
                 psx.error('Special CPU instruction ' + (code & 0x3f));
                 return;
             case 2: // J
-                branch(((cpu.base[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
+                branch(((base[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
                 return;
             case 3: // JAL
-                cpu.base[31] = cpu.base[32] + 4;
-                branch(((cpu.base[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
+                base[31] = base[32] + 4;
+                branch(((base[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
                 return;
             case 4: // BEQ
-                if (cpu.base[((code >>> 21) & 0x1f)] === cpu.base[((code >>> 16) & 0x1f)]) {
-                    branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
+                if (base[((code >>> 21) & 0x1f)] === base[((code >>> 16) & 0x1f)]) {
+                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
             case 5: // BNE
-                if (cpu.base[((code >>> 21) & 0x1f)] !== cpu.base[((code >>> 16) & 0x1f)]) {
-                    branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
+                if (base[((code >>> 21) & 0x1f)] !== base[((code >>> 16) & 0x1f)]) {
+                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
             case 7: // BGTZ
-                if (((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) > 0) {
-                    branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
+                if (((base[((code >>> 21) & 0x1f)]) << 0 >> 0) > 0) {
+                    branch((base[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 return;
             case 9: // ADDIU
-                cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16));
+                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16));
                 return;
             case 10: // SLTI
-                cpu.base[((code >>> 16) & 0x1f)] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
+                base[((code >>> 16) & 0x1f)] = ((base[((code >>> 21) & 0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
                 return;
             case 12: // ANDI
-                cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & (code & 0xffff);
+                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] & (code & 0xffff);
                 return;
             case 13: // ORI
-                cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] | (code & 0xffff);
+                base[((code >>> 16) & 0x1f)] = base[((code >>> 21) & 0x1f)] | (code & 0xffff);
                 return;
             case 15: // LUI
-                cpu.base[((code >>> 16) & 0x1f)] = code << 16;
+                base[((code >>> 16) & 0x1f)] = code << 16;
                 return;
             case 33: // LH
-                cpu.base[((code >>> 16) & 0x1f)] = ((mem.read.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
+                base[((code >>> 16) & 0x1f)] = ((mem.read.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
                 return;
             case 35: // LW
-                cpu.base[((code >>> 16) & 0x1f)] = mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[((code >>> 16) & 0x1f)] = mem.read.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
             case 36: // LBU
-                cpu.base[((code >>> 16) & 0x1f)] = mem.read.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                base[((code >>> 16) & 0x1f)] = mem.read.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
             case 40: // SB
-                mem.write.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
+                mem.write.b((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
                 return;
             case 41: // SH
-                mem.write.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
+                mem.write.h((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
                 return;
             case 43: // SW
-                mem.write.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
+                mem.write.w((base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), base[((code >>> 16) & 0x1f)]);
                 return;
         }
         psx.error('Basic CPU instruction ' + ((code >>> 26) & 0x3f));
     }
     function branch(addr) {
-        // Execute instruction in slot
         step();
-        cpu.base[32] = addr;
+        base[32] = addr;
     }
-    // Exposed class functions/variables
     return {
-        base: new Uint32Array(32 + 1),
         reset() {
             // Reset processors
-            cpu.base.fill(0);
-            cpu.base[32] = 0xbfc00000;
+            base.fill(0);
+            base[32] = 0xbfc00000;
         },
         run() {
             suspended = false;
@@ -213,9 +196,9 @@ pseudo.CstrMips = function() {
             }
         },
         parseExeHeader(header) {
-            cpu.base[28] = header[2 + 3];
-            cpu.base[29] = header[2 + 10];
-            cpu.base[32] = header[2 + 2];
+            base[28] = header[2 + 3];
+            base[29] = header[2 + 10];
+            base[32] = header[2 + 2];
         }
     };
 };
