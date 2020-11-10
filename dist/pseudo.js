@@ -16,7 +16,6 @@ function union(size) {
 'use strict';
 const pseudo = window.pseudo || {};
 pseudo.CstrHardware = function() {
-    // Exposed class functions/variables
     return {
         write: {
             w(addr, data) {
@@ -25,28 +24,20 @@ pseudo.CstrHardware = function() {
                         mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                         if (addr & 8) {
                             const chan = ((addr >>> 4) & 0xf) - 8;
-            
                             if (mem.hwr.uw[((0x10f0) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (8 << (chan * 4))) {
                                 if (chan === 2) {
                                     vs.executeDMA(addr);
                                 }
-                                
                                 mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
-                                if (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (1 << (16 + chan))) {
-                                    mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] |= 1 << (24 + chan);
-                                    bus.interruptSet(IRQ_DMA);
-                                }
                             }
                         }
-                        return;
-                    case (addr == 0x10f4): // DICR, thanks Calb, Galtor :)
-                        mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] = (mem.hwr.uw[((0x10f4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & (~((data & 0xff000000) | 0xffffff))) | (data & 0xffffff);
                         return;
                     case (addr >= 0x1810 && addr <= 0x1814): // Graphics
                         vs.scopeW(addr, data);
                         return;
                     
                     case (addr == 0x10f0): // DPCR
+                    case (addr == 0x10f4): // DICR
                         mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                         return;
                 }
@@ -267,10 +258,10 @@ pseudo.CstrMain = function() {
         init(screen) {
             render.init(screen);
             request('print-text.exe', function(resp) {
-                cpu.reset();
-                mem.reset();
+                   cpu.reset();
+                   mem.reset();
                 render.reset();
-                vs.reset();
+                    vs.reset();
                 cpu.parseExeHeader(
                     mem.writeExecutable(resp)
                 );
@@ -289,8 +280,6 @@ pseudo.CstrMain = function() {
 const psx = new pseudo.CstrMain();
 pseudo.CstrRender = function() {
     let ctx, attrib, bfr; // Draw context
-    let blend, bit, ofs;
-    let drawArea, spriteTP;
     // Resolution
     const res = {
         w: 0,
@@ -304,18 +293,6 @@ pseudo.CstrRender = function() {
         ctx.getShaderParameter(shader, ctx.COMPILE_STATUS);
         return shader;
     }
-    function drawAreaCalc(n) {
-        return Math.round((n * res.w) / 100);
-    }
-    // Compose Blend
-    function composeBlend(a) {
-        const b = [
-            a & 2 ? blend : 0,
-            a & 2 ? bit[blend].opaque : 255
-        ];
-        ctx.blendFunc(bit[b[0]].src, bit[b[0]].target);
-        return b[1];
-    }
     function createColor(color) {
         ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._c);
         ctx.vertexAttribPointer(attrib._c, 4, ctx.UNSIGNED_BYTE, true, 0, 0);
@@ -326,26 +303,9 @@ pseudo.CstrRender = function() {
         ctx.vertexAttribPointer(attrib._p, 2, ctx.SHORT, false, 0, 0);
         ctx.bufferData(ctx.ARRAY_BUFFER, new Int16Array(vertex), ctx.DYNAMIC_DRAW);
     }
-    function createTexture(texture) {
-        ctx.uniform1i(attrib._e, true);
-        ctx.enableVertexAttribArray(attrib._t);
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, bfr._t);
-        ctx.vertexAttribPointer(attrib._t, 2, ctx.FLOAT, false, 0, 0);
-        ctx.bufferData(ctx.ARRAY_BUFFER, new Float32Array(texture), ctx.DYNAMIC_DRAW);
-    }
-    function disableTexture() {
-        ctx.uniform1i(attrib._e, false);
-        ctx.disableVertexAttribArray(attrib._t);
-    }
     function drawScene(color, vertex, texture, mode, size) {
         createColor   (color);
         createVertex (vertex);
-        if (texture) {
-            createTexture(texture.map(n => n / 256.0));
-        }
-        else {
-            disableTexture();
-        }
         ctx.drawArrays(mode, 0, size);
     }
     
@@ -353,19 +313,16 @@ pseudo.CstrRender = function() {
         
         let color  = [];
         let vertex = [];
-        
-        const opaque = composeBlend(p.cr[0].n);
-        
         for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[i].a,
                 p.cr[i].b,
                 p.cr[i].c,
-                opaque
+                255
             );
             vertex.push(
-                p.vx[i].h + ofs.h,
-                p.vx[i].v + ofs.v,
+                p.vx[i].h,
+                p.vx[i].v,
             );
         }
         drawScene(color, vertex, null, mode, size);
@@ -376,57 +333,35 @@ pseudo.CstrRender = function() {
         let color   = [];
         let vertex  = [];
         let texture = [];
-        
-        const opaque = composeBlend(p.cr[0].n);
-        
         if (size) {
             p.vx[1].h = size;
             p.vx[1].v = size;
         }
         for (let i = 0; i < 4; i++) {
-            if (p.cr[0].n & 1) {
-                color.push(
-                    255 >>> 1,
-                    255 >>> 1,
-                    255 >>> 1,
-                    opaque
-                );
-            }
-            else {
-                color.push(
-                    p.cr[0].a,
-                    p.cr[0].b,
-                    p.cr[0].c,
-                    opaque
-                );
-            }
+            color.push(
+                255 >>> 1,
+                255 >>> 1,
+                255 >>> 1,
+                255
+            );
         }
         vertex = [
-            p.vx[0].h + ofs.h,             p.vx[0].v + ofs.v,
-            p.vx[0].h + ofs.h + p.vx[1].h, p.vx[0].v + ofs.v,
-            p.vx[0].h + ofs.h,             p.vx[0].v + ofs.v + p.vx[1].v,
-            p.vx[0].h + ofs.h + p.vx[1].h, p.vx[0].v + ofs.v + p.vx[1].v,
+            p.vx[0].h,             p.vx[0].v,
+            p.vx[0].h + p.vx[1].h, p.vx[0].v,
+            p.vx[0].h,             p.vx[0].v + p.vx[1].v,
+            p.vx[0].h + p.vx[1].h, p.vx[0].v + p.vx[1].v,
         ];
-        texture = [
-            p.tx[0].u,             p.tx[0].v,
-            p.tx[0].u + p.vx[1].h, p.tx[0].v,
-            p.tx[0].u,             p.tx[0].v + p.vx[1].v,
-            p.tx[0].u + p.vx[1].h, p.tx[0].v + p.vx[1].v,
-        ];
-        tcache.fetchTexture(ctx, spriteTP, p.tp[0]);
-        drawScene(color, vertex, texture, ctx.TRIANGLE_STRIP, 4);
+        drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
     }
     // Exposed class functions/variables
     return {
         init(canvas) {
             // Draw canvas
             ctx = canvas[0].getContext('webgl2', { antialias: false, depth: false, desynchronized: true, preserveDrawingBuffer: true, stencil: false });
-            ctx.enable(ctx.BLEND);
-            ctx.clearColor(21 / 255.0, 21 / 255.0, 21 / 255.0, 1.0);
             // Shaders
             const func = ctx.createProgram();
-            ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '     attribute vec2 a_position;     attribute vec4 a_color;     attribute vec2 a_texCoord;     uniform vec2 u_resolution;     varying vec4 v_color;     varying vec2 v_texCoord;         void main() {         gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);         v_color = a_color;         v_texCoord = a_texCoord;     }'));
-            ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '     precision mediump float;     uniform sampler2D u_texture;     uniform bool u_enabled;     varying vec4 v_color;     varying vec2 v_texCoord;         void main() {         if (u_enabled) {             gl_FragColor = texture2D(u_texture, v_texCoord) * (v_color * vec4(2.0, 2.0, 2.0, 1));         }         else {             gl_FragColor = v_color;         }     }'));
+            ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '     attribute vec2 a_position;     attribute vec4 a_color;     uniform vec2 u_resolution;     varying vec4 v_color;         void main() {         gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);         v_color = a_color;     }'));
+            ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '     precision mediump float;     uniform sampler2D u_texture;     varying vec4 v_color;     varying vec2 v_texCoord;         void main() {         gl_FragColor = v_color;     }'));
             ctx.linkProgram(func);
             ctx.getProgramParameter(func, ctx.LINK_STATUS);
             ctx.useProgram (func);
@@ -434,60 +369,25 @@ pseudo.CstrRender = function() {
             attrib = {
                 _c: ctx.getAttribLocation(func, 'a_color'),
                 _p: ctx.getAttribLocation(func, 'a_position'),
-                _t: ctx.getAttribLocation(func, 'a_texCoord'),
                 _r: ctx.getUniformLocation  (func, 'u_resolution'),
-                _e: ctx.getUniformLocation  (func, 'u_enabled')
             };
             ctx.enableVertexAttribArray(attrib._c);
             ctx.enableVertexAttribArray(attrib._p);
-            ctx.enableVertexAttribArray(attrib._t);
             // Buffers
             bfr = {
                 _c: ctx.createBuffer(),
                 _v: ctx.createBuffer(),
-                _t: ctx.createBuffer(),
             };
-            // Blend
-            bit = [
-                { src: ctx.SRC_ALPHA, target: ctx.ONE_MINUS_SRC_ALPHA, opaque: 128 },
-                { src: ctx.ONE,       target: ctx.ONE_MINUS_SRC_ALPHA, opaque:   0 },
-                { src: ctx.ZERO,      target: ctx.ONE_MINUS_SRC_COLOR, opaque:   0 },
-                { src: ctx.SRC_ALPHA, target: ctx.ONE,                 opaque:  64 },
-            ];
-            // Texture Cache
-            tcache.init();
         },
         reset() {
-            spriteTP = 0;
-               blend = 0;
-            // Draw Area Start/End
-            drawArea = {
-                start: { h: 0, v: 0 },
-                  end: { h: 0, v: 0 },
-            };
-            // Offset
-            ofs = {
-                h: 0, v: 0
-            };
-            // Texture Cache
-            tcache.reset(ctx);
             render.resize({ w: 640, h: 480 });
-        },
-        swapBuffers(clear) {
-            if (clear) {
-                ctx.clear(ctx.COLOR_BUFFER_BIT);
-            }
         },
         resize(data) {
             // Store valid resolution
             res.w = data.w;
             res.h = data.h;
-            
-            //ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-            //ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
             ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
             ctx.viewport(0, 0, 640, 480);
-            render.swapBuffers(true);
         },
         draw(addr, data) {
             // Primitives
@@ -504,20 +404,15 @@ pseudo.CstrRender = function() {
             }
             // Operations
             switch(addr) {
-                case 0x01: // FLUSH
-                    return;
-                case 0x02: // BLOCK FILL
-                    return;
                 case 0xa0: // LOAD IMAGE
                     vs.photoRead(data);
                     return;
+                
+                case 0x01: // FLUSH
+                case 0x02: // BLOCK FILL
                 case 0xe1: // TEXTURE PAGE
-                    spriteTP = data[0] & 0x7ff;
-                    return;
                 case 0xe3: // DRAW AREA START
-                    return;
                 case 0xe4: // DRAW AREA END
-                    return;
                 case 0xe5: // DRAW OFFSET
                     return;
             }
@@ -526,85 +421,6 @@ pseudo.CstrRender = function() {
     };
 };
 const render = new pseudo.CstrRender();
-pseudo.CstrTexCache = function() {
-    const TEX_04BIT = 0;
-    // Maximum texture cache
-    const TCACHE_MAX = 384;
-    const TEX_SIZE   = 256;
-    let cache = [];
-    let index;
-    let tex;
-    // Exposed class functions/variables
-    return {
-        init() {
-            for (let i = 0; i < TCACHE_MAX; i++) {
-                cache[i] = {
-                    pos: { // Mem position of texture and color lookup table
-                    },
-                    tex: undefined
-                };
-            }
-            tex = { // Texture and color lookup table buffer
-                bfr: union(TEX_SIZE * TEX_SIZE * 4),
-                cc : new Uint32Array(256),
-            };
-        },
-        reset(ctx) {
-            // Reset texture cache
-            for (const tc of cache) {
-                if (tc.tex) {
-                    ctx.deleteTexture(tc.tex);
-                }
-                tc.uid = -1;
-            }
-            index = 0;
-        },
-        pixel2texel(p) {
-            return (((p ? 255 : 0) & 0xff) << 24) | ((( (p >>> 10) << 3) & 0xff) << 16) | ((( (p >>> 5) << 3) & 0xff) << 8) | (( p << 3) & 0xff);
-        },
-        fetchTexture(ctx, tp, clut) {
-            const uid = (clut << 16) | tp;
-            // Basic info
-            const tc  = cache[index];
-            tc.pos.w  = (tp & 15) * 64;
-            tc.pos.h  = ((tp >>> 4) & 1) * 256;
-            tc.pos.cc = (clut & 0x7fff) * 16;
-            // Reset
-            tex.bfr.ub.fill(0);
-            tex.cc.fill(0);
-            switch((tp >>> 7) & 3) {
-                case TEX_04BIT: // 16 color palette
-                    for (let i = 0; i < 16; i++) {
-                        tex.cc[i] = tcache.pixel2texel(vs.vram.uh[tc.pos.cc]);
-                        tc.pos.cc++;
-                    }
-                    for (let h = 0, idx = 0; h < 256; h++) {
-                        for (let w = 0; w < (256 / 4); w++) {
-                            const p = vs.vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>>  0) & 15];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>>  4) & 15];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>>  8) & 15];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>> 12) & 15];
-                        }
-                    }
-                    break;
-                default:
-                    console.info('Texture Cache Unknown ' + ((tp >>> 7) & 3));
-                    break;
-            }
-            // Attach texture
-            tc.tex = ctx.createTexture();
-            ctx.bindTexture  (ctx.TEXTURE_2D, tc.tex);
-            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-            ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, tex.bfr.ub);
-            // Advance cache counter
-            tc.uid = uid;
-            index  = (index + 1) & (TCACHE_MAX - 1);
-        }
-    };
-};
-const tcache = new pseudo.CstrTexCache();
 pseudo.CstrGraphics = function() {
     // Constants
     const GPU_STAT_ODDLINES         = 0x80000000;

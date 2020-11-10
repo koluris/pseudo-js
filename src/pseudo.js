@@ -15,10 +15,10 @@ pseudo.CstrMain = function() {
             render.init(screen);
 
             request('print-text.exe', function(resp) {
-                cpu.reset();
-                mem.reset();
+                   cpu.reset();
+                   mem.reset();
                 render.reset();
-                vs.reset();
+                    vs.reset();
 
                 cpu.parseExeHeader(
                     mem.writeExecutable(resp)
