@@ -18,23 +18,6 @@ pseudo.CstrMem = function() {
     return {
         ram: union(0x200000),
         hwr: union(0x4000),
-        writeExecutable(data) {
-            const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
-            const offset = header[6];
-            cpu.setpc(header[4]);
-            const exe = new Uint8Array(data, PSX_EXE_HEADER_SIZE);
-            for (let i = 0; i < exe.byteLength; i++) {
-                mem.ram.ub[(( offset + i) & (mem.ram.ub.byteLength - 1)) >>> 0] = exe[i];
-            }
-            // const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
-            // const start  = header[2 + 2];
-            // const offset = header[2 + 4] & (mem.ram.ub.bSize - 1);
-            // const size   = header[2 + 5];
-            // console.info(header[2 + 4]);
-            // console.info(header[2 + 4] & (mem.ram.ub.bSize - 1));
-            // mem.ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE, size), offset);
-            // cpu.setpc(start);
-        },
         write: {
             w(addr, data) {
                 switch(addr >>> 24) {
@@ -214,7 +197,13 @@ pseudo.CstrMain = function() {
             const xhr = new XMLHttpRequest();
             xhr.onload = function() {
                 render.init(screen);
-                mem.writeExecutable(xhr.response);
+                const header = new Uint32Array(xhr.response, 0, 0x800);
+                const start  = header[4];
+                const size   = header[7];
+                mem.ram.ub.set(
+                    new Uint8Array(xhr.response, 0x800, size), start & (mem.ram.ub.byteLength - 1)
+                );
+                cpu.setpc(start);
                 cpu.run();
             };
             xhr.responseType = 'arraybuffer';
