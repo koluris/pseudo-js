@@ -1,8 +1,17 @@
 #define opcode \
     ((code >>> 26) & 0x3f)
 
+#define rs \
+    ((code >>> 21) & 0x1f)
+
+#define rt \
+    ((code >>> 16) & 0x1f)
+
+#define rd \
+    ((code >>> 11) & 0x1f)
+
 #define shamt \
-    ((code >>> 6) & 0x1f)
+    ((code >>>  6) & 0x1f)
 
 #define imm_u \
     (code & 0xffff)
@@ -20,7 +29,7 @@
     ((pc & 0xf0000000) | (code & 0x3ffffff) << 2)
 
 pseudo.CstrMips = function() {
-    const base = new UintWcap(32);
+    const base = new Uint32Array(32);
     let pc;
 
     function step() {

@@ -1,28 +1,15 @@
-// Preprocessor
-#define bSize         byteLength
-#define dataBin       'arraybuffer'
-#define fetchContext  getContext
-#define responseSort  responseType
-#define SintWcap      Int32Array
-#define SintHcap      Int16Array
-#define SintBcap      Int8Array
-#define toText        toString
-#define UintWcap      Uint32Array
-#define UintHcap      Uint16Array
-#define UintBcap      Uint8Array
-
 // A kind of helper for various data manipulation
 function union(size) {
     const bfr = new ArrayBuffer(size);
 
     return {
-        uw: new UintWcap(bfr),
-        uh: new UintHcap(bfr),
-        ub: new UintBcap(bfr),
+        uw: new Uint32Array(bfr),
+        uh: new Uint16Array(bfr),
+        ub: new Uint8Array(bfr),
 
-        sw: new SintWcap(bfr),
-        sh: new SintHcap(bfr),
-        sb: new SintBcap(bfr),
+        sw: new Int32Array(bfr),
+        sh: new Int16Array(bfr),
+        sb: new Int8Array(bfr),
     };
 }
 
@@ -30,13 +17,13 @@ function union(size) {
     Mem banks
 ***/
 #define directMemW(module, addr) \
-    module[((addr) & (module.bSize - 1)) >>> 2]
+    module[((addr) & (module.byteLength - 1)) >>> 2]
 
 #define directMemH(module, addr) \
-    module[((addr) & (module.bSize - 1)) >>> 1]
+    module[((addr) & (module.byteLength - 1)) >>> 1]
 
 #define directMemB(module, addr) \
-    module[((addr) & (module.bSize - 1)) >>> 0]
+    module[((addr) & (module.byteLength - 1)) >>> 0]
 
 /***
     DMA
@@ -61,15 +48,6 @@ function union(size) {
 
 #define SIGN_EXT_8(n) \
     ((n) << 24 >> 24)
-
-#define rs \
-    ((code >>> 21) & 0x1f)
-
-#define rt \
-    ((code >>> 16) & 0x1f)
-
-#define rd \
-    ((code >>> 11) & 0x1f)
 
 // Declare our namespace
 'use strict';

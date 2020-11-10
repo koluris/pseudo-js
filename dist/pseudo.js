@@ -1,4 +1,3 @@
-// Preprocessor
 // A kind of helper for various data manipulation
 function union(size) {
     const bfr = new ArrayBuffer(size);
@@ -206,28 +205,28 @@ pseudo.CstrRender = function() {
                 case 0x38: // POLY G4
                     {
                         const p = {
-                            cr: [
-                                { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, },
-                                { a: (data[2] >>> 0) & 0xff, b: (data[2] >>> 8) & 0xff, c: (data[2] >>> 16) & 0xff, n: (data[2] >>> 24) & 0xff, },
-                                { a: (data[4] >>> 0) & 0xff, b: (data[4] >>> 8) & 0xff, c: (data[4] >>> 16) & 0xff, n: (data[4] >>> 24) & 0xff, },
-                                { a: (data[6] >>> 0) & 0xff, b: (data[6] >>> 8) & 0xff, c: (data[6] >>> 16) & 0xff, n: (data[6] >>> 24) & 0xff, },
+                            colors: [
+                                { r: (data[0] >>> 0) & 0xff, g: (data[0] >>> 8) & 0xff, b: (data[0] >>> 16) & 0xff, a: (data[0] >>> 24) & 0xff, },
+                                { r: (data[2] >>> 0) & 0xff, g: (data[2] >>> 8) & 0xff, b: (data[2] >>> 16) & 0xff, a: (data[2] >>> 24) & 0xff, },
+                                { r: (data[4] >>> 0) & 0xff, g: (data[4] >>> 8) & 0xff, b: (data[4] >>> 16) & 0xff, a: (data[4] >>> 24) & 0xff, },
+                                { r: (data[6] >>> 0) & 0xff, g: (data[6] >>> 8) & 0xff, b: (data[6] >>> 16) & 0xff, a: (data[6] >>> 24) & 0xff, },
                             ],
-                            vx: [
-                                { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, },
-                                { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, },
-                                { h: (data[5] >> 0) & 0xffff, v: (data[5] >> 16) & 0xffff, },
-                                { h: (data[7] >> 0) & 0xffff, v: (data[7] >> 16) & 0xffff, },
+                            points: [
+                                { x: (data[1] >> 0) & 0xffff, y: (data[1] >> 16) & 0xffff, },
+                                { x: (data[3] >> 0) & 0xffff, y: (data[3] >> 16) & 0xffff, },
+                                { x: (data[5] >> 0) & 0xffff, y: (data[5] >> 16) & 0xffff, },
+                                { x: (data[7] >> 0) & 0xffff, y: (data[7] >> 16) & 0xffff, },
                             ]
                         };
-                        var grd = ctx.createLinearGradient(0, 0, p.vx[3].h, p.vx[3].v);
-                        grd.addColorStop(0, 'RGBA(' + p.cr[0].a + ', ' + p.cr[0].b + ', ' + p.cr[0].c + ', 255)');
-                        grd.addColorStop(1, 'RGBA(' + p.cr[3].a + ', ' + p.cr[3].b + ', ' + p.cr[3].c + ', 255)');
-                        ctx.fillStyle = grd;
+                        const gradient = ctx.createLinearGradient(0, 0, p.points[3].x, p.points[3].y);
+                        gradient.addColorStop(0, 'RGBA(' + p.colors[0].r + ', ' + p.colors[0].g + ', ' + p.colors[0].b + ', 255)');
+                        gradient.addColorStop(1, 'RGBA(' + p.colors[3].r + ', ' + p.colors[3].g + ', ' + p.colors[3].b + ', 255)');
+                        ctx.fillStyle = gradient;
                         ctx.fillRect(
-                            p.vx[0].h,
-                            p.vx[0].v,
-                            p.vx[3].h,
-                            p.vx[3].v,
+                            p.points[0].x,
+                            p.points[0].y,
+                            p.points[3].x,
+                            p.points[3].y,
                         );
                     }
                     return;
@@ -235,21 +234,20 @@ pseudo.CstrRender = function() {
                     {
                         const p = {
                             colors: [
-                                { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }
+                                { r: (data[0] >>> 0) & 0xff, g: (data[0] >>> 8) & 0xff, b: (data[0] >>> 16) & 0xff, a: (data[0] >>> 24) & 0xff, }
                             ],
                             points: [
-                                { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, },
-                                { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, },
+                                { x: (data[1] >> 0) & 0xffff, y: (data[1] >> 16) & 0xffff, },
+                                { x: (data[3] >> 0) & 0xffff, y: (data[3] >> 16) & 0xffff, },
                             ]
                         };
-                        ctx.fillStyle = 'RGBA(' + p.colors[0].a + ', ' + p.colors[0].b + ', ' + p.colors[0].c + ', 255)';
+                        ctx.fillStyle = 'RGBA(' + p.colors[0].r + ', ' + p.colors[0].g + ', ' + p.colors[0].b + ', 255)';
                         ctx.fillRect(
-                            p.points[0].h,
-                            p.points[0].v,
+                            p.points[0].x,
+                            p.points[0].y,
                             8,
                             8,
                         );
-                        ctx.closePath();
                     }
                     return;
             }

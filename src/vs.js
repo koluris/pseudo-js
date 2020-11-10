@@ -4,7 +4,7 @@
 pseudo.CstrGraphics = function() {
     // Command Pipeline
     const pipe = {
-        data: new UintWcap(256)
+        data: new Uint32Array(256)
     };
 
     const pSize = [];

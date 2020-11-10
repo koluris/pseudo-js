@@ -3,15 +3,15 @@
 ***/
 
 #define RGBC(data) { \
-    a: (data >>>  0) & 0xff, \
-    b: (data >>>  8) & 0xff, \
-    c: (data >>> 16) & 0xff, \
-    n: (data >>> 24) & 0xff, \
+    r: (data >>>  0) & 0xff, \
+    g: (data >>>  8) & 0xff, \
+    b: (data >>> 16) & 0xff, \
+    a: (data >>> 24) & 0xff, \
 }
 
 #define POINT(data) { \
-    h: (data >>  0) & 0xffff, \
-    v: (data >> 16) & 0xffff, \
+    x: (data >>  0) & 0xffff, \
+    y: (data >> 16) & 0xffff, \
 }
 
 pseudo.CstrRender = function() {
@@ -20,7 +20,7 @@ pseudo.CstrRender = function() {
     // Exposed class functions/variables
     return {
         init(canvas) {
-            ctx = canvas.fetchContext('2d');
+            ctx = canvas.getContext('2d');
         },
 
         draw(addr, data) {
@@ -28,13 +28,13 @@ pseudo.CstrRender = function() {
                 case 0x38: // POLY G4
                     {
                         const p = {
-                            cr: [
+                            colors: [
                                 RGBC(data[0]),
                                 RGBC(data[2]),
                                 RGBC(data[4]),
                                 RGBC(data[6]),
                             ],
-                            vx: [
+                            points: [
                                 POINT(data[1]),
                                 POINT(data[3]),
                                 POINT(data[5]),
@@ -42,16 +42,16 @@ pseudo.CstrRender = function() {
                             ]
                         };
 
-                        var grd = ctx.createLinearGradient(0, 0, p.vx[3].h, p.vx[3].v);
-                        grd.addColorStop(0, 'RGBA(' + p.cr[0].a + ', ' + p.cr[0].b + ', ' + p.cr[0].c + ', 255)');
-                        grd.addColorStop(1, 'RGBA(' + p.cr[3].a + ', ' + p.cr[3].b + ', ' + p.cr[3].c + ', 255)');
+                        const gradient = ctx.createLinearGradient(0, 0, p.points[3].x, p.points[3].y);
+                        gradient.addColorStop(0, 'RGBA(' + p.colors[0].r + ', ' + p.colors[0].g + ', ' + p.colors[0].b + ', 255)');
+                        gradient.addColorStop(1, 'RGBA(' + p.colors[3].r + ', ' + p.colors[3].g + ', ' + p.colors[3].b + ', 255)');
 
-                        ctx.fillStyle = grd;
+                        ctx.fillStyle = gradient;
                         ctx.fillRect(
-                            p.vx[0].h,
-                            p.vx[0].v,
-                            p.vx[3].h,
-                            p.vx[3].v,
+                            p.points[0].x,
+                            p.points[0].y,
+                            p.points[3].x,
+                            p.points[3].y,
                         );
                     }
                     return;
@@ -68,14 +68,13 @@ pseudo.CstrRender = function() {
                             ]
                         };
 
-                        ctx.fillStyle = 'RGBA(' + p.colors[0].a + ', ' + p.colors[0].b + ', ' + p.colors[0].c + ', 255)';
+                        ctx.fillStyle = 'RGBA(' + p.colors[0].r + ', ' + p.colors[0].g + ', ' + p.colors[0].b + ', 255)';
                         ctx.fillRect(
-                            p.points[0].h,
-                            p.points[0].v,
+                            p.points[0].x,
+                            p.points[0].y,
                             8,
                             8,
                         );
-                        ctx.closePath();
                     }
                     return;
             }

@@ -7,7 +7,7 @@ pseudo.CstrMain = function() {
                 cpu.parseExeHeader(mem.writeExecutable(xhr.response));
                 cpu.run();
             };
-            xhr.responseSort = dataBin;
+            xhr.responseType = 'arraybuffer';
             xhr.open('GET', 'print-text.exe');
             xhr.send();
         }
