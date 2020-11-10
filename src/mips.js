@@ -23,10 +23,6 @@
 #define s_addr \
     ((pc & 0xf0000000) | (code & 0x3ffffff) << 2)
 
-// Inline functions for speedup
-#define setptr(addr) \
-    ptr = mem.ram.uw
-
 pseudo.CstrMips = function() {
     // Base + Coprocessor
     const base = new UintWcap(32 + 3); // + pc, lo, hi
@@ -34,9 +30,9 @@ pseudo.CstrMips = function() {
     let ptr, suspended, requestAF;
 
     // Base CPU stepper
-    function step(inslot) {
+    function step() {
         //cpu.base[0] = 0; // As weird as this seems, it is needed
-        const code  = directMemW(ptr, pc);
+        const code = mem.read.w(pc);
         pc += 4;
 
         switch(opcode) {
@@ -54,7 +50,6 @@ pseudo.CstrMips = function() {
 
                     case 8: // JR
                         branch(cpu.base[rs]);
-                        setptr(pc);
                         return;
 
                     case 36: // AND
@@ -146,7 +141,7 @@ pseudo.CstrMips = function() {
 
     function branch(addr) {
         // Execute instruction in slot
-        step(true);
+        step();
         pc = addr;
     }
 
@@ -157,23 +152,19 @@ pseudo.CstrMips = function() {
         reset() {
             // Reset processors
             cpu.base.fill(0);
-
             pc = 0xbfc00000;
-            setptr(pc);
         },
 
         run() {
             suspended = false;
             requestAF = requestAnimationFrame(cpu.run);
-
+            
             let vbk = 0;
 
-            while(!suspended) { // And u don`t stop!
+            while(!suspended) {
                 step(false);
 
-                vbk += 64;
-
-                if (vbk >= 100000) { vbk = 0;
+                if (vbk++ >= 100000) { vbk = 0;
                     suspended = true;
                 }
             }
@@ -183,11 +174,6 @@ pseudo.CstrMips = function() {
             cpu.base[28] = header[2 + 3];
             cpu.base[29] = header[2 + 10];
             pc = header[2 + 2];
-            setptr(pc);
-        },
-
-        setpc(addr) {
-            setptr(addr);
         }
     };
 };

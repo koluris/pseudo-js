@@ -2,31 +2,24 @@
 #define bSize                   byteLength
 #define createFunction          createProgram
 #define dataBin                 'arraybuffer'
-#define dest                    target
-#define disableVertexAttrib     disableVertexAttribArray
 #define drawVertices            drawArrays
 #define enableVertexAttrib      enableVertexAttribArray
-#define F32cap                  Float32Array
 #define fetchAttribute          getAttribLocation
-#define fetchChannelData        getChannelData
 #define fetchContext            getContext
 #define fetchFunctionParameter  getProgramParameter
 #define fetchShaderParameter    getShaderParameter
 #define fetchUniform            getUniformLocation
 #define linkFunction            linkProgram
-#define readAsBuffer            readAsArrayBuffer
 #define responseSort            responseType
 #define SintWcap                Int32Array
 #define SintHcap                Int16Array
 #define SintBcap                Int8Array
-#define texPhoto2D              texImage2D
-#define Text                    String
 #define toText                  toString
 #define UintWcap                Uint32Array
 #define UintHcap                Uint16Array
 #define UintBcap                Uint8Array
 #define useFunction             useProgram
-#define WebGL                   'webgl2', { antialias: false, depth: false, desynchronized: true, preserveDrawingBuffer: true, stencil: false }
+#define WebGL                   'webgl'
 
 // A kind of helper for various data manipulation
 function union(size) {
@@ -91,12 +84,6 @@ function union(size) {
 /***
     Graphics
 ***/
-#define FRAME_W \
-    1024
-
-#define FRAME_H \
-    512
-
 #define SHADER_VERTEX ' \
     attribute vec2 a_position; \
     attribute vec4 a_color; \
@@ -110,9 +97,7 @@ function union(size) {
 
 #define SHADER_FRAGMENT ' \
     precision mediump float; \
-    uniform sampler2D u_texture; \
     varying vec4 v_color; \
-    varying vec2 v_texCoord; \
     \
     void main() { \
         gl_FragColor = v_color; \

@@ -1,31 +1,23 @@
 pseudo.CstrMain = function() {
-    // AJAX function
-    function request(path, fn) {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = function() {
-            fn(xhr.response);
-        };
-        xhr.responseSort = dataBin;
-        xhr.open('GET', path);
-        xhr.send();
-    }
-
     return {
         init(screen) {
             render.init(screen);
 
-            request('print-text.exe', function(resp) {
-                   cpu.reset();
-                   mem.reset();
-                render.reset();
-                    vs.reset();
+            const xhr = new XMLHttpRequest();
+            xhr.onload = function() {
+                cpu.reset();
+                mem.reset();
+                 vs.reset();
 
                 cpu.parseExeHeader(
-                    mem.writeExecutable(resp)
+                    mem.writeExecutable(xhr.response)
                 );
 
                 cpu.run();
-            });
+            };
+            xhr.responseSort = dataBin;
+            xhr.open('GET', 'print-text.exe');
+            xhr.send();
         },
 
         hex(number) {

@@ -29,11 +29,6 @@ pseudo.CstrGraphics = function() {
         data: new UintWcap(256)
     };
 
-    // Resolution Mode
-    const resMode = [
-        256, 320, 512, 640, 368, 384, 512, 640
-    ];
-
     const dataMem = {
         write(stream, addr, size) {
             let i = 0;
@@ -75,10 +70,7 @@ pseudo.CstrGraphics = function() {
 
     // Exposed class functions/variables
     return {
-        vram: union(FRAME_W * FRAME_H * 2),
-
         reset() {
-            vs.vram.uh.fill(0);
             status = 0;
 
             // Command Pipe
@@ -86,6 +78,8 @@ pseudo.CstrGraphics = function() {
             pipe.prim = 0;
             pipe.size = 0;
             pipe.row  = 0;
+
+            render.resize({ w: 320, h: 240 });
         },
 
         scopeW(addr, data) {
@@ -100,19 +94,13 @@ pseudo.CstrGraphics = function() {
                             status = 0x14802000;
                             return;
 
-                        case 0x08:
-                            render.resize({
-                                w: resMode[(data & 3) | ((data & 0x40) >>> 4)],
-                                h: (data & 4) ? 480 : 240
-                            });
-                            return;
-
                         /* unused */
                         case 0x03:
                         case 0x04:
                         case 0x05:
                         case 0x06:
                         case 0x07:
+                        case 0x08:
                             return;
                     }
 

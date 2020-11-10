@@ -46,12 +46,6 @@
 pseudo.CstrRender = function() {
     let ctx, attrib, bfr; // Draw context
 
-    // Resolution
-    const res = {
-        w: 0,
-        h: 0,
-    };
-
     // Generic function for shaders
     function createShader(kind, content) {
         const shader = ctx.createShader(kind);
@@ -156,15 +150,7 @@ pseudo.CstrRender = function() {
             };
         },
 
-        reset() {
-            render.resize({ w: 640, h: 480 });
-        },
-
-        resize(data) {
-            // Store valid resolution
-            res.w = data.w;
-            res.h = data.h;
-
+        resize(res) {
             ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
             ctx.viewport(0, 0, 640, 480);
         },

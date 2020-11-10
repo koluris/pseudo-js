@@ -70,7 +70,7 @@ pseudo.CstrMem = function() {
         },
         writeExecutable(data) {
             const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
-            const offset = header[2 + 4] & (mem.ram.ub.byteLength - 1); // Offset needs boundaries...
+            const offset = header[2 + 4] & (mem.ram.ub.byteLength - 1);
             const size   = header[2 + 5];
             mem.ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE, size), offset);
             return header;
@@ -97,15 +97,14 @@ pseudo.CstrMem = function() {
     };
 };
 const mem = new pseudo.CstrMem();
-// Inline functions for speedup
 pseudo.CstrMips = function() {
     // Base + Coprocessor
     const base = new Uint32Array(32 + 3); // + cpu.base[32], lo, hi
     let ptr, suspended, requestAF;
     // Base CPU stepper
-    function step(inslot) {
+    function step() {
         //cpu.base[0] = 0; // As weird as this seems, it is needed
-        const code  = ptr[(( cpu.base[32]) & (ptr.byteLength - 1)) >>> 2];
+        const code = mem.read.w(cpu.base[32]);
         cpu.base[32] += 4;
         switch(((code >>> 26) & 0x3f)) {
             case 0: // SPECIAL
@@ -120,7 +119,6 @@ pseudo.CstrMips = function() {
                         return;
                     case 8: // JR
                         branch(cpu.base[((code >>> 21) & 0x1f)]);
-                        ptr = mem.ram.uw;
                         return;
                     case 36: // AND
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & cpu.base[((code >>> 16) & 0x1f)];
@@ -191,7 +189,7 @@ pseudo.CstrMips = function() {
     }
     function branch(addr) {
         // Execute instruction in slot
-        step(true);
+        step();
         cpu.base[32] = addr;
     }
     // Exposed class functions/variables
@@ -201,16 +199,15 @@ pseudo.CstrMips = function() {
             // Reset processors
             cpu.base.fill(0);
             cpu.base[32] = 0xbfc00000;
-            ptr = mem.ram.uw;
         },
         run() {
             suspended = false;
             requestAF = requestAnimationFrame(cpu.run);
+            
             let vbk = 0;
-            while(!suspended) { // And u don`t stop!
+            while(!suspended) {
                 step(false);
-                vbk += 64;
-                if (vbk >= 100000) { vbk = 0;
+                if (vbk++ >= 100000) { vbk = 0;
                     suspended = true;
                 }
             }
@@ -219,38 +216,27 @@ pseudo.CstrMips = function() {
             cpu.base[28] = header[2 + 3];
             cpu.base[29] = header[2 + 10];
             cpu.base[32] = header[2 + 2];
-            ptr = mem.ram.uw;
-        },
-        setpc(addr) {
-            ptr = mem.ram.uw;
         }
     };
 };
 const cpu = new pseudo.CstrMips();
 pseudo.CstrMain = function() {
-    // AJAX function
-    function request(path, fn) {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = function() {
-            fn(xhr.response);
-        };
-        xhr.responseType = 'arraybuffer';
-        xhr.open('GET', path);
-        xhr.send();
-    }
     return {
         init(screen) {
             render.init(screen);
-            request('print-text.exe', function(resp) {
-                   cpu.reset();
-                   mem.reset();
-                render.reset();
-                    vs.reset();
+            const xhr = new XMLHttpRequest();
+            xhr.onload = function() {
+                cpu.reset();
+                mem.reset();
+                 vs.reset();
                 cpu.parseExeHeader(
-                    mem.writeExecutable(resp)
+                    mem.writeExecutable(xhr.response)
                 );
                 cpu.run();
-            });
+            };
+            xhr.responseType = 'arraybuffer';
+            xhr.open('GET', 'print-text.exe');
+            xhr.send();
         },
         hex(number) {
             return '0x' + (number >>> 0).toString(16);
@@ -263,11 +249,6 @@ pseudo.CstrMain = function() {
 const psx = new pseudo.CstrMain();
 pseudo.CstrRender = function() {
     let ctx, attrib, bfr; // Draw context
-    // Resolution
-    const res = {
-        w: 0,
-        h: 0,
-    };
     // Generic function for shaders
     function createShader(kind, content) {
         const shader = ctx.createShader(kind);
@@ -326,11 +307,11 @@ pseudo.CstrRender = function() {
     return {
         init(canvas) {
             // Draw canvas
-            ctx = canvas[0].getContext('webgl2', { antialias: false, depth: false, desynchronized: true, preserveDrawingBuffer: true, stencil: false });
+            ctx = canvas[0].getContext('webgl');
             // Shaders
             const func = ctx.createProgram();
             ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '     attribute vec2 a_position;     attribute vec4 a_color;     uniform vec2 u_resolution;     varying vec4 v_color;         void main() {         gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);         v_color = a_color;     }'));
-            ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '     precision mediump float;     uniform sampler2D u_texture;     varying vec4 v_color;     varying vec2 v_texCoord;         void main() {         gl_FragColor = v_color;     }'));
+            ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '     precision mediump float;     varying vec4 v_color;         void main() {         gl_FragColor = v_color;     }'));
             ctx.linkProgram(func);
             ctx.getProgramParameter(func, ctx.LINK_STATUS);
             ctx.useProgram (func);
@@ -348,13 +329,7 @@ pseudo.CstrRender = function() {
                 _v: ctx.createBuffer(),
             };
         },
-        reset() {
-            render.resize({ w: 640, h: 480 });
-        },
-        resize(data) {
-            // Store valid resolution
-            res.w = data.w;
-            res.h = data.h;
+        resize(res) {
             ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
             ctx.viewport(0, 0, 640, 480);
         },
@@ -413,10 +388,6 @@ pseudo.CstrGraphics = function() {
     const pipe = {
         data: new Uint32Array(256)
     };
-    // Resolution Mode
-    const resMode = [
-        256, 320, 512, 640, 368, 384, 512, 640
-    ];
     const dataMem = {
         write(stream, addr, size) {
             let i = 0;
@@ -452,15 +423,14 @@ pseudo.CstrGraphics = function() {
     };
     // Exposed class functions/variables
     return {
-        vram: union(1024 * 512 * 2),
         reset() {
-            vs.vram.uh.fill(0);
             status = 0;
             // Command Pipe
             pipe.data.fill(0);
             pipe.prim = 0;
             pipe.size = 0;
             pipe.row  = 0;
+            render.resize({ w: 320, h: 240 });
         },
         scopeW(addr, data) {
             switch(addr & 0xf) {
@@ -472,18 +442,13 @@ pseudo.CstrGraphics = function() {
                         case 0x00:
                             status = 0x14802000;
                             return;
-                        case 0x08:
-                            render.resize({
-                                w: resMode[(data & 3) | ((data & 0x40) >>> 4)],
-                                h: (data & 4) ? 480 : 240
-                            });
-                            return;
                         
                         case 0x03:
                         case 0x04:
                         case 0x05:
                         case 0x06:
                         case 0x07:
+                        case 0x08:
                             return;
                     }
                     psx.error('GPU Write Status ' + psx.hex(((data >>> 24) & 0xff)));
