@@ -33,7 +33,6 @@ pseudo.CstrMain = function() {
         },
 
         error(out) {
-            cpu.pause();
             throw new Error('/// PSeudo ' + out);
         }
     };

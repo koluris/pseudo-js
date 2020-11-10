@@ -108,27 +108,18 @@ pseudo.CstrRender = function() {
         const p = SPRTx(data);
         let color   = [];
         let vertex  = [];
-        let texture = [];
-
-        if (size) {
-            p.vx[1].h = size;
-            p.vx[1].v = size;
-        }
 
         for (let i = 0; i < 4; i++) {
             color.push(
-                127,
-                127,
-                127,
-                255
+                127, 127, 127, 255
             );
         }
 
         vertex = [
-            p.vx[0].h,             p.vx[0].v,
-            p.vx[0].h + p.vx[1].h, p.vx[0].v,
-            p.vx[0].h,             p.vx[0].v + p.vx[1].v,
-            p.vx[0].h + p.vx[1].h, p.vx[0].v + p.vx[1].v,
+            p.vx[0].h,        p.vx[0].v,
+            p.vx[0].h + size, p.vx[0].v,
+            p.vx[0].h,        p.vx[0].v + size,
+            p.vx[0].h + size, p.vx[0].v + size,
         ];
 
         drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);

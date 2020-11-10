@@ -256,7 +256,6 @@ pseudo.CstrMain = function() {
             return '0x' + (number >>> 0).toString(16);
         },
         error(out) {
-            cpu.pause();
             throw new Error('/// PSeudo ' + out);
         }
     };
@@ -310,24 +309,16 @@ pseudo.CstrRender = function() {
         const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, ] };
         let color   = [];
         let vertex  = [];
-        let texture = [];
-        if (size) {
-            p.vx[1].h = size;
-            p.vx[1].v = size;
-        }
         for (let i = 0; i < 4; i++) {
             color.push(
-                127,
-                127,
-                127,
-                255
+                127, 127, 127, 255
             );
         }
         vertex = [
-            p.vx[0].h,             p.vx[0].v,
-            p.vx[0].h + p.vx[1].h, p.vx[0].v,
-            p.vx[0].h,             p.vx[0].v + p.vx[1].v,
-            p.vx[0].h + p.vx[1].h, p.vx[0].v + p.vx[1].v,
+            p.vx[0].h,        p.vx[0].v,
+            p.vx[0].h + size, p.vx[0].v,
+            p.vx[0].h,        p.vx[0].v + size,
+            p.vx[0].h + size, p.vx[0].v + size,
         ];
         drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
     }
@@ -398,11 +389,6 @@ pseudo.CstrRender = function() {
 };
 const render = new pseudo.CstrRender();
 pseudo.CstrGraphics = function() {
-    // Constants
-    const GPU_DMA_NONE     = 0;
-    const GPU_DMA_FIFO     = 1;
-    const GPU_DMA_MEM2VRAM = 2;
-    const GPU_DMA_VRAM2MEM = 3;
     // Primitive Size
     const pSize = [
         0x00,0x01,0x03,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -422,10 +408,7 @@ pseudo.CstrGraphics = function() {
         0x00,0x01,0x01,0x01,0x01,0x01,0x01,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     ];
-    const ret = {
-          data: 0,
-        status: 0,
-    };
+    let status;
     // Command Pipeline
     const pipe = {
         data: new Uint32Array(256)
@@ -434,25 +417,19 @@ pseudo.CstrGraphics = function() {
     const resMode = [
         256, 320, 512, 640, 368, 384, 512, 640
     ];
-    let modeDMA;
-    function pipeReset() {
-        pipe.data.fill(0);
-        pipe.prim = 0;
-        pipe.size = 0;
-        pipe.row  = 0;
-    }
     const dataMem = {
         write(stream, addr, size) {
             let i = 0;
+            let haha = 0;
             while (i < size) {
-                ret.data = stream ? mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] : addr;
+                haha = stream ? mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] : addr;
                 addr += 4;
                 i++;
                 if (!pipe.size) {
-                    const prim  = ((ret.data >>> 24) & 0xff);
+                    const prim  = ((haha >>> 24) & 0xff);
                     const count = pSize[prim];
                     if (count) {
-                        pipe.data[0] = ret.data;
+                        pipe.data[0] = haha;
                         pipe.prim = prim;
                         pipe.size = count;
                         pipe.row  = 1;
@@ -462,7 +439,7 @@ pseudo.CstrGraphics = function() {
                     }
                 }
                 else {
-                    pipe.data[pipe.row] = ret.data;
+                    pipe.data[pipe.row] = haha;
                     pipe.row++;
                 }
                 if (pipe.size === pipe.row) {
@@ -478,10 +455,12 @@ pseudo.CstrGraphics = function() {
         vram: union(1024 * 512 * 2),
         reset() {
             vs.vram.uh.fill(0);
-            ret.status = 0;
-            modeDMA    = GPU_DMA_NONE;
+            status = 0;
             // Command Pipe
-            pipeReset();
+            pipe.data.fill(0);
+            pipe.prim = 0;
+            pipe.size = 0;
+            pipe.row  = 0;
         },
         scopeW(addr, data) {
             switch(addr & 0xf) {
@@ -491,10 +470,7 @@ pseudo.CstrGraphics = function() {
                 case 4: // Status
                     switch(((data >>> 24) & 0xff)) {
                         case 0x00:
-                            ret.status = 0x14802000;
-                            return;
-                        case 0x04:
-                            modeDMA = data & 3;
+                            status = 0x14802000;
                             return;
                         case 0x08:
                             render.resize({
@@ -504,6 +480,7 @@ pseudo.CstrGraphics = function() {
                             return;
                         
                         case 0x03:
+                        case 0x04:
                         case 0x05:
                         case 0x06:
                         case 0x07:
@@ -516,28 +493,20 @@ pseudo.CstrGraphics = function() {
         scopeR(addr) {
             switch(addr & 0xf) {
                 case 0: // Data
-                    return ret.data;
+                    return 0;
                 case 4: // Status
-                    return ret.status;
+                    return status;
             }
         },
         executeDMA(addr) {
-            const size = (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] >>> 16) * (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0xffff);
-            switch(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
-                case 0x01000401:
-                    while(mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] !== 0xffffff) {
-                        const count = mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2];
-                        dataMem.write(true, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + 4, count >>> 24);
-                        mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] = count & 0xffffff;
-                    }
-                    return;
-                
-                case 0x00000401: // Disable DMA?
-                case 0x01000200: // Read
-                case 0x01000201: // Write
-                    return;
+            if (mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] === 0x01000401) {
+                while(mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] !== 0xffffff) {
+                    const count = mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2];
+                    dataMem.write(true, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + 4, count >>> 24);
+                    mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] = count & 0xffffff;
+                }
+                return;
             }
-            psx.error('GPU DMA ' + psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
         }
     };
 };
