@@ -7,12 +7,7 @@
             return; \
         \
         case 0x1f: \
-            if ((addr & 0xffff) >= 0x400) { \
-                io.write.hw(addr & 0xffff, data); \
-                return; \
-            } \
-            \
-            maccess(mem.hwr.width, addr) = data; \
+            io.write.hw(addr & 0xffff, data); \
             return; \
     }
 
@@ -23,15 +18,8 @@
         case 0xA0: \
             return maccess(mem.ram.width, addr); \
         \
-        case 0xbf: \
-            return maccess(mem.rom.width, addr); \
-        \
         case 0x1f: \
-            if ((addr & 0xffff) >= 0x400) { \
-                return io.read.hw(addr & 0xffff); \
-            } \
-            \
-            return maccess(mem.hwr.width, addr); \
+            return io.read.hw(addr & 0xffff); \
     } \
     \
     return 0
