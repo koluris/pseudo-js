@@ -45,9 +45,13 @@ pseudo.CstrMem = function() {
 
         writeExecutable(data) {
             const header = new UintWcap(data, 0, PSX_EXE_HEADER_SIZE);
-            const offset = header[2 + 4] & (mem.ram.ub.bSize - 1);
+            const offset = header[6];
 
-            mem.ram.ub.set(new UintBcap(data, PSX_EXE_HEADER_SIZE), offset);
+            const exe = new UintBcap(data, PSX_EXE_HEADER_SIZE);
+
+            for (let i = 0; i < exe.bSize; i++) {
+                directMemB(mem.ram.ub, offset + i) = exe[i];
+            }
 
             return header;
         },

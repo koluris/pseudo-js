@@ -61,8 +61,11 @@ pseudo.CstrMem = function() {
         hwr: union(0x4000),
         writeExecutable(data) {
             const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
-            const offset = header[2 + 4] & (mem.ram.ub.byteLength - 1);
-            mem.ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE), offset);
+            const offset = header[6];
+            const exe = new Uint8Array(data, PSX_EXE_HEADER_SIZE);
+            for (let i = 0; i < exe.byteLength; i++) {
+                mem.ram.ub[(( offset + i) & (mem.ram.ub.byteLength - 1)) >>> 0] = exe[i];
+            }
             return header;
         },
         write: {
