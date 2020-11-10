@@ -1,7 +1,3 @@
-/***
-    Base components
-***/
-
 #define RGBC(data) { \
     r: (data >>>  0) & 0xff, \
     g: (data >>>  8) & 0xff, \
@@ -17,7 +13,6 @@
 pseudo.CstrRender = function() {
     let ctx;
 
-    // Exposed class functions/variables
     return {
         init(canvas) {
             ctx = canvas.getContext('2d');

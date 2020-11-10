@@ -1,8 +1,4 @@
-#define GPU_COMMAND(x) \
-    ((x >>> 24) & 0xff)
-
 pseudo.CstrGraphics = function() {
-    // Command Pipeline
     const pipe = {
         data: new Uint32Array(256)
     };
@@ -14,7 +10,7 @@ pseudo.CstrGraphics = function() {
     return {
         writeData(addr) {
             if (!pipe.size) {
-                const prim  = GPU_COMMAND(addr);
+                const prim  = (addr >>> 24) & 0xff
                 const count = pSize[prim];
 
                 if (count) {
@@ -43,15 +39,13 @@ pseudo.CstrGraphics = function() {
         executeDMA(addr) {
             if (chcr === 0x01000401) {
                 while(madr !== 0xffffff) {
-                    const count = directMemW(mem.ram.uw, madr);
+                    const size = directMemW(mem.ram.uw, madr);
                     let haha = madr + 4;
-                    let i = 0;
-                    while (i < (count >>> 24)) {
+                    for (let i = 0; i < (size >>> 24); i++) {
                         vs.writeData(directMemW(mem.ram.uw, haha));
                         haha += 4;
-                        i++;
                     }
-                    madr = count & 0xffffff;
+                    madr = size & 0xffffff;
                 }
                 return;
             }

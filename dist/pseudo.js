@@ -195,7 +195,6 @@ pseudo.CstrMain = function() {
 const psx = new pseudo.CstrMain();
 pseudo.CstrRender = function() {
     let ctx;
-    // Exposed class functions/variables
     return {
         init(canvas) {
             ctx = canvas.getContext('2d');
@@ -256,7 +255,6 @@ pseudo.CstrRender = function() {
 };
 const render = new pseudo.CstrRender();
 pseudo.CstrGraphics = function() {
-    // Command Pipeline
     const pipe = {
         data: new Uint32Array(256)
     };
@@ -266,7 +264,7 @@ pseudo.CstrGraphics = function() {
     return {
         writeData(addr) {
             if (!pipe.size) {
-                const prim  = ((addr >>> 24) & 0xff);
+                const prim  = (addr >>> 24) & 0xff
                 const count = pSize[prim];
                 if (count) {
                     pipe.data[0] = addr;
@@ -291,15 +289,13 @@ pseudo.CstrGraphics = function() {
         executeDMA(addr) {
             if (mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] === 0x01000401) {
                 while(mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] !== 0xffffff) {
-                    const count = mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2];
+                    const size = mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2];
                     let haha = mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + 4;
-                    let i = 0;
-                    while (i < (count >>> 24)) {
+                    for (let i = 0; i < (size >>> 24); i++) {
                         vs.writeData(mem.ram.uw[(( haha) & (mem.ram.uw.byteLength - 1)) >>> 2]);
                         haha += 4;
-                        i++;
                     }
-                    mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] = count & 0xffffff;
+                    mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] = size & 0xffffff;
                 }
                 return;
             }
