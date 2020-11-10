@@ -156,7 +156,7 @@ pseudo.CstrMips = function() {
         },
 
         parseExeHeader(header) {
-            pc = header[2 + 2];
+            pc = header[4];
         }
     };
 };
