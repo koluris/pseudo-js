@@ -2600,7 +2600,7 @@ pseudo.CstrRender = function() {
         init(canvas, resolution) {
             divRes = resolution[0];
             // Draw canvas
-            ctx = canvas[0].getContext('webgl2', { antialias: false, depth: false, preserveDrawingBuffer: true, stencil: false, desynchronized: true });
+            ctx = canvas[0].getContext('webgl2', { antialias: false, depth: false, desynchronized: true, preserveDrawingBuffer: true, stencil: false });
             ctx.enable(ctx.BLEND);
             ctx.clearColor(21 / 255.0, 21 / 255.0, 21 / 255.0, 1.0);
             // Shaders
