@@ -166,13 +166,7 @@ pseudo.CstrGraphics = function() {
     function fetchEnd(count) {
         if (vrop.v.p >= vrop.v.end) {
             vrop.enabled = false;
-            vrop.raw.ub.fill(0);
-
             modeDMA = GPU_DMA_NONE;
-        }
-
-        if (count % 2) {
-            count++;
         }
         return count >>> 1;
     }
@@ -204,8 +198,6 @@ pseudo.CstrGraphics = function() {
             modeDMA      = GPU_DMA_NONE;
             vpos         = 0;
             vdiff        = 0;
-            isVideoPAL   = false;
-            isVideo24Bit = false;
             disabled     = true;
 
             // VRAM Operations
@@ -223,11 +215,6 @@ pseudo.CstrGraphics = function() {
             pipeReset();
         },
 
-        redraw() {
-            ret.status ^= GPU_STAT_ODDLINES;
-            render.swapBuffers(disabled);
-        },
-
         scopeW(addr, data) {
             switch(addr & 0xf) {
                 case 0: // Data
@@ -237,18 +224,8 @@ pseudo.CstrGraphics = function() {
                 case 4: // Status
                     switch(GPU_COMMAND(data)) {
                         case 0x00:
-                            ret.status   = 0x14802000;
-                            disabled     = true;
-                            isVideoPAL   = false;
-                            isVideo24Bit = false;
-                            return;
-
-                        case 0x01:
-                            pipeReset();
-                            return;
-
-                        case 0x03:
-                            disabled = data & 1 ? true : false;
+                            ret.status = 0x14802000;
+                            disabled   = true;
                             return;
 
                         case 0x04:
@@ -264,9 +241,6 @@ pseudo.CstrGraphics = function() {
                             return;
 
                         case 0x08:
-                            isVideoPAL   = ((data) & 8) ? true : false;
-                            isVideo24Bit = ((data >>> 4) & 1) ? true : false;
-
                             {
                                 // Basic info
                                 const w = resMode[(data & 3) | ((data & 0x40) >>> 4)];
@@ -282,17 +256,12 @@ pseudo.CstrGraphics = function() {
                             }
                             return;
 
-                        case 0x10:
-                            switch(data & 0xffffff) {
-                                case 7:
-                                    ret.data = 2;
-                                    return;
-                            }
-                            return;
-
                         /* unused */
+                        case 0x01:
                         case 0x02:
+                        case 0x03:
                         case 0x06:
+                        case 0x10:
                             return;
                     }
 
@@ -304,11 +273,10 @@ pseudo.CstrGraphics = function() {
         scopeR(addr) {
             switch(addr & 0xf) {
                 case 0: // Data
-                    dataMem.read(false, 0, 1);
                     return ret.data;
 
                 case 4: // Status
-                    return ret.status | GPU_STAT_READYFORVRAM;
+                    return ret.status;
             }
         },
 
@@ -340,24 +308,11 @@ pseudo.CstrGraphics = function() {
             psx.error('GPU DMA ' + psx.hex(chcr));
         },
 
-        photoWrite(data) {
-            const p = photoData(data);
-
-            vrop.pvram = p[1] * FRAME_W;
-            modeDMA = GPU_DMA_VRAM2MEM;
-
-            ret.status |= GPU_STAT_READYFORVRAM;
-        },
-
         photoRead(data) {
             const p = photoData(data);
 
             vrop.enabled = true;
-            vrop.raw = new union((p[2] * p[3]) * 4);
             modeDMA = GPU_DMA_MEM2VRAM;
-
-            // Cache invalidation
-            tcache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
         }
     };
 };

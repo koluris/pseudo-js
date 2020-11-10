@@ -527,10 +527,7 @@ pseudo.CstrRender = function() {
 };
 const render = new pseudo.CstrRender();
 pseudo.CstrTexCache = function() {
-    const TEX_04BIT   = 0;
-    const TEX_08BIT   = 1;
-    const TEX_15BIT   = 2;
-    const TEX_15BIT_2 = 3;
+    const TEX_04BIT = 0;
     // Maximum texture cache
     const TCACHE_MAX = 384;
     const TEX_SIZE   = 256;
@@ -553,10 +550,6 @@ pseudo.CstrTexCache = function() {
             };
         },
         reset(ctx) {
-            // Cached white texture for non-textured shader
-            const white = ctx.createTexture();
-            ctx.bindTexture(ctx.TEXTURE_2D, white);
-            ctx.texImage2D (ctx.TEXTURE_2D, 0, ctx.RGBA, 1, 1, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
             // Reset texture cache
             for (const tc of cache) {
                 if (tc.tex) {
@@ -571,12 +564,6 @@ pseudo.CstrTexCache = function() {
         },
         fetchTexture(ctx, tp, clut) {
             const uid = (clut << 16) | tp;
-            for (const tc of cache) {
-                if (tc.uid === uid) { // Found cached texture
-                    ctx.bindTexture(ctx.TEXTURE_2D, tc.tex);
-                    return;
-                }
-            }
             // Basic info
             const tc  = cache[index];
             tc.pos.w  = (tp & 15) * 64;
@@ -601,28 +588,6 @@ pseudo.CstrTexCache = function() {
                         }
                     }
                     break;
-                case TEX_08BIT: // 256 color palette
-                    for (let i = 0; i < 256; i++) {
-                        tex.cc[i] = tcache.pixel2texel(vs.vram.uh[tc.pos.cc]);
-                        tc.pos.cc++;
-                    }
-                    for (let h = 0, idx = 0; h < 256; h++) {
-                        for (let w = 0; w < (256 / 2); w++) {
-                            const p = vs.vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>> 0) & 255];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>> 8) & 255];
-                        }
-                    }
-                    break;
-                case TEX_15BIT:   // No color palette
-                case TEX_15BIT_2: // Seen on some rare cases
-                    for (let h = 0, idx = 0; h < 256; h++) {
-                        for (let w = 0; w < 256; w++) {
-                            const p = vs.vram.uh[(tc.pos.h + h) * 1024 + tc.pos.w + w];
-                            tex.bfr.uw[idx++] = tcache.pixel2texel(p);
-                        }
-                    }
-                    break;
                 default:
                     console.info('Texture Cache Unknown ' + ((tp >>> 7) & 3));
                     break;
@@ -636,14 +601,6 @@ pseudo.CstrTexCache = function() {
             // Advance cache counter
             tc.uid = uid;
             index  = (index + 1) & (TCACHE_MAX - 1);
-        },
-        invalidate(iX, iY, iW, iH) {
-            for (const tc of cache) {
-                //if (((tc.pos.w + 255) >= iX) && ((tc.pos.h + 255) >= iY) && ((tc.pos.w) <= iW) && ((tc.pos.h) <= iH)) {
-                    tc.uid = -1;
-                    //continue;
-                //}
-            }
         }
     };
 };
@@ -791,11 +748,7 @@ pseudo.CstrGraphics = function() {
     function fetchEnd(count) {
         if (vrop.v.p >= vrop.v.end) {
             vrop.enabled = false;
-            vrop.raw.ub.fill(0);
             modeDMA = GPU_DMA_NONE;
-        }
-        if (count % 2) {
-            count++;
         }
         return count >>> 1;
     }
@@ -822,8 +775,6 @@ pseudo.CstrGraphics = function() {
             modeDMA      = GPU_DMA_NONE;
             vpos         = 0;
             vdiff        = 0;
-            isVideoPAL   = false;
-            isVideo24Bit = false;
             disabled     = true;
             // VRAM Operations
             vrop.enabled = false;
@@ -838,10 +789,6 @@ pseudo.CstrGraphics = function() {
             // Command Pipe
             pipeReset();
         },
-        redraw() {
-            ret.status ^= GPU_STAT_ODDLINES;
-            render.swapBuffers(disabled);
-        },
         scopeW(addr, data) {
             switch(addr & 0xf) {
                 case 0: // Data
@@ -850,16 +797,8 @@ pseudo.CstrGraphics = function() {
                 case 4: // Status
                     switch(((data >>> 24) & 0xff)) {
                         case 0x00:
-                            ret.status   = 0x14802000;
-                            disabled     = true;
-                            isVideoPAL   = false;
-                            isVideo24Bit = false;
-                            return;
-                        case 0x01:
-                            pipeReset();
-                            return;
-                        case 0x03:
-                            disabled = data & 1 ? true : false;
+                            ret.status = 0x14802000;
+                            disabled   = true;
                             return;
                         case 0x04:
                             modeDMA = data & 3;
@@ -872,8 +811,6 @@ pseudo.CstrGraphics = function() {
                             vdiff = ((data >>> 10) & 0x3ff) - (data & 0x3ff);
                             return;
                         case 0x08:
-                            isVideoPAL   = ((data) & 8) ? true : false;
-                            isVideo24Bit = ((data >>> 4) & 1) ? true : false;
                             {
                                 // Basic info
                                 const w = resMode[(data & 3) | ((data & 0x40) >>> 4)];
@@ -888,16 +825,12 @@ pseudo.CstrGraphics = function() {
                                 }
                             }
                             return;
-                        case 0x10:
-                            switch(data & 0xffffff) {
-                                case 7:
-                                    ret.data = 2;
-                                    return;
-                            }
-                            return;
                         
+                        case 0x01:
                         case 0x02:
+                        case 0x03:
                         case 0x06:
+                        case 0x10:
                             return;
                     }
                     psx.error('GPU Write Status ' + psx.hex(((data >>> 24) & 0xff)));
@@ -907,10 +840,9 @@ pseudo.CstrGraphics = function() {
         scopeR(addr) {
             switch(addr & 0xf) {
                 case 0: // Data
-                    dataMem.read(false, 0, 1);
                     return ret.data;
                 case 4: // Status
-                    return ret.status | GPU_STAT_READYFORVRAM;
+                    return ret.status;
             }
         },
         executeDMA(addr) {
@@ -935,19 +867,10 @@ pseudo.CstrGraphics = function() {
             }
             psx.error('GPU DMA ' + psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
         },
-        photoWrite(data) {
-            const p = photoData(data);
-            vrop.pvram = p[1] * 1024;
-            modeDMA = GPU_DMA_VRAM2MEM;
-            ret.status |= GPU_STAT_READYFORVRAM;
-        },
         photoRead(data) {
             const p = photoData(data);
             vrop.enabled = true;
-            vrop.raw = new union((p[2] * p[3]) * 4);
             modeDMA = GPU_DMA_MEM2VRAM;
-            // Cache invalidation
-            tcache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
         }
     };
 };

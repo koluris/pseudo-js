@@ -4,10 +4,7 @@
     (((a) & 0xff) << 24) | (((b) & 0xff) << 16) | (((c) & 0xff) << 8) | ((r) & 0xff)
 
 pseudo.CstrTexCache = function() {
-    const TEX_04BIT   = 0;
-    const TEX_08BIT   = 1;
-    const TEX_15BIT   = 2;
-    const TEX_15BIT_2 = 3;
+    const TEX_04BIT = 0;
 
     // Maximum texture cache
     const TCACHE_MAX = 384;
@@ -36,11 +33,6 @@ pseudo.CstrTexCache = function() {
         },
 
         reset(ctx) {
-            // Cached white texture for non-textured shader
-            const white = ctx.createTexture();
-            ctx.bindTexture(ctx.TEXTURE_2D, white);
-            ctx.texPhoto2D (ctx.TEXTURE_2D, 0, ctx.RGBA, 1, 1, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, new UintBcap([255, 255, 255, 255]));
-
             // Reset texture cache
             for (const tc of cache) {
                 if (tc.tex) {
@@ -57,13 +49,6 @@ pseudo.CstrTexCache = function() {
 
         fetchTexture(ctx, tp, clut) {
             const uid = (clut << 16) | tp;
-
-            for (const tc of cache) {
-                if (tc.uid === uid) { // Found cached texture
-                    ctx.bindTexture(ctx.TEXTURE_2D, tc.tex);
-                    return;
-                }
-            }
 
             // Basic info
             const tc  = cache[index];
@@ -93,31 +78,6 @@ pseudo.CstrTexCache = function() {
                     }
                     break;
 
-                case TEX_08BIT: // 256 color palette
-                    for (let i = 0; i < 256; i++) {
-                        tex.cc[i] = tcache.pixel2texel(vs.vram.uh[tc.pos.cc]);
-                        tc.pos.cc++;
-                    }
-
-                    for (let h = 0, idx = 0; h < 256; h++) {
-                        for (let w = 0; w < (256 / 2); w++) {
-                            const p = vs.vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>> 0) & 255];
-                            tex.bfr.uw[idx++] = tex.cc[(p >>> 8) & 255];
-                        }
-                    }
-                    break;
-
-                case TEX_15BIT:   // No color palette
-                case TEX_15BIT_2: // Seen on some rare cases
-                    for (let h = 0, idx = 0; h < 256; h++) {
-                        for (let w = 0; w < 256; w++) {
-                            const p = vs.vram.uh[(tc.pos.h + h) * FRAME_W + tc.pos.w + w];
-                            tex.bfr.uw[idx++] = tcache.pixel2texel(p);
-                        }
-                    }
-                    break;
-
                 default:
                     console.info('Texture Cache Unknown ' + ((tp >>> 7) & 3));
                     break;
@@ -133,15 +93,6 @@ pseudo.CstrTexCache = function() {
             // Advance cache counter
             tc.uid = uid;
             index  = (index + 1) & (TCACHE_MAX - 1);
-        },
-
-        invalidate(iX, iY, iW, iH) {
-            for (const tc of cache) {
-                //if (((tc.pos.w + 255) >= iX) && ((tc.pos.h + 255) >= iY) && ((tc.pos.w) <= iW) && ((tc.pos.h) <= iH)) {
-                    tc.uid = -1;
-                    //continue;
-                //}
-            }
         }
     };
 };
