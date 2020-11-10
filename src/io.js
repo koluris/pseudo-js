@@ -17,13 +17,14 @@ pseudo.CstrHardware = function() {
                         }
                         return;
 
-                    case (addr >= 0x1810 && addr <= 0x1814): // Graphics
-                        vs.scopeW(addr, data);
+                    case (addr == 0x1810): // GPU Data
+                        vs.writeData(data);
                         return;
 
                     /* unused */
                     case (addr == 0x10f0): // DPCR
                     case (addr == 0x10f4): // DICR
+                    case (addr == 0x1814): // GPU Status
                         directMemW(mem.hwr.uw, addr) = data;
                         return;
                 }
@@ -35,12 +36,13 @@ pseudo.CstrHardware = function() {
         read: {
             w(addr) {
                 switch(true) {
-                    case (addr >= 0x1810 && addr <= 0x1814): // Graphics
-                        return vs.scopeR(addr);
+                    case (addr == 0x1814): // GPU Status
+                        return 0x14802000;
 
                     /* unused */
-                    case (addr >= 0x1080 && addr <= 0x10e8): // DMA
+                    case (addr == 0x10a8): // GPU DMA
                     case (addr == 0x10f0): // DPCR
+                    case (addr == 0x1810): // GPU Data
                         return directMemW(mem.hwr.uw, addr);
                 }
 

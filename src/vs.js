@@ -22,87 +22,65 @@ pseudo.CstrGraphics = function() {
         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     ];
 
-    let status;
-
     // Command Pipeline
     const pipe = {
         data: new UintWcap(256)
     };
 
-    const dataMem = {
-        write(stream, addr, size) {
-            let i = 0;
-            let haha = 0;
+    function writeData(addr) {
+        if (!pipe.size) {
+            const prim  = GPU_COMMAND(addr);
+            const count = pSize[prim];
 
-            while (i < size) {
-                haha = stream ? directMemW(mem.ram.uw, addr) : addr;
-                addr += 4;
-                i++;
-
-                if (!pipe.size) {
-                    const prim  = GPU_COMMAND(haha);
-                    const count = pSize[prim];
-
-                    if (count) {
-                        pipe.data[0] = haha;
-                        pipe.prim = prim;
-                        pipe.size = count;
-                        pipe.row  = 1;
-                    }
-                    else {
-                        continue;
-                    }
-                }
-                else {
-                    pipe.data[pipe.row] = haha;
-                    pipe.row++;
-                }
-
-                if (pipe.size === pipe.row) {
-                    pipe.size = 0;
-                    pipe.row  = 0;
-
-                    render.draw(pipe.prim, pipe.data);
-                }
+            if (count) {
+                pipe.data[0] = addr;
+                pipe.prim = prim;
+                pipe.size = count;
+                pipe.row  = 1;
+            }
+            else {
+                return;
             }
         }
-    };
+        else {
+            pipe.data[pipe.row] = addr;
+            pipe.row++;
+        }
+
+        if (pipe.size === pipe.row) {
+            pipe.size = 0;
+            pipe.row  = 0;
+
+            render.draw(pipe.prim, pipe.data);
+        }
+    }
 
     return {
-        scopeW(addr, data) {
-            switch(addr & 0xf) {
-                case 0: // Data
-                    dataMem.write(false, data, 1);
+        writeData(addr) {
+            if (!pipe.size) {
+                const prim  = GPU_COMMAND(addr);
+                const count = pSize[prim];
+    
+                if (count) {
+                    pipe.data[0] = addr;
+                    pipe.prim = prim;
+                    pipe.size = count;
+                    pipe.row  = 1;
+                }
+                else {
                     return;
-
-                case 4: // Status
-                    switch(GPU_COMMAND(data)) {
-                        case 0x00:
-                            status = 0x14802000;
-                            return;
-
-                        /* unused */
-                        case 0x03:
-                        case 0x04:
-                        case 0x05:
-                        case 0x06:
-                        case 0x07:
-                        case 0x08:
-                            return;
-                    }
-
-                    psx.error('GPU Write Status ' + psx.hex(GPU_COMMAND(data)));
-                    return;
+                }
             }
-        },
-
-        scopeR(addr) {
-            switch(addr & 0xf) {
-                case 0: // Data
-                    return 0;
-
-                case 4: // Status
-                    return status;
+            else {
+                pipe.data[pipe.row] = addr;
+                pipe.row++;
+            }
+    
+            if (pipe.size === pipe.row) {
+                pipe.size = 0;
+                pipe.row  = 0;
+    
+                render.draw(pipe.prim, pipe.data);
             }
         },
 
@@ -110,7 +88,13 @@ pseudo.CstrGraphics = function() {
             if (chcr === 0x01000401) {
                 while(madr !== 0xffffff) {
                     const count = directMemW(mem.ram.uw, madr);
-                    dataMem.write(true, madr + 4, count >>> 24);
+                    let haha = madr + 4;
+                    let i = 0;
+                    while (i < (count >>> 24)) {
+                        writeData(directMemW(mem.ram.uw, haha));
+                        haha += 4;
+                        i++;
+                    }
                     madr = count & 0xffffff;
                 }
                 return;

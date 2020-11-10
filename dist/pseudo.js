@@ -29,12 +29,13 @@ pseudo.CstrHardware = function() {
                             mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data & (~(0x01000000));
                         }
                         return;
-                    case (addr >= 0x1810 && addr <= 0x1814): // Graphics
-                        vs.scopeW(addr, data);
+                    case (addr == 0x1810): // GPU Data
+                        vs.writeData(data);
                         return;
                     
                     case (addr == 0x10f0): // DPCR
                     case (addr == 0x10f4): // DICR
+                    case (addr == 0x1814): // GPU Status
                         mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                         return;
                 }
@@ -44,11 +45,12 @@ pseudo.CstrHardware = function() {
         read: {
             w(addr) {
                 switch(true) {
-                    case (addr >= 0x1810 && addr <= 0x1814): // Graphics
-                        return vs.scopeR(addr);
+                    case (addr == 0x1814): // GPU Status
+                        return 0x14802000;
                     
-                    case (addr >= 0x1080 && addr <= 0x10e8): // DMA
+                    case (addr == 0x10a8): // GPU DMA
                     case (addr == 0x10f0): // DPCR
+                    case (addr == 0x1810): // GPU Data
                         return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                 }
                 psx.error('Hardware Read w ' + psx.hex(addr));
@@ -334,81 +336,73 @@ pseudo.CstrGraphics = function() {
         0x00,0x01,0x01,0x01,0x01,0x01,0x01,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     ];
-    let status;
     // Command Pipeline
     const pipe = {
         data: new Uint32Array(256)
     };
-    const dataMem = {
-        write(stream, addr, size) {
-            let i = 0;
-            let haha = 0;
-            while (i < size) {
-                haha = stream ? mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] : addr;
-                addr += 4;
-                i++;
-                if (!pipe.size) {
-                    const prim  = ((haha >>> 24) & 0xff);
-                    const count = pSize[prim];
-                    if (count) {
-                        pipe.data[0] = haha;
-                        pipe.prim = prim;
-                        pipe.size = count;
-                        pipe.row  = 1;
-                    }
-                    else {
-                        continue;
-                    }
-                }
-                else {
-                    pipe.data[pipe.row] = haha;
-                    pipe.row++;
-                }
-                if (pipe.size === pipe.row) {
-                    pipe.size = 0;
-                    pipe.row  = 0;
-                    render.draw(pipe.prim, pipe.data);
-                }
+    function writeData(addr) {
+        if (!pipe.size) {
+            const prim  = ((addr >>> 24) & 0xff);
+            const count = pSize[prim];
+            if (count) {
+                pipe.data[0] = addr;
+                pipe.prim = prim;
+                pipe.size = count;
+                pipe.row  = 1;
+            }
+            else {
+                return;
             }
         }
-    };
+        else {
+            pipe.data[pipe.row] = addr;
+            pipe.row++;
+        }
+        if (pipe.size === pipe.row) {
+            pipe.size = 0;
+            pipe.row  = 0;
+            render.draw(pipe.prim, pipe.data);
+        }
+    }
     return {
-        scopeW(addr, data) {
-            switch(addr & 0xf) {
-                case 0: // Data
-                    dataMem.write(false, data, 1);
+        writeData(addr) {
+            if (!pipe.size) {
+                const prim  = ((addr >>> 24) & 0xff);
+                const count = pSize[prim];
+    
+                if (count) {
+                    pipe.data[0] = addr;
+                    pipe.prim = prim;
+                    pipe.size = count;
+                    pipe.row  = 1;
+                }
+                else {
                     return;
-                case 4: // Status
-                    switch(((data >>> 24) & 0xff)) {
-                        case 0x00:
-                            status = 0x14802000;
-                            return;
-                        
-                        case 0x03:
-                        case 0x04:
-                        case 0x05:
-                        case 0x06:
-                        case 0x07:
-                        case 0x08:
-                            return;
-                    }
-                    psx.error('GPU Write Status ' + psx.hex(((data >>> 24) & 0xff)));
-                    return;
+                }
             }
-        },
-        scopeR(addr) {
-            switch(addr & 0xf) {
-                case 0: // Data
-                    return 0;
-                case 4: // Status
-                    return status;
+            else {
+                pipe.data[pipe.row] = addr;
+                pipe.row++;
+            }
+    
+            if (pipe.size === pipe.row) {
+                pipe.size = 0;
+                pipe.row  = 0;
+    
+                render.draw(pipe.prim, pipe.data);
             }
         },
         executeDMA(addr) {
             if (mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] === 0x01000401) {
                 while(mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] !== 0xffffff) {
                     const count = mem.ram.uw[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2]) & (mem.ram.uw.byteLength - 1)) >>> 2];
-                    dataMem.write(true, mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + 4, count >>> 24);
+                    let haha = mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + 4;
+                    let i = 0;
+                    while (i < (count >>> 24)) {
+                        writeData(mem.ram.uw[(( haha) & (mem.ram.uw.byteLength - 1)) >>> 2]);
+                        haha += 4;
+                        i++;
+                    }
                     mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] = count & 0xffffff;
                 }
                 return;
