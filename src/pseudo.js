@@ -105,13 +105,11 @@ pseudo.CstrMain = function() {
             // ISO 9660
             chunkReader(file, 0x9319, 5, 'text', function(id) {
                 if (id === 'CD001') {
-                    chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
-                        reset();
-                        iso = file;
-                        cpu.base[32] = cpu.base[31];
-                        cpu.setpc(cpu.base[32]);
-                        cpu.run();
-                    });
+                    reset();
+                    iso = file;
+                    cpu.base[32] = cpu.base[31];
+                    cpu.setpc(cpu.base[32]);
+                    cpu.run();
                 }
             });
         },
@@ -120,11 +118,9 @@ pseudo.CstrMain = function() {
             file(e) {
                 e.preventDefault();
                 psx.drop.exit();
-        
-                const dt = e.dataTransfer;
 
-                if (dt.files) {
-                    psx.openFile(dt.files[0]);
+                if (e.dataTransfer.files) {
+                    psx.openFile(e.dataTransfer.files[0]);
                 }
             },
 

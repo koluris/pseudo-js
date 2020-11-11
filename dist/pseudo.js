@@ -1868,9 +1868,6 @@ pseudo.CstrMips = function() {
         [0x18, 0x10, 0x08, 0x00],
         [0x00, 0x08, 0x10, 0x18],
     ];
-    // Base + Coprocessor
-    const base = new Uint32Array(32 + 3); // + cpu.base[32], cpu.base[33], cpu.base[34]
-    const copr = new Uint32Array(16);
     // Cache for expensive calculation
     const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
     let ptr, suspended, opcodeCount, requestAF;
@@ -1884,7 +1881,7 @@ pseudo.CstrMips = function() {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
                     case 0: // SLL
-                        if (code) { // No operation?
+                        if (code) { // No operation
                             cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] << ((code >>> 6) & 0x1f);
                         }
                         return;
@@ -2281,13 +2278,11 @@ pseudo.CstrMain = function() {
             // ISO 9660
             chunkReader(file, 0x9319, 5, 'text', function(id) {
                 if (id === 'CD001') {
-                    chunkReader(file, 0x9340, 32, 'text', function(name) { // Get Name
-                        reset();
-                        iso = file;
-                        cpu.base[32] = cpu.base[31];
-                        cpu.setpc(cpu.base[32]);
-                        cpu.run();
-                    });
+                    reset();
+                    iso = file;
+                    cpu.base[32] = cpu.base[31];
+                    cpu.setpc(cpu.base[32]);
+                    cpu.run();
                 }
             });
         },
@@ -2295,10 +2290,8 @@ pseudo.CstrMain = function() {
             file(e) {
                 e.preventDefault();
                 psx.drop.exit();
-        
-                const dt = e.dataTransfer;
-                if (dt.files) {
-                    psx.openFile(dt.files[0]);
+                if (e.dataTransfer.files) {
+                    psx.openFile(e.dataTransfer.files[0]);
                 }
             },
             over(e) {

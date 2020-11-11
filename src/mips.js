@@ -65,13 +65,8 @@ pseudo.CstrMips = function() {
         [0x00, 0x08, 0x10, 0x18],
     ];
 
-    // Base + Coprocessor
-    const base = new UintWcap(32 + 3); // + pc, lo, hi
-    const copr = new UintWcap(16);
-
     // Cache for expensive calculation
     const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
-
     let ptr, suspended, opcodeCount, requestAF;
 
     // Base CPU stepper
@@ -85,7 +80,7 @@ pseudo.CstrMips = function() {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
                     case 0: // SLL
-                        if (code) { // No operation?
+                        if (code) { // No operation
                             cpu.base[rd] = cpu.base[rt] << shamt;
                         }
                         return;
@@ -439,7 +434,6 @@ pseudo.CstrMips = function() {
                     opcodeCount = 0;
                 }
             }
-
             requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
         },
 
