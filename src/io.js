@@ -59,7 +59,7 @@ pseudo.CstrHardware = function() {
 
             h(addr, data) {
                 switch(true) {
-                    case (addr >= 0x1048 && addr <= 0x104e): // SIO
+                    case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         sio.write.h(addr, data);
                         return;
 
@@ -90,7 +90,7 @@ pseudo.CstrHardware = function() {
 
             b(addr, data) {
                 switch(true) {
-                    case (addr == 0x1040): // SIO Data
+                    case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         sio.write.b(addr, data);
                         return;
 
@@ -135,7 +135,7 @@ pseudo.CstrHardware = function() {
 
             h(addr) {
                 switch(true) {
-                    case (addr >= 0x1044 && addr <= 0x104e): // SIO
+                    case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         return sio.read.h(addr);
 
                     case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
@@ -157,7 +157,7 @@ pseudo.CstrHardware = function() {
 
             b(addr) {
                 switch(true) {
-                    case (addr == 0x1040): // SIO Data
+                    case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         return sio.read.b(addr);
 
                     case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM

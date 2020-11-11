@@ -1513,7 +1513,7 @@ pseudo.CstrHardware = function() {
             },
             h(addr, data) {
                 switch(true) {
-                    case (addr >= 0x1048 && addr <= 0x104e): // SIO
+                    case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         sio.write.h(addr, data);
                         return;
                     case (addr == 0x1070): // IRQ Status
@@ -1538,7 +1538,7 @@ pseudo.CstrHardware = function() {
             },
             b(addr, data) {
                 switch(true) {
-                    case (addr == 0x1040): // SIO Data
+                    case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         sio.write.b(addr, data);
                         return;
                     case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
@@ -1575,7 +1575,7 @@ pseudo.CstrHardware = function() {
             },
             h(addr) {
                 switch(true) {
-                    case (addr >= 0x1044 && addr <= 0x104e): // SIO
+                    case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         return sio.read.h(addr);
                     case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
                         return audio.scopeR(addr);
@@ -1593,7 +1593,7 @@ pseudo.CstrHardware = function() {
             },
             b(addr) {
                 switch(true) {
-                    case (addr == 0x1040): // SIO Data
+                    case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         return sio.read.b(addr);
                     case (addr >= 0x1800 && addr <= 0x1803): // CD-ROM
                         return cdrom.scopeR(addr);
@@ -2832,184 +2832,137 @@ pseudo.CstrRender = function() {
 };
 const render = new pseudo.CstrRender();
 pseudo.CstrSerial = function() {
-  const PAD_BTN_SELECT   =  0;
-  const PAD_BTN_START    =  3;
-  const PAD_BTN_UP       =  4;
-  const PAD_BTN_RIGHT    =  5;
-  const PAD_BTN_DOWN     =  6;
-  const PAD_BTN_LEFT     =  7;
-  const PAD_BTN_L2       =  8;
-  const PAD_BTN_R2       =  9;
-  const PAD_BTN_L1       = 10;
-  const PAD_BTN_R1       = 11;
-  const PAD_BTN_TRIANGLE = 12;
-  const PAD_BTN_CIRCLE   = 13;
-  const PAD_BTN_CROSS    = 14;
-  const PAD_BTN_SQUARE   = 15;
-  let baud, control, mode, status, padst, parp;
-  let bfr = new Uint8Array(256);
-  // Exposed class functions/variables
-  return {
-    reset() {
-      bfr.fill(0);
-      btnState = 0xffff;
-      baud     = 0;
-      control  = 0;
-      mode     = 0;
-      status   = 0x001 | 0x004;
-      padst    = 0;
-      parp     = 0;
-      bfr[0] = 0x00;
-      bfr[1] = 0x41;
-      bfr[2] = 0x5a;
-      bfr[3] = 0xff;
-      bfr[4] = 0xff;
-    },
-    write: {
-      h(addr, data) {
-        switch(addr) {
-          case 0x1048: // Mode
-            mode = data;
-            return;
-          case 0x104a: // Control
-            control = data;
-            if (control&0x010) {
-              status  &= ~0x200;
-              control &= ~0x010;
-            }
-            if (control&0x040 || !control) {
-              status = 0x001 | 0x004;
-              padst  = 0;
-              parp   = 0;
-            }
-            return;
-          case 0x104e: // Baud
-            baud = data;
-            return;
-        }
-        psx.error('SIO write h '+psx.hex(addr)+' <- '+psx.hex(data));
-      },
-      b(addr, data) {
-        switch(addr) {
-          case 0x1040:
-            switch(padst) {
-              case 1:
-                if (data&0x40) {
-                  padst = 2;
-                  parp  = 1;
-                  switch(data) {
-                    case 0x42:
-                      bfr[1] = 0x41;
-                      break;
-                    case 0x43:
-                      bfr[1] = 0x43;
-                      break;
-                    default:
-                      console.dir('SIO write b data '+psx.hex(data));
-                      break;
-                  }
+    const PAD_BTN_SELECT   =  0;
+    const PAD_BTN_START    =  3;
+    const PAD_BTN_UP       =  4;
+    const PAD_BTN_RIGHT    =  5;
+    const PAD_BTN_DOWN     =  6;
+    const PAD_BTN_LEFT     =  7;
+    const PAD_BTN_L2       =  8;
+    const PAD_BTN_R2       =  9;
+    const PAD_BTN_L1       = 10;
+    const PAD_BTN_R1       = 11;
+    const PAD_BTN_TRIANGLE = 12;
+    const PAD_BTN_CIRCLE   = 13;
+    const PAD_BTN_CROSS    = 14;
+    const PAD_BTN_SQUARE   = 15;
+    let mode, control, baud, rx_has_data, rx_data;
+    let index;
+    let btnState;
+    function controller(data) {
+        switch(index) {
+            case 0:
+                if (data != 0x01) {
+                    return 0xff;
                 }
-                bus.interruptSet(7);
-                return;
-              case 2:
-                parp++;
-                
-                if (parp !== 5) {
-                  bus.interruptSet(7);
+                index++;
+                return 0xff;
+            case 1:
+                if (data != 0x42) {
+                    return 0xff;
                 }
-                else {
-                  padst = 0;
-                }
-                return;
-            }
-            if (data === 1) {
-              status &= ~0x004;
-              status |=  0x002;
-              padst = 1;
-              parp  = 0;
-              if (control & 0x002) {
-                switch (control) {
-                  case 0x1003:
-                    bus.interruptSet(7);
-                    break;
-                  case 0x3003:
-                    break;
-                      
-                  default:
-                    break;
-                }
-              }
-            }
-            return;
+                index++;
+                return 0x41;
+            case 2:
+                index++;
+                return 0x5a;
+            case 3:
+                index++;
+                return (btnState >>> 0) & 0xff;
+            case 4:
+                index = 0;
+                return (btnState >>> 8) & 0xff;
         }
-        psx.error('SIO write b '+psx.hex(addr)+' <- '+psx.hex(data));
-      }
-    },
-    read: {
-      h(addr) {
-        switch(addr) {
-          case 0x1044:
-            return status;
-          case 0x104a:
-            return control;
-          case 0x104e:
-            return baud;
-        }
-        psx.error('SIO read h '+psx.hex(addr));
-      },
-      b(addr) {
-        switch(addr) {
-          case 0x1040:
-            {
-              if (!(status & 0x002)) {
-                return 0;
-              }
-              if (parp === 5) {
-                status &= (~(0x002));
-                status |= 0x004;
-              }
-              return bfr[parp];
-            }
-        }
-        psx.error('SIO read b '+psx.hex(addr));
-      }
-    },
-    padListener(code, pushed) {
-      if (code == 50) { // Select
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_SELECT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_SELECT)); };
-      }
-      
-      if (code == 49) { // Start
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_START)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_START)); };
-      }
-      
-      if (code == 38) { // Up
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_UP)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_UP)); };
-      }
-      
-      if (code == 39) { // cop2d.ub[(6 << 2) + 0]
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_RIGHT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_RIGHT)); };
-      }
-      
-      if (code == 40) { // Down
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_DOWN)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_DOWN)); };
-      }
-      
-      if (code == 37) { // Left
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_LEFT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_LEFT)); };
-      }
-      
-      if (code == 90) { // X
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CIRCLE)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CIRCLE)); };
-      }
-      
-      if (code == 88) { // Z
-          if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CROSS)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CROSS)); };
-      }
-      bfr[3] = (btnState >>> 0) & 0xff;
-      bfr[4] = (btnState >>> 8) & 0xff;
+        return 0xff;
     }
-  };
+    return {
+        reset() {
+            index = 0;
+            rx_has_data = false;
+            rx_data = 0;
+            mode    = 0;
+            control = 0;
+            baud    = 0;
+            // Default pad buffer
+            btnState = 0xffff;
+        },
+        write: {
+            h(addr, data) {
+                switch(addr) {
+                    case 0x1048:
+                        mode = data;
+                        return;
+                    case 0x104a:
+                        control = data;
+                        return;
+                    case 0x104e:
+                        baud = data;
+                        return;
+                }
+                psx.error('SIO write h ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            },
+            b(addr, data) {
+                switch(addr) {
+                    case 0x1040:
+                        rx_data = controller(data);
+                        rx_has_data = true;
+                        bus.interruptSet(7);
+                        return;
+                }
+                psx.error('SIO write b ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            }
+        },
+        read: {
+            h(addr) {
+                switch(addr) {
+                    case 0x1044:
+                        return 0b101 | (rx_has_data << 1);
+                    case 0x104a:
+                        return control;
+                    case 0x104e:
+                        return baud;
+                }
+                psx.error('SIO read h ' + psx.hex(addr));
+            },
+            b(addr) {
+                switch(addr) {
+                    case 0x1040:
+                        if (rx_has_data) {
+                            rx_has_data = false;
+                            return rx_data;
+                        }
+                        return 0xff;
+                }
+                psx.error('SIO read b ' + psx.hex(addr));
+            }
+        },
+        padListener(code, pushed) {
+            if (code == 50) { // Select
+                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_SELECT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_SELECT)); };
+            }
+            if (code == 49) { // Start
+                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_START)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_START)); };
+            }
+            if (code == 38) { // Up
+                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_UP)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_UP)); };
+            }
+            if (code == 39) { // cop2d.ub[(6 << 2) + 0]
+                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_RIGHT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_RIGHT)); };
+            }
+            if (code == 40) { // Down
+                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_DOWN)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_DOWN)); };
+            }
+            if (code == 37) { // Left
+                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_LEFT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_LEFT)); };
+            }
+            if (code == 90) { // Z
+                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CIRCLE)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CIRCLE)); };
+            }
+            if (code == 88) { // X
+                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CROSS)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CROSS)); };
+            }
+        }
+    };
 };
 const sio = new pseudo.CstrSerial();
 pseudo.CstrTexCache = function() {
