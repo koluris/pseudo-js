@@ -18,6 +18,12 @@
 #define TABLE_NORM(a) \
     tableNormalize[(a) + 128 + 256]
 
+#define MAKE_RGB15(iR, iG, iB) \
+    ((((iR) >> 3) << 10) | (((iG) >> 3) << 5) | ((iB) >> 3))
+
+#define RGB15_CL(a) \
+    directMemH(mem.ram.uh, (photo + (a + 0))) = MAKE_RGB15(TABLE_NORM(data + iR), TABLE_NORM(data + iG), TABLE_NORM(data + iB))
+
 #define RGB24_CL(a) \
     directMemB(mem.ram.ub, (photo + (a + 0))) = TABLE_NORM(data + iB); \
     directMemB(mem.ram.ub, (photo + (a + 1))) = TABLE_NORM(data + iG); \
@@ -130,6 +136,39 @@ pseudo.CstrMdec = function() {
         }
     }
 
+    function uv15(photo) {
+        let indexCb = 0;
+        let indexCr = MDEC_BLOCK_NUM;
+        let indexY  = MDEC_BLOCK_NUM * 2;
+
+        for (let h = 0; h < 16; h += 2, photo += 24, indexY += (h == 8) ? 64 : 0) {
+            for (let w = 0; w < 4; w++, photo += 2) {
+                for (let i = 0; i <= 4; i += 4) {
+                    let cb = blk.raw[indexCb + i];
+                    let cr = blk.raw[indexCr + i];
+                    
+                    let iB = BLK_MUL_B(cb);
+                    let iG = BLK_MUL_G(cb) + BLK_MUL_F(cr);
+                    let iR = BLK_MUL_R(cr);
+                    
+                    const idxY = indexY + (i * 16); let data;
+                    data = blk.raw[idxY + 0]; RGB15_CL((0x00 + (i * 2)));
+                    data = blk.raw[idxY + 1]; RGB15_CL((0x01 + (i * 2)));
+                    data = blk.raw[idxY + 8]; RGB15_CL((0x10 + (i * 2)));
+                    data = blk.raw[idxY + 9]; RGB15_CL((0x11 + (i * 2)));
+                }
+
+                indexCb += 1;
+                indexCr += 1;
+                indexY  += 2;
+            }
+
+            indexCb += 4;
+            indexCr += 4;
+            indexY  += 8;
+        }
+    }
+
     function uv24(photo) {
         let indexCb = 0;
         let indexCr = MDEC_BLOCK_NUM;
@@ -214,6 +253,17 @@ pseudo.CstrMdec = function() {
             switch(chcr) {
                 case 0x1000200:
                     if (cmd & 0x08000000) { // YUV15
+                        let photo = madr;
+        
+                        for (; size > 0; size -= (MDEC_BLOCK_NUM * 4) / 2, photo += (MDEC_BLOCK_NUM * 4) * 2) {
+                            // Reset Block
+                            blk.raw.fill(0);
+                            blk.index = 0;
+
+                            // Generate
+                            processBlock();
+                            uv15(photo);
+                        }
                     }
                     else { // YUV24
                         let photo = madr;

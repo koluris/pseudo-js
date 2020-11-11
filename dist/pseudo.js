@@ -1702,6 +1702,35 @@ pseudo.CstrMdec = function() {
             blk.raw[(idx + (kh * 3))] = (tmp3 - tmp4) >> sh;
         }
     }
+    function uv15(photo) {
+        let indexCb = 0;
+        let indexCr = MDEC_BLOCK_NUM;
+        let indexY  = MDEC_BLOCK_NUM * 2;
+        for (let h = 0; h < 16; h += 2, photo += 24, indexY += (h == 8) ? 64 : 0) {
+            for (let w = 0; w < 4; w++, photo += 2) {
+                for (let i = 0; i <= 4; i += 4) {
+                    let cb = blk.raw[indexCb + i];
+                    let cr = blk.raw[indexCr + i];
+                    
+                    let iB = ((0x00000716 * (cb)) >> 10);
+                    let iG = ((0xfffffea1 * (cb)) >> 10) + ((0xfffffd25 * (cr)) >> 10);
+                    let iR = ((0x0000059b * (cr)) >> 10);
+                    
+                    const idxY = indexY + (i * 16); let data;
+                    data = blk.raw[idxY + 0]; mem.ram.uh[(((photo + ((0x00 + (i * 2)) + 0))) & (mem.ram.uh.byteLength - 1)) >>> 1] = ((((tableNormalize[(data + iR) + 128 + 256]) >> 3) << 10) | (((tableNormalize[(data + iG) + 128 + 256]) >> 3) << 5) | ((tableNormalize[(data + iB) + 128 + 256]) >> 3));
+                    data = blk.raw[idxY + 1]; mem.ram.uh[(((photo + ((0x01 + (i * 2)) + 0))) & (mem.ram.uh.byteLength - 1)) >>> 1] = ((((tableNormalize[(data + iR) + 128 + 256]) >> 3) << 10) | (((tableNormalize[(data + iG) + 128 + 256]) >> 3) << 5) | ((tableNormalize[(data + iB) + 128 + 256]) >> 3));
+                    data = blk.raw[idxY + 8]; mem.ram.uh[(((photo + ((0x10 + (i * 2)) + 0))) & (mem.ram.uh.byteLength - 1)) >>> 1] = ((((tableNormalize[(data + iR) + 128 + 256]) >> 3) << 10) | (((tableNormalize[(data + iG) + 128 + 256]) >> 3) << 5) | ((tableNormalize[(data + iB) + 128 + 256]) >> 3));
+                    data = blk.raw[idxY + 9]; mem.ram.uh[(((photo + ((0x11 + (i * 2)) + 0))) & (mem.ram.uh.byteLength - 1)) >>> 1] = ((((tableNormalize[(data + iR) + 128 + 256]) >> 3) << 10) | (((tableNormalize[(data + iG) + 128 + 256]) >> 3) << 5) | ((tableNormalize[(data + iB) + 128 + 256]) >> 3));
+                }
+                indexCb += 1;
+                indexCr += 1;
+                indexY  += 2;
+            }
+            indexCb += 4;
+            indexCr += 4;
+            indexY  += 8;
+        }
+    }
     function uv24(photo) {
         let indexCb = 0;
         let indexCr = MDEC_BLOCK_NUM;
@@ -1776,6 +1805,16 @@ pseudo.CstrMdec = function() {
             switch(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
                 case 0x1000200:
                     if (cmd & 0x08000000) { // YUV15
+                        let photo = mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2];
+        
+                        for (; size > 0; size -= (MDEC_BLOCK_NUM * 4) / 2, photo += (MDEC_BLOCK_NUM * 4) * 2) {
+                            // Reset Block
+                            blk.raw.fill(0);
+                            blk.index = 0;
+                            // Generate
+                            processBlock();
+                            uv15(photo);
+                        }
                     }
                     else { // YUV24
                         let photo = mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2];
