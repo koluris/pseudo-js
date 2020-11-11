@@ -1,8 +1,8 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
-#define pc cpu.base[32]
-#define lo cpu.base[33]
-#define hi cpu.base[34]
+#define pc  cpu.base[32]
+#define lo  cpu.base[33]
+#define hi  cpu.base[34]
 
 #define opcode \
     ((code >>> 26) & 0x3f)
