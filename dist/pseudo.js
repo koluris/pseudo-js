@@ -2846,120 +2846,101 @@ pseudo.CstrSerial = function() {
     const PAD_BTN_CIRCLE   = 13;
     const PAD_BTN_CROSS    = 14;
     const PAD_BTN_SQUARE   = 15;
-    let mode, control, baud, rx_has_data, rx_data;
-    let index;
-    let btnState;
-    function controller(data) {
+    let rx, btnState, index;
+    function pollController(data) {
         switch(index) {
             case 0:
                 if (data != 0x01) {
                     return 0xff;
                 }
-                index++;
-                return 0xff;
+                index = 1;
+                return 0x00;
             case 1:
                 if (data != 0x42) {
                     return 0xff;
                 }
-                index++;
+                index = 2;
                 return 0x41;
             case 2:
-                index++;
+                index = 3;
                 return 0x5a;
             case 3:
-                index++;
-                return (btnState >>> 0) & 0xff;
+                index = 4;
+                return btnState & 0xff;
             case 4:
                 index = 0;
-                return (btnState >>> 8) & 0xff;
+                return btnState >>> 8;
         }
         return 0xff;
     }
     return {
         reset() {
-            index = 0;
-            rx_has_data = false;
-            rx_data = 0;
-            mode    = 0;
-            control = 0;
-            baud    = 0;
-            // Default pad buffer
+            rx = {
+                enabled: false,
+                   data: 0
+            };
             btnState = 0xffff;
+            index    = 0;
         },
         write: {
             h(addr, data) {
-                switch(addr) {
-                    case 0x1048:
-                        mode = data;
-                        return;
-                    case 0x104a:
-                        control = data;
-                        return;
-                    case 0x104e:
-                        baud = data;
-                        return;
-                }
-                psx.error('SIO write h ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
             },
             b(addr, data) {
                 switch(addr) {
                     case 0x1040:
-                        rx_data = controller(data);
-                        rx_has_data = true;
+                        rx.enabled = true;
+                        rx.data = pollController(data);
                         bus.interruptSet(7);
                         return;
                 }
-                psx.error('SIO write b ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
             }
         },
         read: {
             h(addr) {
                 switch(addr) {
                     case 0x1044:
-                        return 0b101 | (rx_has_data << 1);
-                    case 0x104a:
-                        return control;
-                    case 0x104e:
-                        return baud;
+                        return 0b101 | (rx.enabled << 1);
                 }
-                psx.error('SIO read h ' + psx.hex(addr));
+                return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
             },
             b(addr) {
                 switch(addr) {
                     case 0x1040:
-                        if (rx_has_data) {
-                            rx_has_data = false;
-                            return rx_data;
+                        if (rx.enabled) {
+                            rx.enabled = false;
+                            return rx.data;
                         }
                         return 0xff;
                 }
-                psx.error('SIO read b ' + psx.hex(addr));
+                return mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
             }
         },
         padListener(code, pushed) {
             if (code == 50) { // Select
-                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_SELECT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_SELECT)); };
+                if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_SELECT))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_SELECT))); };
             }
             if (code == 49) { // Start
-                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_START)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_START)); };
+                if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_START))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_START))); };
             }
             if (code == 38) { // Up
-                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_UP)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_UP)); };
+                if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_UP))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_UP))); };
             }
             if (code == 39) { // cop2d.ub[(6 << 2) + 0]
-                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_RIGHT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_RIGHT)); };
+                if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_RIGHT))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_RIGHT))); };
             }
             if (code == 40) { // Down
-                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_DOWN)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_DOWN)); };
+                if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_DOWN))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_DOWN))); };
             }
             if (code == 37) { // Left
-                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_LEFT)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_LEFT)); };
+                if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_LEFT))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_LEFT))); };
             }
             if (code == 90) { // Z
-                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CIRCLE)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CIRCLE)); };
+                if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_CIRCLE))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_CIRCLE))); };
             }
             if (code == 88) { // X
-                if (pushed) { btnState &= (0xffff ^ (1 << PAD_BTN_CROSS)); } else { btnState |= ~(0xffff ^ (1 << PAD_BTN_CROSS)); };
+                if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_CROSS))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_CROSS))); };
             }
         }
     };
