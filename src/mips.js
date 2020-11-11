@@ -420,7 +420,6 @@ pseudo.CstrMips = function() {
 
         run() {
             suspended = false;
-            requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
 
             while(!suspended) { // And u don`t stop!
                 step(false);
@@ -440,6 +439,8 @@ pseudo.CstrMips = function() {
                     opcodeCount = 0;
                 }
             }
+
+            requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
         },
 
         parseExeHeader(header) {

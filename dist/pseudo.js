@@ -2143,7 +2143,6 @@ pseudo.CstrMips = function() {
         },
         run() {
             suspended = false;
-            requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
             while(!suspended) { // And u don`t stop!
                 step(false);
                 if (opcodeCount >= 100) {
@@ -2161,6 +2160,7 @@ pseudo.CstrMips = function() {
                     opcodeCount = 0;
                 }
             }
+            requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
         },
         parseExeHeader(header) {
             cpu.base[28] = header[2 + 3];
@@ -3046,22 +3046,29 @@ pseudo.CstrTexCache = function() {
     const TEX_08BIT   = 1;
     const TEX_15BIT   = 2;
     const TEX_15BIT_2 = 3;
-    // Maximum texture cache
-    const TCACHE_MAX = 384;
-    const TEX_SIZE   = 256;
+    const TEX_SIZE    = 256;
     let cache = [];
-    let index;
     let tex;
+    function addCachedTexture(uid, tp, clut) {
+        return cache[uid] = {
+            pos: {
+                 w: ((tp & 15) * 64),
+                 h: ((tp >>> 4) & 1) * 256,
+                cc: ((clut & 0x7fff) * 16)
+            }
+        };
+    }
+    function resetCache() {
+        for (const tc in cache) {
+            if (tc.tex) {
+                ctx.deleteTexture(tc.tex);
+            }
+        }
+        cache = [];
+    }
     // Exposed class functions/variables
     return {
         init() {
-            for (let i = 0; i < TCACHE_MAX; i++) {
-                cache[i] = {
-                    pos: { // Mem position of texture and color lookup table
-                    },
-                    tex: undefined
-                };
-            }
             tex = { // Texture and color lookup table buffer
                 bfr: union(TEX_SIZE * TEX_SIZE * 4),
                 cc : new Uint32Array(256),
@@ -3072,32 +3079,19 @@ pseudo.CstrTexCache = function() {
             const white = ctx.createTexture();
             ctx.bindTexture(ctx.TEXTURE_2D, white);
             ctx.texImage2D (ctx.TEXTURE_2D, 0, ctx.RGBA, 1, 1, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
-            // Reset texture cache
-            for (const tc of cache) {
-                if (tc.tex) {
-                    ctx.deleteTexture(tc.tex);
-                }
-                tc.uid = -1;
-            }
-            index = 0;
+            resetCache();
         },
         pixel2texel(p) {
             return (((p ? 255 : 0) & 0xff) << 24) | ((( (p >>> 10) << 3) & 0xff) << 16) | ((( (p >>> 5) << 3) & 0xff) << 8) | (( p << 3) & 0xff);
         },
         fetchTexture(ctx, tp, clut) {
             const uid = (clut << 16) | tp;
-            for (const tc of cache) {
-                if (tc.uid === uid) { // Found cached texture
-                    ctx.bindTexture(ctx.TEXTURE_2D, tc.tex);
-                    return;
-                }
+            if (cache[uid]) { // Found cached texture
+                ctx.bindTexture(ctx.TEXTURE_2D, cache[uid].tex);
+                return;
             }
-            // Basic info
-            const tc  = cache[index];
-            tc.pos.w  = (tp & 15) * 64;
-            tc.pos.h  = ((tp >>> 4) & 1) * 256;
-            tc.pos.cc = (clut & 0x7fff) * 16;
             // Reset
+            const tc = addCachedTexture(uid, tp, clut);
             tex.bfr.ub.fill(0);
             tex.cc.fill(0);
             switch((tp >>> 7) & 3) {
@@ -3148,17 +3142,12 @@ pseudo.CstrTexCache = function() {
             ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
             ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
             ctx.texImage2D   (ctx.TEXTURE_2D, 0, ctx.RGBA, TEX_SIZE, TEX_SIZE, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, tex.bfr.ub);
-            // Advance cache counter
-            tc.uid = uid;
-            index  = (index + 1) & (TCACHE_MAX - 1);
         },
         invalidate(iX, iY, iW, iH) {
-            for (const tc of cache) {
-                //if (((tc.pos.w + 255) >= iX) && ((tc.pos.h + 255) >= iY) && ((tc.pos.w) <= iW) && ((tc.pos.h) <= iH)) {
-                    tc.uid = -1;
-                    //continue;
-                //}
-            }
+            // if (((tc.pos.w + 255) >= iX) && ((tc.pos.h + 255) >= iY) && ((tc.pos.w) <= iW) && ((tc.pos.h) <= iH)) {
+            //     tc.uid = -1;
+            // }
+            resetCache();
         }
     };
 };
