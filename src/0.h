@@ -160,7 +160,7 @@ function union(size) {
     varying vec2 v_texCoord; \
     \
     void main() { \
-        gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1); \
+        gl_Position = vec4(((a_position / u_resolution) - 0.5) * vec2(2, -2), 0, 1); \
         v_color = a_color; \
         v_texCoord = a_texCoord; \
     }'

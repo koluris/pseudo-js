@@ -2398,7 +2398,7 @@ pseudo.CstrRender = function() {
             disableTexture();
         }
         ctx.enable(ctx.SCISSOR_TEST);
-        ctx.scissor(drawArea.start.h, drawArea.start.v, drawArea.end.h, drawArea.end.v);
+        ctx.scissor(drawArea.start.h * 2, drawArea.start.v * 2, drawArea.end.h * 2, drawArea.end.v * 2);
         ctx.drawArrays(mode, 0, size);
         ctx.disable(ctx.SCISSOR_TEST);
     }
@@ -2407,9 +2407,7 @@ pseudo.CstrRender = function() {
         const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[4] >> 0) & 0xffff, v: (data[4] >> 16) & 0xffff, }, ] };
         let color  = [];
         let vertex = [];
-        
         const opaque = composeBlend(p.cr[0].n);
-        
         for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[0].a,
@@ -2429,9 +2427,7 @@ pseudo.CstrRender = function() {
         
         let color  = [];
         let vertex = [];
-        
         const opaque = composeBlend(p.cr[0].n);
-        
         for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[i].a,
@@ -2452,10 +2448,8 @@ pseudo.CstrRender = function() {
         let color   = [];
         let vertex  = [];
         let texture = [];
-        
         blend = (p.tp[1] >>> 5) & 3;
         const opaque = composeBlend(p.cr[0].n);
-        
         for (let i = 0; i < size; i++) {
             if (p.cr[0].n & 1) {
                 color.push(
@@ -2491,10 +2485,8 @@ pseudo.CstrRender = function() {
         let color   = [];
         let vertex  = [];
         let texture = [];
-        
         blend = (p.tp[1] >>> 5) & 3;
         const opaque = composeBlend(p.cr[0].n);
-        
         for (let i = 0; i < size; i++) {
             color.push(
                 p.cr[i].a,
@@ -2519,9 +2511,7 @@ pseudo.CstrRender = function() {
         const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, ] };
         let color  = [];
         let vertex = [];
-        
         const opaque = composeBlend(p.cr[0].n);
-        
         if (size) {
             p.vx[1].h = size;
             p.vx[1].v = size;
@@ -2548,9 +2538,7 @@ pseudo.CstrRender = function() {
         let color   = [];
         let vertex  = [];
         let texture = [];
-        
         const opaque = composeBlend(p.cr[0].n);
-        
         if (size) {
             p.vx[1].h = size;
             p.vx[1].v = size;
@@ -2598,7 +2586,7 @@ pseudo.CstrRender = function() {
             ctx.clearColor(21 / 255.0, 21 / 255.0, 21 / 255.0, 1.0);
             // Shaders
             const func = ctx.createProgram();
-            ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '     attribute vec2 a_position;     attribute vec4 a_color;     attribute vec2 a_texCoord;     uniform vec2 u_resolution;     varying vec4 v_color;     varying vec2 v_texCoord;         void main() {         gl_Position = vec4(((a_position / u_resolution) - 1.0) * vec2(1, -1), 0, 1);         v_color = a_color;         v_texCoord = a_texCoord;     }'));
+            ctx.attachShader(func, createShader(ctx.  VERTEX_SHADER, '     attribute vec2 a_position;     attribute vec4 a_color;     attribute vec2 a_texCoord;     uniform vec2 u_resolution;     varying vec4 v_color;     varying vec2 v_texCoord;         void main() {         gl_Position = vec4(((a_position / u_resolution) - 0.5) * vec2(2, -2), 0, 1);         v_color = a_color;         v_texCoord = a_texCoord;     }'));
             ctx.attachShader(func, createShader(ctx.FRAGMENT_SHADER, '     precision mediump float;     uniform sampler2D u_texture;     uniform bool u_enabled;     varying vec4 v_color;     varying vec2 v_texCoord;         void main() {         if (u_enabled) {             gl_FragColor = texture2D(u_texture, v_texCoord) * (v_color * vec4(2.0, 2.0, 2.0, 1));         }         else {             gl_FragColor = v_color;         }     }'));
             ctx.linkProgram(func);
             ctx.getProgramParameter(func, ctx.LINK_STATUS);
@@ -2656,19 +2644,19 @@ pseudo.CstrRender = function() {
             if (data.w === res.w && data.h === res.h) {
                 return;
             }
-    
             // Check if we have a valid resolution
             if (data.w > 0 && data.h > 0) {
                 // Store valid resolution
                 res.w = data.w;
                 res.h = data.h;
-              
-                //ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-                //ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
-                ctx.uniform2f(attrib._r, res.w / 2, res.h / 2);
-                ctx.viewport(0, 0, 640, 480);
+                if (1) {
+                    ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
+                }
+                else {
+                    ctx.viewport(0, 0, 640, 480);
+                }
+                ctx.uniform2f(attrib._r, res.w, res.h);
                 render.swapBuffers(true);
-    
                 divRes.innerText = res.w + ' x ' + res.h;
             }
         },
@@ -2783,22 +2771,12 @@ pseudo.CstrRender = function() {
                 case 0xe2: // TEXTURE WINDOW
                     return;
                 case 0xe3: // DRAW AREA START
-                    {
-                        const pane = {
-                            h: data[0] & 0x3ff, v: (data[0] >> 10) & 0x1ff
-                        };
-                        drawArea.start.h = drawAreaCalc(pane.h);
-                        drawArea.start.v = drawAreaCalc(pane.v);
-                    }
+                    drawArea.start.h = (data[0] & 0x3ff);
+                    drawArea.start.v = (data[0] >> 10) & 0x1ff;
                     return;
                 case 0xe4: // DRAW AREA END
-                    {
-                        const pane = {
-                            h: data[0] & 0x3ff, v: (data[0] >> 10) & 0x1ff
-                        };
-                        drawArea.end.h = drawAreaCalc(pane.h);
-                        drawArea.end.v = drawAreaCalc(pane.v);
-                    }
+                    drawArea.end.h = (data[0] & 0x3ff);
+                    drawArea.end.v = (data[0] >> 10) & 0x1ff;
                     return;
                 case 0xe5: // DRAW OFFSET
                     ofs.h = (((data[0]) << 0 >> 0) << 21) >> 21;
