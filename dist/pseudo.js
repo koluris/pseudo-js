@@ -2174,9 +2174,9 @@ pseudo.CstrMips = function() {
             },
             check() {
                 if (ld.set) {
-                    if (++ld.set === 3) {
-                        cpu.base[ld.target] = ld.data;
+                    if (ld.set++ === 1) {
                         ld.set = 0;
+                        cpu.base[ld.target] = ld.data;
                     }
                 }
             },
