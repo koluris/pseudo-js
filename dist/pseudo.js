@@ -2846,32 +2846,24 @@ pseudo.CstrSerial = function() {
     const PAD_BTN_CIRCLE   = 13;
     const PAD_BTN_CROSS    = 14;
     const PAD_BTN_SQUARE   = 15;
-    let rx, btnState, index;
+    let rx, btnState, index, bfr = [];
     function pollController(data) {
         switch(index) {
             case 0:
                 if (data != 0x01) {
                     return 0xff;
                 }
-                index = 1;
-                return 0x00;
+                break;
             case 1:
                 if (data != 0x42) {
                     return 0xff;
                 }
-                index = 2;
-                return 0x41;
-            case 2:
-                index = 3;
-                return 0x5a;
-            case 3:
-                index = 4;
-                return btnState & 0xff;
-            case 4:
-                index = 0;
-                return btnState >>> 8;
+                break;
         }
-        return 0xff;
+        rx.data = bfr[index];
+        if (++index === 5) {
+            index = 0;
+        }
     }
     return {
         reset() {
@@ -2881,6 +2873,11 @@ pseudo.CstrSerial = function() {
             };
             btnState = 0xffff;
             index    = 0;
+            bfr[0] = 0xff;
+            bfr[1] = 0x41;
+            bfr[2] = 0x5a;
+            bfr[3] = 0xff;
+            bfr[4] = 0xff;
         },
         write: {
             h(addr, data) {
@@ -2890,7 +2887,7 @@ pseudo.CstrSerial = function() {
                 switch(addr) {
                     case 0x1040:
                         rx.enabled = true;
-                        rx.data = pollController(data);
+                        pollController(data);
                         bus.interruptSet(7);
                         return;
                 }
@@ -2942,6 +2939,8 @@ pseudo.CstrSerial = function() {
             if (code == 88) { // X
                 if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_CROSS))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_CROSS))); };
             }
+            bfr[3] = btnState & 0xff;
+            bfr[4] = btnState >>> 8;
         }
     };
 };
