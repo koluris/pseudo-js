@@ -24,26 +24,17 @@ pseudo.CstrSerial = function() {
     const PAD_BTN_CROSS    = 14;
     const PAD_BTN_SQUARE   = 15;
 
-    let rx, btnState, index, bfr = [];
+    let rx, btnState, index;
+    let bfr = new UintBcap(5);
 
     function pollController(data) {
-        switch(index) {
-            case 0:
-                if (data != 0x01) {
-                    return 0xff;
-                }
-                break;
-
-            case 1:
-                if (data != 0x42) {
-                    return 0xff;
-                }
-                break;
+        if ((index == 0 && data != 0x01) || (index == 1 && data != 0x42)) {
+            return 0xff;
         }
 
         rx.data = bfr[index];
 
-        if (++index === 5) {
+        if (++index === bfr.bSize) {
             index = 0;
         }
     }
