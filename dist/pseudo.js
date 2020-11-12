@@ -50,6 +50,13 @@ pseudo.CstrAudio = function() {
             }
         }
     }
+    function voiceOff(data) {
+        for (let i = 0; i < SPU_MAX_CHAN; i++) {
+            if (data & (1 << i)) {
+                spuVoices[i].active = false;
+            }
+        }
+    }
     function decodeStream() {
         sbuf.fill(0);
         for (let n = 0; n < SPU_MAX_CHAN; n++) {
@@ -191,7 +198,12 @@ pseudo.CstrAudio = function() {
                 case (addr == 0x1d8a): // Sound On 2
                     voiceOn(data << 16);
                     return;
-                    
+                case (addr == 0x1d8c): // Sound Off 1
+                    voiceOff(data);
+                    return;
+                case (addr == 0x1d8e): // Sound Off 2
+                    voiceOff(data << 16);
+                    return;
                 case (addr == 0x1da6): // Transfer Address
                     spuAddr = data << 3;
                     return;
@@ -206,8 +218,8 @@ pseudo.CstrAudio = function() {
                 case (addr == 0x1d82): // Volume R
                 case (addr == 0x1d84): // Reverb Volume L
                 case (addr == 0x1d86): // Reverb Volume R
-                case (addr == 0x1d8c): // Sound Off 1
-                case (addr == 0x1d8e): // Sound Off 2
+                // case (addr == 0x1d8c): // Sound Off 1
+                // case (addr == 0x1d8e): // Sound Off 2
                 case (addr == 0x1d90): // FM Mode On 1
                 case (addr == 0x1d92): // FM Mode On 2
                 case (addr == 0x1d94): // Noise Mode On 1
@@ -349,10 +361,10 @@ pseudo.CstrBus = function() {
         target: 1
     }, {
         code: 7,
-        target: 8
+        target: 4
     }, {
         code: 8,
-        target: 8
+        target: 4
     }, {
         code: 9,
         target: 1
@@ -421,16 +433,16 @@ pseudo.CstrCdrom = function() {
     let kbRead;
     const param = {
         data: new Uint8Array(8),
-        p: undefined,
-        c: undefined
+           p: undefined,
+           c: undefined
     };
     const res = {
         data: new Uint8Array(8),
-        tn: new Uint8Array(6),
-        td: new Uint8Array(4),
-        p: undefined,
-        c: undefined,
-        ok: undefined
+          tn: new Uint8Array(6),
+          td: new Uint8Array(4),
+           p: undefined,
+           c: undefined,
+          ok: undefined
     };
     const sector = {
         data: new Uint8Array(4),
@@ -438,20 +450,20 @@ pseudo.CstrCdrom = function() {
     };
     const transfer = {
         data: new Uint8Array(2352),
-        p: 0
+           p: 0
     };
     function resetParam(prm) {
         prm.data.fill(0);
         prm.p = 0;
         prm.c = 0;
     }
-    function resetRes(rrs) {
-        rrs.data.fill(0);
-        rrs.tn.fill(0);
-        rrs.td.fill(0);
-        rrs.p = 0;
-        rrs.c = 0;
-        rrs.ok = 0;
+    function resetRes(temp) {
+        temp.data.fill(0);
+        temp.  tn.fill(0);
+        temp.  td.fill(0);
+        temp.p  = 0;
+        temp.c  = 0;
+        temp.ok = 0;
     }
     function resetSect(sect) {
         sect.data.fill(0);
@@ -1484,7 +1496,7 @@ pseudo.CstrCounters = function() {
                 mem.hwr.uh[((0x1100 + (2 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = temp;
             }
             // Graphics
-            vbk += threshold * 1;
+            vbk += threshold * 2;
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
                 bus.interruptSet(0);
                  vs.redraw();
@@ -1958,15 +1970,14 @@ pseudo.CstrMips = function() {
     ];
     // Cache for expensive calculation
     const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
-    let ptr, suspended, opcodeCount, requestAF;
+    let ptr, suspended, requestAF;
     let ld;
     // Base CPU stepper
     function step(inslot) {
         cpu.base[0] = 0; // As weird as this seems, it is needed
         const code  = ptr[(( cpu.base[32]) & (ptr.byteLength - 1)) >>> 2];
-        opcodeCount++;
         cpu.base[32] += 4;
-        cpu.load.check();
+        //cpu.load.check();
         switch(((code >>> 26) & 0x3f)) {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
@@ -2197,13 +2208,13 @@ pseudo.CstrMips = function() {
                 mem.write.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
                 return;
             case 42: // SWL
-                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); mem.write.w(temp & (~(3)), (cpu.base[((code >>> 16) & 0x1f)] >>> shift[ 2][temp & 3]) | (mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][temp & 3])); };
+                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); mem.write.w(temp & (~(3)), (cpu.base[((code >>> 16) & 0x1f)] >>> shift[ 2][temp & 3]) | (mem.read.w(temp & (~(3))) & mask[ 2][temp & 3])); };
                 return;
             case 43: // SW
                 mem.write.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
                 return;
             case 46: // SWR
-                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); mem.write.w(temp & (~(3)), (cpu.base[((code >>> 16) & 0x1f)] << shift[ 3][temp & 3]) | (mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][temp & 3])); };
+                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); mem.write.w(temp & (~(3)), (cpu.base[((code >>> 16) & 0x1f)] << shift[ 3][temp & 3]) | (mem.read.w(temp & (~(3))) & mask[ 3][temp & 3])); };
                 return;
             case 50: // LWC2
                 cop2.opcodeMTC2(((code >>> 16) & 0x1f), mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
@@ -2256,22 +2267,23 @@ pseudo.CstrMips = function() {
         },
         load: {
             set(target, data) {
-                ld.set  = 1;
-                ld.target = target;
-                ld.data = data;
+                //ld.set  = 1;
+                //ld.target = target;
+                //ld.data = data;
+                cpu.base[target] = data;
             },
             check() {
-                if (ld.set) {
-                    if (ld.set++ === 1) {
-                        ld.set = 0;
-                        cpu.base[ld.target] = ld.data;
-                    }
-                }
+                //if (ld.set) {
+                //    if (ld.set++ === 1) {
+                //        ld.set = 0;
+                //        cpu.base[ld.target] = ld.data;
+                //    }
+                //}
             },
             clear(target) {
-                if (ld.set && ld.target === target) {
-                    ld.set = 0;
-                }
+                //if (ld.set && ld.target === target) {
+                //    ld.set = 0;
+                //}
             }
         },
         bootstrap() {
@@ -2286,23 +2298,21 @@ pseudo.CstrMips = function() {
         run() {
             suspended = false;
             while(!suspended) { // And u don`t stop!
-                step(false);
-                if (opcodeCount >= 100) {
-                    // Rootcounters, interrupts
-                    rootcnt.update(64);
-                      cdrom.update();
-                        bus.update();
-    
-                    // Exceptions
-                    if (mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
-                        if ((cpu.copr[12] & 0x401) === 0x401) {
-                            exception(0x400, false);
-                        }
+                for (let i = 0; i < 128; i++) {
+                    step(false);
+                }
+                // Rootcounters, interrupts
+                  cdrom.update();
+                rootcnt.update(128);
+                    bus.update();
+                // Exceptions
+                if (mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
+                    if ((cpu.copr[12] & 0x401) === 0x401) {
+                        exception(0x400, false);
                     }
-                    opcodeCount = 0;
                 }
             }
-            requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
+            requestAF = requestAnimationFrame(cpu.run); //setTimeout(cpu.run, 0);
         },
         parseExeHeader(header) {
             cpu.base[28] = header[2 + 3];
@@ -2314,8 +2324,8 @@ pseudo.CstrMips = function() {
             suspended = true;
         },
         pause() {
-            //cancelAnimationFrame(requestAF);
-            clearTimeout(requestAF);
+            cancelAnimationFrame(requestAF);
+            //clearTimeout(requestAF);
             requestAF = undefined;
             suspended = true;
         },

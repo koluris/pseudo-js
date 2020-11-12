@@ -40,17 +40,17 @@ pseudo.CstrCdrom = function() {
 
     const param = {
         data: new UintBcap(8),
-        p: undefined,
-        c: undefined
+           p: undefined,
+           c: undefined
     };
 
     const res = {
         data: new UintBcap(8),
-        tn: new UintBcap(6),
-        td: new UintBcap(4),
-        p: undefined,
-        c: undefined,
-        ok: undefined
+          tn: new UintBcap(6),
+          td: new UintBcap(4),
+           p: undefined,
+           c: undefined,
+          ok: undefined
     };
 
     const sector = {
@@ -60,7 +60,7 @@ pseudo.CstrCdrom = function() {
 
     const transfer = {
         data: new UintBcap(UDF_FRAMESIZERAW),
-        p: 0
+           p: 0
     };
 
     function resetParam(prm) {
@@ -69,13 +69,13 @@ pseudo.CstrCdrom = function() {
         prm.c = 0;
     }
 
-    function resetRes(rrs) {
-        rrs.data.fill(0);
-        rrs.tn.fill(0);
-        rrs.td.fill(0);
-        rrs.p = 0;
-        rrs.c = 0;
-        rrs.ok = 0;
+    function resetRes(temp) {
+        temp.data.fill(0);
+        temp.  tn.fill(0);
+        temp.  td.fill(0);
+        temp.p  = 0;
+        temp.c  = 0;
+        temp.ok = 0;
     }
 
     function resetSect(sect) {

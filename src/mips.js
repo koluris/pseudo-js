@@ -52,7 +52,7 @@
 #define opcodeSWx(o, d) \
     { \
         const temp = ob; \
-        mem.write.w(temp & (~(3)), (cpu.base[rt] o shift[d][temp & 3]) | (mem.read.w(ob & (~(3))) & mask[d][temp & 3])); \
+        mem.write.w(temp & (~(3)), (cpu.base[rt] o shift[d][temp & 3]) | (mem.read.w(temp & (~(3))) & mask[d][temp & 3])); \
     }
 
 pseudo.CstrMips = function() {
@@ -73,17 +73,16 @@ pseudo.CstrMips = function() {
 
     // Cache for expensive calculation
     const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
-    let ptr, suspended, opcodeCount, requestAF;
+    let ptr, suspended, requestAF;
     let ld;
 
     // Base CPU stepper
     function step(inslot) {
         cpu.base[0] = 0; // As weird as this seems, it is needed
         const code  = directMemW(ptr, pc);
-        opcodeCount++;
         pc += 4;
 
-        cpu.load.check();
+        //cpu.load.check();
 
         switch(opcode) {
             case 0: // SPECIAL
@@ -449,24 +448,26 @@ pseudo.CstrMips = function() {
 
         load: {
             set(dest, data) {
-                ld.set  = 1;
-                ld.dest = dest;
-                ld.data = data;
+                //ld.set  = 1;
+                //ld.dest = dest;
+                //ld.data = data;
+
+                cpu.base[dest] = data;
             },
 
             check() {
-                if (ld.set) {
-                    if (ld.set++ === 1) {
-                        ld.set = 0;
-                        cpu.base[ld.dest] = ld.data;
-                    }
-                }
+                //if (ld.set) {
+                //    if (ld.set++ === 1) {
+                //        ld.set = 0;
+                //        cpu.base[ld.dest] = ld.data;
+                //    }
+                //}
             },
 
             clear(dest) {
-                if (ld.set && ld.dest === dest) {
-                    ld.set = 0;
-                }
+                //if (ld.set && ld.dest === dest) {
+                //    ld.set = 0;
+                //}
             }
         },
 
@@ -485,24 +486,23 @@ pseudo.CstrMips = function() {
             suspended = false;
 
             while(!suspended) { // And u don`t stop!
-                step(false);
+                for (let i = 0; i < 128; i++) {
+                    step(false);
+                }
 
-                if (opcodeCount >= 100) {
-                    // Rootcounters, interrupts
-                    rootcnt.update(64);
-                      cdrom.update();
-                        bus.update();
-    
-                    // Exceptions
-                    if (data32 & mask32) {
-                        if ((cpu.copr[12] & 0x401) === 0x401) {
-                            exception(0x400, false);
-                        }
+                // Rootcounters, interrupts
+                  cdrom.update();
+                rootcnt.update(128);
+                    bus.update();
+
+                // Exceptions
+                if (data32 & mask32) {
+                    if ((cpu.copr[12] & 0x401) === 0x401) {
+                        exception(0x400, false);
                     }
-                    opcodeCount = 0;
                 }
             }
-            requestAF = setTimeout(cpu.run, 0); //requestAnimationFrame(cpu.run);
+            requestAF = requestAnimationFrame(cpu.run); //setTimeout(cpu.run, 0);
         },
 
         parseExeHeader(header) {
@@ -517,8 +517,8 @@ pseudo.CstrMips = function() {
         },
 
         pause() {
-            //cancelAnimationFrame(requestAF);
-            clearTimeout(requestAF);
+            cancelAnimationFrame(requestAF);
+            //clearTimeout(requestAF);
             requestAF = undefined;
             suspended = true;
         },

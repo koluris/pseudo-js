@@ -58,6 +58,14 @@ pseudo.CstrAudio = function() {
         }
     }
 
+    function voiceOff(data) {
+        for (let i = 0; i < SPU_MAX_CHAN; i++) {
+            if (data & (1 << i)) {
+                spuVoices[i].active = false;
+            }
+        }
+    }
+
     function decodeStream() {
         sbuf.fill(0);
 
@@ -219,7 +227,15 @@ pseudo.CstrAudio = function() {
                 case (addr == 0x1d8a): // Sound On 2
                     voiceOn(data << 16);
                     return;
-                    
+
+                case (addr == 0x1d8c): // Sound Off 1
+                    voiceOff(data);
+                    return;
+
+                case (addr == 0x1d8e): // Sound Off 2
+                    voiceOff(data << 16);
+                    return;
+
                 case (addr == 0x1da6): // Transfer Address
                     spuAddr = data << 3;
                     return;
@@ -235,8 +251,8 @@ pseudo.CstrAudio = function() {
                 case (addr == 0x1d82): // Volume R
                 case (addr == 0x1d84): // Reverb Volume L
                 case (addr == 0x1d86): // Reverb Volume R
-                case (addr == 0x1d8c): // Sound Off 1
-                case (addr == 0x1d8e): // Sound Off 2
+                // case (addr == 0x1d8c): // Sound Off 1
+                // case (addr == 0x1d8e): // Sound Off 2
                 case (addr == 0x1d90): // FM Mode On 1
                 case (addr == 0x1d92): // FM Mode On 2
                 case (addr == 0x1d94): // Noise Mode On 1

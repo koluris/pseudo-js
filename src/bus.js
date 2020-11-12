@@ -29,10 +29,10 @@ pseudo.CstrBus = function() {
         dest: 1
     }, {
         code: IRQ_SIO0,
-        dest: 8
+        dest: 4
     }, {
         code: IRQ_SIO1,
-        dest: 8
+        dest: 4
     }, {
         code: IRQ_SPU,
         dest: 1

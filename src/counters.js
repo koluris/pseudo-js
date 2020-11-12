@@ -87,7 +87,7 @@ pseudo.CstrCounters = function() {
             }
 
             // Graphics
-            vbk += threshold * 1;
+            vbk += threshold * 2;
 
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
                 bus.interruptSet(IRQ_VBLANK);
