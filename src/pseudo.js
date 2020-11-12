@@ -107,8 +107,10 @@ pseudo.CstrMain = function() {
                 if (id === 'CD001') {
                     reset();
                     iso = file;
-                    cpu.base[32] = cpu.base[31];
-                    cpu.setpc(cpu.base[32]);
+                    if (0) { // Enable to skip BIOS boot
+                        cpu.base[32] = cpu.base[31];
+                        cpu.setpc(cpu.base[32]);
+                    }
                     cpu.run();
                 }
             });
@@ -177,7 +179,7 @@ pseudo.CstrMain = function() {
         },
 
         discExists() {
-            return iso !== undefined;
+            return iso != undefined;
         }
     };
 };

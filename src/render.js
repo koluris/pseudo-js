@@ -208,10 +208,10 @@ pseudo.CstrRender = function() {
             disableTexture();
         }
 
-        ctx.enable(ctx.SCISSOR_TEST);
-        ctx.scissor(drawArea.start.h * 2, drawArea.start.v * 2, drawArea.end.h * 2, drawArea.end.v * 2);
+        //ctx.enable(ctx.SCISSOR_TEST);
+        //ctx.scissor(drawArea.start.h * 2, drawArea.start.v * 2, drawArea.end.h * 2, drawArea.end.v * 2);
         ctx.drawVertices(mode, 0, size);
-        ctx.disable(ctx.SCISSOR_TEST);
+        //ctx.disable(ctx.SCISSOR_TEST);
     }
 
     /***

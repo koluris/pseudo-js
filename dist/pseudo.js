@@ -408,563 +408,556 @@ pseudo.CstrBus = function() {
 };
 const bus = new pseudo.CstrBus();
 pseudo.CstrCdrom = function() {
-  const CD_STAT_NO_INTR     = 0;
-  const CD_STAT_DATA_READY  = 1;
-  const CD_STAT_COMPLETE    = 2;
-  const CD_STAT_ACKNOWLEDGE = 3;
-  const CD_STAT_DISK_ERROR  = 5;
-  // HTML elements
-  let divBlink, divKb;
-  let ctrl, mode, stat, statP, re2;
-  let occupied, reads, seeked, readed;
-  let irq, cdint, cdreadint;
-  let kbRead;
-  const param = {
-    data: new Uint8Array(8),
-    p: undefined,
-    c: undefined
-  };
-  const res = {
-    data: new Uint8Array(8),
-    tn: new Uint8Array(6),
-    td: new Uint8Array(4),
-    p: undefined,
-    c: undefined,
-    ok: undefined
-  };
-  const sector = {
-    data: new Uint8Array(4),
-    prev: new Uint8Array(4)
-  };
-  const transfer = {
-    data: new Uint8Array(2352),
-    p: 0
-  };
-  function resetParam(prm) {
-    prm.data.fill(0);
-    prm.p = 0;
-    prm.c = 0;
-  }
-  function resetRes(rrs) {
-    rrs.data.fill(0);
-    rrs.tn.fill(0);
-    rrs.td.fill(0);
-    rrs.p = 0;
-    rrs.c = 0;
-    rrs.ok = 0;
-  }
-  function resetSect(sect) {
-    sect.data.fill(0);
-    sect.prev.fill(0);
-  }
-  function trackRead() {
-    sector.prev[0] = (parseInt((sector.data[0]) / 10) * 16 + (sector.data[0]) % 10);
-    sector.prev[1] = (parseInt((sector.data[1]) / 10) * 16 + (sector.data[1]) % 10);
-    sector.prev[2] = (parseInt((sector.data[2]) / 10) * 16 + (sector.data[2]) % 10);
-    psx.trackRead(sector.prev);
-  }
-  function interruptQueue(code) {
-    irq = code;
-    if (!stat) {
-      cdint = 1
+    const CD_STAT_NO_INTR     = 0;
+    const CD_STAT_DATA_READY  = 1;
+    const CD_STAT_COMPLETE    = 2;
+    const CD_STAT_ACKNOWLEDGE = 3;
+    const CD_STAT_DISK_ERROR  = 5;
+    // HTML elements
+    let divBlink, divKb;
+    let ctrl, mode, stat, statP, re2, file, channel;
+    let occupied, reads, seeked, readed;
+    let irq, cdint, cdreadint;
+    let kbRead;
+    const param = {
+        data: new Uint8Array(8),
+        p: undefined,
+        c: undefined
+    };
+    const res = {
+        data: new Uint8Array(8),
+        tn: new Uint8Array(6),
+        td: new Uint8Array(4),
+        p: undefined,
+        c: undefined,
+        ok: undefined
+    };
+    const sector = {
+        data: new Uint8Array(4),
+        prev: new Uint8Array(4)
+    };
+    const transfer = {
+        data: new Uint8Array(2352),
+        p: 0
+    };
+    function resetParam(prm) {
+        prm.data.fill(0);
+        prm.p = 0;
+        prm.c = 0;
     }
-  }
-  function interrupt() {
-    const prevIrq = irq;
-    if (stat) {
-      cdint = 1
-      return;
+    function resetRes(rrs) {
+        rrs.data.fill(0);
+        rrs.tn.fill(0);
+        rrs.td.fill(0);
+        rrs.p = 0;
+        rrs.c = 0;
+        rrs.ok = 0;
     }
-    irq = 0xff;
-    ctrl &= (~(0x80));
-    switch(prevIrq) {
-      case  1: // CdlNop
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        break;
-      case  2: // CdlSetloc
-      case 11: // CdlMute
-      case 12: // CdlDemute
-      case 13: // CdlSetfilter
-      case 14: // CdlSetmode
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        break;
-      case  3: // CdlStart
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        statP |= 0x80;
-        break;
-      case  6: // CdlReadN
-          if (!reads) {
+    function resetSect(sect) {
+        sect.data.fill(0);
+        sect.prev.fill(0);
+    }
+    function trackRead() {
+        sector.prev[0] = (parseInt((sector.data[0]) / 10) * 16 + (sector.data[0]) % 10);
+        sector.prev[1] = (parseInt((sector.data[1]) / 10) * 16 + (sector.data[1]) % 10);
+        sector.prev[2] = (parseInt((sector.data[2]) / 10) * 16 + (sector.data[2]) % 10);
+        psx.trackRead(sector.prev);
+    }
+    function interruptQueue(code) {
+        irq = code;
+        if (!stat) {
+            cdint = 1
+        }
+    }
+    function interrupt() {
+        const prevIrq = irq;
+        if (stat) {
+            cdint = 1
             return;
-          }
-          res.p = 0; res.c = 1; res.ok = 1;
-          stat = CD_STAT_ACKNOWLEDGE;
-          statP |= 0x02;
-          res.data[0] = statP;
-          statP |= 0x20;
-  
-          if (!seeked) {
-            seeked = 1;
-            statP |= 0x40;
-          }
-          cdreadint = 1
-          break;
-      case  7: // CdlIdle
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_COMPLETE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        break;
-      case  8: // CdlStop
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_COMPLETE;
-        statP &= (~(0x2));
-        res.data[0] = statP;
-        break;
-      case  9: // CdlPause
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        ctrl |= 0x80;
-        res.data[0] = statP;
-        interruptQueue(prevIrq + 0x20);
-        break;
-      case  9 + 0x20: // CdlPause
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_COMPLETE;
-        statP |= 0x02;
-        statP &= (~(0x20));
-        res.data[0] = statP;
-        break;
-      case 10: // CdlInit
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        interruptQueue(prevIrq + 0x20);
-        break;
-      case 10 + 0x20: // CdlInit
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_COMPLETE;
-        res.data[0] = statP;
-        break;
-      case 15: // CdlGetmode
-        res.p = 0; res.c = 6; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        //res.data[1] = mode;
-        //res.data[2] = file;
-        //res.data[3] = channel;
-        res.data[4] = 0;
-        res.data[5] = 0;
-        break;
-      case 16: // CdlGetlocL
-        res.p = 0; res.c = 8; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        for (let i = 0; i < 8; i++) {
-          res.data[i] = transfer.data[i];
         }
-        break;
-      case 17: // CdlGetlocP
-        res.p = 0; res.c = 8; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        res.data[0] = 1;
-        res.data[1] = 1;
-        res.data[2] = sector.prev[0];
-        res.data[3] = (parseInt(((parseInt((sector.prev[1]) / 16) * 10 + (sector.prev[1]) % 16) - 2) / 10) * 16 + ((parseInt((sector.prev[1]) / 16) * 10 + (sector.prev[1]) % 16) - 2) % 10);
-        res.data[4] = sector.prev[2];
-        res.data[5] = sector.prev[0];
-        res.data[6] = sector.prev[1];
-        res.data[7] = sector.prev[2];
-        break;
-      case 19: // CdlGetTN
-        res.p = 0; res.c = 3; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        res.tn[0] = 1;
-        res.tn[1] = 1;
-        res.data[1] = (parseInt((res.tn[0]) / 10) * 16 + (res.tn[0]) % 10);
-        res.data[2] = (parseInt((res.tn[1]) / 10) * 16 + (res.tn[1]) % 10);
-        break;
-      case 20: // CdlGetTD
-        res.p = 0; res.c = 4; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        res.td[0] = 0;
-        res.td[1] = 2;
-        res.td[2] = 0;
-        res.data[1] = (parseInt((res.td[2]) / 10) * 16 + (res.td[2]) % 10);
-        res.data[2] = (parseInt((res.td[1]) / 10) * 16 + (res.td[1]) % 10);
-        res.data[3] = (parseInt((res.td[0]) / 10) * 16 + (res.td[0]) % 10);
-        break;
-      case 21: // CdlSeekL
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        statP |= 0x40;
-        interruptQueue(prevIrq + 0x20);
-        seeked = 1;
-        break;
-      case 21 + 0x20: // CdlSeekL
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_COMPLETE;
-        statP |= 0x02;
-        statP &= (~(0x40));
-        res.data[0] = statP;
-        break;
-      case 22: // CdlSeekP
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x2;
-        res.data[0] = statP;
-        statP |= 0x40;
-        interruptQueue(prevIrq + 0x20);
-        break;
-      case 22 + 0x20: // CdlSeekP
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_COMPLETE;
-        statP |= 0x2;
-        statP &= (~(0x40));
-        res.data[0] = statP;
-        break;
-        case 25: // CdlTest
-        stat = CD_STAT_ACKNOWLEDGE;
-        switch(param.data[0]) {
-          case 0x04:
-          case 0x05:
-            break;
-          case 0x20:
-            res.p = 0; res.c = 4; res.ok = 1;
-            res.data[0] = 0x98;
-            res.data[1] = 0x06;
-            res.data[2] = 0x10;
-            res.data[3] = 0xc3;
-            break;
-          default:
-            psx.error('CD CdlTest ', psx.hex(param.data[0]));
-            break;
-        }
-        break;
-      case 26: // CdlID
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        interruptQueue(prevIrq + 0x20);
-        break;
-        
-      case 26 + 0x20:
-        res.p = 0; res.c = 8; res.ok = 1;
-        stat = CD_STAT_COMPLETE;
-        res.data[0] = 0x00;
-        res.data[1] = psx.discExists() ? 0x00 : 0x80;
-        res.data[2] = 0x00;
-        res.data[3] = 0x00;
-        res.data[4] = 'S'; // Ehm...
-        res.data[5] = 'C';
-        res.data[6] = 'E';
-        res.data[7] = 'A';
-        break;
-      case 30: // CdlReadToc
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_ACKNOWLEDGE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        interruptQueue(prevIrq + 0x20);
-        break;
-        
-      case 30 + 0x20:
-        res.p = 0; res.c = 1; res.ok = 1;
-        stat = CD_STAT_COMPLETE;
-        statP |= 0x02;
-        res.data[0] = statP;
-        break;
-      default:
-        psx.error('CD prevIrq -> ' + prevIrq);
-        break;
-    }
-    if (stat !== CD_STAT_NO_INTR && re2 !== 0x18) {
-      bus.interruptSet(2);
-    }
-  }
-  function interruptRead() {
-    if (!reads) {
-      return;
-    }
-    if (stat) {
-      cdreadint = 1
-      return;
-    }
-    occupied = 1;
-    res.p = 0; res.c = 1; res.ok = 1;
-    statP |= 0x22;
-    statP &= (~(0x40));
-    res.data[0] = statP;
-    cpu.pause();
-    trackRead();
-    divBlink.css({ 'background':'#f5cb0f' });
-  }
-  // Exposed class functions/variables
-  return {
-    interruptRead2(buf) {
-      transfer.data.set(buf);
-      stat = CD_STAT_DATA_READY;
-      sector.data[2]++;
-      if (sector.data[2] === 75) {
-          sector.data[2] = 0;
-          sector.data[1]++;
-          if (sector.data[1] === 60) {
-              sector.data[1] = 0;
-              sector.data[0]++;
-          }
-      }
-      readed = 0;
-      if ((transfer.data[4 + 2] & 0x80) && (mode & 0x02)) {
-        interruptQueue(9); // CdlPause
-      }
-      else {
-        cdreadint = 1;
-        
-        kbRead += buf.byteLength;
-        divBlink.css({ 'background':'transparent' });
-        divKb.innerText = Math.round(kbRead / 1024) + ' kb';
-      }
-      bus.interruptSet(2);
-      cpu.resume();
-    },
-    init(blink, kb) {
-      // Get HTML elements
-      divBlink = blink;
-      divKb    = kb[0];
-    },
-    reset() {
-      resetParam(param);
-      resetRes(res);
-      resetSect(sector);
-      transfer.data.fill(0);
-      transfer.p = 0;
-      ctrl = stat = statP = re2 = 0;
-      occupied = readed = reads = seeked = muted = 0;
-      irq = cdint = cdreadint = 0;
-      mode = 0;
-      kbRead = 0;
-    },
-    update() {
-      if (cdint) {
-        if (cdint++ >= 16) {
-          cdint = 0;
-          interrupt();
-        }
-      }
-      if (cdreadint) {
-        if (cdreadint++ >= 1024) {
-          cdreadint = 0;
-          interruptRead();
-        }
-      }
-    },
-    scopeW(addr, data) {
-      switch(addr&0xf) {
-        case 0:
-          ctrl = data | (ctrl & (~(0x03)));
-          if (!data) {
-            param.p = 0;
-            param.c = 0;
-            res.ok  = 0;
-          }
-          return;
-        case 1:
-          occupied = 0;
-  
-          if (ctrl & 0x01) {
-            return;
-          }
-      
-          switch(data) {
-            case  7: // CdlIdle
-            case  8: // CdlStop
-            case  9: // CdlPause
-            case 10: // CdlInit
-              if (reads) { reads = 0; };
+        irq = 0xff;
+        ctrl &= (~(0x80));
+        switch(prevIrq) {
             case  1: // CdlNop
-            case  3: // CdlAudio
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                res.data[0] = statP;
+                break;
+            case  2: // CdlSetloc
             case 11: // CdlMute
             case 12: // CdlDemute
-            case 15: // CdlGetmode
-            case 16: // CdlGetlocL
-            case 17: // CdlGetlocP
-            case 19: // CdlGetTN
-            case 20: // CdlGetTD
-            case 21: // CdlSeekL
-            case 22: // CdlSeekP
-            case 25: // CdlTest
-            case 26: // CdlID
-            case 30: // CdlReadToc
-              ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
-              break;
-            case 2: // CdlSetLoc
-              if (reads) { reads = 0; };
-              ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
-              seeked = 0;
-              for (let i = 0; i < 3; i++) {
-                sector.data[i] = (parseInt((param.data[i]) / 16) * 10 + (param.data[i]) % 16);
-              }
-              sector.data[3] = 0;
-              break;
-            case  6: // CdlReadN
-            case 27: // CdlReadS
-              if (reads) { reads = 0; };
-              irq = 0;
-              stat = CD_STAT_NO_INTR;
-              ctrl |= 0x80;
-              reads = 1; readed = 0xff; interruptQueue(6);
-              break;
             case 13: // CdlSetfilter
-              //file    = param.data[0];
-              //channel = param.data[1];
-              ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
-              break;
             case 14: // CdlSetmode
-              mode = param.data[0];
-              ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
-              break;
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                break;
+            case  3: // CdlAudio
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                statP |= 0x80;
+                break;
+            case  6: // CdlReadN
+                if (!reads) {
+                    return;
+                }
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                statP |= 0x20;
+                if (!seeked) {
+                    seeked = 1;
+                    statP |= 0x40;
+                }
+                cdreadint = 1
+                break;
+            case  7: // CdlIdle
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_COMPLETE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                break;
+            case  8: // CdlStop
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_COMPLETE;
+                statP &= (~(0x2));
+                res.data[0] = statP;
+                break;
+            case  9: // CdlPause
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                ctrl |= 0x80;
+                res.data[0] = statP;
+                interruptQueue(prevIrq + 0x20);
+                break;
+            case  9 + 0x20: // CdlPause
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_COMPLETE;
+                statP |= 0x02;
+                statP &= (~(0x20));
+                res.data[0] = statP;
+                break;
+            case 10: // CdlInit
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                interruptQueue(prevIrq + 0x20);
+                break;
+            case 10 + 0x20: // CdlInit
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_COMPLETE;
+                res.data[0] = statP;
+                break;
+            case 15: // CdlGetmode
+                res.p = 0; res.c = 6; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                res.data[1] = mode;
+                res.data[2] = file;
+                res.data[3] = channel;
+                res.data[4] = 0;
+                res.data[5] = 0;
+                break;
+            case 16: // CdlGetlocL
+                res.p = 0; res.c = 8; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                for (let i = 0; i < 8; i++) {
+                  res.data[i] = transfer.data[i];
+                }
+                break;
+            case 17: // CdlGetlocP
+                res.p = 0; res.c = 8; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                res.data[0] = 1;
+                res.data[1] = 1;
+                res.data[2] = sector.prev[0];
+                res.data[3] = (parseInt(((parseInt((sector.prev[1]) / 16) * 10 + (sector.prev[1]) % 16) - 2) / 10) * 16 + ((parseInt((sector.prev[1]) / 16) * 10 + (sector.prev[1]) % 16) - 2) % 10);
+                res.data[4] = sector.prev[2];
+                res.data[5] = sector.prev[0];
+                res.data[6] = sector.prev[1];
+                res.data[7] = sector.prev[2];
+                break;
+            case 19: // CdlGetTN
+                res.p = 0; res.c = 3; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                res.tn[0] = 1;
+                res.tn[1] = 1;
+                res.data[1] = (parseInt((res.tn[0]) / 10) * 16 + (res.tn[0]) % 10);
+                res.data[2] = (parseInt((res.tn[1]) / 10) * 16 + (res.tn[1]) % 10);
+                break;
+            case 20: // CdlGetTD
+                res.p = 0; res.c = 4; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                res.td[0] = 0;
+                res.td[1] = 2;
+                res.td[2] = 0;
+                res.data[1] = (parseInt((res.td[2]) / 10) * 16 + (res.td[2]) % 10);
+                res.data[2] = (parseInt((res.td[1]) / 10) * 16 + (res.td[1]) % 10);
+                res.data[3] = (parseInt((res.td[0]) / 10) * 16 + (res.td[0]) % 10);
+                break;
+            case 21: // CdlSeekL
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                statP |= 0x40;
+                interruptQueue(prevIrq + 0x20);
+                seeked = 1;
+                break;
+            case 21 + 0x20: // CdlSeekL
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_COMPLETE;
+                statP |= 0x02;
+                statP &= (~(0x40));
+                res.data[0] = statP;
+                break;
+            case 22: // CdlSeekP
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x2;
+                res.data[0] = statP;
+                statP |= 0x40;
+                interruptQueue(prevIrq + 0x20);
+                break;
+            case 22 + 0x20: // CdlSeekP
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_COMPLETE;
+                statP |= 0x2;
+                statP &= (~(0x40));
+                res.data[0] = statP;
+                break;
+            case 25: // CdlTest
+                stat = CD_STAT_ACKNOWLEDGE;
+                switch(param.data[0]) {
+                    case 0x04:
+                    case 0x05:
+                        break;
+                    case 0x20:
+                        res.p = 0; res.c = 4; res.ok = 1;
+                        res.data[0] = 0x98;
+                        res.data[1] = 0x06;
+                        res.data[2] = 0x10;
+                        res.data[3] = 0xc3;
+                        break;
+                    default:
+                        psx.error('CD CdlTest ', psx.hex(param.data[0]));
+                        break;
+                }
+                break;
+            case 26: // CdlID
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                interruptQueue(prevIrq + 0x20);
+                break;
+        
+            case 26 + 0x20:
+                res.p = 0; res.c = 8; res.ok = 1;
+                stat = CD_STAT_COMPLETE;
+                res.data[0] = 0x00;
+                res.data[1] = psx.discExists() ? 0x00 : 0x80;
+                res.data[2] = 0x00;
+                res.data[3] = 0x00;
+                res.data[4] = 'S'; // Ehm...
+                res.data[5] = 'C';
+                res.data[6] = 'E';
+                res.data[7] = 'A';
+                break;
+            case 30: // CdlReadToc
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_ACKNOWLEDGE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                interruptQueue(prevIrq + 0x20);
+                break;
+        
+            case 30 + 0x20:
+                res.p = 0; res.c = 1; res.ok = 1;
+                stat = CD_STAT_COMPLETE;
+                statP |= 0x02;
+                res.data[0] = statP;
+                break;
             default:
-              psx.error('CD W 0x1801 data -> ' + data);
-              break;
-          }
-          if (stat !== CD_STAT_NO_INTR) {
+                psx.error('CD prevIrq -> ' + prevIrq);
+                break;
+        }
+        if (stat !== CD_STAT_NO_INTR && re2 !== 0x18) {
             bus.interruptSet(2);
-          }
-          return;
-        case 2:
-          if (ctrl & 0x01) {
-            switch(data) {
-              case 7:
-                ctrl &= (~(0x03));
-                param.p = 0;
-                param.c = 0;
-                res.ok  = 1;
-                break;
-              default:
-                re2 = data;
-                break;
-            }
-          }
-          else if (!(ctrl & 0x01) && param.p < 8) {
-            param.data[param.p++] = data;
-            param.c++;
-          }
-          return;
-        case 3:
-          if (data === 0x07 && ((ctrl & 0x01) == true)) {
-            stat = 0;
-            if (irq === 0xff) {
-              irq = 0;
-              return;
-            }
-            if (irq) {
-              cdint = 1
-            }
-            if (reads && !res.ok) {
-              cdreadint = 1
-            }
+        }
+    }
+    function interruptRead() {
+        if (!reads) {
             return;
-          }
-          
-          if (data === 0x80 && ((ctrl & 0x01) == false) && !readed) {
-            readed = 1;
-            transfer.p = 0;
-            switch(mode & 0x30) {
-              case 0x00:
-                transfer.p += 12;
-                return;
-              case 0x20:
-                return;
-              default:
-                psx.error('mode&0x30 -> ' + psx.hex(mode & 0x30));
-                return;
+        }
+        if (stat) {
+            cdreadint = 1
+            return;
+        }
+        occupied = 1;
+        res.p = 0; res.c = 1; res.ok = 1;
+        statP |= 0x22;
+        statP &= (~(0x40));
+        res.data[0] = statP;
+        cpu.pause();
+        trackRead();
+        divBlink.css({ 'background':'#f5cb0f' });
+    }
+    // Exposed class functions/variables
+    return {
+        interruptRead2(buf) {
+            transfer.data.set(buf);
+            stat = CD_STAT_DATA_READY;
+            sector.data[2]++;
+            if (sector.data[2] === 75) {
+                sector.data[2] = 0;
+                sector.data[1]++;
+                if (sector.data[1] === 60) {
+                    sector.data[1] = 0;
+                    sector.data[0]++;
+                }
             }
-          }
-          return;
-      }
-    },
-    scopeR(addr) {
-      switch(addr & 0xf) {
-        case 0:
-          if (res.ok) {
-            ctrl |= 0x20;
-          }
-          else {
-            ctrl &= (~(0x20));
-          }
-          
-          if (occupied) {
-            ctrl |= 0x40;
-          }
-          ctrl |= 0x18;
-          return mem.hwr.ub[((0x1800 | 0) & (mem.hwr.ub.byteLength - 1)) >>> 0] = ctrl;
-        case 1:
-          mem.hwr.ub[((0x1800 | 1) & (mem.hwr.ub.byteLength - 1)) >>> 0] = 0;
-          if (res.ok) {
-            mem.hwr.ub[((0x1800 | 1) & (mem.hwr.ub.byteLength - 1)) >>> 0] = res.data[res.p++];
-            if (res.p === res.c) {
-              res.ok = 0;
-            }
-          }
-          
-          return mem.hwr.ub[((0x1800 | 1) & (mem.hwr.ub.byteLength - 1)) >>> 0];
-        case 2:
-          if (!readed) {
-            psx.error('CD R !readed');
-            return 0;
-          }
-          return transfer.data[transfer.p++];
-        case 3:
-          mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0] = 0;
-          if (stat) {
-            if (ctrl & 0x01) {
-              mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0] = stat | 0xe0;
+            readed = 0;
+            if ((transfer.data[4 + 2] & 0x80) && (mode & 0x02)) {
+                interruptQueue(9); // CdlPause
             }
             else {
-              psx.error('CD R CD_REG(3) = 0xff;');
-              mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0] = 0xff;
+                cdreadint = 1;
+                
+                kbRead += buf.byteLength;
+                divBlink.css({ 'background':'transparent' });
+                divKb.innerText = Math.round(kbRead / 1024) + ' kb';
             }
-          }
+            bus.interruptSet(2);
+            cpu.resume();
+        },
+        init(blink, kb) {
+            // Get HTML elements
+            divBlink = blink;
+            divKb    = kb[0];
+        },
+        reset() {
+            resetParam(param);
+            resetRes(res);
+            resetSect(sector);
+            transfer.data.fill(0);
+            transfer.p = 0;
+            ctrl = stat = statP = re2 = file = channel = 0;
+            occupied = readed = reads = seeked = muted = 0;
+            irq = cdint = cdreadint = 0;
+            mode = 0;
+            kbRead = 0;
+        },
+        update() {
+            if (cdint) {
+                if (cdint++ >= 16) {
+                    cdint = 0;
+                    interrupt();
+                }
+            }
+            if (cdreadint) {
+                if (cdreadint++ >= 1024) {
+                    cdreadint = 0;
+                    interruptRead();
+                }
+            }
+        },
+        scopeW(addr, data) {
+            switch(addr&0xf) {
+                case 0:
+                    ctrl = data | (ctrl & (~(0x03)));
+                    if (!data) {
+                        param.p = 0;
+                        param.c = 0;
+                        res.ok  = 0;
+                    }
+                    return;
+                case 1:
+                    occupied = 0;
+                    if (ctrl & 0x01) {
+                        return;
+                    }
+                    switch(data) {
+                        case  7: // CdlIdle
+                        case  8: // CdlStop
+                        case  9: // CdlPause
+                        case 10: // CdlInit
+                            if (reads) { reads = 0; };
+                        case  1: // CdlNop
+                        case  3: // CdlAudio
+                        case 11: // CdlMute
+                        case 12: // CdlDemute
+                        case 15: // CdlGetmode
+                        case 16: // CdlGetlocL
+                        case 17: // CdlGetlocP
+                        case 19: // CdlGetTN
+                        case 20: // CdlGetTD
+                        case 21: // CdlSeekL
+                        case 22: // CdlSeekP
+                        case 25: // CdlTest
+                        case 26: // CdlID
+                        case 30: // CdlReadToc
+                            ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
+                            break;
+                        case 2: // CdlSetLoc
+                            if (reads) { reads = 0; };
+                            ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
+                            seeked = 0;
+                            for (let i = 0; i < 3; i++) {
+                                sector.data[i] = (parseInt((param.data[i]) / 16) * 10 + (param.data[i]) % 16);
+                            }
+                            sector.data[3] = 0;
+                            break;
+                        case  6: // CdlReadN
+                        case 27: // CdlReadS
+                            if (reads) { reads = 0; };
+                            irq = 0;
+                            stat = CD_STAT_NO_INTR;
+                            ctrl |= 0x80;
+                            reads = 1; readed = 0xff; interruptQueue(6);
+                            break;
+                        case 13: // CdlSetfilter
+                            file    = param.data[0];
+                            channel = param.data[1];
+                            ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
+                            break;
+                        case 14: // CdlSetmode
+                            mode = param.data[0];
+                            ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
+                            break;
+                        default:
+                            psx.error('CD W 0x1801 data -> ' + data);
+                            break;
+                    }
+                    if (stat !== CD_STAT_NO_INTR) {
+                        bus.interruptSet(2);
+                    }
+                    return;
+                case 2:
+                    if (ctrl & 0x01) {
+                        switch(data) {
+                            case 7:
+                                ctrl &= (~(0x03));
+                                param.p = 0;
+                                param.c = 0;
+                                res.ok  = 1;
+                                break;
+                            default:
+                                re2 = data;
+                                break;
+                        }
+                    }
+                    else if (!(ctrl & 0x01) && param.p < 8) {
+                        param.data[param.p++] = data;
+                        param.c++;
+                    }
+                    return;
+                case 3:
+                    if (data === 0x07 && ((ctrl & 0x01) == true)) {
+                        stat = 0;
+                        if (irq === 0xff) {
+                            irq = 0;
+                            return;
+                        }
+                        if (irq) {
+                            cdint = 1
+                        }
+                        if (reads && !res.ok) {
+                            cdreadint = 1
+                        }
+                        return;
+                    }
+                    if (data === 0x80 && ((ctrl & 0x01) == false) && !readed) {
+                        readed = 1;
+                        transfer.p = 0;
+                        switch(mode & 0x30) {
+                            case 0x00:
+                                transfer.p += 12;
+                                return;
+                            case 0x20:
+                                return;
+                            default:
+                                psx.error('mode&0x30 -> ' + psx.hex(mode & 0x30));
+                                return;
+                        }
+                    }
+                    return;
+            }
+        },
+        scopeR(addr) {
+            switch(addr & 0xf) {
+                case 0:
+                    if (res.ok) {
+                        ctrl |= 0x20;
+                    }
+                    else {
+                        ctrl &= (~(0x20));
+                    }
           
-          return mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0];
-      }
-    },
-    executeDMA(addr) {
-      const size = (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0xffff) * 4;
-      switch(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
-        case 0x11000000:
-        case 0x11400100: // ?
-          if (!readed) {
-            return;
-          }
-          
-          for (let i=0; i<size; i++) {
-            mem.ram.ub[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + i) & (mem.ram.ub.byteLength - 1)) >>> 0] = transfer.data[transfer.p + i];
-          }
-          transfer.p += size;
-          return;
-        case 0x00000000: // ?
-        return;
-        default:
-          psx.error('CD DMA -> '+psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
-          return;
-      }
-    }
-  };
+                    if (occupied) {
+                        ctrl |= 0x40;
+                    }
+                    ctrl |= 0x18;
+                    return mem.hwr.ub[((0x1800 | 0) & (mem.hwr.ub.byteLength - 1)) >>> 0] = ctrl;
+                case 1:
+                    mem.hwr.ub[((0x1800 | 1) & (mem.hwr.ub.byteLength - 1)) >>> 0] = 0;
+                    if (res.ok) {
+                        mem.hwr.ub[((0x1800 | 1) & (mem.hwr.ub.byteLength - 1)) >>> 0] = res.data[res.p++];
+                        if (res.p === res.c) {
+                            res.ok = 0;
+                        }
+                    }
+                    return mem.hwr.ub[((0x1800 | 1) & (mem.hwr.ub.byteLength - 1)) >>> 0];
+                case 2:
+                    if (!readed) {
+                        psx.error('CD R !readed');
+                        return 0;
+                    }
+                    return transfer.data[transfer.p++];
+                case 3:
+                    mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0] = 0;
+                    if (stat) {
+                        if (ctrl & 0x01) {
+                            mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0] = stat | 0xe0;
+                        }
+                        else {
+                            mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0] = 0xff;
+                        }
+                    }
+                    return mem.hwr.ub[((0x1800 | 3) & (mem.hwr.ub.byteLength - 1)) >>> 0];
+            }
+        },
+        executeDMA(addr) {
+            const size = (mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] & 0xffff) * 4;
+            switch(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
+                case 0x11000000:
+                case 0x11400100: // ?
+                    if (!readed) {
+                        return;
+                    }
+                    for (let i=0; i<size; i++) {
+                        mem.ram.ub[(( mem.hwr.uw[(((addr & 0xfff0) | 0) & (mem.hwr.uw.byteLength - 1)) >>> 2] + i) & (mem.ram.ub.byteLength - 1)) >>> 0] = transfer.data[transfer.p + i];
+                    }
+                    transfer.p += size;
+                    return;
+                case 0x00000000: // ?
+                    return;
+                default:
+                    psx.error('CD DMA -> '+psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
+                    return;
+            }
+        }
+    };
 };
 const cdrom = new pseudo.CstrCdrom();
 // 32-bit accessor
@@ -1491,7 +1484,7 @@ pseudo.CstrCounters = function() {
                 mem.hwr.uh[((0x1100 + (2 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = temp;
             }
             // Graphics
-            vbk += threshold * 2;
+            vbk += threshold * 1;
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
                 bus.interruptSet(0);
                  vs.redraw();
@@ -2432,8 +2425,10 @@ pseudo.CstrMain = function() {
                 if (id === 'CD001') {
                     reset();
                     iso = file;
-                    cpu.base[32] = cpu.base[31];
-                    cpu.setpc(cpu.base[32]);
+                    if (0) { // Enable to skip BIOS boot
+                        cpu.base[32] = cpu.base[31];
+                        cpu.setpc(cpu.base[32]);
+                    }
                     cpu.run();
                 }
             });
@@ -2488,7 +2483,7 @@ pseudo.CstrMain = function() {
             });
         },
         discExists() {
-            return iso !== undefined;
+            return iso != undefined;
         }
     };
 };
@@ -2552,10 +2547,10 @@ pseudo.CstrRender = function() {
         else {
             disableTexture();
         }
-        ctx.enable(ctx.SCISSOR_TEST);
-        ctx.scissor(drawArea.start.h * 2, drawArea.start.v * 2, drawArea.end.h * 2, drawArea.end.v * 2);
+        //ctx.enable(ctx.SCISSOR_TEST);
+        //ctx.scissor(drawArea.start.h * 2, drawArea.start.v * 2, drawArea.end.h * 2, drawArea.end.v * 2);
         ctx.drawArrays(mode, 0, size);
-        ctx.disable(ctx.SCISSOR_TEST);
+        //ctx.disable(ctx.SCISSOR_TEST);
     }
     
     function drawF(data, size, mode) {
