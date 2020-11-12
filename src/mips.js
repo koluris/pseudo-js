@@ -44,10 +44,16 @@
     }
 
 #define opcodeLWx(o, d) \
-    cpu.load.set(rt, (cpu.base[rt] & mask[d][ob & 3]) | (mem.read.w(ob & (~(3))) o shift[d][ob & 3]))
+    { \
+        const temp = ob; \
+        cpu.load.set(rt, (cpu.base[rt] & mask[d][temp & 3]) | (mem.read.w(temp & (~(3))) o shift[d][temp & 3])); \
+    }
 
 #define opcodeSWx(o, d) \
-    mem.write.w(ob & (~(3)), (cpu.base[rt] o shift[d][ob & 3]) | (mem.read.w(ob & (~(3))) & mask[d][ob & 3]))
+    { \
+        const temp = ob; \
+        mem.write.w(temp & (~(3)), (cpu.base[rt] o shift[d][temp & 3]) | (mem.read.w(ob & (~(3))) & mask[d][temp & 3])); \
+    }
 
 pseudo.CstrMips = function() {
     // SW & LW tables

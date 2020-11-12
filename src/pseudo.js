@@ -174,6 +174,10 @@ pseudo.CstrMain = function() {
                 cdrom.interruptRead2(new UintBcap(data));
                 // slice(0, DATASIZE)
             });
+        },
+
+        discExists() {
+            return iso !== undefined;
         }
     };
 };

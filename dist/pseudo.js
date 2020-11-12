@@ -292,7 +292,7 @@ pseudo.CstrAudio = function() {
                 case (addr == 0x1db6): // ?
                 case (addr == 0x1db8): // ?
                 case (addr == 0x1dba): // ?
-                case (addr >= 0x1e00 && addr <= 0x1e0e): // ?
+                case (addr >= 0x1e00 && addr <= 0x1e3e): // ?
                     return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
             }
             psx.error('SPU Read: ' + psx.hex(addr));
@@ -636,6 +636,58 @@ pseudo.CstrCdrom = function() {
         statP &= (~(0x40));
         res.data[0] = statP;
         break;
+        case 25: // CdlTest
+        stat = CD_STAT_ACKNOWLEDGE;
+        switch(param.data[0]) {
+          case 0x04:
+          case 0x05:
+            break;
+          case 0x20:
+            res.p = 0; res.c = 4; res.ok = 1;
+            res.data[0] = 0x98;
+            res.data[1] = 0x06;
+            res.data[2] = 0x10;
+            res.data[3] = 0xc3;
+            break;
+          default:
+            psx.error('CD CdlTest ', psx.hex(param.data[0]));
+            break;
+        }
+        break;
+      case 26: // CdlID
+        res.p = 0; res.c = 1; res.ok = 1;
+        stat = CD_STAT_ACKNOWLEDGE;
+        statP |= 0x02;
+        res.data[0] = statP;
+        interruptQueue(prevIrq + 0x20);
+        break;
+        
+      case 26 + 0x20:
+        res.p = 0; res.c = 8; res.ok = 1;
+        stat = CD_STAT_COMPLETE;
+        res.data[0] = 0x00;
+        res.data[1] = psx.discExists() ? 0x00 : 0x80;
+        res.data[2] = 0x00;
+        res.data[3] = 0x00;
+        res.data[4] = 'S'; // Ehm...
+        res.data[5] = 'C';
+        res.data[6] = 'E';
+        res.data[7] = 'A';
+        break;
+      case 30: // CdlReadToc
+        res.p = 0; res.c = 1; res.ok = 1;
+        stat = CD_STAT_ACKNOWLEDGE;
+        statP |= 0x02;
+        res.data[0] = statP;
+        interruptQueue(prevIrq + 0x20);
+        break;
+        
+      case 30 + 0x20:
+        res.p = 0; res.c = 1; res.ok = 1;
+        stat = CD_STAT_COMPLETE;
+        statP |= 0x02;
+        res.data[0] = statP;
+        break;
       default:
         psx.error('CD prevIrq -> ' + prevIrq);
         break;
@@ -754,6 +806,9 @@ pseudo.CstrCdrom = function() {
             case 20: // CdlGetTD
             case 21: // CdlSeekL
             case 22: // CdlSeekP
+            case 25: // CdlTest
+            case 26: // CdlID
+            case 30: // CdlReadToc
               ctrl |= 0x80; stat = CD_STAT_NO_INTR; interruptQueue(data);
               break;
             case 2: // CdlSetLoc
@@ -1577,12 +1632,13 @@ pseudo.CstrHardware = function() {
                 switch(true) {
                     case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         return sio.read.h(addr);
-                    case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
+                    case (addr >= 0x1c00 && addr <= 0x1e3e): // SPU
                         return audio.scopeR(addr);
                     
                     case (addr == 0x1014): // ?
                     case (addr == 0x1054): // SIO 1 Status
                     case (addr == 0x105a): // SIO 1 Control
+                    case (addr == 0x105e): // SIO 1 Baud
                     case (addr == 0x1070): // IRQ Status
                     case (addr == 0x1074): // IRQ Mask
                     case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
@@ -1871,14 +1927,14 @@ pseudo.CstrMem = function() {
             return header;
         },
         write: {
-            w(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.copr[12] & 0x10000) { return; } mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. w(addr & 0xffff, data); return; } mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '32' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
-            h(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.copr[12] & 0x10000) { return; } mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. h(addr & 0xffff, data); return; } mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '16' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
-            b(addr, data) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.copr[12] & 0x10000) { return; } mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. b(addr & 0xffff, data); return; } mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '08' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            w(addr, data) { if (addr %  4 !== 0) { psx.error('Mem W align error at ' +  '32' + ' bits'); } switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.copr[12] & 0x10000) { return; } mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. w(addr & 0xffff, data); return; } mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '32' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            h(addr, data) { if (addr %  2 !== 0) { psx.error('Mem W align error at ' +  '16' + ' bits'); } switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.copr[12] & 0x10000) { return; } mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. h(addr & 0xffff, data); return; } mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '16' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
+            b(addr, data) { if (addr %  1 !== 0) { psx.error('Mem W align error at ' +  '08' + ' bits'); } switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: if (cpu.copr[12] & 0x10000) { return; } mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0] = data; return; case 0x1f: if ((addr & 0xffff) >= 0x400) { io.write. b(addr & 0xffff, data); return; } mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0] = data; return; } if ((addr) == 0xfffe0130) { return; } psx.error('Mem W ' +  '08' + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data)); },
         },
         read: {
-            w(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2]; case 0xbf: return mem.rom. uw[((addr) & (mem.rom. uw.byteLength - 1)) >>> 2]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. w(addr & 0xffff); } return mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '32' + ' ' + psx.hex(addr)); return 0; },
-            h(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1]; case 0xbf: return mem.rom. uh[((addr) & (mem.rom. uh.byteLength - 1)) >>> 1]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. h(addr & 0xffff); } return mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '16' + ' ' + psx.hex(addr)); return 0; },
-            b(addr) { switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0]; case 0xbf: return mem.rom. ub[((addr) & (mem.rom. ub.byteLength - 1)) >>> 0]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. b(addr & 0xffff); } return mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '08' + ' ' + psx.hex(addr)); return 0; },
+            w(addr) { if (addr %  4 !== 0) { psx.error('Mem R align error at ' +  '32' + ' bits'); } switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uw[((addr) & (mem.ram. uw.byteLength - 1)) >>> 2]; case 0xbf: return mem.rom. uw[((addr) & (mem.rom. uw.byteLength - 1)) >>> 2]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. w(addr & 0xffff); } return mem.hwr. uw[((addr) & (mem.hwr. uw.byteLength - 1)) >>> 2]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '32' + ' ' + psx.hex(addr)); return 0; },
+            h(addr) { if (addr %  2 !== 0) { psx.error('Mem R align error at ' +  '16' + ' bits'); } switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. uh[((addr) & (mem.ram. uh.byteLength - 1)) >>> 1]; case 0xbf: return mem.rom. uh[((addr) & (mem.rom. uh.byteLength - 1)) >>> 1]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. h(addr & 0xffff); } return mem.hwr. uh[((addr) & (mem.hwr. uh.byteLength - 1)) >>> 1]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '16' + ' ' + psx.hex(addr)); return 0; },
+            b(addr) { if (addr %  1 !== 0) { psx.error('Mem R align error at ' +  '08' + ' bits'); } switch(addr >>> 24) { case 0x00: case 0x80: case 0xA0: return mem.ram. ub[((addr) & (mem.ram. ub.byteLength - 1)) >>> 0]; case 0xbf: return mem.rom. ub[((addr) & (mem.rom. ub.byteLength - 1)) >>> 0]; case 0x1f: if ((addr & 0xffff) >= 0x400) { return io.read. b(addr & 0xffff); } return mem.hwr. ub[((addr) & (mem.hwr. ub.byteLength - 1)) >>> 0]; } if ((addr) == 0xfffe0130) { return 0; } psx.error('Mem R ' +  '08' + ' ' + psx.hex(addr)); return 0; },
         },
         executeDMA(addr) {
             if (!mem.hwr.uw[(((addr & 0xfff0) | 4) & (mem.hwr.uw.byteLength - 1)) >>> 2] || mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2] !== 0x11000002) {
@@ -2127,7 +2183,7 @@ pseudo.CstrMips = function() {
                 cpu.load.set(((code >>> 16) & 0x1f), ((mem.read.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16));
                 return;
             case 34: // LWL
-                cpu.load.set(((code >>> 16) & 0x1f), (cpu.base[((code >>> 16) & 0x1f)] & mask[ 0][(cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) << shift[ 0][(cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
+                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); cpu.load.set(((code >>> 16) & 0x1f), (cpu.base[((code >>> 16) & 0x1f)] & mask[ 0][temp & 3]) | (mem.read.w(temp & (~(3))) << shift[ 0][temp & 3])); };
                 return;
             case 35: // LW
                 cpu.load.set(((code >>> 16) & 0x1f), mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
@@ -2139,7 +2195,7 @@ pseudo.CstrMips = function() {
                 cpu.load.set(((code >>> 16) & 0x1f), mem.read.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
                 return;
             case 38: // LWR
-                cpu.load.set(((code >>> 16) & 0x1f), (cpu.base[((code >>> 16) & 0x1f)] & mask[ 1][(cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) >>> shift[ 1][(cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
+                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); cpu.load.set(((code >>> 16) & 0x1f), (cpu.base[((code >>> 16) & 0x1f)] & mask[ 1][temp & 3]) | (mem.read.w(temp & (~(3))) >>> shift[ 1][temp & 3])); };
                 return;
             case 40: // SB
                 mem.write.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
@@ -2148,13 +2204,13 @@ pseudo.CstrMips = function() {
                 mem.write.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
                 return;
             case 42: // SWL
-                mem.write.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (cpu.base[((code >>> 16) & 0x1f)] >>> shift[ 2][(cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][(cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
+                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); mem.write.w(temp & (~(3)), (cpu.base[((code >>> 16) & 0x1f)] >>> shift[ 2][temp & 3]) | (mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 2][temp & 3])); };
                 return;
             case 43: // SW
                 mem.write.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
                 return;
             case 46: // SWR
-                mem.write.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3)), (cpu.base[((code >>> 16) & 0x1f)] << shift[ 3][(cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]) | (mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][(cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & 3]));
+                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); mem.write.w(temp & (~(3)), (cpu.base[((code >>> 16) & 0x1f)] << shift[ 3][temp & 3]) | (mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))) & (~(3))) & mask[ 3][temp & 3])); };
                 return;
             case 50: // LWC2
                 cop2.opcodeMTC2(((code >>> 16) & 0x1f), mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
@@ -2430,6 +2486,9 @@ pseudo.CstrMain = function() {
                 cdrom.interruptRead2(new Uint8Array(data));
                 // slice(0, DATASIZE)
             });
+        },
+        discExists() {
+            return iso !== undefined;
         }
     };
 };

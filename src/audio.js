@@ -326,7 +326,7 @@ pseudo.CstrAudio = function() {
                 case (addr == 0x1db6): // ?
                 case (addr == 0x1db8): // ?
                 case (addr == 0x1dba): // ?
-                case (addr >= 0x1e00 && addr <= 0x1e0e): // ?
+                case (addr >= 0x1e00 && addr <= 0x1e3e): // ?
                     return directMemH(mem.hwr.uh, addr);
             }
 

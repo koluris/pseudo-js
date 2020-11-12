@@ -1,6 +1,10 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
-#define scopeMemW(maccess, width, hw, size) \
+#define scopeMemW(maccess, width, hw, size, align) \
+    if (addr % align !== 0) { \
+        psx.error('Mem W align error at ' + size + ' bits'); \
+    } \
+    \
     switch(addr >>> 24) { \
         case 0x00: \
         case 0x80: \
@@ -27,7 +31,11 @@
     \
     psx.error('Mem W ' + size + ' ' + psx.hex(addr) + ' <- ' + psx.hex(data))
 
-#define scopeMemR(maccess, width, hw, size) \
+#define scopeMemR(maccess, width, hw, size, align) \
+    if (addr % align !== 0) { \
+        psx.error('Mem R align error at ' + size + ' bits'); \
+    } \
+    \
     switch(addr >>> 24) { \
         case 0x00: \
         case 0x80: \
@@ -82,15 +90,15 @@ pseudo.CstrMem = function() {
         },
 
         write: {
-            w(addr, data) { scopeMemW(directMemW, uw, w, '32'); },
-            h(addr, data) { scopeMemW(directMemH, uh, h, '16'); },
-            b(addr, data) { scopeMemW(directMemB, ub, b, '08'); },
+            w(addr, data) { scopeMemW(directMemW, uw, w, '32', 4); },
+            h(addr, data) { scopeMemW(directMemH, uh, h, '16', 2); },
+            b(addr, data) { scopeMemW(directMemB, ub, b, '08', 1); },
         },
 
         read: {
-            w(addr) { scopeMemR(directMemW, uw, w, '32'); },
-            h(addr) { scopeMemR(directMemH, uh, h, '16'); },
-            b(addr) { scopeMemR(directMemB, ub, b, '08'); },
+            w(addr) { scopeMemR(directMemW, uw, w, '32', 4); },
+            h(addr) { scopeMemR(directMemH, uh, h, '16', 2); },
+            b(addr) { scopeMemR(directMemB, ub, b, '08', 1); },
         },
 
         executeDMA(addr) {

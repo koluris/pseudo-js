@@ -138,13 +138,14 @@ pseudo.CstrHardware = function() {
                     case (addr >= 0x1040 && addr <= 0x104e): // SIO 0
                         return sio.read.h(addr);
 
-                    case (addr >= 0x1c00 && addr <= 0x1e0e): // SPU
+                    case (addr >= 0x1c00 && addr <= 0x1e3e): // SPU
                         return audio.scopeR(addr);
 
                     /* unused */
                     case (addr == 0x1014): // ?
                     case (addr == 0x1054): // SIO 1 Status
                     case (addr == 0x105a): // SIO 1 Control
+                    case (addr == 0x105e): // SIO 1 Baud
                     case (addr == 0x1070): // IRQ Status
                     case (addr == 0x1074): // IRQ Mask
                     case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters

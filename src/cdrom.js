@@ -289,6 +289,63 @@ pseudo.CstrCdrom = function() {
         res.data[0] = statP;
         break;
 
+        case 25: // CdlTest
+        stat = CD_STAT_ACKNOWLEDGE;
+        switch(param.data[0]) {
+          case 0x04:
+          case 0x05:
+            break;
+
+          case 0x20:
+            setResultSize(4);
+            res.data[0] = 0x98;
+            res.data[1] = 0x06;
+            res.data[2] = 0x10;
+            res.data[3] = 0xc3;
+            break;
+
+          default:
+            psx.error('CD CdlTest ', psx.hex(param.data[0]));
+            break;
+        }
+        break;
+
+      case 26: // CdlID
+        setResultSize(1);
+        stat = CD_STAT_ACKNOWLEDGE;
+        statP |= 0x02;
+        res.data[0] = statP;
+        interruptQueue(prevIrq + 0x20);
+        break;
+        
+      case 26 + 0x20:
+        setResultSize(8);
+        stat = CD_STAT_COMPLETE;
+        res.data[0] = 0x00;
+        res.data[1] = psx.discExists() ? 0x00 : 0x80;
+        res.data[2] = 0x00;
+        res.data[3] = 0x00;
+        res.data[4] = 'S'; // Ehm...
+        res.data[5] = 'C';
+        res.data[6] = 'E';
+        res.data[7] = 'A';
+        break;
+
+      case 30: // CdlReadToc
+        setResultSize(1);
+        stat = CD_STAT_ACKNOWLEDGE;
+        statP |= 0x02;
+        res.data[0] = statP;
+        interruptQueue(prevIrq + 0x20);
+        break;
+        
+      case 30 + 0x20:
+        setResultSize(1);
+        stat = CD_STAT_COMPLETE;
+        statP |= 0x02;
+        res.data[0] = statP;
+        break;
+
       default:
         psx.error('CD prevIrq -> ' + prevIrq);
         break;
@@ -426,6 +483,9 @@ pseudo.CstrCdrom = function() {
             case 20: // CdlGetTD
             case 21: // CdlSeekL
             case 22: // CdlSeekP
+            case 25: // CdlTest
+            case 26: // CdlID
+            case 30: // CdlReadToc
               defaultCtrlAndStat();
               break;
 
