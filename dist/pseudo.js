@@ -3275,15 +3275,13 @@ pseudo.CstrGraphics = function() {
     const dataMem = {
         write(stream, addr, size) {
             let i = 0;
-      
             while (i < size) {
-                if (modeDMA === GPU_DMA_MEM2VRAM) {
+                if (vrop.allowStore) {
                     if ((i += fetchFromRAM(stream, addr, size - i)) >= size) {
                         continue;
                     }
                     addr += i;
                 }
-        
                 ret.data = stream ? mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] : addr;
                 addr += 4;
                 i++;
@@ -3319,8 +3317,7 @@ pseudo.CstrGraphics = function() {
             }
         },
         read(stream, addr, size) {
-            if (modeDMA == GPU_DMA_VRAM2MEM) {
-                ret.status &= (~(0x14000000));
+            if (vrop.allowRead) {
                 do {
                     const vramValue = vs.vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
                     if (stream) {
@@ -3334,23 +3331,16 @@ pseudo.CstrGraphics = function() {
                         vrop.h.p = vrop.h.start;
                         vrop.pvram += 1024;
                         if (++vrop.v.p >= vrop.v.end) {
-                            modeDMA = GPU_DMA_NONE;
-                            ret.status &= (~(GPU_STAT_READYFORVRAM));
                             break;
                         }
                     }
                 } while (--size);
-        
-                ret.status = (ret.status | 0x14000000) & (~(GPU_STAT_DMABITS));
+                vrop.allowRead = false;
             }
         }
     };
     function fetchFromRAM(stream, addr, size) {
         let count = 0;
-        if (!vrop.enabled) {
-            modeDMA = GPU_DMA_NONE;
-            return 0;
-        }
         size <<= 1;
         while (vrop.v.p < vrop.v.end) {
             while (vrop.h.p < vrop.h.end) {
@@ -3390,9 +3380,8 @@ pseudo.CstrGraphics = function() {
     function fetchEnd(count) {
         if (vrop.v.p >= vrop.v.end) {
             render.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
-            vrop.enabled = false;
+            vrop.allowStore = false;
             vrop.raw.ub.fill(0);
-            modeDMA = GPU_DMA_NONE;
         }
         if (count % 2) {
             count++;
@@ -3426,7 +3415,8 @@ pseudo.CstrGraphics = function() {
             isVideo24Bit = false;
             disabled     = true;
             // VRAM Operations
-            vrop.enabled = false;
+            vrop.allowStore = false;
+            vrop.allowRead  = false;
             vrop.raw     = 0;
             vrop.pvram   = 0;
             vrop.h.p     = 0;
@@ -3467,7 +3457,6 @@ pseudo.CstrGraphics = function() {
                         case 0x05:
                             vpos = Math.max(vpos, (data >>> 10) & 0x1ff);
                             return;
-                
                         case 0x07:
                             vdiff = ((data >>> 10) & 0x3ff) - (data & 0x3ff);
                             return;
@@ -3478,7 +3467,6 @@ pseudo.CstrGraphics = function() {
                                 // Basic info
                                 const w = resMode[(data & 3) | ((data & 0x40) >>> 4)];
                                 const h = (data & 4) ? 480 : 240;
-                
                                 if (((data >>> 5) & 1) || h == vdiff) { // No distinction for interlaced & normal mode
                                     render.resize({ w: w, h: h });
                                 }
@@ -3537,15 +3525,14 @@ pseudo.CstrGraphics = function() {
         },
         photoWrite(data) {
             const p = photoData(data);
+            vrop.allowRead = true;
             vrop.pvram = p[1] * 1024;
-            modeDMA = GPU_DMA_VRAM2MEM;
             ret.status |= GPU_STAT_READYFORVRAM;
         },
         photoRead(data) {
             const p = photoData(data);
-            vrop.enabled = true;
+            vrop.allowStore = true;
             vrop.raw = new union((p[2] * p[3]) * 4);
-            modeDMA = GPU_DMA_MEM2VRAM;
             // Cache invalidation
             tcache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
         }
