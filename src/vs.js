@@ -129,30 +129,29 @@ pseudo.CstrGraphics = function() {
         },
 
         read(stream, addr, size) {
-            if (vrop.allowRead) {
-                do {
-                    const vramValue = vs.vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
+            do {
+                const vramValue = vs.vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
 
-                    if (stream) {
-                        directMemW(mem.ram.uw, addr) = vramValue;
-                    }
-                    else {
-                        ret.data = vramValue;
-                    }
-                    addr += 4;
+                if (stream) {
+                    directMemW(mem.ram.uw, addr) = vramValue;
+                }
+                else {
+                    ret.data = vramValue;
+                }
+                addr += 4;
 
+                if (vrop.allowRead) {
                     if ((vrop.h.p += 2) >= vrop.h.end) {
                         vrop.h.p = vrop.h.start;
                         vrop.pvram += FRAME_W;
 
                         if (++vrop.v.p >= vrop.v.end) {
+                            vrop.allowRead = false;
                             break;
                         }
                     }
-                } while (--size);
-
-                vrop.allowRead = false;
-            }
+                }
+            } while (--size);
         }
     };
 
@@ -383,8 +382,6 @@ pseudo.CstrGraphics = function() {
 
             vrop.allowRead = true;
             vrop.pvram = p[1] * FRAME_W;
-
-            ret.status |= GPU_STAT_READYFORVRAM;
         },
 
         photoRead(data) {

@@ -3317,26 +3317,26 @@ pseudo.CstrGraphics = function() {
             }
         },
         read(stream, addr, size) {
-            if (vrop.allowRead) {
-                do {
-                    const vramValue = vs.vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
-                    if (stream) {
-                        mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] = vramValue;
-                    }
-                    else {
-                        ret.data = vramValue;
-                    }
-                    addr += 4;
+            do {
+                const vramValue = vs.vram.uw[(vrop.pvram + vrop.h.p) >>> 1];
+                if (stream) {
+                    mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] = vramValue;
+                }
+                else {
+                    ret.data = vramValue;
+                }
+                addr += 4;
+                if (vrop.allowRead) {
                     if ((vrop.h.p += 2) >= vrop.h.end) {
                         vrop.h.p = vrop.h.start;
                         vrop.pvram += 1024;
                         if (++vrop.v.p >= vrop.v.end) {
+                            vrop.allowRead = false;
                             break;
                         }
                     }
-                } while (--size);
-                vrop.allowRead = false;
-            }
+                }
+            } while (--size);
         }
     };
     function fetchFromRAM(stream, addr, size) {
@@ -3527,7 +3527,6 @@ pseudo.CstrGraphics = function() {
             const p = photoData(data);
             vrop.allowRead = true;
             vrop.pvram = p[1] * 1024;
-            ret.status |= GPU_STAT_READYFORVRAM;
         },
         photoRead(data) {
             const p = photoData(data);
