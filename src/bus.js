@@ -62,7 +62,7 @@ pseudo.CstrBus = function() {
         },
 
         interruptSet(code) {
-            interrupts[code].queued = IRQ_ENABLED;
+            if (!interrupts[code].queued) { interrupts[code].queued = IRQ_ENABLED; }
         },
         
         checkDMA(addr, data) {

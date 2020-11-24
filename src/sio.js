@@ -149,7 +149,7 @@ pseudo.CstrSerial = function() {
                         if (!(status & SIO_STAT_RX_READY)) {
                             return 0;
                         }
-                        
+
                         if (index == bfr.bSize - 1) {
                             status &= (~(SIO_STAT_RX_READY));
                             status |= ( (SIO_STAT_TX_EMPTY));

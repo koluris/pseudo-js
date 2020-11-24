@@ -706,6 +706,7 @@ pseudo.CstrRender = function() {
             // Disable state
             ctx.disable(ctx.BLEND);
 
+            // TODO: Precreate the textures
             if (bit24) {
                 iX = (iX * 2) / 3;
                 iW = (iW * 2) / 3;

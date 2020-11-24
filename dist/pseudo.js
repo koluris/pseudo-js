@@ -391,7 +391,7 @@ pseudo.CstrBus = function() {
             }
         },
         interruptSet(code) {
-            interrupts[code].queued = IRQ_ENABLED;
+            if (!interrupts[code].queued) { interrupts[code].queued = IRQ_ENABLED; }
         },
         
         checkDMA(addr, data) {
@@ -1926,7 +1926,7 @@ pseudo.CstrMem = function() {
         },
         writeExecutable(data) {
             const header = new Uint32Array(data, 0, PSX_EXE_HEADER_SIZE);
-            const offset = header[2 + 4] & (mem.ram.ub.byteLength - 1); // Offset needs boundaries...
+            const offset = header[2 + 4] & (mem.ram.ub.byteLength - 1); // Relative RAM address
             const size   = header[2 + 5];
             mem.ram.ub.set(new Uint8Array(data, PSX_EXE_HEADER_SIZE, size), offset);
             return header;
@@ -2892,6 +2892,7 @@ pseudo.CstrRender = function() {
         outputVRAM(raw, iX, iY, iW, iH, bit24) {
             // Disable state
             ctx.disable(ctx.BLEND);
+            // TODO: Precreate the textures
             if (bit24) {
                 iX = (iX * 2) / 3;
                 iW = (iW * 2) / 3;
@@ -3057,7 +3058,6 @@ pseudo.CstrSerial = function() {
                         if (!(mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2] & SIO_STAT_RX_READY)) {
                             return 0;
                         }
-                        
                         if (index == bfr.byteLength - 1) {
                             mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2] &= (~(SIO_STAT_RX_READY));
                             mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2] |= ( (SIO_STAT_TX_EMPTY));
