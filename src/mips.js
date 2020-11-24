@@ -43,17 +43,17 @@
         hi = a % b; \
     }
 
-#define opcodeLWx(o, d) \
-    { \
-        const temp = ob; \
-        cpu.load.set(rt, (cpu.base[rt] & mask[d][temp & 3]) | (mem.read.w(temp & (~(3))) o shift[d][temp & 3])); \
-    }
-
 #define opcodeSWx(o, d) \
-    { \
-        const temp = ob; \
-        mem.write.w(temp & (~(3)), (cpu.base[rt] o shift[d][temp & 3]) | (mem.read.w(temp & (~(3))) & mask[d][temp & 3])); \
-    }
+{ \
+    const temp = ob; \
+    mem.write.w(temp & (~(3)), (cpu.base[rt] o shift[d][temp & 3]) | (mem.read.w(temp & (~(3))) & mask[d][temp & 3])); \
+}
+
+#define opcodeLWx(o, d) \
+{ \
+    const temp = ob; \
+    cpu.base[rt] = (cpu.base[rt] & mask[d][temp & 3]) | (mem.read.w(temp & (~(3))) o shift[d][temp & 3]); \
+}
 
 pseudo.CstrMips = function() {
     // SW & LW tables
@@ -72,17 +72,16 @@ pseudo.CstrMips = function() {
     ];
 
     // Cache for expensive calculation
-    const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
+    const power32 = Math.pow(2, 32); 
     let ptr, suspended, requestAF;
-    let ld;
 
     // Base CPU stepper
     function step(inslot) {
-        cpu.base[0] = 0; // As weird as this seems, it is needed
         const code  = directMemW(ptr, pc);
         pc += 4;
 
-        //cpu.load.check();
+        // Needed
+        cpu.base[0] = 0;
 
         switch(opcode) {
             case 0: // SPECIAL
@@ -90,38 +89,31 @@ pseudo.CstrMips = function() {
                     case 0: // SLL
                         if (code) { // No operation
                             cpu.base[rd] = cpu.base[rt] << shamt;
-                            cpu.load.clear(rd);
                         }
                         return;
 
                     case 2: // SRL
                         cpu.base[rd] = cpu.base[rt] >>> shamt;
-                        cpu.load.clear(rd);
                         return;
 
                     case 3: // SRA
                         cpu.base[rd] = SIGN_EXT_32(cpu.base[rt]) >> shamt;
-                        cpu.load.clear(rd);
                         return;
 
                     case 4: // SLLV
                         cpu.base[rd] = cpu.base[rt] << (cpu.base[rs] & 31);
-                        cpu.load.clear(rd);
                         return;
 
                     case 6: // SRLV
                         cpu.base[rd] = cpu.base[rt] >>> (cpu.base[rs] & 31);
-                        cpu.load.clear(rd);
                         return;
 
                     case 7: // SRAV
                         cpu.base[rd] = SIGN_EXT_32(cpu.base[rt]) >> (cpu.base[rs] & 31);
-                        cpu.load.clear(rd);
                         return;
 
                     case 9: // JALR
                         cpu.base[rd] = pc + 4;
-                        cpu.load.clear(rd);
 
                     case 8: // JR
                         branch(cpu.base[rs]);
@@ -139,7 +131,6 @@ pseudo.CstrMips = function() {
 
                     case 16: // MFHI
                         cpu.base[rd] = hi;
-                        cpu.load.clear(rd);
                         return;
 
                     case 17: // MTHI
@@ -148,7 +139,6 @@ pseudo.CstrMips = function() {
 
                     case 18: // MFLO
                         cpu.base[rd] = lo;
-                        cpu.load.clear(rd);
                         return;
 
                     case 19: // MTLO
@@ -174,43 +164,35 @@ pseudo.CstrMips = function() {
                     case 32: // ADD
                     case 33: // ADDU
                         cpu.base[rd] = cpu.base[rs] + cpu.base[rt];
-                        cpu.load.clear(rd);
                         return;
 
                     case 34: // SUB
                     case 35: // SUBU
                         cpu.base[rd] = cpu.base[rs] - cpu.base[rt];
-                        cpu.load.clear(rd);
                         return;
 
                     case 36: // AND
                         cpu.base[rd] = cpu.base[rs] & cpu.base[rt];
-                        cpu.load.clear(rd);
                         return;
 
                     case 37: // OR
                         cpu.base[rd] = cpu.base[rs] | cpu.base[rt];
-                        cpu.load.clear(rd);
                         return;
 
                     case 38: // XOR
                         cpu.base[rd] = cpu.base[rs] ^ cpu.base[rt];
-                        cpu.load.clear(rd);
                         return;
 
                     case 39: // NOR
                         cpu.base[rd] = (~(cpu.base[rs] | cpu.base[rt]));
-                        cpu.load.clear(rd);
                         return;
 
                     case 42: // SLT
                         cpu.base[rd] = SIGN_EXT_32(cpu.base[rs]) < SIGN_EXT_32(cpu.base[rt]);
-                        cpu.load.clear(rd);
                         return;
 
                     case 43: // SLTU
                         cpu.base[rd] = cpu.base[rs] < cpu.base[rt];
-                        cpu.load.clear(rd);
                         return;
                 }
 
@@ -221,7 +203,6 @@ pseudo.CstrMips = function() {
                 switch(rt) {
                     case 16: // BLTZAL
                         cpu.base[31] = pc + 4;
-                        cpu.load.clear(31);
 
                     case 0: // BLTZ
                         if (SIGN_EXT_32(cpu.base[rs]) <  0) {
@@ -231,7 +212,6 @@ pseudo.CstrMips = function() {
 
                     case 17: // BGEZAL
                         cpu.base[31] = pc + 4;
-                        cpu.load.clear(31);
 
                     case 1: // BGEZ
                         if (SIGN_EXT_32(cpu.base[rs]) >= 0) {
@@ -245,7 +225,6 @@ pseudo.CstrMips = function() {
 
             case 3: // JAL
                 cpu.base[31] = pc + 4;
-                cpu.load.clear(31);
 
             case 2: // J
                 branch(s_addr);
@@ -278,54 +257,44 @@ pseudo.CstrMips = function() {
             case 8: // ADDI
             case 9: // ADDIU
                 cpu.base[rt] = cpu.base[rs] + imm_s;
-                cpu.load.clear(rt);
                 return;
 
             case 10: // SLTI
                 cpu.base[rt] = SIGN_EXT_32(cpu.base[rs]) < imm_s;
-                cpu.load.clear(rt);
                 return;
 
             case 11: // SLTIU
                 cpu.base[rt] = cpu.base[rs] < imm_u;
-                cpu.load.clear(rt);
                 return;
 
             case 12: // ANDI
                 cpu.base[rt] = cpu.base[rs] & imm_u;
-                cpu.load.clear(rt);
                 return;
 
             case 13: // ORI
                 cpu.base[rt] = cpu.base[rs] | imm_u;
-                cpu.load.clear(rt);
                 return;
 
             case 14: // XORI
                 cpu.base[rt] = cpu.base[rs] ^ imm_u;
-                cpu.load.clear(rt);
                 return;
 
             case 15: // LUI
                 cpu.base[rt] = code << 16;
-                cpu.load.clear(rt);
                 return;
 
             case 16: // COP0
                 switch(rs) {
                     case 0: // MFC0
                         cpu.base[rt] = cpu.copr[rd];
-                        cpu.load.clear(rt);
                         return;
 
                     case 4: // MTC0
                         cpu.copr[rd] = cpu.base[rt];
-                        cpu.load.clear(rd);
                         return;
 
                     case 16: // RFE
                         cpu.copr[12] = (cpu.copr[12] & 0xfffffff0) | ((cpu.copr[12] >>> 2) & 0xf);
-                        cpu.load.clear(12);
                         return;
                 }
 
@@ -337,11 +306,11 @@ pseudo.CstrMips = function() {
                 return;
 
             case 32: // LB
-                cpu.load.set(rt, SIGN_EXT_8(mem.read.b(ob)));
+                cpu.base[rt] = SIGN_EXT_8(mem.read.b(ob));
                 return;
 
             case 33: // LH
-                cpu.load.set(rt, SIGN_EXT_16(mem.read.h(ob)));
+                cpu.base[rt] = SIGN_EXT_16(mem.read.h(ob));
                 return;
 
             case 34: // LWL
@@ -349,15 +318,15 @@ pseudo.CstrMips = function() {
                 return;
 
             case 35: // LW
-                cpu.load.set(rt, mem.read.w(ob));
+                cpu.base[rt] = mem.read.w(ob);
                 return;
 
             case 36: // LBU
-                cpu.load.set(rt, mem.read.b(ob));
+                cpu.base[rt] = mem.read.b(ob);
                 return;
 
             case 37: // LHU
-                cpu.load.set(rt, mem.read.h(ob));
+                cpu.base[rt] = mem.read.h(ob);
                 return;
 
             case 38: // LWR
@@ -435,40 +404,8 @@ pseudo.CstrMips = function() {
             cpu.copr[12] = 0x10900000;
             cpu.copr[15] = 0x2;
 
-            opcodeCount = 0;
             pc = 0xbfc00000;
             setptr(pc);
-
-            ld = {
-                 set: 0,
-                dest: 0,
-                data: 0,
-            };
-        },
-
-        load: {
-            set(dest, data) {
-                //ld.set  = 1;
-                //ld.dest = dest;
-                //ld.data = data;
-
-                cpu.base[dest] = data;
-            },
-
-            check() {
-                //if (ld.set) {
-                //    if (ld.set++ === 1) {
-                //        ld.set = 0;
-                //        cpu.base[ld.dest] = ld.data;
-                //    }
-                //}
-            },
-
-            clear(dest) {
-                //if (ld.set && ld.dest === dest) {
-                //    ld.set = 0;
-                //}
-            }
         },
 
         bootstrap() {
@@ -491,7 +428,7 @@ pseudo.CstrMips = function() {
                 }
 
                 // Tick psx
-                rootcnt.update(128);
+                rootcnt.update(64);
                   cdrom.update();
                     bus.update();
 
@@ -500,7 +437,6 @@ pseudo.CstrMips = function() {
                     continue;
                 }
 
-                // Exceptions
                 if (data32 & mask32) {
                     if ((cpu.copr[12] & 0x401) === 0x401) {
                         exception(0x400, false);

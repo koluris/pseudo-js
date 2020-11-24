@@ -433,7 +433,7 @@ pseudo.CstrCdrom = function() {
 
         update() {
             if (cdint) {
-                if (cdint++ >= 16) {
+                if (cdint++ >= 8) {
                     cdint = 0;
                     interrupt();
                 }

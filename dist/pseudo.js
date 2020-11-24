@@ -361,10 +361,10 @@ pseudo.CstrBus = function() {
         target: 1
     }, {
         code: 7,
-        target: 4
+        target: 8
     }, {
         code: 8,
-        target: 4
+        target: 8
     }, {
         code: 9,
         target: 1
@@ -772,7 +772,7 @@ pseudo.CstrCdrom = function() {
         },
         update() {
             if (cdint) {
-                if (cdint++ >= 16) {
+                if (cdint++ >= 8) {
                     cdint = 0;
                     interrupt();
                 }
@@ -1496,7 +1496,7 @@ pseudo.CstrCounters = function() {
                 mem.hwr.uh[((0x1100 + (2 << 4)) & (mem.hwr.uh.byteLength - 1)) >>> 1] = temp;
             }
             // Graphics
-            vbk += threshold * 2;
+            vbk += threshold * 1;
             if (vbk >= PSX_VSYNC_NTSC) { vbk = 0;
                 bus.interruptSet(0);
                  vs.redraw();
@@ -1969,47 +1969,39 @@ pseudo.CstrMips = function() {
         [0x00, 0x08, 0x10, 0x18],
     ];
     // Cache for expensive calculation
-    const power32 = Math.pow(2, 32); // Btw, pure multiplication is faster
+    const power32 = Math.pow(2, 32); 
     let ptr, suspended, requestAF;
-    let ld;
     // Base CPU stepper
     function step(inslot) {
-        cpu.base[0] = 0; // As weird as this seems, it is needed
         const code  = ptr[(( cpu.base[32]) & (ptr.byteLength - 1)) >>> 2];
         cpu.base[32] += 4;
-        //cpu.load.check();
+        // Needed
+        cpu.base[0] = 0;
         switch(((code >>> 26) & 0x3f)) {
             case 0: // SPECIAL
                 switch(code & 0x3f) {
                     case 0: // SLL
                         if (code) { // No operation
                             cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] << ((code >>> 6) & 0x1f);
-                            cpu.load.clear(((code >>> 11) & 0x1f));
                         }
                         return;
                     case 2: // SRL
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] >>> ((code >>> 6) & 0x1f);
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 3: // SRA
                         cpu.base[((code >>> 11) & 0x1f)] = ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0) >> ((code >>> 6) & 0x1f);
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 4: // SLLV
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] << (cpu.base[((code >>> 21) & 0x1f)] & 31);
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 6: // SRLV
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] >>> (cpu.base[((code >>> 21) & 0x1f)] & 31);
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 7: // SRAV
                         cpu.base[((code >>> 11) & 0x1f)] = ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0) >> (cpu.base[((code >>> 21) & 0x1f)] & 31);
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 9: // JALR
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[32] + 4;
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                     case 8: // JR
                         branch(cpu.base[((code >>> 21) & 0x1f)]);
                         ptr = cpu.base[32] >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
@@ -2023,14 +2015,12 @@ pseudo.CstrMips = function() {
                         return;
                     case 16: // MFHI
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[34];
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 17: // MTHI
                         cpu.base[34] = cpu.base[((code >>> 21) & 0x1f)];
                         return;
                     case 18: // MFLO
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[33];
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 19: // MTLO
                         cpu.base[33] = cpu.base[((code >>> 21) & 0x1f)];
@@ -2050,36 +2040,28 @@ pseudo.CstrMips = function() {
                     case 32: // ADD
                     case 33: // ADDU
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] + cpu.base[((code >>> 16) & 0x1f)];
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 34: // SUB
                     case 35: // SUBU
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] - cpu.base[((code >>> 16) & 0x1f)];
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 36: // AND
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & cpu.base[((code >>> 16) & 0x1f)];
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 37: // OR
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] | cpu.base[((code >>> 16) & 0x1f)];
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 38: // XOR
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] ^ cpu.base[((code >>> 16) & 0x1f)];
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 39: // NOR
                         cpu.base[((code >>> 11) & 0x1f)] = (~(cpu.base[((code >>> 21) & 0x1f)] | cpu.base[((code >>> 16) & 0x1f)]));
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 42: // SLT
                         cpu.base[((code >>> 11) & 0x1f)] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) < ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0);
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 43: // SLTU
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] < cpu.base[((code >>> 16) & 0x1f)];
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                 }
                 psx.error('Special CPU instruction ' + (code & 0x3f));
@@ -2088,7 +2070,6 @@ pseudo.CstrMips = function() {
                 switch(((code >>> 16) & 0x1f)) {
                     case 16: // BLTZAL
                         cpu.base[31] = cpu.base[32] + 4;
-                        cpu.load.clear(31);
                     case 0: // BLTZ
                         if (((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) <  0) {
                             branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
@@ -2096,7 +2077,6 @@ pseudo.CstrMips = function() {
                         return;
                     case 17: // BGEZAL
                         cpu.base[31] = cpu.base[32] + 4;
-                        cpu.load.clear(31);
                     case 1: // BGEZ
                         if (((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) >= 0) {
                             branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
@@ -2107,7 +2087,6 @@ pseudo.CstrMips = function() {
                 return;
             case 3: // JAL
                 cpu.base[31] = cpu.base[32] + 4;
-                cpu.load.clear(31);
             case 2: // J
                 branch(((cpu.base[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
                 return;
@@ -2134,45 +2113,35 @@ pseudo.CstrMips = function() {
             case 8: // ADDI
             case 9: // ADDIU
                 cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16));
-                cpu.load.clear(((code >>> 16) & 0x1f));
                 return;
             case 10: // SLTI
                 cpu.base[((code >>> 16) & 0x1f)] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
-                cpu.load.clear(((code >>> 16) & 0x1f));
                 return;
             case 11: // SLTIU
                 cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] < (code & 0xffff);
-                cpu.load.clear(((code >>> 16) & 0x1f));
                 return;
             case 12: // ANDI
                 cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & (code & 0xffff);
-                cpu.load.clear(((code >>> 16) & 0x1f));
                 return;
             case 13: // ORI
                 cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] | (code & 0xffff);
-                cpu.load.clear(((code >>> 16) & 0x1f));
                 return;
             case 14: // XORI
                 cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] ^ (code & 0xffff);
-                cpu.load.clear(((code >>> 16) & 0x1f));
                 return;
             case 15: // LUI
                 cpu.base[((code >>> 16) & 0x1f)] = code << 16;
-                cpu.load.clear(((code >>> 16) & 0x1f));
                 return;
             case 16: // COP0
                 switch(((code >>> 21) & 0x1f)) {
                     case 0: // MFC0
                         cpu.base[((code >>> 16) & 0x1f)] = cpu.copr[((code >>> 11) & 0x1f)];
-                        cpu.load.clear(((code >>> 16) & 0x1f));
                         return;
                     case 4: // MTC0
                         cpu.copr[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)];
-                        cpu.load.clear(((code >>> 11) & 0x1f));
                         return;
                     case 16: // RFE
                         cpu.copr[12] = (cpu.copr[12] & 0xfffffff0) | ((cpu.copr[12] >>> 2) & 0xf);
-                        cpu.load.clear(12);
                         return;
                 }
                 psx.error('Coprocessor 0 instruction ' + ((code >>> 21) & 0x1f));
@@ -2181,25 +2150,25 @@ pseudo.CstrMips = function() {
                 cop2.execute(code);
                 return;
             case 32: // LB
-                cpu.load.set(((code >>> 16) & 0x1f), ((mem.read.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24));
+                cpu.base[((code >>> 16) & 0x1f)] = ((mem.read.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
                 return;
             case 33: // LH
-                cpu.load.set(((code >>> 16) & 0x1f), ((mem.read.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16));
+                cpu.base[((code >>> 16) & 0x1f)] = ((mem.read.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
                 return;
             case 34: // LWL
-                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); cpu.load.set(((code >>> 16) & 0x1f), (cpu.base[((code >>> 16) & 0x1f)] & mask[ 0][temp & 3]) | (mem.read.w(temp & (~(3))) << shift[ 0][temp & 3])); };
+                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); cpu.base[((code >>> 16) & 0x1f)] = (cpu.base[((code >>> 16) & 0x1f)] & mask[ 0][temp & 3]) | (mem.read.w(temp & (~(3))) << shift[ 0][temp & 3]); };
                 return;
             case 35: // LW
-                cpu.load.set(((code >>> 16) & 0x1f), mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
+                cpu.base[((code >>> 16) & 0x1f)] = mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
             case 36: // LBU
-                cpu.load.set(((code >>> 16) & 0x1f), mem.read.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
+                cpu.base[((code >>> 16) & 0x1f)] = mem.read.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
             case 37: // LHU
-                cpu.load.set(((code >>> 16) & 0x1f), mem.read.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16)))));
+                cpu.base[((code >>> 16) & 0x1f)] = mem.read.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 return;
             case 38: // LWR
-                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); cpu.load.set(((code >>> 16) & 0x1f), (cpu.base[((code >>> 16) & 0x1f)] & mask[ 1][temp & 3]) | (mem.read.w(temp & (~(3))) >>> shift[ 1][temp & 3])); };
+                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); cpu.base[((code >>> 16) & 0x1f)] = (cpu.base[((code >>> 16) & 0x1f)] & mask[ 1][temp & 3]) | (mem.read.w(temp & (~(3))) >>> shift[ 1][temp & 3]); };
                 return;
             case 40: // SB
                 mem.write.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
@@ -2256,35 +2225,8 @@ pseudo.CstrMips = function() {
             cpu.copr.fill(0);
             cpu.copr[12] = 0x10900000;
             cpu.copr[15] = 0x2;
-            opcodeCount = 0;
             cpu.base[32] = 0xbfc00000;
             ptr = cpu.base[32] >>> 20 === 0xbfc ? mem.rom.uw : mem.ram.uw;
-            ld = {
-                 set: 0,
-                target: 0,
-                data: 0,
-            };
-        },
-        load: {
-            set(target, data) {
-                //ld.set  = 1;
-                //ld.target = target;
-                //ld.data = data;
-                cpu.base[target] = data;
-            },
-            check() {
-                //if (ld.set) {
-                //    if (ld.set++ === 1) {
-                //        ld.set = 0;
-                //        cpu.base[ld.target] = ld.data;
-                //    }
-                //}
-            },
-            clear(target) {
-                //if (ld.set && ld.target === target) {
-                //    ld.set = 0;
-                //}
-            }
         },
         bootstrap() {
             psx.consoleInformation('info', 'BIOS file has been written to ROM');
@@ -2302,14 +2244,13 @@ pseudo.CstrMips = function() {
                     step(false);
                 }
                 // Tick psx
-                rootcnt.update(128);
+                rootcnt.update(64);
                   cdrom.update();
                     bus.update();
                 // Skip exceptions for GTE`s sake
                 if ((ptr[(( cpu.base[32]) & (ptr.byteLength - 1)) >>> 2] >>> 26) === 0x12) {
                     continue;
                 }
-                // Exceptions
                 if (mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
                     if ((cpu.copr[12] & 0x401) === 0x401) {
                         exception(0x400, false);
