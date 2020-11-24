@@ -2312,7 +2312,7 @@ pseudo.CstrMips = function() {
                     }
                 }
             }
-            requestAF = requestAnimationFrame(cpu.run); //setTimeout(cpu.run, 0);
+            requestAF = setTimeout(cpu.run, 0);
         },
         parseExeHeader(header) {
             cpu.base[28] = header[2 + 3];
@@ -2324,8 +2324,8 @@ pseudo.CstrMips = function() {
             suspended = true;
         },
         pause() {
-            cancelAnimationFrame(requestAF);
-            //clearTimeout(requestAF);
+            //cancelAnimationFrame(requestAF);
+            clearTimeout(requestAF);
             requestAF = undefined;
             suspended = true;
         },
@@ -2435,7 +2435,7 @@ pseudo.CstrMain = function() {
                 if (id === 'CD001') {
                     reset();
                     iso = file;
-                    if (0) { // Enable to skip BIOS boot
+                    if (1) { // Enable to skip BIOS boot
                         cpu.base[32] = cpu.base[31];
                         cpu.setpc(cpu.base[32]);
                     }
@@ -2564,7 +2564,7 @@ pseudo.CstrRender = function() {
     }
     
     function drawF(data, size, mode) {
-        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[4] >> 0) & 0xffff, v: (data[4] >> 16) & 0xffff, }, ] };
+        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: ((data[1] >> 0) << 21 >> 21), v: ((data[1] >> 16) << 21 >> 21), }, { h: ((data[2] >> 0) << 21 >> 21), v: ((data[2] >> 16) << 21 >> 21), }, { h: ((data[3] >> 0) << 21 >> 21), v: ((data[3] >> 16) << 21 >> 21), }, { h: ((data[4] >> 0) << 21 >> 21), v: ((data[4] >> 16) << 21 >> 21), }, ] };
         let color  = [];
         let vertex = [];
         const opaque = composeBlend(p.cr[0].n);
@@ -2583,7 +2583,7 @@ pseudo.CstrRender = function() {
         drawScene(color, vertex, null, mode, size);
     }
     
-    function drawG(data, size, mode) {          const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }, { a: (data[2] >>> 0) & 0xff, b: (data[2] >>> 8) & 0xff, c: (data[2] >>> 16) & 0xff, n: (data[2] >>> 24) & 0xff, }, { a: (data[4] >>> 0) & 0xff, b: (data[4] >>> 8) & 0xff, c: (data[4] >>> 16) & 0xff, n: (data[4] >>> 24) & 0xff, }, { a: (data[6] >>> 0) & 0xff, b: (data[6] >>> 8) & 0xff, c: (data[6] >>> 16) & 0xff, n: (data[6] >>> 24) & 0xff, }, ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[5] >> 0) & 0xffff, v: (data[5] >> 16) & 0xffff, }, { h: (data[7] >> 0) & 0xffff, v: (data[7] >> 16) & 0xffff, }, ] };
+    function drawG(data, size, mode) {          const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }, { a: (data[2] >>> 0) & 0xff, b: (data[2] >>> 8) & 0xff, c: (data[2] >>> 16) & 0xff, n: (data[2] >>> 24) & 0xff, }, { a: (data[4] >>> 0) & 0xff, b: (data[4] >>> 8) & 0xff, c: (data[4] >>> 16) & 0xff, n: (data[4] >>> 24) & 0xff, }, { a: (data[6] >>> 0) & 0xff, b: (data[6] >>> 8) & 0xff, c: (data[6] >>> 16) & 0xff, n: (data[6] >>> 24) & 0xff, }, ], vx: [ { h: ((data[1] >> 0) << 21 >> 21), v: ((data[1] >> 16) << 21 >> 21), }, { h: ((data[3] >> 0) << 21 >> 21), v: ((data[3] >> 16) << 21 >> 21), }, { h: ((data[5] >> 0) << 21 >> 21), v: ((data[5] >> 16) << 21 >> 21), }, { h: ((data[7] >> 0) << 21 >> 21), v: ((data[7] >> 16) << 21 >> 21), }, ] };
         
         let color  = [];
         let vertex = [];
@@ -2604,7 +2604,7 @@ pseudo.CstrRender = function() {
     }
     
     function drawFT(data, size) {
-        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, { h: (data[5] >> 0) & 0xffff, v: (data[5] >> 16) & 0xffff, }, { h: (data[7] >> 0) & 0xffff, v: (data[7] >> 16) & 0xffff, }, ], tx: [ { u: (data[2] >>> 0) & 0xff, v: (data[2] >>> 8) & 0xff, }, { u: (data[4] >>> 0) & 0xff, v: (data[4] >>> 8) & 0xff, }, { u: (data[6] >>> 0) & 0xff, v: (data[6] >>> 8) & 0xff, }, { u: (data[8] >>> 0) & 0xff, v: (data[8] >>> 8) & 0xff, }, ], tp: [ (data[2] >>> 16) & 0xffff, (data[4] >>> 16) & 0xffff, ] };
+        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: ((data[1] >> 0) << 21 >> 21), v: ((data[1] >> 16) << 21 >> 21), }, { h: ((data[3] >> 0) << 21 >> 21), v: ((data[3] >> 16) << 21 >> 21), }, { h: ((data[5] >> 0) << 21 >> 21), v: ((data[5] >> 16) << 21 >> 21), }, { h: ((data[7] >> 0) << 21 >> 21), v: ((data[7] >> 16) << 21 >> 21), }, ], tx: [ { u: (data[2] >>> 0) & 0xff, v: (data[2] >>> 8) & 0xff, }, { u: (data[4] >>> 0) & 0xff, v: (data[4] >>> 8) & 0xff, }, { u: (data[6] >>> 0) & 0xff, v: (data[6] >>> 8) & 0xff, }, { u: (data[8] >>> 0) & 0xff, v: (data[8] >>> 8) & 0xff, }, ], tp: [ (data[2] >>> 16) & 0xffff, (data[4] >>> 16) & 0xffff, ] };
         let color   = [];
         let vertex  = [];
         let texture = [];
@@ -2641,7 +2641,7 @@ pseudo.CstrRender = function() {
     }
     
     function drawGT(data, size) {
-        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }, { a: (data[3] >>> 0) & 0xff, b: (data[3] >>> 8) & 0xff, c: (data[3] >>> 16) & 0xff, n: (data[3] >>> 24) & 0xff, }, { a: (data[6] >>> 0) & 0xff, b: (data[6] >>> 8) & 0xff, c: (data[6] >>> 16) & 0xff, n: (data[6] >>> 24) & 0xff, }, { a: (data[9] >>> 0) & 0xff, b: (data[9] >>> 8) & 0xff, c: (data[9] >>> 16) & 0xff, n: (data[9] >>> 24) & 0xff, }, ], vx: [ { h: (data[ 1] >> 0) & 0xffff, v: (data[ 1] >> 16) & 0xffff, }, { h: (data[ 4] >> 0) & 0xffff, v: (data[ 4] >> 16) & 0xffff, }, { h: (data[ 7] >> 0) & 0xffff, v: (data[ 7] >> 16) & 0xffff, }, { h: (data[10] >> 0) & 0xffff, v: (data[10] >> 16) & 0xffff, }, ], tx: [ { u: (data[ 2] >>> 0) & 0xff, v: (data[ 2] >>> 8) & 0xff, }, { u: (data[ 5] >>> 0) & 0xff, v: (data[ 5] >>> 8) & 0xff, }, { u: (data[ 8] >>> 0) & 0xff, v: (data[ 8] >>> 8) & 0xff, }, { u: (data[11] >>> 0) & 0xff, v: (data[11] >>> 8) & 0xff, }, ], tp: [ (data[2] >>> 16) & 0xffff, (data[5] >>> 16) & 0xffff, ] };
+        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, }, { a: (data[3] >>> 0) & 0xff, b: (data[3] >>> 8) & 0xff, c: (data[3] >>> 16) & 0xff, n: (data[3] >>> 24) & 0xff, }, { a: (data[6] >>> 0) & 0xff, b: (data[6] >>> 8) & 0xff, c: (data[6] >>> 16) & 0xff, n: (data[6] >>> 24) & 0xff, }, { a: (data[9] >>> 0) & 0xff, b: (data[9] >>> 8) & 0xff, c: (data[9] >>> 16) & 0xff, n: (data[9] >>> 24) & 0xff, }, ], vx: [ { h: ((data[ 1] >> 0) << 21 >> 21), v: ((data[ 1] >> 16) << 21 >> 21), }, { h: ((data[ 4] >> 0) << 21 >> 21), v: ((data[ 4] >> 16) << 21 >> 21), }, { h: ((data[ 7] >> 0) << 21 >> 21), v: ((data[ 7] >> 16) << 21 >> 21), }, { h: ((data[10] >> 0) << 21 >> 21), v: ((data[10] >> 16) << 21 >> 21), }, ], tx: [ { u: (data[ 2] >>> 0) & 0xff, v: (data[ 2] >>> 8) & 0xff, }, { u: (data[ 5] >>> 0) & 0xff, v: (data[ 5] >>> 8) & 0xff, }, { u: (data[ 8] >>> 0) & 0xff, v: (data[ 8] >>> 8) & 0xff, }, { u: (data[11] >>> 0) & 0xff, v: (data[11] >>> 8) & 0xff, }, ], tp: [ (data[2] >>> 16) & 0xffff, (data[5] >>> 16) & 0xffff, ] };
         let color   = [];
         let vertex  = [];
         let texture = [];
@@ -2668,7 +2668,7 @@ pseudo.CstrRender = function() {
     }
     
     function drawTile(data, size) {
-        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, ] };
+        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: ((data[1] >> 0) << 21 >> 21), v: ((data[1] >> 16) << 21 >> 21), }, { h: ((data[2] >> 0) << 21 >> 21), v: ((data[2] >> 16) << 21 >> 21), }, ] };
         let color  = [];
         let vertex = [];
         const opaque = composeBlend(p.cr[0].n);
@@ -2694,7 +2694,7 @@ pseudo.CstrRender = function() {
     }
     
     function drawSprite(data, size) {
-        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[3] >> 0) & 0xffff, v: (data[3] >> 16) & 0xffff, }, ], tx: [ { u: (data[2] >>> 0) & 0xff, v: (data[2] >>> 8) & 0xff, } ], tp: [ (data[2] >>> 16) & 0xffff ] };
+        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: ((data[1] >> 0) << 21 >> 21), v: ((data[1] >> 16) << 21 >> 21), }, { h: ((data[3] >> 0) << 21 >> 21), v: ((data[3] >> 16) << 21 >> 21), }, ], tx: [ { u: (data[2] >>> 0) & 0xff, v: (data[2] >>> 8) & 0xff, } ], tp: [ (data[2] >>> 16) & 0xffff ] };
         let color   = [];
         let vertex  = [];
         let texture = [];
@@ -2794,10 +2794,7 @@ pseudo.CstrRender = function() {
             tcache.reset(ctx);
             render.resize({ w: 640, h: 480 });
         },
-        swapBuffers(clear) {
-            if (clear) {
-                ctx.clear(ctx.COLOR_BUFFER_BIT);
-            }
+        swapBuffers() {
         },
         resize(data) {
             // Same resolution? Ciao!
@@ -2809,14 +2806,14 @@ pseudo.CstrRender = function() {
                 // Store valid resolution
                 res.w = data.w;
                 res.h = data.h;
-                if (1) {
+                if (0) {
                     ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
                 }
                 else {
                     ctx.viewport(0, 0, 640, 480);
                 }
                 ctx.uniform2f(attrib._r, res.w, res.h);
-                render.swapBuffers(true);
+                ctx.clear(ctx.COLOR_BUFFER_BIT);
                 divRes.innerText = res.w + ' x ' + res.h;
             }
         },
@@ -2894,7 +2891,7 @@ pseudo.CstrRender = function() {
                     return;
                 case 0x02: // BLOCK FILL
                     {
-                        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: (data[1] >> 0) & 0xffff, v: (data[1] >> 16) & 0xffff, }, { h: (data[2] >> 0) & 0xffff, v: (data[2] >> 16) & 0xffff, }, ] };
+                        const p = { cr: [ { a: (data[0] >>> 0) & 0xff, b: (data[0] >>> 8) & 0xff, c: (data[0] >>> 16) & 0xff, n: (data[0] >>> 24) & 0xff, } ], vx: [ { h: ((data[1] >> 0) << 21 >> 21), v: ((data[1] >> 16) << 21 >> 21), }, { h: ((data[2] >> 0) << 21 >> 21), v: ((data[2] >> 16) << 21 >> 21), }, ] };
                         let color  = [];
                         let vertex = [];
                         for (let i = 0; i < 4; i++) {
@@ -2991,7 +2988,15 @@ pseudo.CstrRender = function() {
     };
 };
 const render = new pseudo.CstrRender();
+// Check for pushed button
 pseudo.CstrSerial = function() {
+    const SIO_STAT_TX_READY = 0x001;
+    const SIO_STAT_RX_READY = 0x002;
+    const SIO_STAT_TX_EMPTY = 0x004;
+    const SIO_STAT_IRQ      = 0x200;
+    const SIO_CTRL_DTR         = 0x002;
+    const SIO_CTRL_RESET_ERROR = 0x010;
+    const SIO_CTRL_RESET       = 0x040;
     const PAD_BTN_SELECT   =  0;
     const PAD_BTN_START    =  3;
     const PAD_BTN_UP       =  4;
@@ -3006,25 +3011,15 @@ pseudo.CstrSerial = function() {
     const PAD_BTN_CIRCLE   = 13;
     const PAD_BTN_CROSS    = 14;
     const PAD_BTN_SQUARE   = 15;
-    let rx, btnState, index;
     let bfr = new Uint8Array(5);
-    function pollController(data) {
-        if ((index == 0 && data != 0x01) || (index == 1 && data != 0x42)) {
-            return 0xff;
-        }
-        rx.data = bfr[index];
-        if (++index === bfr.byteLength) {
-            index = 0;
-        }
-    }
+    let btnState, index, step;
     return {
         reset() {
-            rx = {
-                enabled: false,
-                   data: 0
-            };
+            mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2] = SIO_STAT_TX_READY | SIO_STAT_TX_EMPTY;
+            index  = 0;
+            step   = 0;
             btnState = 0xffff;
-            index    = 0;
+            // Default pad buffer
             bfr[0] = 0xff;
             bfr[1] = 0x41;
             bfr[2] = 0x5a;
@@ -3033,14 +3028,75 @@ pseudo.CstrSerial = function() {
         },
         write: {
             h(addr, data) {
+                switch(addr) {
+                    case 0x104a:
+                        mem.hwr.uh[((0x104a) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data & (~(SIO_CTRL_RESET_ERROR));
+                        
+                        if (mem.hwr.uh[((0x104a) & (mem.hwr.uh.byteLength - 1)) >>> 1] & SIO_CTRL_RESET || !mem.hwr.uh[((0x104a) & (mem.hwr.uh.byteLength - 1)) >>> 1]) {
+                            mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2]  = SIO_STAT_TX_READY | SIO_STAT_TX_EMPTY;
+                            
+                            index = 0;
+                            step  = 0;
+                        }
+                        return;
+                }
                 mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
             },
             b(addr, data) {
                 switch(addr) {
                     case 0x1040:
-                        rx.enabled = true;
-                        pollController(data);
-                        bus.interruptSet(7);
+                        switch(step) {
+                            case 1:
+                                if (data & 0x40) {
+                                    index = 1;
+                                    step  = 2;
+                                    
+                                    if (data  == 0x42) {
+                                        bfr[1] = 0x41;
+                                    }
+                                    else
+                                    if (data  == 0x43) {
+                                        bfr[1] = 0x43;
+                                    }
+                                    else {
+                                        psx.error('SIO: Data == ' + psx.hex(data));
+                                    }
+                                }
+                                else {
+                                    step = 0;
+                                }
+                                
+                                bus.interruptSet(7);
+                                return;
+                                
+                            case 2:
+                                if (++index == bfr.byteLength - 1) {
+                                    step = 0;
+                                    return;
+                                }
+                                
+                                bus.interruptSet(7);
+                                return;
+                        }
+                        
+                        if (data == 1) {
+                            mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2] &= (~(SIO_STAT_TX_EMPTY));
+                            mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2] |= ( (SIO_STAT_RX_READY));
+                            
+                            index = 0;
+                            step  = 1;
+                            
+                            if (mem.hwr.uh[((0x104a) & (mem.hwr.uh.byteLength - 1)) >>> 1] & SIO_CTRL_DTR) {
+                                if (mem.hwr.uh[((0x104a) & (mem.hwr.uh.byteLength - 1)) >>> 1] & 0x2000) { // Controller 2
+                                    bfr[3] = 0xff;
+                                    bfr[4] = 0xff;
+                                } else { // Controller 1
+                                    bfr[3] = btnState & 0xff;
+                                    bfr[4] = btnState >>> 8;
+                                }
+                                bus.interruptSet(7);
+                            }
+                        }
                         return;
                 }
                 mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
@@ -3048,20 +3104,24 @@ pseudo.CstrSerial = function() {
         },
         read: {
             h(addr) {
-                switch(addr) {
-                    case 0x1044:
-                        return 0b101 | (rx.enabled << 1);
-                }
                 return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
             },
             b(addr) {
                 switch(addr) {
                     case 0x1040:
-                        if (rx.enabled) {
-                            rx.enabled = false;
-                            return rx.data;
+                        if (!(mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2] & SIO_STAT_RX_READY)) {
+                            return 0;
                         }
-                        return 0xff;
+                        
+                        if (index == bfr.byteLength - 1) {
+                            mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2] &= (~(SIO_STAT_RX_READY));
+                            mem.hwr.uw[((0x1044) & (mem.hwr.uw.byteLength - 1)) >>> 2] |= ( (SIO_STAT_TX_EMPTY));
+                            
+                            if (step == 2) {
+                                step  = 0;
+                            }
+                        }
+                        return bfr[index];
                 }
                 return mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
             }
@@ -3091,8 +3151,6 @@ pseudo.CstrSerial = function() {
             if (code == 88) { // X
                 if (pushed) { btnState &= ( (0xffff ^ (1 << PAD_BTN_CROSS))); } else { btnState |= (~(0xffff ^ (1 << PAD_BTN_CROSS))); };
             }
-            bfr[3] = btnState & 0xff;
-            bfr[4] = btnState >>> 8;
         }
     };
 };
@@ -3265,7 +3323,7 @@ pseudo.CstrGraphics = function() {
     const resMode = [
         256, 320, 512, 640, 368, 384, 512, 640
     ];
-    let modeDMA, vpos, vdiff, isVideoPAL, isVideo24Bit, disabled;
+    let modeDMA, vdiff, isVideoPAL, isVideo24Bit, disabled;
     function pipeReset() {
         pipe.data.fill(0);
         pipe.prim = 0;
@@ -3390,8 +3448,8 @@ pseudo.CstrGraphics = function() {
     }
     function photoData(data) {
         const p = [
-            (data[1] >>>  0) & 0xffff,
-            (data[1] >>> 16) & 0xffff,
+            (data[1] >>>  0) & 0x03ff,
+            (data[1] >>> 16) & 0x01ff,
             (data[2] >>>  0) & 0xffff,
             (data[2] >>> 16) & 0xffff,
         ];
@@ -3404,12 +3462,13 @@ pseudo.CstrGraphics = function() {
     // Exposed class functions/variables
     return {
         vram: union(1024 * 512 * 2),
+        vpos: 0,
         reset() {
             vs.vram.uh.fill(0);
             ret.data     = 0x400;
             ret.status   = GPU_STAT_READYFORCOMMANDS | GPU_STAT_IDLE | GPU_STAT_DISPLAYDISABLED | 0x2000;
             modeDMA      = GPU_DMA_NONE;
-            vpos         = 0;
+            vs.vpos      = 0;
             vdiff        = 0;
             isVideoPAL   = false;
             isVideo24Bit = false;
@@ -3430,7 +3489,7 @@ pseudo.CstrGraphics = function() {
         },
         redraw() {
             ret.status ^= GPU_STAT_ODDLINES;
-            render.swapBuffers(disabled);
+            render.swapBuffers();
         },
         scopeW(addr, data) {
             switch(addr & 0xf) {
@@ -3455,7 +3514,7 @@ pseudo.CstrGraphics = function() {
                             modeDMA = data & 3;
                             return;
                         case 0x05:
-                            vpos = Math.max(vpos, (data >>> 10) & 0x1ff);
+                            vs.vpos = (data >>> 10) & 0x1ff;
                             return;
                         case 0x07:
                             vdiff = ((data >>> 10) & 0x3ff) - (data & 0x3ff);
@@ -3472,7 +3531,7 @@ pseudo.CstrGraphics = function() {
                                 }
                                 else { // Special cases
                                     vdiff = vdiff == 226 ? 240 : vdiff; // pdx-059, wurst2k
-                                    render.resize({ w: w, h: vpos ? vpos : vdiff });
+                                    render.resize({ w: w, h: vs.vpos ? vs.vpos : vdiff });
                                 }
                             }
                             return;

@@ -67,7 +67,7 @@ pseudo.CstrGraphics = function() {
         256, 320, 512, 640, 368, 384, 512, 640
     ];
 
-    let modeDMA, vpos, vdiff, isVideoPAL, isVideo24Bit, disabled;
+    let modeDMA, vdiff, isVideoPAL, isVideo24Bit, disabled;
 
     function pipeReset() {
         pipe.data.fill(0);
@@ -215,8 +215,8 @@ pseudo.CstrGraphics = function() {
 
     function photoData(data) {
         const p = [
-            (data[1] >>>  0) & 0xffff,
-            (data[1] >>> 16) & 0xffff,
+            (data[1] >>>  0) & 0x03ff,
+            (data[1] >>> 16) & 0x01ff,
             (data[2] >>>  0) & 0xffff,
             (data[2] >>> 16) & 0xffff,
         ];
@@ -232,13 +232,14 @@ pseudo.CstrGraphics = function() {
     // Exposed class functions/variables
     return {
         vram: union(FRAME_W * FRAME_H * 2),
+        vpos: 0,
 
         reset() {
             vs.vram.uh.fill(0);
             ret.data     = 0x400;
             ret.status   = GPU_STAT_READYFORCOMMANDS | GPU_STAT_IDLE | GPU_STAT_DISPLAYDISABLED | 0x2000;
             modeDMA      = GPU_DMA_NONE;
-            vpos         = 0;
+            vs.vpos      = 0;
             vdiff        = 0;
             isVideoPAL   = false;
             isVideo24Bit = false;
@@ -262,7 +263,7 @@ pseudo.CstrGraphics = function() {
 
         redraw() {
             ret.status ^= GPU_STAT_ODDLINES;
-            render.swapBuffers(disabled);
+            render.swapBuffers();
         },
 
         scopeW(addr, data) {
@@ -293,7 +294,7 @@ pseudo.CstrGraphics = function() {
                             return;
 
                         case 0x05:
-                            vpos = Math.max(vpos, (data >>> 10) & 0x1ff);
+                            vs.vpos = (data >>> 10) & 0x1ff;
                             return;
 
                         case 0x07:
@@ -314,7 +315,7 @@ pseudo.CstrGraphics = function() {
                                 }
                                 else { // Special cases
                                     vdiff = vdiff == 226 ? 240 : vdiff; // pdx-059, wurst2k
-                                    render.resize({ w: w, h: vpos ? vpos : vdiff });
+                                    render.resize({ w: w, h: vs.vpos ? vs.vpos : vdiff });
                                 }
                             }
                             return;

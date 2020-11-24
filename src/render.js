@@ -20,8 +20,8 @@
 }
 
 #define POINT(data) { \
-    h: (data >>  0) & 0xffff, \
-    v: (data >> 16) & 0xffff, \
+    h: ((data >>  0) << 21 >> 21), \
+    v: ((data >> 16) << 21 >> 21), \
 }
 
 #define UV(data) { \
@@ -511,10 +511,7 @@ pseudo.CstrRender = function() {
             render.resize({ w: 640, h: 480 });
         },
 
-        swapBuffers(clear) {
-            if (clear) {
-                ctx.clear(ctx.COLOR_BUFFER_BIT);
-            }
+        swapBuffers() {
         },
 
         resize(data) {
@@ -529,14 +526,14 @@ pseudo.CstrRender = function() {
                 res.w = data.w;
                 res.h = data.h;
 
-                if (1) {
+                if (0) {
                     ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
                 }
                 else {
                     ctx.viewport(0, 0, 640, 480);
                 }
                 ctx.uniform2f(attrib._r, res.w, res.h);
-                render.swapBuffers(true);
+                ctx.clear(ctx.COLOR_BUFFER_BIT);
 
                 divRes.innerText = res.w + ' x ' + res.h;
             }

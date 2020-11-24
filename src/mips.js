@@ -502,7 +502,7 @@ pseudo.CstrMips = function() {
                     }
                 }
             }
-            requestAF = requestAnimationFrame(cpu.run); //setTimeout(cpu.run, 0);
+            requestAF = setTimeout(cpu.run, 0);
         },
 
         parseExeHeader(header) {
@@ -517,8 +517,8 @@ pseudo.CstrMips = function() {
         },
 
         pause() {
-            cancelAnimationFrame(requestAF);
-            //clearTimeout(requestAF);
+            //cancelAnimationFrame(requestAF);
+            clearTimeout(requestAF);
             requestAF = undefined;
             suspended = true;
         },

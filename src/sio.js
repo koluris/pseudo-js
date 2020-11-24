@@ -1,5 +1,12 @@
 /* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
 
+#define status \
+    directMemW(mem.hwr.uw, 0x1044)
+
+#define control \
+    directMemH(mem.hwr.uh, 0x104a)
+
+// Check for pushed button
 #define btnCheck(btn) \
     if (pushed) { \
         btnState &= ( (0xffff ^ (1 << btn))); \
@@ -9,6 +16,15 @@
     }
 
 pseudo.CstrSerial = function() {
+    const SIO_STAT_TX_READY = 0x001;
+    const SIO_STAT_RX_READY = 0x002;
+    const SIO_STAT_TX_EMPTY = 0x004;
+    const SIO_STAT_IRQ      = 0x200;
+
+    const SIO_CTRL_DTR         = 0x002;
+    const SIO_CTRL_RESET_ERROR = 0x010;
+    const SIO_CTRL_RESET       = 0x040;
+
     const PAD_BTN_SELECT   =  0;
     const PAD_BTN_START    =  3;
     const PAD_BTN_UP       =  4;
@@ -24,31 +40,17 @@ pseudo.CstrSerial = function() {
     const PAD_BTN_CROSS    = 14;
     const PAD_BTN_SQUARE   = 15;
 
-    let rx, btnState, index;
     let bfr = new UintBcap(5);
-
-    function pollController(data) {
-        if ((index == 0 && data != 0x01) || (index == 1 && data != 0x42)) {
-            return 0xff;
-        }
-
-        rx.data = bfr[index];
-
-        if (++index === bfr.bSize) {
-            index = 0;
-        }
-    }
+    let btnState, index, step;
 
     return {
         reset() {
-            rx = {
-                enabled: false,
-                   data: 0
-            };
-
+            status = SIO_STAT_TX_READY | SIO_STAT_TX_EMPTY;
+            index  = 0;
+            step   = 0;
             btnState = 0xffff;
-            index    = 0;
 
+            // Default pad buffer
             bfr[0] = 0xff;
             bfr[1] = 0x41;
             bfr[2] = 0x5a;
@@ -58,15 +60,77 @@ pseudo.CstrSerial = function() {
 
         write: {
             h(addr, data) {
+                switch(addr) {
+                    case 0x104a:
+                        control = data & (~(SIO_CTRL_RESET_ERROR));
+                        
+                        if (control & SIO_CTRL_RESET || !control) {
+                            status  = SIO_STAT_TX_READY | SIO_STAT_TX_EMPTY;
+                            
+                            index = 0;
+                            step  = 0;
+                        }
+                        return;
+                }
+
                 directMemH(mem.hwr.uh, addr) = data;
             },
 
             b(addr, data) {
                 switch(addr) {
                     case 0x1040:
-                        rx.enabled = true;
-                        pollController(data);
-                        bus.interruptSet(IRQ_SIO0);
+                        switch(step) {
+                            case 1:
+                                if (data & 0x40) {
+                                    index = 1;
+                                    step  = 2;
+                                    
+                                    if (data  == 0x42) {
+                                        bfr[1] = 0x41;
+                                    }
+                                    else
+                                    if (data  == 0x43) {
+                                        bfr[1] = 0x43;
+                                    }
+                                    else {
+                                        psx.error('SIO: Data == ' + psx.hex(data));
+                                    }
+                                }
+                                else {
+                                    step = 0;
+                                }
+                                
+                                bus.interruptSet(IRQ_SIO0);
+                                return;
+                                
+                            case 2:
+                                if (++index == bfr.bSize - 1) {
+                                    step = 0;
+                                    return;
+                                }
+                                
+                                bus.interruptSet(IRQ_SIO0);
+                                return;
+                        }
+                        
+                        if (data == 1) {
+                            status &= (~(SIO_STAT_TX_EMPTY));
+                            status |= ( (SIO_STAT_RX_READY));
+                            
+                            index = 0;
+                            step  = 1;
+                            
+                            if (control & SIO_CTRL_DTR) {
+                                if (control & 0x2000) { // Controller 2
+                                    bfr[3] = 0xff;
+                                    bfr[4] = 0xff;
+                                } else { // Controller 1
+                                    bfr[3] = btnState & 0xff;
+                                    bfr[4] = btnState >>> 8;
+                                }
+                                bus.interruptSet(IRQ_SIO0);
+                            }
+                        }
                         return;
                 }
 
@@ -76,22 +140,25 @@ pseudo.CstrSerial = function() {
 
         read: {
             h(addr) {
-                switch(addr) {
-                    case 0x1044:
-                        return 0b101 | (rx.enabled << 1);
-                }
-
                 return directMemH(mem.hwr.uh, addr);
             },
 
             b(addr) {
                 switch(addr) {
                     case 0x1040:
-                        if (rx.enabled) {
-                            rx.enabled = false;
-                            return rx.data;
+                        if (!(status & SIO_STAT_RX_READY)) {
+                            return 0;
                         }
-                        return 0xff;
+                        
+                        if (index == bfr.bSize - 1) {
+                            status &= (~(SIO_STAT_RX_READY));
+                            status |= ( (SIO_STAT_TX_EMPTY));
+                            
+                            if (step == 2) {
+                                step  = 0;
+                            }
+                        }
+                        return bfr[index];
                 }
 
                 return directMemB(mem.hwr.ub, addr) = data;
@@ -130,11 +197,11 @@ pseudo.CstrSerial = function() {
             if (code == 88) { // X
                 btnCheck(PAD_BTN_CROSS);
             }
-
-            bfr[3] = btnState & 0xff;
-            bfr[4] = btnState >>> 8;
         }
     };
 };
+
+#undef status
+#undef control
 
 const sio = new pseudo.CstrSerial();
