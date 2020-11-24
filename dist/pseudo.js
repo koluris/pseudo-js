@@ -2297,14 +2297,18 @@ pseudo.CstrMips = function() {
         },
         run() {
             suspended = false;
-            while(!suspended) { // And u don`t stop!
-                for (let i = 0; i < 128; i++) {
+            while(!suspended) {
+                for (let i = 0; i < 100; i++) {
                     step(false);
                 }
-                // Rootcounters, interrupts
-                  cdrom.update();
+                // Tick psx
                 rootcnt.update(128);
+                  cdrom.update();
                     bus.update();
+                // Skip exceptions for GTE`s sake
+                if ((ptr[(( cpu.base[32]) & (ptr.byteLength - 1)) >>> 2] >>> 26) === 0x12) {
+                    continue;
+                }
                 // Exceptions
                 if (mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
                     if ((cpu.copr[12] & 0x401) === 0x401) {
@@ -2801,11 +2805,11 @@ pseudo.CstrRender = function() {
             if (data.w === res.w && data.h === res.h) {
                 return;
             }
+            // Store valid resolution
+            res.w = data.w;
+            res.h = data.h;
             // Check if we have a valid resolution
             if (data.w > 0 && data.h > 0) {
-                // Store valid resolution
-                res.w = data.w;
-                res.h = data.h;
                 if (0) {
                     ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
                 }
@@ -2813,9 +2817,9 @@ pseudo.CstrRender = function() {
                     ctx.viewport(0, 0, 640, 480);
                 }
                 ctx.uniform2f(attrib._r, res.w, res.h);
-                ctx.clear(ctx.COLOR_BUFFER_BIT);
-                divRes.innerText = res.w + ' x ' + res.h;
             }
+            ctx.clear(ctx.COLOR_BUFFER_BIT);
+            divRes.innerText = res.w + ' x ' + res.h;
         },
         draw(addr, data) {
             // Primitives
@@ -2887,7 +2891,7 @@ pseudo.CstrRender = function() {
             // Operations
             switch(addr) {
                 case 0x01: // FLUSH
-                    vs.scopeW(0x1f801814, 0x01000000);
+                    vs.scopeW(0x1814, 0x01000000);
                     return;
                 case 0x02: // BLOCK FILL
                     {
@@ -2908,17 +2912,17 @@ pseudo.CstrRender = function() {
                             p.vx[0].h,             p.vx[0].v + p.vx[1].v,
                             p.vx[0].h + p.vx[1].h, p.vx[0].v + p.vx[1].v,
                         ];
-                        
                         drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
                     }
                     return;
-                case 0x80: // MOVE IMAGE
+                case 0x80: // IMAGE MOVE
+                    //vs.photoMoveWithin(data);
                     return;
-                case 0xa0: // LOAD IMAGE
-                    vs.photoRead(data);
+                case 0xa0: // IMAGE SEND
+                    vs.photoSendTo(data);
                     return;
-                case 0xc0: // STORE IMAGE
-                    vs.photoWrite(data);
+                case 0xc0: // IMAGE COPY
+                    vs.photoReadFrom(data);
                     return;
                 case 0xe1: // TEXTURE PAGE
                     blend = (data[0] >>> 5) & 3;
@@ -2944,7 +2948,7 @@ pseudo.CstrRender = function() {
             }
             psx.error('GPU Render Primitive ' + psx.hex(addr));
         },
-        outputVRAM(raw, bit24, iX, iY, iW, iH) {
+        outputVRAM(raw, iX, iY, iW, iH, bit24) {
             // Disable state
             ctx.disable(ctx.BLEND);
             if (bit24) {
@@ -3332,17 +3336,15 @@ pseudo.CstrGraphics = function() {
     }
     const dataMem = {
         write(stream, addr, size) {
-            let i = 0;
-            while (i < size) {
+            for (let i = 0; i < size; i++) {
                 if (vrop.allowStore) {
-                    if ((i += fetchFromRAM(stream, addr, size - i)) >= size) {
+                    if ((i += fetchMem(stream, addr, size - i)) >= size) {
                         continue;
                     }
                     addr += i;
                 }
                 ret.data = stream ? mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2] : addr;
                 addr += 4;
-                i++;
                 if (!pipe.size) {
                     const prim  = ((ret.data >>> 24) & 0xff);
                     const count = pSize[prim];
@@ -3397,7 +3399,7 @@ pseudo.CstrGraphics = function() {
             } while (--size);
         }
     };
-    function fetchFromRAM(stream, addr, size) {
+    function fetchMem(stream, addr, size) {
         let count = 0;
         size <<= 1;
         while (vrop.v.p < vrop.v.end) {
@@ -3427,17 +3429,25 @@ pseudo.CstrGraphics = function() {
                         vrop.h.p = vrop.h.start;
                         vrop.v.p++;
                     }
-                    return fetchEnd(count);
+                    return fetchMemEnd(count);
                 }
             }
             vrop.h.p = vrop.h.start;
             vrop.v.p++;
         }
-        return fetchEnd(count);
+        return fetchMemEnd(count);
     }
-    function fetchEnd(count) {
+    function fetchMemEnd(count) {
         if (vrop.v.p >= vrop.v.end) {
-            render.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
+            // Draw buffer on screen
+            render.outputVRAM(
+                vrop.raw,
+                vrop.h.start,
+                vrop.v.start,
+                vrop.h.end - vrop.h.start,
+                vrop.v.end - vrop.v.start,
+                isVideo24Bit
+            );
             vrop.allowStore = false;
             vrop.raw.ub.fill(0);
         }
@@ -3448,10 +3458,10 @@ pseudo.CstrGraphics = function() {
     }
     function photoData(data) {
         const p = [
-            (data[1] >>>  0) & 0x03ff,
-            (data[1] >>> 16) & 0x01ff,
-            (data[2] >>>  0) & 0xffff,
-            (data[2] >>> 16) & 0xffff,
+            (data[1] >>>  0) & 0x03ff, // srcX
+            (data[1] >>> 16) & 0x01ff, // srcY
+            (data[2] >>>  0) & 0xffff, // iW
+            (data[2] >>> 16) & 0xffff, // iH
         ];
         vrop.h.start = vrop.h.p = p[0];
         vrop.v.start = vrop.v.p = p[1];
@@ -3582,17 +3592,17 @@ pseudo.CstrGraphics = function() {
             }
             psx.error('GPU DMA ' + psx.hex(mem.hwr.uw[(((addr & 0xfff0) | 8) & (mem.hwr.uw.byteLength - 1)) >>> 2]));
         },
-        photoWrite(data) {
-            const p = photoData(data);
-            vrop.allowRead = true;
-            vrop.pvram = p[1] * 1024;
-        },
-        photoRead(data) {
+        photoSendTo(data) {
             const p = photoData(data);
             vrop.allowStore = true;
             vrop.raw = new union((p[2] * p[3]) * 4);
             // Cache invalidation
             tcache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
+        },
+        photoReadFrom(data) {
+            const p = photoData(data);
+            vrop.allowRead = true;
+            vrop.pvram = p[1] * 1024;
         }
     };
 };

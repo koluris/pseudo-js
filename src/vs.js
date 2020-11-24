@@ -78,11 +78,9 @@ pseudo.CstrGraphics = function() {
 
     const dataMem = {
         write(stream, addr, size) {
-            let i = 0;
-
-            while (i < size) {
+            for (let i = 0; i < size; i++) {
                 if (vrop.allowStore) {
-                    if ((i += fetchFromRAM(stream, addr, size - i)) >= size) {
+                    if ((i += fetchMem(stream, addr, size - i)) >= size) {
                         continue;
                     }
                     addr += i;
@@ -90,7 +88,6 @@ pseudo.CstrGraphics = function() {
 
                 ret.data = stream ? directMemW(mem.ram.uw, addr) : addr;
                 addr += 4;
-                i++;
 
                 if (!pipe.size) {
                     const prim  = GPU_COMMAND(ret.data);
@@ -155,7 +152,7 @@ pseudo.CstrGraphics = function() {
         }
     };
 
-    function fetchFromRAM(stream, addr, size) {
+    function fetchMem(stream, addr, size) {
         let count = 0;
         size <<= 1;
 
@@ -189,19 +186,27 @@ pseudo.CstrGraphics = function() {
                         vrop.h.p = vrop.h.start;
                         vrop.v.p++;
                     }
-                    return fetchEnd(count);
+                    return fetchMemEnd(count);
                 }
             }
 
             vrop.h.p = vrop.h.start;
             vrop.v.p++;
         }
-        return fetchEnd(count);
+        return fetchMemEnd(count);
     }
 
-    function fetchEnd(count) {
+    function fetchMemEnd(count) {
         if (vrop.v.p >= vrop.v.end) {
-            render.outputVRAM(vrop.raw, isVideo24Bit, vrop.h.start, vrop.v.start, vrop.h.end - vrop.h.start, vrop.v.end - vrop.v.start);
+            // Draw buffer on screen
+            render.outputVRAM(
+                vrop.raw,
+                vrop.h.start,
+                vrop.v.start,
+                vrop.h.end - vrop.h.start,
+                vrop.v.end - vrop.v.start,
+                isVideo24Bit
+            );
 
             vrop.allowStore = false;
             vrop.raw.ub.fill(0);
@@ -215,10 +220,10 @@ pseudo.CstrGraphics = function() {
 
     function photoData(data) {
         const p = [
-            (data[1] >>>  0) & 0x03ff,
-            (data[1] >>> 16) & 0x01ff,
-            (data[2] >>>  0) & 0xffff,
-            (data[2] >>> 16) & 0xffff,
+            (data[1] >>>  0) & 0x03ff, // srcX
+            (data[1] >>> 16) & 0x01ff, // srcY
+            (data[2] >>>  0) & 0xffff, // iW
+            (data[2] >>> 16) & 0xffff, // iH
         ];
 
         vrop.h.start = vrop.h.p = p[0];
@@ -378,14 +383,7 @@ pseudo.CstrGraphics = function() {
             psx.error('GPU DMA ' + psx.hex(chcr));
         },
 
-        photoWrite(data) {
-            const p = photoData(data);
-
-            vrop.allowRead = true;
-            vrop.pvram = p[1] * FRAME_W;
-        },
-
-        photoRead(data) {
+        photoSendTo(data) {
             const p = photoData(data);
 
             vrop.allowStore = true;
@@ -393,6 +391,13 @@ pseudo.CstrGraphics = function() {
 
             // Cache invalidation
             tcache.invalidate(vrop.h.start, vrop.v.start, vrop.h.end, vrop.v.end);
+        },
+
+        photoReadFrom(data) {
+            const p = photoData(data);
+
+            vrop.allowRead = true;
+            vrop.pvram = p[1] * FRAME_W;
         }
     };
 };

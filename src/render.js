@@ -520,12 +520,12 @@ pseudo.CstrRender = function() {
                 return;
             }
 
+            // Store valid resolution
+            res.w = data.w;
+            res.h = data.h;
+
             // Check if we have a valid resolution
             if (data.w > 0 && data.h > 0) {
-                // Store valid resolution
-                res.w = data.w;
-                res.h = data.h;
-
                 if (0) {
                     ctx.viewport((640 - res.w) / 2, (480 - res.h) / 2, res.w, res.h);
                 }
@@ -533,10 +533,10 @@ pseudo.CstrRender = function() {
                     ctx.viewport(0, 0, 640, 480);
                 }
                 ctx.uniform2f(attrib._r, res.w, res.h);
-                ctx.clear(ctx.COLOR_BUFFER_BIT);
-
-                divRes.innerText = res.w + ' x ' + res.h;
             }
+
+            ctx.clear(ctx.COLOR_BUFFER_BIT);
+            divRes.innerText = res.w + ' x ' + res.h;
         },
 
         draw(addr, data) {
@@ -630,7 +630,7 @@ pseudo.CstrRender = function() {
             // Operations
             switch(addr) {
                 case 0x01: // FLUSH
-                    vs.scopeW(0x1f801814, 0x01000000);
+                    vs.scopeW(0x1814, 0x01000000);
                     return;
 
                 case 0x02: // BLOCK FILL
@@ -654,20 +654,21 @@ pseudo.CstrRender = function() {
                             p.vx[0].h,             p.vx[0].v + p.vx[1].v,
                             p.vx[0].h + p.vx[1].h, p.vx[0].v + p.vx[1].v,
                         ];
-                        
+
                         drawScene(color, vertex, null, ctx.TRIANGLE_STRIP, 4);
                     }
                     return;
 
-                case 0x80: // MOVE IMAGE
+                case 0x80: // IMAGE MOVE
+                    //vs.photoMoveWithin(data);
                     return;
 
-                case 0xa0: // LOAD IMAGE
-                    vs.photoRead(data);
+                case 0xa0: // IMAGE SEND
+                    vs.photoSendTo(data);
                     return;
 
-                case 0xc0: // STORE IMAGE
-                    vs.photoWrite(data);
+                case 0xc0: // IMAGE COPY
+                    vs.photoReadFrom(data);
                     return;
 
                 case 0xe1: // TEXTURE PAGE
@@ -701,7 +702,7 @@ pseudo.CstrRender = function() {
             psx.error('GPU Render Primitive ' + psx.hex(addr));
         },
 
-        outputVRAM(raw, bit24, iX, iY, iW, iH) {
+        outputVRAM(raw, iX, iY, iW, iH, bit24) {
             // Disable state
             ctx.disable(ctx.BLEND);
 

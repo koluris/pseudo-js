@@ -485,15 +485,20 @@ pseudo.CstrMips = function() {
         run() {
             suspended = false;
 
-            while(!suspended) { // And u don`t stop!
-                for (let i = 0; i < 128; i++) {
+            while(!suspended) {
+                for (let i = 0; i < 100; i++) {
                     step(false);
                 }
 
-                // Rootcounters, interrupts
-                  cdrom.update();
+                // Tick psx
                 rootcnt.update(128);
+                  cdrom.update();
                     bus.update();
+
+                // Skip exceptions for GTE`s sake
+                if ((directMemW(ptr, pc) >>> 26) === 0x12) {
+                    continue;
+                }
 
                 // Exceptions
                 if (data32 & mask32) {
