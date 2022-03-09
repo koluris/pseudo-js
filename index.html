@@ -22,7 +22,10 @@
             const screen = $('#screen');
             psx.init(screen);
             psx.reset();
-            psx.run(performance.now());
+
+            setTimeout(function() {
+                psx.run(performance.now());
+            }, 1000);
         });
     </script>
 </body>

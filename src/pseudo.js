@@ -1,3 +1,5 @@
+/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
+
 #define PSX_CLK 33868800
 
 pseudo.CstrMain = function() {
@@ -47,6 +49,10 @@ pseudo.CstrMain = function() {
             }
             totalFrames += frame;
             requestAF = requestAnimationFrame(psx.run);
+        },
+
+        hex(number) {
+            return '0x' + (number >>> 0).toText(16);
         },
 
         error(out) {

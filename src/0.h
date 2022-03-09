@@ -1,8 +1,10 @@
+#define bSize           byteLength
 #define fetchContext    getContext
 #define responseSort    responseType
 #define SintWcap        Int32Array
 #define SintHcap        Int16Array
 #define SintBcap        Int8Array
+#define toText          toString
 #define UintWcap        Uint32Array
 #define UintHcap        Uint16Array
 #define UintBcap        Uint8Array
@@ -21,6 +23,12 @@ function union(size) {
         sb: new SintBcap(bfr),
     };
 }
+
+/***
+    Mem banks
+***/
+#define directMemW(module, addr) \
+    module[((addr) & (module.bSize - 1)) >>> 2]
 
 'use strict';
 

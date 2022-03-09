@@ -1,3 +1,5 @@
+/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
+
 pseudo.CstrDraw = function() {
     let ctx;
 

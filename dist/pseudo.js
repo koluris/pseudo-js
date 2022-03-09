@@ -35,20 +35,37 @@ pseudo.CstrMem = function() {
         },
         writeROM(data) {
             mem.rom.ub.set(new Uint8Array(data));
+        },
+        read: {
+            w(addr) {
+                switch(addr >>> 24) {
+                    case 0xbf:
+                        return mem.rom.uw[(( addr) & (mem.rom.uw.byteLength - 1)) >>> 2];
+                }
+                psx.error('Mem R32 ' + psx.hex(addr));
+            }
         }
     };
 };
 const mem = new pseudo.CstrMem();
 pseudo.CstrMips = function() {
+    // Base CPU stepper
+    function step() {
+        const code  = mem.read.w(cpu.base[32]);
+        cpu.base[0] = 0;
+        cpu.base[32] += 4;
+        console.info(psx.hex(code));
+    }
     // Exposed class methods/variables
     return {
-        base: new Uint32Array(32 + 3), // + pc, lo, hi
+        base: new Uint32Array(32 + 3), // + cpu.base[32], cpu.base[33], cpu.base[34]
         reset() {
             // Reset processors
             cpu.base.fill(0);
-            pc = 0xbfc00000;
+            cpu.base[32] = 0xbfc00000;
         },
         run() {
+            step();
             psx.error('EOF');
         }
     };
@@ -94,6 +111,9 @@ pseudo.CstrMain = function() {
             }
             totalFrames += frame;
             requestAF = requestAnimationFrame(psx.run);
+        },
+        hex(number) {
+            return '0x' + (number >>> 0).toString(16);
         },
         error(out) {
             cancelAnimationFrame(requestAF);

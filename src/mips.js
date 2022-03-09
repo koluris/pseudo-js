@@ -1,4 +1,18 @@
+/* Base structure and authentic idea PSeudo (Credits: Dennis Koluris) */
+
+#define pc  cpu.base[32]
+#define lo  cpu.base[33]
+#define hi  cpu.base[34]
+
 pseudo.CstrMips = function() {
+    // Base CPU stepper
+    function step() {
+        const code  = mem.read.w(pc);
+        cpu.base[0] = 0;
+        pc += 4;
+        console.info(psx.hex(code));
+    }
+
     // Exposed class methods/variables
     return {
         base: new UintWcap(32 + 3), // + pc, lo, hi
@@ -10,6 +24,7 @@ pseudo.CstrMips = function() {
         },
 
         run() {
+            step();
             psx.error('EOF');
         }
     };
