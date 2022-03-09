@@ -25,14 +25,17 @@ pseudo.CstrMain = function() {
             draw.init(screen);
 
             request('bios/scph1001.bin', function(data) {
-                console.info(data);
+                mem.writeROM(data);
             });
         },
 
         reset() {
-            draw.reset();
             totalFrames = 0;
-            //psx.run(performance.now());
+
+            // Reset all emulator components
+             cpu.reset();
+            draw.reset();
+             mem.reset();
         },
 
         run(now) {
@@ -40,9 +43,16 @@ pseudo.CstrMain = function() {
             let cc = frame * (PSX_CLK / 1000);
 
             while (--cc > 0) {
+                cpu.run();
             }
             totalFrames += frame;
             requestAF = requestAnimationFrame(psx.run);
+        },
+
+        error(out) {
+            cancelAnimationFrame(requestAF);
+            requestAF = undefined;
+            throw new Error('/// PSeudo ' + out);
         }
     };
 };
