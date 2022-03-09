@@ -6,5 +6,6 @@ html, body {
     height: 100%;
 }
 canvas {
+    background: black;
     image-rendering: pixelated;
 }

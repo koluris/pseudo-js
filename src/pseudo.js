@@ -1,21 +1,19 @@
-'use strict';
-
-const pseudo = window.pseudo || {};
+#define PSX_CLK 33868800
 
 pseudo.CstrMain = function() {
-    let suspended, requestAF, totalFrames;
+    let requestAF, totalFrames;
 
-    // Exposed class functions/variables
+    // Exposed class methods/variables
     return {
-        init() {
+        init(screen) {
+            draw.init(screen);
             totalFrames = 0;
-            psx.run(performance.now());
+            //psx.run(performance.now());
         },
 
         run(now) {
             let frame = 10.0 + (now - totalFrames);
-            let cc = frame * (33868800 / 1000);
-            console.info(frame);
+            let cc = frame * (PSX_CLK / 1000);
 
             while (--cc > 0) {
             }
