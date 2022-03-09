@@ -5,21 +5,42 @@ pseudo.CstrDraw = function() {
     // Exposed class methods/variables
     return {
         init(screen) {
-            ctx = screen[0].getContext('WebGL'.toLocaleLowerCase());
+            ctx = screen[0].getContext('WebGL'.toLowerCase());
             ctx.clearColor(21 / 255.0, 21 / 255.0, 21 / 255.0, 1.0);
-            ctx.clear(ctx.COLOR_BUFFER_BIT);
         },
         reset() {
+            ctx.clear(ctx.COLOR_BUFFER_BIT);
         }
     };
 };
 const draw = new pseudo.CstrDraw();
 pseudo.CstrMain = function() {
     let requestAF, totalFrames;
+    // AJAX function
+    function request(path, callback) {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+            if (xhr.status === 404) {
+                console.info('Unable to read file "' + path + '"');
+            }
+            else {
+                callback(xhr.response);
+            }
+        };
+        xhr.responseType = 'ARRAYBUFFER'.toLowerCase();
+        xhr.open('GET', path);
+        xhr.send();
+    }
     // Exposed class methods/variables
     return {
         init(screen) {
             draw.init(screen);
+            request('bios/scph1001.bin', function(resp) {
+                console.info(resp);
+            });
+        },
+        reset() {
+            draw.reset();
             totalFrames = 0;
             //psx.run(performance.now());
         },

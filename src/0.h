@@ -1,4 +1,5 @@
 #define fetchContext    getContext
+#define responseSort    responseType
 
 'use strict';
 
