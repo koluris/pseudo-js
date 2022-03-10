@@ -44,8 +44,9 @@ pseudo.CstrMain = function() {
             let frame = 10.0 + (now - totalFrames);
             let cc = frame * (PSX_CLK / 1000);
 
-            while (--cc > 0) {
-                cpu.run();
+            while (cc > 0) {
+                let blockTime = cpu.run();
+                console.info(blockTime);
             }
             totalFrames += frame;
             requestAF = requestAnimationFrame(psx.run);

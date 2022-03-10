@@ -49,12 +49,24 @@ pseudo.CstrMem = function() {
 };
 const mem = new pseudo.CstrMem();
 pseudo.CstrMips = function() {
+    let branched, cc;
     // Base CPU stepper
     function step() {
         const code  = mem.read.w(cpu.base[32]);
-        cpu.base[0] = 0;
         cpu.base[32] += 4;
-        console.info(psx.hex(code));
+        switch(((code >>> 26) & 0x3f)) {
+            case 13: // ORI
+                cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] | (code & 0xffff);
+                return;
+            case 15: // LUI
+                cpu.base[((code >>> 16) & 0x1f)] = code << 16;
+                break;
+            default:
+                psx.error(psx.hex(((code >>> 26) & 0x3f)));
+                break;
+        }
+        cpu.base[0] = 0;
+        cc++;
     }
     // Exposed class methods/variables
     return {
@@ -62,11 +74,17 @@ pseudo.CstrMips = function() {
         reset() {
             // Reset processors
             cpu.base.fill(0);
+            branched = false;
             cpu.base[32] = 0xbfc00000;
+            cc = 0;
         },
         run() {
-            step();
-            psx.error('EOF');
+            // Reset frames
+            cc = 0;
+            while(!branched) { // Run until Jump/Branch instruction
+                step();
+            }
+            return cc;
         }
     };
 };
@@ -106,8 +124,9 @@ pseudo.CstrMain = function() {
         run(now) {
             let frame = 10.0 + (now - totalFrames);
             let cc = frame * (33868800 / 1000);
-            while (--cc > 0) {
-                cpu.run();
+            while (cc > 0) {
+                let blockTime = cpu.run();
+                console.info(blockTime);
             }
             totalFrames += frame;
             requestAF = requestAnimationFrame(psx.run);
