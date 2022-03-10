@@ -42,11 +42,15 @@ pseudo.CstrMem = function() {
                     return;
                 }
 
-                psx.error('Mem W32 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                psx.error('Mem Write w ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             },
 
             h(addr, data) {
                 switch(addr >>> 24) {
+                    case 0x80:
+                        directMemH(mem.ram.uh, addr) = data;
+                        return;
+
                     case 0x1f:
                         if ((addr & 0xffff) >= 0x400) {
                             io.write.h(addr & 0xffff, data);
@@ -56,7 +60,7 @@ pseudo.CstrMem = function() {
                         return;
                 }
 
-                psx.error('Mem W16 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                psx.error('Mem Write h ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             },
 
             b(addr, data) {
@@ -76,7 +80,7 @@ pseudo.CstrMem = function() {
                         return;
                 }
 
-                psx.error('Mem W08 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                psx.error('Mem Write b ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             }
         },
 
@@ -98,7 +102,22 @@ pseudo.CstrMem = function() {
                         return directMemW(mem.hwr.uw, addr);
                 }
 
-                psx.error('Mem R32 ' + psx.hex(addr));
+                psx.error('Mem Read w ' + psx.hex(addr));
+            },
+
+            h(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return directMemH(mem.ram.uh, addr);
+
+                    case 0x1f:
+                        if ((addr & 0xffff) >= 0x400) {
+                            return io.read.h(addr & 0xffff);
+                        }
+                        return directMemH(mem.hwr.uh, addr);
+                }
+
+                psx.error('Mem Read h ' + psx.hex(addr));
             },
 
             b(addr) {
@@ -117,7 +136,7 @@ pseudo.CstrMem = function() {
                         return directMemB(mem.hwr.ub, addr);
                 }
 
-                psx.error('Mem R08 ' + psx.hex(addr));
+                psx.error('Mem Read b ' + psx.hex(addr));
             }
         }
     };

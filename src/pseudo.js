@@ -38,16 +38,17 @@ pseudo.CstrMain = function() {
              cpu.reset();
             draw.reset();
              mem.reset();
+              vs.reset();
         },
 
         run(now) {
             let frame = 10.0 + (now - totalFrames);
             let cc = frame * (PSX_CLK / 1000);
 
-            while (cc > 0) {
-                let blockTime = cpu.run();
-                cc -= blockTime;
-                console.info('Block count ' + blockTime);
+            while(cc -= cpu.run() > 0) {
+                if (data32 & mask32) {
+                    psx.error('Interrupt!');
+                }
             }
             psx.error('EOF');
             totalFrames += frame;

@@ -22,6 +22,7 @@ pseudo.CstrHardware = function() {
                     case (addr == 0x1020): // COM
                     case (addr == 0x1060): // RAM Size
                     case (addr == 0x1074): // IRQ Mask
+                    case (addr == 0x10f0): // DPCR
                         directMemW(mem.hwr.uw, addr) = data;
                         return;
                 }
@@ -56,12 +57,26 @@ pseudo.CstrHardware = function() {
         read: {
             w(addr) {
                 switch(true) {
+                    case (addr >= 0x1810 && addr <= 0x1814): // Graphics
+                        return vs.scopeR(addr);
+
                     /* unused */
                     case (addr == 0x1074): // IRQ Mask
+                    case (addr == 0x10f0): // DPCR
                         return directMemW(mem.hwr.uw, addr);
                 }
 
                 psx.error('Hardware Read w ' + psx.hex(addr));
+            },
+
+            h(addr) {
+                switch(true) {
+                    /* unused */
+                    case (addr >= 0x1c00 && addr <= 0x1e3e): // SPU
+                        return directMemH(mem.hwr.uh, addr);
+                }
+
+                psx.error('Hardware Read h ' + psx.hex(addr));
             }
         }
     };

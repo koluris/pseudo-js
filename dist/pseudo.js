@@ -47,6 +47,7 @@ pseudo.CstrHardware = function() {
                     case (addr == 0x1020): // COM
                     case (addr == 0x1060): // RAM Size
                     case (addr == 0x1074): // IRQ Mask
+                    case (addr == 0x10f0): // DPCR
                         mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                         return;
                 }
@@ -75,11 +76,22 @@ pseudo.CstrHardware = function() {
         read: {
             w(addr) {
                 switch(true) {
+                    case (addr >= 0x1810 && addr <= 0x1814): // Graphics
+                        return vs.scopeR(addr);
                     
                     case (addr == 0x1074): // IRQ Mask
+                    case (addr == 0x10f0): // DPCR
                         return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                 }
                 psx.error('Hardware Read w ' + psx.hex(addr));
+            },
+            h(addr) {
+                switch(true) {
+                    
+                    case (addr >= 0x1c00 && addr <= 0x1e3e): // SPU
+                        return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
+                }
+                psx.error('Hardware Read h ' + psx.hex(addr));
             }
         }
     };
@@ -121,10 +133,13 @@ pseudo.CstrMem = function() {
                 if ((addr) == 0xfffe0130) {
                     return;
                 }
-                psx.error('Mem W32 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                psx.error('Mem Write w ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             },
             h(addr, data) {
                 switch(addr >>> 24) {
+                    case 0x80:
+                        mem.ram.uh[(( addr) & (mem.ram.uh.byteLength - 1)) >>> 1] = data;
+                        return;
                     case 0x1f:
                         if ((addr & 0xffff) >= 0x400) {
                             io.write.h(addr & 0xffff, data);
@@ -133,7 +148,7 @@ pseudo.CstrMem = function() {
                         mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
                         return;
                 }
-                psx.error('Mem W16 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                psx.error('Mem Write h ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             },
             b(addr, data) {
                 switch(addr >>> 24) {
@@ -150,7 +165,7 @@ pseudo.CstrMem = function() {
                         mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
                         return;
                 }
-                psx.error('Mem W08 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                psx.error('Mem Write b ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             }
         },
         read: {
@@ -168,7 +183,19 @@ pseudo.CstrMem = function() {
                         }
                         return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                 }
-                psx.error('Mem R32 ' + psx.hex(addr));
+                psx.error('Mem Read w ' + psx.hex(addr));
+            },
+            h(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return mem.ram.uh[(( addr) & (mem.ram.uh.byteLength - 1)) >>> 1];
+                    case 0x1f:
+                        if ((addr & 0xffff) >= 0x400) {
+                            return io.read.h(addr & 0xffff);
+                        }
+                        return mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1];
+                }
+                psx.error('Mem Read h ' + psx.hex(addr));
             },
             b(addr) {
                 switch(addr >>> 24) {
@@ -183,7 +210,7 @@ pseudo.CstrMem = function() {
                         }
                         return mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0];
                 }
-                psx.error('Mem R08 ' + psx.hex(addr));
+                psx.error('Mem Read b ' + psx.hex(addr));
             }
         }
     };
@@ -204,6 +231,8 @@ pseudo.CstrMips = function() {
         [0x18, 0x10, 0x08, 0x00],
         [0x00, 0x08, 0x10, 0x18],
     ];
+    // Cache for expensive calculation
+    const power32 = Math.pow(2, 32); 
     let branched, cc;
     // Base CPU stepper
     function step(inslot) {
@@ -223,17 +252,39 @@ pseudo.CstrMips = function() {
                     case 3: // SRA
                         cpu.base[((code >>> 11) & 0x1f)] = ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0) >> ((code >>> 6) & 0x1f);
                         break;
+                    case 4: // SLLV
+                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] << (cpu.base[((code >>> 21) & 0x1f)] & 31);
+                        break;
+                    case 6: // SRLV
+                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] >>> (cpu.base[((code >>> 21) & 0x1f)] & 31);
+                        break;
+                    case 7: // SRAV
+                        cpu.base[((code >>> 11) & 0x1f)] = ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0) >> (cpu.base[((code >>> 21) & 0x1f)] & 31);
+                        break;
                     case 9: // JALR
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[32] + 4;
                     case 8: // JR
                         branch(cpu.base[((code >>> 21) & 0x1f)]);
                         consoleOutput();
                         break;
+                    case 12: // SYSCALL
+                        cpu.base[32] -= 4;
+                        exception(0x20, inslot);
+                        break;
                     case 16: // MFHI
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[34];
                         break;
+                    case 17: // MTHI
+                        cpu.base[34] = cpu.base[((code >>> 21) & 0x1f)];
+                        return;
                     case 18: // MFLO
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[33];
+                        break;
+                    case 19: // MTLO
+                        cpu.base[33] = cpu.base[((code >>> 21) & 0x1f)];
+                        break;
+                    case 25: // MULTU
+                        { const temp = cpu.base[((code >>> 21) & 0x1f)] *  cpu.base[((code >>> 16) & 0x1f)]; cpu.base[33] = temp & 0xffffffff; cpu.base[34] = Math.floor(temp / power32); };
                         break;
                     case 26: // DIV
                         if ( ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0)) { cpu.base[33] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) /  ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0); cpu.base[34] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) %  ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0); };
@@ -253,6 +304,9 @@ pseudo.CstrMips = function() {
                         break;
                     case 37: // OR
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] | cpu.base[((code >>> 16) & 0x1f)];
+                        break;
+                    case 39: // NOR
+                        cpu.base[((code >>> 11) & 0x1f)] = (~(cpu.base[((code >>> 21) & 0x1f)] | cpu.base[((code >>> 16) & 0x1f)]));
                         break;
                     case 42: // SLT
                         cpu.base[((code >>> 11) & 0x1f)] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) < ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0);
@@ -334,6 +388,9 @@ pseudo.CstrMips = function() {
                     case 4: // MTC0
                         cpu.copr[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)];
                         break;
+                    case 16: // RFE
+                        cpu.copr[12] = (cpu.copr[12] & 0xfffffff0) | ((cpu.copr[12] >>> 2) & 0xf);
+                        break;
                     default:
                         psx.error('Coprocessor 0 instruction ' + ((code >>> 21) & 0x1f));
                         break;
@@ -343,12 +400,20 @@ pseudo.CstrMips = function() {
                 cpu.base[((code >>> 16) & 0x1f)] = ((mem.read.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
                 cc += 3;
                 break;
+            case 33: // LH
+                cpu.base[((code >>> 16) & 0x1f)] = ((mem.read.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 16 >> 16);
+                cc += 3;
+                break;
             case 35: // LW
                 cpu.base[((code >>> 16) & 0x1f)] = mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 cc += 3;
                 break;
             case 36: // LBU
                 cpu.base[((code >>> 16) & 0x1f)] = mem.read.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                cc += 3;
+                break;
+            case 37: // LHU
+                cpu.base[((code >>> 16) & 0x1f)] = mem.read.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 cc += 3;
                 break;
             case 40: // SB
@@ -375,6 +440,12 @@ pseudo.CstrMips = function() {
         branched = true;
         step(true);
         cpu.base[32] = addr;
+    }
+    function exception(code, inslot) {
+        cpu.copr[12] = (cpu.copr[12] & (~(0x3f))) | ((cpu.copr[12] << 2) & 0x3f);
+        cpu.copr[13] = code;
+        cpu.copr[14] = cpu.base[32];
+        cpu.base[32] = 0x80;
     }
     function consoleOutput() {
         if (cpu.base[32] === 0xb0) {
@@ -446,14 +517,15 @@ pseudo.CstrMain = function() {
              cpu.reset();
             draw.reset();
              mem.reset();
+              vs.reset();
         },
         run(now) {
             let frame = 10.0 + (now - totalFrames);
             let cc = frame * (33868800 / 1000);
-            while (cc > 0) {
-                let blockTime = cpu.run();
-                cc -= blockTime;
-                console.info('Block count ' + blockTime);
+            while(cc -= cpu.run() > 0) {
+                if (mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2]) {
+                    psx.error('Interrupt!');
+                }
             }
             psx.error('EOF');
             totalFrames += frame;
@@ -473,3 +545,45 @@ pseudo.CstrMain = function() {
     };
 };
 const psx = new pseudo.CstrMain();
+pseudo.CstrGraphics = function() {
+    // Constants
+    const GPU_STAT_ODDLINES         = 0x80000000;
+    const GPU_STAT_DMABITS          = 0x60000000;
+    const GPU_STAT_READYFORCOMMANDS = 0x10000000;
+    const GPU_STAT_READYFORVRAM     = 0x08000000;
+    const GPU_STAT_IDLE             = 0x04000000;
+    const GPU_STAT_DISPLAYDISABLED  = 0x00800000;
+    const GPU_STAT_INTERLACED       = 0x00400000;
+    const GPU_STAT_RGB24            = 0x00200000;
+    const GPU_STAT_PAL              = 0x00100000;
+    const GPU_STAT_DOUBLEHEIGHT     = 0x00080000;
+    const GPU_STAT_WIDTHBITS        = 0x00070000;
+    const GPU_STAT_MASKENABLED      = 0x00001000;
+    const GPU_STAT_MASKDRAWN        = 0x00000800;
+    const GPU_STAT_DRAWINGALLOWED   = 0x00000400;
+    const GPU_STAT_DITHER           = 0x00000200;
+    const GPU_DMA_NONE     = 0;
+    const GPU_DMA_FIFO     = 1;
+    const GPU_DMA_MEM2VRAM = 2;
+    const GPU_DMA_VRAM2MEM = 3;
+    const ret = {
+          data: 0,
+        status: 0,
+    };
+    // Exposed class methods/variables
+    return {
+        reset() {
+            ret.status = GPU_STAT_READYFORCOMMANDS | GPU_STAT_IDLE | GPU_STAT_DISPLAYDISABLED | 0x2000;
+        },
+        scopeR(addr) {
+            switch(addr & 0xf) {
+                case 4: // Status
+                    return ret.status | GPU_STAT_READYFORVRAM;
+                default:
+                    psx.error('GPU Read ' + (addr & 0xf));
+                    break;
+            }
+        }
+    };
+};
+const vs = new pseudo.CstrGraphics();

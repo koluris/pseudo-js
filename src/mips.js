@@ -27,12 +27,12 @@
 
 // Inline functions for speedup
 #define opcodeMult(a, b) \
-    { \
-        const temp = a * b; \
-        \
-        lo = temp & 0xffffffff; \
-        hi = Math.floor(temp / power32); \
-    }
+{ \
+    const temp = a * b; \
+    \
+    lo = temp & 0xffffffff; \
+    hi = Math.floor(temp / power32); \
+}
 
 #define opcodeDiv(a, b) \
     if (b) { \
@@ -68,6 +68,8 @@ pseudo.CstrMips = function() {
         [0x00, 0x08, 0x10, 0x18],
     ];
 
+    // Cache for expensive calculation
+    const power32 = Math.pow(2, 32); 
     let branched, cc;
 
     // Base CPU stepper
@@ -92,6 +94,18 @@ pseudo.CstrMips = function() {
                         cpu.base[rd] = SIGN_EXT_32(cpu.base[rt]) >> shamt;
                         break;
 
+                    case 4: // SLLV
+                        cpu.base[rd] = cpu.base[rt] << (cpu.base[rs] & 31);
+                        break;
+
+                    case 6: // SRLV
+                        cpu.base[rd] = cpu.base[rt] >>> (cpu.base[rs] & 31);
+                        break;
+
+                    case 7: // SRAV
+                        cpu.base[rd] = SIGN_EXT_32(cpu.base[rt]) >> (cpu.base[rs] & 31);
+                        break;
+
                     case 9: // JALR
                         cpu.base[rd] = pc + 4;
 
@@ -100,12 +114,29 @@ pseudo.CstrMips = function() {
                         consoleOutput();
                         break;
 
+                    case 12: // SYSCALL
+                        pc -= 4;
+                        exception(0x20, inslot);
+                        break;
+
                     case 16: // MFHI
                         cpu.base[rd] = hi;
                         break;
 
+                    case 17: // MTHI
+                        hi = cpu.base[rs];
+                        return;
+
                     case 18: // MFLO
                         cpu.base[rd] = lo;
+                        break;
+
+                    case 19: // MTLO
+                        lo = cpu.base[rs];
+                        break;
+
+                    case 25: // MULTU
+                        opcodeMult(cpu.base[rs], cpu.base[rt]);
                         break;
 
                     case 26: // DIV
@@ -131,6 +162,10 @@ pseudo.CstrMips = function() {
 
                     case 37: // OR
                         cpu.base[rd] = cpu.base[rs] | cpu.base[rt];
+                        break;
+
+                    case 39: // NOR
+                        cpu.base[rd] = (~(cpu.base[rs] | cpu.base[rt]));
                         break;
 
                     case 42: // SLT
@@ -233,6 +268,10 @@ pseudo.CstrMips = function() {
                         cpu.copr[rd] = cpu.base[rt];
                         break;
 
+                    case 16: // RFE
+                        cpu.copr[12] = (cpu.copr[12] & 0xfffffff0) | ((cpu.copr[12] >>> 2) & 0xf);
+                        break;
+
                     default:
                         psx.error('Coprocessor 0 instruction ' + rs);
                         break;
@@ -244,6 +283,11 @@ pseudo.CstrMips = function() {
                 cc += 3;
                 break;
 
+            case 33: // LH
+                cpu.base[rt] = SIGN_EXT_16(mem.read.h(ob));
+                cc += 3;
+                break;
+
             case 35: // LW
                 cpu.base[rt] = mem.read.w(ob);
                 cc += 3;
@@ -251,6 +295,11 @@ pseudo.CstrMips = function() {
 
             case 36: // LBU
                 cpu.base[rt] = mem.read.b(ob);
+                cc += 3;
+                break;
+
+            case 37: // LHU
+                cpu.base[rt] = mem.read.h(ob);
                 cc += 3;
                 break;
 
@@ -284,6 +333,14 @@ pseudo.CstrMips = function() {
         branched = true;
         step(true);
         pc = addr;
+    }
+
+    function exception(code, inslot) {
+        cpu.copr[12] = (cpu.copr[12] & (~(0x3f))) | ((cpu.copr[12] << 2) & 0x3f);
+        cpu.copr[13] = code;
+        cpu.copr[14] = pc;
+
+        pc = 0x80;
     }
 
     function consoleOutput() {
