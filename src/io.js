@@ -10,6 +10,10 @@ pseudo.CstrHardware = function() {
                         data32 &= data & mask32;
                         return;
 
+                    case (addr >= 0x1810 && addr <= 0x1814): // Graphics
+                        vs.scopeW(addr, data);
+                        return;
+
                     /* unused */
                     case (addr == 0x1000): // ?
                     case (addr == 0x1004): // ?

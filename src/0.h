@@ -79,6 +79,15 @@ function union(size) {
 #define rd \
     ((code >>> 11) & 0x1f)
 
+/***
+    Graphics
+***/
+#define FRAME_W \
+    1024
+
+#define FRAME_H \
+    512
+
 'use strict';
 
 const pseudo = window.pseudo || {};
