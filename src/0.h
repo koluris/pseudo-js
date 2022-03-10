@@ -4,6 +4,7 @@
 #define SintWcap        Int32Array
 #define SintHcap        Int16Array
 #define SintBcap        Int8Array
+#define Text            String
 #define toText          toString
 #define UintWcap        Uint32Array
 #define UintHcap        Uint16Array

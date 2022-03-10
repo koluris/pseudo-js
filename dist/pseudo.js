@@ -226,7 +226,8 @@ pseudo.CstrMips = function() {
                     case 9: // JALR
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[32] + 4;
                     case 8: // JR
-                        branch(cpu.base[((code >>> 21) & 0x1f)]); // TODO: Verbose
+                        branch(cpu.base[((code >>> 21) & 0x1f)]);
+                        consoleOutput();
                         break;
                     case 16: // MFHI
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[34];
@@ -375,6 +376,13 @@ pseudo.CstrMips = function() {
         step(true);
         cpu.base[32] = addr;
     }
+    function consoleOutput() {
+        if (cpu.base[32] === 0xb0) {
+            if (cpu.base[9] === 59 || cpu.base[9] === 61) {
+                psx.consoleKernel(cpu.base[4] & 0xff);
+            }
+        }
+    }
     // Exposed class methods/variables
     return {
         base: new Uint32Array(32 + 3), // + cpu.base[32], cpu.base[33], cpu.base[34]
@@ -453,6 +461,9 @@ pseudo.CstrMain = function() {
         },
         hex(number) {
             return '0x' + (number >>> 0).toString(16);
+        },
+        consoleKernel(char) {
+            console.warn(String.fromCharCode(char).toUpperCase());
         },
         error(out) {
             cancelAnimationFrame(requestAF);

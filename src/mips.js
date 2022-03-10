@@ -96,7 +96,8 @@ pseudo.CstrMips = function() {
                         cpu.base[rd] = pc + 4;
 
                     case 8: // JR
-                        branch(cpu.base[rs]); // TODO: Verbose
+                        branch(cpu.base[rs]);
+                        consoleOutput();
                         break;
 
                     case 16: // MFHI
@@ -283,6 +284,14 @@ pseudo.CstrMips = function() {
         branched = true;
         step(true);
         pc = addr;
+    }
+
+    function consoleOutput() {
+        if (pc === 0xb0) {
+            if (cpu.base[9] === 59 || cpu.base[9] === 61) {
+                psx.consoleKernel(cpu.base[4] & 0xff);
+            }
+        }
     }
 
     // Exposed class methods/variables

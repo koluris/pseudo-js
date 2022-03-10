@@ -58,6 +58,10 @@ pseudo.CstrMain = function() {
             return '0x' + (number >>> 0).toText(16);
         },
 
+        consoleKernel(char) {
+            console.warn(Text.fromCharCode(char).toUpperCase());
+        },
+
         error(out) {
             cancelAnimationFrame(requestAF);
             requestAF = undefined;
