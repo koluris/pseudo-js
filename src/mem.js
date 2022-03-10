@@ -61,6 +61,10 @@ pseudo.CstrMem = function() {
 
             b(addr, data) {
                 switch(addr >>> 24) {
+                    case 0x80:
+                        directMemW(mem.ram.ub, addr) = data;
+                        return;
+
                     case 0x1f:
                         if ((addr & 0xffff) >= 0x400) {
                             io.write.b(addr & 0xffff, data);
@@ -77,6 +81,8 @@ pseudo.CstrMem = function() {
         read: {
             w(addr) {
                 switch(addr >>> 24) {
+                    case 0x00:
+                    case 0x80:
                     case 0xa0:
                         return directMemW(mem.ram.uw, addr);
 
@@ -85,6 +91,24 @@ pseudo.CstrMem = function() {
                 }
 
                 psx.error('Mem R32 ' + psx.hex(addr));
+            },
+
+            b(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return directMemW(mem.ram.ub, addr);
+
+                    case 0xbf:
+                        return directMemW(mem.rom.ub, addr);
+
+                    case 0x1f:
+                        if ((addr & 0xffff) >= 0x400) {
+                            return io.read.b(addr & 0xffff);
+                        }
+                        return directMemW(mem.hwr.ub, addr);
+                }
+
+                psx.error('Mem R08 ' + psx.hex(addr));
             }
         }
     };

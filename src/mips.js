@@ -46,8 +46,13 @@ pseudo.CstrMips = function() {
                         branch(cpu.base[rs]); // TODO: Verbose
                         break;
 
+                    case 32: // ADD
                     case 33: // ADDU
                         cpu.base[rd] = cpu.base[rs] + cpu.base[rt];
+                        break;
+
+                    case 36: // AND
+                        cpu.base[rd] = cpu.base[rs] & cpu.base[rt];
                         break;
 
                     case 37: // OR
@@ -69,6 +74,12 @@ pseudo.CstrMips = function() {
 
             case 2: // J
                 branch(s_addr);
+                break;
+
+            case 4: // BEQ
+                if (cpu.base[rs] === cpu.base[rt]) {
+                    branch(b_addr);
+                }
                 break;
 
             case 5: // BNE
@@ -96,6 +107,10 @@ pseudo.CstrMips = function() {
 
             case 16: // COP0
                 switch(rs) {
+                    case 0: // MFC0
+                        cpu.base[rt] = cpu.copr[rd];
+                        break;
+
                     case 4: // MTC0
                         cpu.copr[rd] = cpu.base[rt];
                         break;
@@ -104,6 +119,11 @@ pseudo.CstrMips = function() {
                         psx.error('Coprocessor 0 instruction ' + rs);
                         break;
                 }
+                break;
+
+            case 32: // LB
+                cpu.base[rt] = SIGN_EXT_8(mem.read.b(ob));
+                cc += 3;
                 break;
 
             case 35: // LW
@@ -153,6 +173,16 @@ pseudo.CstrMips = function() {
             cpu.copr[15] = 0x2;
 
             pc = 0xbfc00000;
+        },
+
+        bootstrap() {
+            const start = performance.now();
+
+            while(pc !== 0x80030000) {
+                step(false);
+            }
+            const delta = parseFloat(performance.now() - start).toFixed(2);
+            console.info('Bootstrap completed in ' + delta + ' ms');
         },
 
         run() {

@@ -128,6 +128,9 @@ pseudo.CstrMem = function() {
             },
             b(addr, data) {
                 switch(addr >>> 24) {
+                    case 0x80:
+                        mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 2] = data;
+                        return;
                     case 0x1f:
                         if ((addr & 0xffff) >= 0x400) {
                             io.write.b(addr & 0xffff, data);
@@ -142,12 +145,28 @@ pseudo.CstrMem = function() {
         read: {
             w(addr) {
                 switch(addr >>> 24) {
+                    case 0x00:
+                    case 0x80:
                     case 0xa0:
                         return mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2];
                     case 0xbf:
                         return mem.rom.uw[(( addr) & (mem.rom.uw.byteLength - 1)) >>> 2];
                 }
                 psx.error('Mem R32 ' + psx.hex(addr));
+            },
+            b(addr) {
+                switch(addr >>> 24) {
+                    case 0x80:
+                        return mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 2];
+                    case 0xbf:
+                        return mem.rom.ub[(( addr) & (mem.rom.ub.byteLength - 1)) >>> 2];
+                    case 0x1f:
+                        if ((addr & 0xffff) >= 0x400) {
+                            return io.read.b(addr & 0xffff);
+                        }
+                        return mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 2];
+                }
+                psx.error('Mem R08 ' + psx.hex(addr));
             }
         }
     };
@@ -170,8 +189,12 @@ pseudo.CstrMips = function() {
                     case 8: // JR
                         branch(cpu.base[((code >>> 21) & 0x1f)]); // TODO: Verbose
                         break;
+                    case 32: // ADD
                     case 33: // ADDU
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] + cpu.base[((code >>> 16) & 0x1f)];
+                        break;
+                    case 36: // AND
+                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & cpu.base[((code >>> 16) & 0x1f)];
                         break;
                     case 37: // OR
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] | cpu.base[((code >>> 16) & 0x1f)];
@@ -188,6 +211,11 @@ pseudo.CstrMips = function() {
                 cpu.base[31] = cpu.base[32] + 4;
             case 2: // J
                 branch(((cpu.base[32] & 0xf0000000) | (code & 0x3ffffff) << 2));
+                break;
+            case 4: // BEQ
+                if (cpu.base[((code >>> 21) & 0x1f)] === cpu.base[((code >>> 16) & 0x1f)]) {
+                    branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
+                }
                 break;
             case 5: // BNE
                 if (cpu.base[((code >>> 21) & 0x1f)] !== cpu.base[((code >>> 16) & 0x1f)]) {
@@ -209,6 +237,9 @@ pseudo.CstrMips = function() {
                 break;
             case 16: // COP0
                 switch(((code >>> 21) & 0x1f)) {
+                    case 0: // MFC0
+                        cpu.base[((code >>> 16) & 0x1f)] = cpu.copr[((code >>> 11) & 0x1f)];
+                        break;
                     case 4: // MTC0
                         cpu.copr[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)];
                         break;
@@ -216,6 +247,10 @@ pseudo.CstrMips = function() {
                         psx.error('Coprocessor 0 instruction ' + ((code >>> 21) & 0x1f));
                         break;
                 }
+                break;
+            case 32: // LB
+                cpu.base[((code >>> 16) & 0x1f)] = ((mem.read.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))))) << 24 >> 24);
+                cc += 3;
                 break;
             case 35: // LW
                 cpu.base[((code >>> 16) & 0x1f)] = mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
@@ -254,6 +289,14 @@ pseudo.CstrMips = function() {
             cpu.copr[12] = 0x10900000;
             cpu.copr[15] = 0x2;
             cpu.base[32] = 0xbfc00000;
+        },
+        bootstrap() {
+            const start = performance.now();
+            while(cpu.base[32] !== 0x80030000) {
+                step(false);
+            }
+            const delta = parseFloat(performance.now() - start).toFixed(2);
+            console.info('Bootstrap completed in ' + delta + ' ms');
         },
         run() {
             // Next code block
@@ -302,6 +345,7 @@ pseudo.CstrMain = function() {
         run(now) {
             let frame = 10.0 + (now - totalFrames);
             let cc = frame * (33868800 / 1000);
+            console.info(cc);
             while (cc > 0) {
                 let blockTime = cpu.run();
                 cc -= blockTime;
