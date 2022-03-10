@@ -46,8 +46,10 @@ pseudo.CstrMain = function() {
 
             while (cc > 0) {
                 let blockTime = cpu.run();
+                cc -= blockTime;
                 console.info('Block count ' + blockTime);
             }
+            psx.error('EOF');
             totalFrames += frame;
             requestAF = requestAnimationFrame(psx.run);
         },

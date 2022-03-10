@@ -24,6 +24,32 @@ pseudo.CstrHardware = function() {
                         psx.error('Hardware W32 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
                         return;
                 }
+            },
+
+            h(addr, data) {
+                switch(true) {
+                    /* unused */
+                    case (addr >= 0x1c00 && addr <= 0x1dfe): // SPU
+                        directMemH(mem.hwr.uh, addr) = data;
+                        return;
+
+                    default:
+                        psx.error('Hardware W16 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                        return;
+                }
+            },
+
+            b(addr, data) {
+                switch(true) {
+                    /* unused */
+                    case (addr == 0x2041): // DIP Switch?
+                        directMemB(mem.hwr.ub, addr) = data;
+                        return;
+
+                    default:
+                        psx.error('Hardware W08 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+                        return;
+                }
             }
         }
     };

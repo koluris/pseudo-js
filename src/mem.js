@@ -21,6 +21,8 @@ pseudo.CstrMem = function() {
             w(addr, data) {
                 switch(addr >>> 24) {
                     case 0x00:
+                    case 0x80:
+                    case 0xa0:
                         if (cpu.copr[12] & 0x10000) {
                             return;
                         }
@@ -41,12 +43,43 @@ pseudo.CstrMem = function() {
                 }
 
                 psx.error('Mem W32 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            },
+
+            h(addr, data) {
+                switch(addr >>> 24) {
+                    case 0x1f:
+                        if ((addr & 0xffff) >= 0x400) {
+                            io.write.h(addr & 0xffff, data);
+                            return;
+                        }
+                        directMemW(mem.hwr.uh, addr) = data;
+                        return;
+                }
+
+                psx.error('Mem W16 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            },
+
+            b(addr, data) {
+                switch(addr >>> 24) {
+                    case 0x1f:
+                        if ((addr & 0xffff) >= 0x400) {
+                            io.write.b(addr & 0xffff, data);
+                            return;
+                        }
+                        directMemW(mem.hwr.ub, addr) = data;
+                        return;
+                }
+
+                psx.error('Mem W08 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             }
         },
 
         read: {
             w(addr) {
                 switch(addr >>> 24) {
+                    case 0xa0:
+                        return directMemW(mem.ram.uw, addr);
+
                     case 0xbf:
                         return directMemW(mem.rom.uw, addr);
                 }

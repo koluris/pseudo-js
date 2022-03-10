@@ -30,7 +30,7 @@ pseudo.CstrMips = function() {
 
     // Base CPU stepper
     function step(inslot) {
-        const code  = mem.read.w(pc);
+        const code = mem.read.w(pc);
         pc += 4;
 
         switch(opcode) {
@@ -42,8 +42,20 @@ pseudo.CstrMips = function() {
                         }
                         break;
 
+                    case 8: // JR
+                        branch(cpu.base[rs]); // TODO: Verbose
+                        break;
+
+                    case 33: // ADDU
+                        cpu.base[rd] = cpu.base[rs] + cpu.base[rt];
+                        break;
+
                     case 37: // OR
                         cpu.base[rd] = cpu.base[rs] | cpu.base[rt];
+                        break;
+
+                    case 43: // SLTU
+                        cpu.base[rd] = cpu.base[rs] < cpu.base[rt];
                         break;
 
                     default:
@@ -51,6 +63,9 @@ pseudo.CstrMips = function() {
                         break;
                 }
                 break;
+
+            case 3: // JAL
+                cpu.base[31] = pc + 4;
 
             case 2: // J
                 branch(s_addr);
@@ -65,6 +80,10 @@ pseudo.CstrMips = function() {
             case 8: // ADDI
             case 9: // ADDIU
                 cpu.base[rt] = cpu.base[rs] + imm_s;
+                break;
+
+            case 12: // ANDI
+                cpu.base[rt] = cpu.base[rs] & imm_u;
                 break;
 
             case 13: // ORI
@@ -85,6 +104,19 @@ pseudo.CstrMips = function() {
                         psx.error('Coprocessor 0 instruction ' + rs);
                         break;
                 }
+                break;
+
+            case 35: // LW
+                cpu.base[rt] = mem.read.w(ob);
+                cc += 3;
+                break;
+
+            case 40: // SB
+                mem.write.b(ob, cpu.base[rt]);
+                break;
+
+            case 41: // SH
+                mem.write.h(ob, cpu.base[rt]);
                 break;
 
             case 43: // SW

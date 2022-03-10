@@ -30,6 +30,12 @@ function union(size) {
 #define directMemW(module, addr) \
     module[((addr) & (module.bSize - 1)) >>> 2]
 
+#define directMemH(module, addr) \
+    module[((addr) & (module.bSize - 1)) >>> 1]
+
+#define directMemB(module, addr) \
+    module[((addr) & (module.bSize - 1)) >>> 0]
+
 /***
     Mips processor
 ***/
