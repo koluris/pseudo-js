@@ -130,7 +130,7 @@ pseudo.CstrMem = function() {
                             io.write.h(addr & 0xffff, data);
                             return;
                         }
-                        mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 2] = data;
+                        mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
                         return;
                 }
                 psx.error('Mem W16 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
@@ -140,14 +140,14 @@ pseudo.CstrMem = function() {
                     case 0x00:
                     case 0x80:
                     case 0xa0:
-                        mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 2] = data;
+                        mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 0] = data;
                         return;
                     case 0x1f:
                         if ((addr & 0xffff) >= 0x400) {
                             io.write.b(addr & 0xffff, data);
                             return;
                         }
-                        mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 2] = data;
+                        mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
                         return;
                 }
                 psx.error('Mem W08 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
@@ -174,14 +174,14 @@ pseudo.CstrMem = function() {
                 switch(addr >>> 24) {
                     case 0x00:
                     case 0x80:
-                        return mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 2];
+                        return mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 0];
                     case 0xbf:
-                        return mem.rom.ub[(( addr) & (mem.rom.ub.byteLength - 1)) >>> 2];
+                        return mem.rom.ub[(( addr) & (mem.rom.ub.byteLength - 1)) >>> 0];
                     case 0x1f:
                         if ((addr & 0xffff) >= 0x400) {
                             return io.read.b(addr & 0xffff);
                         }
-                        return mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 2];
+                        return mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0];
                 }
                 psx.error('Mem R08 ' + psx.hex(addr));
             }
@@ -189,7 +189,21 @@ pseudo.CstrMem = function() {
     };
 };
 const mem = new pseudo.CstrMem();
+// Inline functions for speedup
 pseudo.CstrMips = function() {
+    // SW & LW tables
+    const mask = [
+        [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
+        [0x00000000, 0xff000000, 0xffff0000, 0xffffff00],
+        [0xffffff00, 0xffff0000, 0xff000000, 0x00000000],
+        [0x00000000, 0x000000ff, 0x0000ffff, 0x00ffffff],
+    ];
+    const shift = [
+        [0x18, 0x10, 0x08, 0x00],
+        [0x00, 0x08, 0x10, 0x18],
+        [0x18, 0x10, 0x08, 0x00],
+        [0x00, 0x08, 0x10, 0x18],
+    ];
     let branched, cc;
     // Base CPU stepper
     function step(inslot) {
@@ -214,6 +228,18 @@ pseudo.CstrMips = function() {
                     case 8: // JR
                         branch(cpu.base[((code >>> 21) & 0x1f)]); // TODO: Verbose
                         break;
+                    case 16: // MFHI
+                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[34];
+                        break;
+                    case 18: // MFLO
+                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[33];
+                        break;
+                    case 26: // DIV
+                        if ( ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0)) { cpu.base[33] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) /  ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0); cpu.base[34] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) %  ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0); };
+                        break;
+                    case 27: // DIVU
+                        if ( cpu.base[((code >>> 16) & 0x1f)]) { cpu.base[33] = cpu.base[((code >>> 21) & 0x1f)] /  cpu.base[((code >>> 16) & 0x1f)]; cpu.base[34] = cpu.base[((code >>> 21) & 0x1f)] %  cpu.base[((code >>> 16) & 0x1f)]; };
+                        break;
                     case 32: // ADD
                     case 33: // ADDU
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] + cpu.base[((code >>> 16) & 0x1f)];
@@ -226,6 +252,9 @@ pseudo.CstrMips = function() {
                         break;
                     case 37: // OR
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] | cpu.base[((code >>> 16) & 0x1f)];
+                        break;
+                    case 42: // SLT
+                        cpu.base[((code >>> 11) & 0x1f)] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) < ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0);
                         break;
                     case 43: // SLTU
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] < cpu.base[((code >>> 16) & 0x1f)];
@@ -284,6 +313,9 @@ pseudo.CstrMips = function() {
             case 10: // SLTI
                 cpu.base[((code >>> 16) & 0x1f)] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
                 break;
+            case 11: // SLTIU
+                cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] < (code & 0xffff);
+                break;
             case 12: // ANDI
                 cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & (code & 0xffff);
                 break;
@@ -323,6 +355,9 @@ pseudo.CstrMips = function() {
                 break;
             case 41: // SH
                 mem.write.h((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
+                break;
+            case 42: // SWL
+                { const temp = (cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))); mem.write.w(temp & (~(3)), (cpu.base[((code >>> 16) & 0x1f)] >>> shift[ 2][temp & 3]) | (mem.read.w(temp & (~(3))) & mask[ 2][temp & 3])); };
                 break;
             case 43: // SW
                 mem.write.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))), cpu.base[((code >>> 16) & 0x1f)]);
@@ -407,7 +442,6 @@ pseudo.CstrMain = function() {
         run(now) {
             let frame = 10.0 + (now - totalFrames);
             let cc = frame * (33868800 / 1000);
-            console.info(cc);
             while (cc > 0) {
                 let blockTime = cpu.run();
                 cc -= blockTime;

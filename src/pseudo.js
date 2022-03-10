@@ -43,7 +43,6 @@ pseudo.CstrMain = function() {
         run(now) {
             let frame = 10.0 + (now - totalFrames);
             let cc = frame * (PSX_CLK / 1000);
-            console.info(cc);
 
             while (cc > 0) {
                 let blockTime = cpu.run();

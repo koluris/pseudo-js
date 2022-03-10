@@ -25,7 +25,49 @@
 #define s_addr \
     ((pc & 0xf0000000) | (code & 0x3ffffff) << 2)
 
+// Inline functions for speedup
+#define opcodeMult(a, b) \
+    { \
+        const temp = a * b; \
+        \
+        lo = temp & 0xffffffff; \
+        hi = Math.floor(temp / power32); \
+    }
+
+#define opcodeDiv(a, b) \
+    if (b) { \
+        lo = a / b; \
+        hi = a % b; \
+    }
+
+#define opcodeSWx(o, d) \
+{ \
+    const temp = ob; \
+    mem.write.w(temp & (~(3)), (cpu.base[rt] o shift[d][temp & 3]) | (mem.read.w(temp & (~(3))) & mask[d][temp & 3])); \
+}
+
+#define opcodeLWx(o, d) \
+{ \
+    const temp = ob; \
+    cpu.base[rt] = (cpu.base[rt] & mask[d][temp & 3]) | (mem.read.w(temp & (~(3))) o shift[d][temp & 3]); \
+}
+
 pseudo.CstrMips = function() {
+    // SW & LW tables
+    const mask = [
+        [0x00ffffff, 0x0000ffff, 0x000000ff, 0x00000000],
+        [0x00000000, 0xff000000, 0xffff0000, 0xffffff00],
+        [0xffffff00, 0xffff0000, 0xff000000, 0x00000000],
+        [0x00000000, 0x000000ff, 0x0000ffff, 0x00ffffff],
+    ];
+
+    const shift = [
+        [0x18, 0x10, 0x08, 0x00],
+        [0x00, 0x08, 0x10, 0x18],
+        [0x18, 0x10, 0x08, 0x00],
+        [0x00, 0x08, 0x10, 0x18],
+    ];
+
     let branched, cc;
 
     // Base CPU stepper
@@ -57,6 +99,22 @@ pseudo.CstrMips = function() {
                         branch(cpu.base[rs]); // TODO: Verbose
                         break;
 
+                    case 16: // MFHI
+                        cpu.base[rd] = hi;
+                        break;
+
+                    case 18: // MFLO
+                        cpu.base[rd] = lo;
+                        break;
+
+                    case 26: // DIV
+                        opcodeDiv(SIGN_EXT_32(cpu.base[rs]), SIGN_EXT_32(cpu.base[rt]));
+                        break;
+
+                    case 27: // DIVU
+                        opcodeDiv(cpu.base[rs], cpu.base[rt]);
+                        break;
+
                     case 32: // ADD
                     case 33: // ADDU
                         cpu.base[rd] = cpu.base[rs] + cpu.base[rt];
@@ -72,6 +130,10 @@ pseudo.CstrMips = function() {
 
                     case 37: // OR
                         cpu.base[rd] = cpu.base[rs] | cpu.base[rt];
+                        break;
+
+                    case 42: // SLT
+                        cpu.base[rd] = SIGN_EXT_32(cpu.base[rs]) < SIGN_EXT_32(cpu.base[rt]);
                         break;
 
                     case 43: // SLTU
@@ -144,6 +206,10 @@ pseudo.CstrMips = function() {
                 cpu.base[rt] = SIGN_EXT_32(cpu.base[rs]) < imm_s;
                 break;
 
+            case 11: // SLTIU
+                cpu.base[rt] = cpu.base[rs] < imm_u;
+                break;
+
             case 12: // ANDI
                 cpu.base[rt] = cpu.base[rs] & imm_u;
                 break;
@@ -193,6 +259,10 @@ pseudo.CstrMips = function() {
 
             case 41: // SH
                 mem.write.h(ob, cpu.base[rt]);
+                break;
+
+            case 42: // SWL
+                opcodeSWx(>>>, 2);
                 break;
 
             case 43: // SW
