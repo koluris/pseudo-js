@@ -32,6 +32,9 @@ pseudo.CstrHardware = function() {
         write: {
             w(addr, data) {
                 switch(true) {
+                    case (addr == 0x1070): // IRQ Status
+                        mem.hwr.uw[((0x1070) & (mem.hwr.uw.byteLength - 1)) >>> 2] &= data & mem.hwr.uw[((0x1074) & (mem.hwr.uw.byteLength - 1)) >>> 2];
+                        return;
                     
                     case (addr == 0x1000): // ?
                     case (addr == 0x1004): // ?
@@ -43,23 +46,21 @@ pseudo.CstrHardware = function() {
                     case (addr == 0x101c): // ?
                     case (addr == 0x1020): // COM
                     case (addr == 0x1060): // RAM Size
+                    case (addr == 0x1074): // IRQ Mask
                         mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2] = data;
                         return;
-                    default:
-                        psx.error('Hardware W32 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
-                        return;
                 }
+                psx.error('Hardware Write w ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             },
             h(addr, data) {
                 switch(true) {
                     
+                    case (addr >= 0x1100 && addr <= 0x1128): // Rootcounters
                     case (addr >= 0x1c00 && addr <= 0x1dfe): // SPU
                         mem.hwr.uh[(( addr) & (mem.hwr.uh.byteLength - 1)) >>> 1] = data;
                         return;
-                    default:
-                        psx.error('Hardware W16 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
-                        return;
                 }
+                psx.error('Hardware Write h ' + psx.hex(addr) + ' <- ' + psx.hex(data));
             },
             b(addr, data) {
                 switch(true) {
@@ -67,10 +68,18 @@ pseudo.CstrHardware = function() {
                     case (addr == 0x2041): // DIP Switch?
                         mem.hwr.ub[(( addr) & (mem.hwr.ub.byteLength - 1)) >>> 0] = data;
                         return;
-                    default:
-                        psx.error('Hardware W08 ' + psx.hex(addr) + ' <- ' + psx.hex(data));
-                        return;
                 }
+                psx.error('Hardware Write b ' + psx.hex(addr) + ' <- ' + psx.hex(data));
+            }
+        },
+        read: {
+            w(addr) {
+                switch(true) {
+                    
+                    case (addr == 0x1074): // IRQ Mask
+                        return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
+                }
+                psx.error('Hardware Read w ' + psx.hex(addr));
             }
         }
     };
@@ -128,7 +137,9 @@ pseudo.CstrMem = function() {
             },
             b(addr, data) {
                 switch(addr >>> 24) {
+                    case 0x00:
                     case 0x80:
+                    case 0xa0:
                         mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 2] = data;
                         return;
                     case 0x1f:
@@ -151,11 +162,17 @@ pseudo.CstrMem = function() {
                         return mem.ram.uw[(( addr) & (mem.ram.uw.byteLength - 1)) >>> 2];
                     case 0xbf:
                         return mem.rom.uw[(( addr) & (mem.rom.uw.byteLength - 1)) >>> 2];
+                    case 0x1f:
+                        if ((addr & 0xffff) >= 0x400) {
+                            return io.read.w(addr & 0xffff);
+                        }
+                        return mem.hwr.uw[(( addr) & (mem.hwr.uw.byteLength - 1)) >>> 2];
                 }
                 psx.error('Mem R32 ' + psx.hex(addr));
             },
             b(addr) {
                 switch(addr >>> 24) {
+                    case 0x00:
                     case 0x80:
                         return mem.ram.ub[(( addr) & (mem.ram.ub.byteLength - 1)) >>> 2];
                     case 0xbf:
@@ -186,12 +203,23 @@ pseudo.CstrMips = function() {
                             cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] << ((code >>> 6) & 0x1f);
                         }
                         break;
+                    case 2: // SRL
+                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 16) & 0x1f)] >>> ((code >>> 6) & 0x1f);
+                        break;
+                    case 3: // SRA
+                        cpu.base[((code >>> 11) & 0x1f)] = ((cpu.base[((code >>> 16) & 0x1f)]) << 0 >> 0) >> ((code >>> 6) & 0x1f);
+                        break;
+                    case 9: // JALR
+                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[32] + 4;
                     case 8: // JR
                         branch(cpu.base[((code >>> 21) & 0x1f)]); // TODO: Verbose
                         break;
                     case 32: // ADD
                     case 33: // ADDU
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] + cpu.base[((code >>> 16) & 0x1f)];
+                        break;
+                    case 35: // SUBU
+                        cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] - cpu.base[((code >>> 16) & 0x1f)];
                         break;
                     case 36: // AND
                         cpu.base[((code >>> 11) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & cpu.base[((code >>> 16) & 0x1f)];
@@ -204,6 +232,23 @@ pseudo.CstrMips = function() {
                         break;
                     default:
                         psx.error('Special CPU instruction ' + (code & 0x3f));
+                        break;
+                }
+                break;
+            case 1: // REGIMM
+                switch(((code >>> 16) & 0x1f)) {
+                    case 0: // BLTZ
+                        if (((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) <  0) {
+                            branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
+                        }
+                        break;
+                    case 1: // BGEZ
+                        if (((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) >= 0) {
+                            branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
+                        }
+                        break;
+                    default:
+                        psx.error('Bcond CPU instruction ' + ((code >>> 16) & 0x1f));
                         break;
                 }
                 break;
@@ -222,9 +267,22 @@ pseudo.CstrMips = function() {
                     branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
                 }
                 break;
+            case 6: // BLEZ
+                if (((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) <= 0) {
+                    branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
+                }
+                break;
+            case 7: // BGTZ
+                if (((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) > 0) {
+                    branch((cpu.base[32] + ((((code) << 16 >> 16)) << 2)));
+                }
+                break;
             case 8: // ADDI
             case 9: // ADDIU
                 cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16));
+                break;
+            case 10: // SLTI
+                cpu.base[((code >>> 16) & 0x1f)] = ((cpu.base[((code >>> 21) & 0x1f)]) << 0 >> 0) < (((code) << 16 >> 16));
                 break;
             case 12: // ANDI
                 cpu.base[((code >>> 16) & 0x1f)] = cpu.base[((code >>> 21) & 0x1f)] & (code & 0xffff);
@@ -254,6 +312,10 @@ pseudo.CstrMips = function() {
                 break;
             case 35: // LW
                 cpu.base[((code >>> 16) & 0x1f)] = mem.read.w((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
+                cc += 3;
+                break;
+            case 36: // LBU
+                cpu.base[((code >>> 16) & 0x1f)] = mem.read.b((cpu.base[((code >>> 21) & 0x1f)] + (((code) << 16 >> 16))));
                 cc += 3;
                 break;
             case 40: // SB

@@ -42,6 +42,17 @@ pseudo.CstrMips = function() {
                         }
                         break;
 
+                    case 2: // SRL
+                        cpu.base[rd] = cpu.base[rt] >>> shamt;
+                        break;
+
+                    case 3: // SRA
+                        cpu.base[rd] = SIGN_EXT_32(cpu.base[rt]) >> shamt;
+                        break;
+
+                    case 9: // JALR
+                        cpu.base[rd] = pc + 4;
+
                     case 8: // JR
                         branch(cpu.base[rs]); // TODO: Verbose
                         break;
@@ -49,6 +60,10 @@ pseudo.CstrMips = function() {
                     case 32: // ADD
                     case 33: // ADDU
                         cpu.base[rd] = cpu.base[rs] + cpu.base[rt];
+                        break;
+
+                    case 35: // SUBU
+                        cpu.base[rd] = cpu.base[rs] - cpu.base[rt];
                         break;
 
                     case 36: // AND
@@ -65,6 +80,26 @@ pseudo.CstrMips = function() {
 
                     default:
                         psx.error('Special CPU instruction ' + (code & 0x3f));
+                        break;
+                }
+                break;
+
+            case 1: // REGIMM
+                switch(rt) {
+                    case 0: // BLTZ
+                        if (SIGN_EXT_32(cpu.base[rs]) <  0) {
+                            branch(b_addr);
+                        }
+                        break;
+
+                    case 1: // BGEZ
+                        if (SIGN_EXT_32(cpu.base[rs]) >= 0) {
+                            branch(b_addr);
+                        }
+                        break;
+
+                    default:
+                        psx.error('Bcond CPU instruction ' + rt);
                         break;
                 }
                 break;
@@ -88,9 +123,25 @@ pseudo.CstrMips = function() {
                 }
                 break;
 
+            case 6: // BLEZ
+                if (SIGN_EXT_32(cpu.base[rs]) <= 0) {
+                    branch(b_addr);
+                }
+                break;
+
+            case 7: // BGTZ
+                if (SIGN_EXT_32(cpu.base[rs]) > 0) {
+                    branch(b_addr);
+                }
+                break;
+
             case 8: // ADDI
             case 9: // ADDIU
                 cpu.base[rt] = cpu.base[rs] + imm_s;
+                break;
+
+            case 10: // SLTI
+                cpu.base[rt] = SIGN_EXT_32(cpu.base[rs]) < imm_s;
                 break;
 
             case 12: // ANDI
@@ -128,6 +179,11 @@ pseudo.CstrMips = function() {
 
             case 35: // LW
                 cpu.base[rt] = mem.read.w(ob);
+                cc += 3;
+                break;
+
+            case 36: // LBU
+                cpu.base[rt] = mem.read.b(ob);
                 cc += 3;
                 break;
 

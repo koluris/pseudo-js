@@ -61,7 +61,9 @@ pseudo.CstrMem = function() {
 
             b(addr, data) {
                 switch(addr >>> 24) {
+                    case 0x00:
                     case 0x80:
+                    case 0xa0:
                         directMemW(mem.ram.ub, addr) = data;
                         return;
 
@@ -88,6 +90,12 @@ pseudo.CstrMem = function() {
 
                     case 0xbf:
                         return directMemW(mem.rom.uw, addr);
+
+                    case 0x1f:
+                        if ((addr & 0xffff) >= 0x400) {
+                            return io.read.w(addr & 0xffff);
+                        }
+                        return directMemW(mem.hwr.uw, addr);
                 }
 
                 psx.error('Mem R32 ' + psx.hex(addr));
@@ -95,6 +103,7 @@ pseudo.CstrMem = function() {
 
             b(addr) {
                 switch(addr >>> 24) {
+                    case 0x00:
                     case 0x80:
                         return directMemW(mem.ram.ub, addr);
 

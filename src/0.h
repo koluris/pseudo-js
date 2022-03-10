@@ -37,6 +37,27 @@ function union(size) {
     module[((addr) & (module.bSize - 1)) >>> 0]
 
 /***
+    Hardware IO
+***/
+#define data32 \
+    directMemW(mem.hwr.uw, 0x1070)
+
+#define mask32 \
+    directMemW(mem.hwr.uw, 0x1074)
+
+#define data16 \
+    directMemH(mem.hwr.uh, 0x1070)
+
+#define mask16 \
+    directMemH(mem.hwr.uh, 0x1074)
+
+#define dpcr \
+    directMemW(mem.hwr.uw, 0x10f0)
+
+#define dicr \
+    directMemW(mem.hwr.uw, 0x10f4)
+
+/***
     Mips processor
 ***/
 #define SIGN_EXT_32(n) \
