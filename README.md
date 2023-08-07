@@ -1,4 +1,4 @@
-<h1>PSeudo JS</h1>
+<h1>PSeudo JS (<a href="https://naden.co">https://naden.co</a>)</h1>
 
 [![GitHub stars](https://img.shields.io/github/stars/dkoluris/pseudo-js.svg?style=flat-square)](https://github.com/dkoluris/pseudo-js/stargazers) [![GitHub license](https://img.shields.io/github/license/dkoluris/pseudo-js.svg?style=flat-square)](https://github.com/dkoluris/pseudo-js/blob/master/LICENSE) [![Twitter](https://img.shields.io/twitter/url/https/github.com/dkoluris/pseudo-js.svg?style=social)](https://twitter.com/intent/tweet?text=Wow:&url=https%3A%2F%2Fgithub.com%2Fdkoluris%2Fpseudo-js)
 
